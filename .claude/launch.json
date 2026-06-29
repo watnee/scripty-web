@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Scripty WebApp (Tomcat)",
+      "runtimeExecutable": "java",
+      "runtimeArgs": ["-jar", "target/dependency/webapp-runner.jar", "--port", "8080", "target/spring-mvc-railway-webapp.war"],
+      "port": 8080
+    }
+  ]
+}

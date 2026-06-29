@@ -5,7 +5,7 @@
     <artifactId>scripty</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>war</packaging>
-    <name>scripty Spring MVC Heroku Webapp</name>
+    <name>scripty Spring MVC Railway Webapp</name>
     <url>http://maven.apache.org</url>
   
     <properties>
@@ -160,7 +160,7 @@
     </dependencies>
 
     <build>
-        <finalName>spring-mvc-heroku-webapp</finalName>
+        <finalName>spring-mvc-railway-webapp</finalName>
 <resources>
             <resource>
                 <directory>src/main/resources</directory>

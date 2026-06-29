@@ -1,7 +1,6 @@
 {
-  "name": "SG Records WebMVC",
-  "description": "Example of SpringMVC on heroku",
-  "repository": "https://bitbucket.thesoftwareguild.com/scm/sg/sg-heroku-archetype.git",
+  "name": "Scripty WebMVC",
+  "description": "SpringMVC webapp deployed on Railway",
   "logo": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Tomcat-logo.svg",
   "keywords": [
     "java",

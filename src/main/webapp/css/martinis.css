@@ -1,5 +1,10 @@
 header {
     border-bottom: none;
+    padding: 0.75rem 1.5rem;
+}
+
+header nav {
+    gap: 1.5rem;
 }
 
 main.home {

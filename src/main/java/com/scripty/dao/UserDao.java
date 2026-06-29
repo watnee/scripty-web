@@ -1,9 +1,9 @@
-package com.chriswatnee.martinis.service;
+package com.scripty.dao;
 
-import com.chriswatnee.martinis.dto.User;
+import com.scripty.dto.User;
 import java.util.List;
 
-public interface UserService {
+public interface UserDao {
 
     public User create(User user);
     public User read(Integer id);

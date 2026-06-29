@@ -1,22 +1,23 @@
-package com.chriswatnee.martinis.dto;
+package com.scripty.commandmodel.user.createuser;
 
-public class User {
+import org.hibernate.validator.constraints.Length;
+import org.hibernate.validator.constraints.NotEmpty;
 
-    private Integer id;
+public class CreateUserCommandModel {
+
+    @NotEmpty(message = "You must supply a value for Username.")
+    @Length(max = 20, message = "Username must be no more than 20 characters in length.")
     private String username;
+    @NotEmpty(message = "You must supply a value for Password.")
+    @Length(max = 100, message = "Password must be no more than 100 characters in length.")
     private String password;
-    private boolean enabled;
+    @NotEmpty(message = "You must supply a value for First Name.")
+    @Length(max = 30, message = "First Name must be no more than 30 characters in length.")
     private String firstName;
+    @NotEmpty(message = "You must supply a value for Last Name.")
+    @Length(max = 30, message = "Last Name must be no more than 30 characters in length.")
     private String lastName;
     private boolean admin;
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
 
     public String getUsername() {
         return username;
@@ -32,14 +33,6 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
     }
 
     public String getFirstName() {

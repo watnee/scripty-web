@@ -59,14 +59,14 @@
     <bean id="sceneDao" class="com.scripty.dao.SceneDaoImpl" />
     <bean id="sceneService" class="com.scripty.service.SceneServiceImpl" />
     
-    <bean id="userDao" class="com.chriswatnee.martinis.dao.UserDaoImpl" />
-    <bean id="appUserService" class="com.chriswatnee.martinis.service.UserServiceImpl" />
+    <bean id="userDao" class="com.scripty.dao.UserDaoImpl" />
+    <bean id="appUserService" class="com.scripty.service.UserServiceImpl" />
 
     <bean id="actorWebService" class="com.scripty.webservice.ActorWebServiceImpl" />
     <bean id="blockWebService" class="com.scripty.webservice.BlockWebServiceImpl" />
     <bean id="personWebService" class="com.scripty.webservice.PersonWebServiceImpl" />
     <bean id="projectWebService" class="com.scripty.webservice.ProjectWebServiceImpl" />
     <bean id="sceneWebService" class="com.scripty.webservice.SceneWebServiceImpl" />
-    <bean id="userWebService" class="com.chriswatnee.martinis.webservice.UserWebServiceImpl" />
+    <bean id="userWebService" class="com.scripty.webservice.UserWebServiceImpl" />
 
 </beans>

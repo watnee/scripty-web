@@ -1,22 +1,12 @@
-package com.chriswatnee.martinis.commandmodel.user.edituser;
+package com.scripty.dto;
 
-import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotEmpty;
-
-public class EditUserCommandModel {
+public class User {
 
     private Integer id;
-
-    @NotEmpty(message = "You must supply a value for Username.")
-    @Length(max = 20, message = "Username must be no more than 20 characters in length.")
     private String username;
-    @Length(max = 100, message = "Password must be no more than 100 characters in length.")
     private String password;
-    @NotEmpty(message = "You must supply a value for First Name.")
-    @Length(max = 30, message = "First Name must be no more than 30 characters in length.")
+    private boolean enabled;
     private String firstName;
-    @NotEmpty(message = "You must supply a value for Last Name.")
-    @Length(max = 30, message = "Last Name must be no more than 30 characters in length.")
     private String lastName;
     private boolean admin;
 
@@ -42,6 +32,14 @@ public class EditUserCommandModel {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     public String getFirstName() {

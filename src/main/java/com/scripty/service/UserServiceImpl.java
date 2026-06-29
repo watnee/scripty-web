@@ -1,7 +1,7 @@
-package com.chriswatnee.martinis.service;
+package com.scripty.service;
 
-import com.chriswatnee.martinis.dao.UserDao;
-import com.chriswatnee.martinis.dto.User;
+import com.scripty.dao.UserDao;
+import com.scripty.dto.User;
 import java.util.List;
 import javax.inject.Inject;
 

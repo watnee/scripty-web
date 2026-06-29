@@ -1,14 +1,15 @@
-package com.chriswatnee.martinis.commandmodel.user.createuser;
+package com.scripty.commandmodel.user.edituser;
 
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.NotEmpty;
 
-public class CreateUserCommandModel {
+public class EditUserCommandModel {
+
+    private Integer id;
 
     @NotEmpty(message = "You must supply a value for Username.")
     @Length(max = 20, message = "Username must be no more than 20 characters in length.")
     private String username;
-    @NotEmpty(message = "You must supply a value for Password.")
     @Length(max = 100, message = "Password must be no more than 100 characters in length.")
     private String password;
     @NotEmpty(message = "You must supply a value for First Name.")
@@ -18,6 +19,14 @@ public class CreateUserCommandModel {
     @Length(max = 30, message = "Last Name must be no more than 30 characters in length.")
     private String lastName;
     private boolean admin;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
 
     public String getUsername() {
         return username;

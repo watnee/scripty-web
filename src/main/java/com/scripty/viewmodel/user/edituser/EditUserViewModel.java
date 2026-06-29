@@ -1,6 +1,6 @@
-package com.chriswatnee.martinis.viewmodel.user.edituser;
+package com.scripty.viewmodel.user.edituser;
 
-import com.chriswatnee.martinis.commandmodel.user.edituser.EditUserCommandModel;
+import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
 
 public class EditUserViewModel {
 

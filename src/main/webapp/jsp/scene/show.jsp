@@ -24,7 +24,10 @@
             <table id="table-blocks">
                 <c:forEach items="${viewModel.blocks}" var="block" varStatus="loop">
                     <tr draggable="true" data-block-id="${block.id}" data-block-order="${block.order}">
-                        <td class="drag-handle" title="Drag to reorder">&#8942;&#8942;</td>
+                        <td class="block-left-controls">
+                            <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
+                            <a hx-get="${pageContext.request.contextPath}/block/createBelowInline?id=${block.id}" hx-target="closest tr" hx-swap="afterend" class="create-below" role="button">+</a>
+                        </td>
                         <td class="block-content" hx-get="${pageContext.request.contextPath}/block/editInline?id=${block.id}" hx-trigger="click[!event.target.closest('a')&&!event.target.closest('form')]" hx-swap="innerHTML">
                             <c:if test="${not empty block.personName}">
                                 <p style="margin-bottom: 0; text-align: center">
@@ -42,7 +45,6 @@
                                 <c:if test="${not loop.first}">
                                     <a href="${pageContext.request.contextPath}/block/moveUp?id=${block.id}" class="move-up" role="button">&#8593;</a>
                                 </c:if>
-                                <a hx-get="${pageContext.request.contextPath}/block/createBelowInline?id=${block.id}" hx-target="closest tr" hx-swap="afterend" class="create-below" role="button">+ block</a>
                             </span>
                         </td>
                     </tr>

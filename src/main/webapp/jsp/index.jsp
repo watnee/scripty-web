@@ -9,7 +9,7 @@
         <link href="${pageContext.request.contextPath}/css/martinis.css" rel="stylesheet">
         <link rel="shortcut icon" href="${pageContext.request.contextPath}/favicon.ico" type="image/x-icon">
     </head>
-    <body>
+    <body hx-boost="true">
         <jsp:include page="includes/nav.jsp">
             <jsp:param name="page" value="index" />
         </jsp:include>
@@ -19,6 +19,7 @@
                 <p><a href="${pageContext.request.contextPath}/login" role="button">Login</a></p>
             </c:if>
         </main>
+        <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <script src="${pageContext.request.contextPath}/js/_hyperscript.min.js"></script>
     </body>
 </html>

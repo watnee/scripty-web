@@ -9,7 +9,7 @@
         <link href="${pageContext.request.contextPath}/css/martinis.css" rel="stylesheet">
         <link rel="shortcut icon" href="${pageContext.request.contextPath}/favicon.ico" type="image/x-icon">
     </head>
-    <body>
+    <body hx-boost="true">
         <jsp:include page="../includes/nav.jsp" />
         <main>
             <jsp:include page="../includes/logout.jsp" />
@@ -42,6 +42,7 @@
                 </p>
             </sf:form>
         </main>
+        <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <script src="${pageContext.request.contextPath}/js/_hyperscript.min.js"></script>
     </body>
 </html>

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "java",
+  "packages": {
+    "java": "8"
+  },
+  "deploy": {
+    "startCommand": "java $JAVA_OPTS -jar target/dependency/webapp-runner.jar --port ${PORT:-8080} target/*.war"
+  }
+}

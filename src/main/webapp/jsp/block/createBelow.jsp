@@ -18,7 +18,7 @@
                 <sf:hidden path="id" />
                 <label>
                     Content
-                    <sf:textarea path="content" rows="15" cols="30" />
+                    <sf:textarea path="content" rows="25" cols="30" />
                     <sf:errors path="content" />
                 </label>
                 <label>

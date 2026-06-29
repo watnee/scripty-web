@@ -5,7 +5,7 @@
     <input type="hidden" name="sceneId" value="${commandModel.sceneId}" />
     <label>
         Content
-        <textarea spellcheck="true" rows="15" cols="30" name="content">${commandModel.content}</textarea>
+        <textarea spellcheck="true" rows="25" cols="30" name="content">${commandModel.content}</textarea>
     </label>
     <label>
         Character

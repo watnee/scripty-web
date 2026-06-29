@@ -5,7 +5,7 @@
     <td class="block-content">
         <form hx-post="${pageContext.request.contextPath}/block/createInline" hx-target="closest tr" hx-swap="outerHTML" hx-trigger="input delay:500ms from:find textarea, keydown[key=='Enter'&&!event.shiftKey] from:find textarea, createNext">
             <input type="hidden" name="sceneId" value="${viewModel.sceneId}" />
-            <textarea spellcheck="true" rows="15" cols="30" name="content" autofocus onkeydown="if(event.key==='Enter'&&!event.shiftKey)event.preventDefault()" _="on blur if my value.trim() is '' remove closest <tr/>"></textarea>
+            <textarea spellcheck="true" rows="25" cols="30" name="content" autofocus onkeydown="if(event.key==='Enter'&&!event.shiftKey)event.preventDefault()" _="on blur if my value.trim() is '' remove closest <tr/>"></textarea>
             <label>
                 Character
                 <select name="personId">

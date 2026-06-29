@@ -18,7 +18,7 @@
                 <sf:hidden path="sceneId" />
                 <label>
                     Content
-                    <sf:textarea spellcheck="true" rows="5" cols="30" path="content" />
+                    <sf:textarea spellcheck="true" rows="15" cols="30" path="content" />
                     <sf:errors path="content" />
                 </label>
                 <label>

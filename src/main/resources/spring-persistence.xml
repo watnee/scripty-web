@@ -20,7 +20,7 @@
     
     <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
         <property name="driverClassName" value="org.h2.Driver" />
-        <property name="url" value="jdbc:h2:mem:martinis;MODE=MySQL;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:schema.sql'\;RUNSCRIPT FROM 'classpath:data.sql'" />
+        <property name="url" value="jdbc:h2:mem:scripty;MODE=MySQL;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:schema.sql'\;RUNSCRIPT FROM 'classpath:data.sql'" />
         <property name="username" value="sa" />
         <property name="password" value="" />
         <property name="initialSize" value="5" />
@@ -35,20 +35,20 @@
         <property name="dataSource" ref="dataSource" />
     </bean>
 
-    <bean id="actorDao" class="com.chriswatnee.martinis.dao.ActorDaoImpl" />
-    <bean id="actorService" class="com.chriswatnee.martinis.service.ActorServiceImpl" />
+    <bean id="actorDao" class="com.scripty.dao.ActorDaoImpl" />
+    <bean id="actorService" class="com.scripty.service.ActorServiceImpl" />
     
-    <bean id="blockDao" class="com.chriswatnee.martinis.dao.BlockDaoImpl" />
-    <bean id="blockService" class="com.chriswatnee.martinis.service.BlockServiceImpl" />
+    <bean id="blockDao" class="com.scripty.dao.BlockDaoImpl" />
+    <bean id="blockService" class="com.scripty.service.BlockServiceImpl" />
     
-    <bean id="personDao" class="com.chriswatnee.martinis.dao.PersonDaoImpl" />
-    <bean id="personService" class="com.chriswatnee.martinis.service.PersonServiceImpl" />
+    <bean id="personDao" class="com.scripty.dao.PersonDaoImpl" />
+    <bean id="personService" class="com.scripty.service.PersonServiceImpl" />
     
-    <bean id="projectDao" class="com.chriswatnee.martinis.dao.ProjectDaoImpl" />
-    <bean id="projectService" class="com.chriswatnee.martinis.service.ProjectServiceImpl" />
+    <bean id="projectDao" class="com.scripty.dao.ProjectDaoImpl" />
+    <bean id="projectService" class="com.scripty.service.ProjectServiceImpl" />
     
-    <bean id="sceneDao" class="com.chriswatnee.martinis.dao.SceneDaoImpl" />
-    <bean id="sceneService" class="com.chriswatnee.martinis.service.SceneServiceImpl" />
+    <bean id="sceneDao" class="com.scripty.dao.SceneDaoImpl" />
+    <bean id="sceneService" class="com.scripty.service.SceneServiceImpl" />
     
     <bean id="userDao" class="com.chriswatnee.martinis.dao.UserDaoImpl" />
     <bean id="userService" class="com.chriswatnee.martinis.service.UserServiceImpl" />

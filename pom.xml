@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.chriswatnee</groupId>
-    <artifactId>martinis</artifactId>
+    <groupId>com.scripty</groupId>
+    <artifactId>scripty</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>war</packaging>
-    <name>martinis Spring MVC Heroku Webapp</name>
+    <name>scripty Spring MVC Railway Webapp</name>
     <url>http://maven.apache.org</url>
   
     <properties>
@@ -160,7 +160,7 @@
     </dependencies>
 
     <build>
-        <finalName>spring-mvc-heroku-webapp</finalName>
+        <finalName>spring-mvc-railway-webapp</finalName>
 <resources>
             <resource>
                 <directory>src/main/resources</directory>

@@ -5,18 +5,16 @@ CREATE TABLE IF NOT EXISTS `user` (
 	enabled tinyint(1) NOT NULL,
 	first_name varchar(30) NOT NULL,
 	last_name varchar(30) NOT NULL,
-	PRIMARY KEY (id)
+	PRIMARY KEY (id),
+	INDEX idx_user_username (username)
 );
-
-CREATE INDEX IF NOT EXISTS idx_user_username ON `user`(username);
 
 CREATE TABLE IF NOT EXISTS authority (
 	username varchar(20) NOT NULL,
 	authority varchar(20) NOT NULL,
-	PRIMARY KEY (username, authority)
+	PRIMARY KEY (username, authority),
+	INDEX idx_authority_username (username)
 );
-
-CREATE INDEX IF NOT EXISTS idx_authority_username ON authority(username);
 
 CREATE TABLE IF NOT EXISTS project (
 	id int NOT NULL AUTO_INCREMENT,

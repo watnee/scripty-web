@@ -10,7 +10,7 @@
                             http://www.springframework.org/schema/mvc/spring-mvc.xsd">
     <!-- Uncomment this to move to annotation driven configuration -->
     <mvc:annotation-driven />
-    <context:component-scan base-package="com.chriswatnee.martinis" />        
+    <context:component-scan base-package="com.scripty" />        
     <bean
         class="org.springframework.web.servlet.view.InternalResourceViewResolver">
         <property name="prefix">

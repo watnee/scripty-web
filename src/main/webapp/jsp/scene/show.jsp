@@ -6,7 +6,7 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Scripty - Scene Profile</title>
         <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
-        <link href="${pageContext.request.contextPath}/css/martinis.css" rel="stylesheet">
+        <link href="${pageContext.request.contextPath}/css/scripty.css" rel="stylesheet">
         <link rel="shortcut icon" href="${pageContext.request.contextPath}/favicon.ico" type="image/x-icon">
     </head>
     <body hx-boost="true">

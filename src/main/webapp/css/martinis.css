@@ -1,3 +1,7 @@
+header {
+    border-bottom: none;
+}
+
 .nowrap {
     white-space: nowrap;
 }

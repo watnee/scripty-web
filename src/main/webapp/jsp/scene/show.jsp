@@ -20,13 +20,13 @@
                     <li aria-current="page" style="text-transform: uppercase">${viewModel.name}</li>
                 </ol>
             </nav>
-            <h1><span class="scene-name-wrap"><span class="scene-name-display" hx-get="${pageContext.request.contextPath}/scene/editNameInline?id=${viewModel.id}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; text-transform: uppercase">${viewModel.name}</span></span> <small><a href="${pageContext.request.contextPath}/scene/delete?id=${viewModel.id}" role="button" _="on click if not confirm('Are you sure you want to delete this scene?') halt">delete</a></small></h1>
+            <h1><span class="scene-name-wrap"><span class="scene-name-display" hx-get="${pageContext.request.contextPath}/scene/editNameInline?id=${viewModel.id}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; text-transform: uppercase; min-width: 10em; display: inline-block"><c:choose><c:when test="${empty viewModel.name || viewModel.name.trim().isEmpty()}"><span style="color: #ccc; font-style: italic">click to name scene</span></c:when><c:otherwise>${viewModel.name}</c:otherwise></c:choose></span></span> <small><a href="${pageContext.request.contextPath}/scene/delete?id=${viewModel.id}" role="button" _="on click if not confirm('Are you sure you want to delete this scene?') halt">delete</a></small></h1>
             <table id="table-blocks">
                 <c:forEach items="${viewModel.blocks}" var="block" varStatus="loop">
                     <tr draggable="true" data-block-id="${block.id}" data-block-order="${block.order}">
                         <td class="block-left-controls">
+                            <a hx-get="${pageContext.request.contextPath}/block/createBelowInline?id=${block.id}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" class="create-below" role="button">+</a>
                             <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
-                            <a hx-get="${pageContext.request.contextPath}/block/createBelowInline?id=${block.id}" hx-target="closest tr" hx-swap="afterend" class="create-below" role="button">+</a>
                         </td>
                         <td class="block-content" hx-get="${pageContext.request.contextPath}/block/editInline?id=${block.id}" hx-trigger="click[!event.target.closest('a')&&!event.target.closest('form')]" hx-swap="innerHTML">
                             <c:if test="${not empty block.personName}">
@@ -52,8 +52,7 @@
                 <tr hx-get="${pageContext.request.contextPath}/block/createInline?sceneId=${viewModel.id}" hx-trigger="load" hx-swap="outerHTML"></tr>
             </table>
             <p>
-                <a hx-get="${pageContext.request.contextPath}/block/createInline?sceneId=${viewModel.id}" hx-target="#table-blocks" hx-swap="beforeend" role="button">Create New Block</a>
-                <a id="create-scene-btn" hx-get="${pageContext.request.contextPath}/scene/createBelowInline?id=${viewModel.id}" hx-target="#create-scene-btn" hx-swap="afterend" role="button" _="on htmx:afterSwap hide me">Create New Scene</a>
+<a id="create-scene-btn" hx-get="${pageContext.request.contextPath}/scene/createBelowInline?id=${viewModel.id}" hx-target="#create-scene-btn" hx-swap="afterend" role="button" _="on htmx:afterSwap hide me">Create New Scene</a>
                 <a href="${pageContext.request.contextPath}/character/create?projectId=${viewModel.projectId}" role="button">Create New Character</a>
             </p>
             <nav aria-label="Scene navigation" class="scene-pager">
@@ -73,8 +72,8 @@
             var dragRow = null;
 
             table.addEventListener('dragstart', function(e) {
-                var tr = e.target.closest('tr[data-block-id]');
-                if (!tr) { e.preventDefault(); return; }
+                var tr = e.target.closest('tr');
+                if (!tr || !table.contains(tr)) { e.preventDefault(); return; }
                 dragRow = tr;
                 tr.classList.add('dragging');
                 e.dataTransfer.effectAllowed = 'move';
@@ -88,30 +87,40 @@
 
             table.addEventListener('dragover', function(e) {
                 e.preventDefault();
-                var tr = e.target.closest('tr[data-block-id]');
-                if (!tr || tr === dragRow) return;
+                var tr = e.target.closest('tr');
+                if (!tr || !table.contains(tr) || tr === dragRow) return;
                 table.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
                 tr.classList.add('drag-over');
             });
 
             table.addEventListener('dragleave', function(e) {
-                var tr = e.target.closest('tr[data-block-id]');
+                var tr = e.target.closest('tr');
                 if (tr) tr.classList.remove('drag-over');
             });
 
             table.addEventListener('drop', function(e) {
                 e.preventDefault();
-                var targetRow = e.target.closest('tr[data-block-id]');
-                if (!targetRow || !dragRow || targetRow === dragRow) return;
+                var targetRow = e.target.closest('tr');
+                if (!targetRow || !table.contains(targetRow) || !dragRow || targetRow === dragRow) return;
                 var blockId = dragRow.getAttribute('data-block-id');
                 var targetOrder = targetRow.getAttribute('data-block-order');
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '${pageContext.request.contextPath}/block/moveTo';
-                form.innerHTML = '<input type="hidden" name="id" value="' + blockId + '">' +
-                                 '<input type="hidden" name="position" value="' + targetOrder + '">';
-                document.body.appendChild(form);
-                form.submit();
+                if (blockId && targetOrder) {
+                    var form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '${pageContext.request.contextPath}/block/moveTo';
+                    form.innerHTML = '<input type="hidden" name="id" value="' + blockId + '">' +
+                                     '<input type="hidden" name="position" value="' + targetOrder + '">';
+                    document.body.appendChild(form);
+                    form.submit();
+                } else {
+                    var rect = targetRow.getBoundingClientRect();
+                    var mid = rect.top + rect.height / 2;
+                    if (e.clientY < mid) {
+                        targetRow.parentNode.insertBefore(dragRow, targetRow);
+                    } else {
+                        targetRow.parentNode.insertBefore(dragRow, targetRow.nextSibling);
+                    }
+                }
             });
         })();
         </script>

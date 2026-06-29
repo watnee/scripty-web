@@ -12,7 +12,10 @@ import com.chriswatnee.martinis.viewmodel.project.createproject.CreateProjectVie
 import com.chriswatnee.martinis.viewmodel.project.editproject.EditProjectViewModel;
 import com.chriswatnee.martinis.viewmodel.project.projectlist.ProjectListViewModel;
 import com.chriswatnee.martinis.viewmodel.project.projectprofile.ProjectProfileViewModel;
+import com.chriswatnee.martinis.commandmodel.scene.createscene.CreateSceneCommandModel;
+import com.chriswatnee.martinis.dto.Scene;
 import com.chriswatnee.martinis.webservice.ProjectWebService;
+import com.chriswatnee.martinis.webservice.SceneWebService;
 import javax.inject.Inject;
 import javax.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -33,6 +36,9 @@ public class ProjectController {
     
     @Inject
     ProjectWebService projectWebService;
+
+    @Inject
+    SceneWebService sceneWebService;
     
     @RequestMapping(value = "/list")
     public String list(Model model) {
@@ -119,6 +125,11 @@ public class ProjectController {
 
         Project project = projectWebService.saveCreateProjectCommandModel(commandModel);
 
-        return "redirect:/project/show?id=" + project.getId();
+        CreateSceneCommandModel sceneCommandModel = new CreateSceneCommandModel();
+        sceneCommandModel.setProjectId(project.getId());
+        sceneCommandModel.setName(" ");
+        Scene scene = sceneWebService.saveCreateSceneCommandModel(sceneCommandModel);
+
+        return "redirect:/scene/show?id=" + scene.getId();
     }
 }

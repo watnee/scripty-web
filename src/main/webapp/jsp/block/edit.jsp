@@ -17,9 +17,13 @@
             <sf:form action="${pageContext.request.contextPath}/block/edit" method="post" modelAttribute="commandModel">
                 <sf:hidden path="id" />
                 <sf:hidden path="sceneId" />
+                <p>
+                    <button type="button" id="undo-btn" onclick="document.querySelector('textarea[name=content]').focus(); document.execCommand('undo')">&#8592; Undo</button>
+                    <button type="button" id="redo-btn" onclick="document.querySelector('textarea[name=content]').focus(); document.execCommand('redo')">Redo &#8594;</button>
+                </p>
                 <label>
                     Content
-                    <sf:textarea spellcheck="true" rows="25" cols="30" path="content" />
+                    <sf:textarea spellcheck="true" rows="1" cols="30" path="content" />
                     <sf:errors path="content" />
                 </label>
                 <label>

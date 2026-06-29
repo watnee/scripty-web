@@ -5,14 +5,18 @@
  */
 package com.chriswatnee.martinis.viewmodel.project.projectprofile;
 
+import com.chriswatnee.martinis.viewmodel.scene.sceneprofile.BlockViewModel;
+import java.util.List;
+
 /**
  *
  * @author chris
  */
 public class SceneViewModel {
-    
+
     private int id;
     private String name;
+    private List<BlockViewModel> blocks;
 
     public int getId() {
         return id;
@@ -29,5 +33,13 @@ public class SceneViewModel {
     public void setName(String name) {
         this.name = name;
     }
-    
+
+    public List<BlockViewModel> getBlocks() {
+        return blocks;
+    }
+
+    public void setBlocks(List<BlockViewModel> blocks) {
+        this.blocks = blocks;
+    }
+
 }

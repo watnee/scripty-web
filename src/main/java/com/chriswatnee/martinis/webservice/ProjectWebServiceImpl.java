@@ -7,12 +7,15 @@ package com.chriswatnee.martinis.webservice;
 
 import com.chriswatnee.martinis.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.chriswatnee.martinis.commandmodel.project.editproject.EditProjectCommandModel;
+import com.chriswatnee.martinis.dto.Block;
 import com.chriswatnee.martinis.dto.Person;
 import com.chriswatnee.martinis.dto.Project;
 import com.chriswatnee.martinis.dto.Scene;
+import com.chriswatnee.martinis.service.BlockService;
 import com.chriswatnee.martinis.service.PersonService;
 import com.chriswatnee.martinis.service.ProjectService;
 import com.chriswatnee.martinis.service.SceneService;
+import com.chriswatnee.martinis.viewmodel.scene.sceneprofile.BlockViewModel;
 import com.chriswatnee.martinis.viewmodel.project.createproject.CreateProjectViewModel;
 import com.chriswatnee.martinis.viewmodel.project.editproject.EditProjectViewModel;
 import com.chriswatnee.martinis.viewmodel.project.projectlist.ProjectListViewModel;
@@ -33,12 +36,14 @@ public class ProjectWebServiceImpl implements ProjectWebService {
     ProjectService projectService;
     SceneService sceneService;
     PersonService personService;
+    BlockService blockService;
 
     @Inject
-    public ProjectWebServiceImpl(ProjectService projectService, SceneService sceneService, PersonService personService) {
+    public ProjectWebServiceImpl(ProjectService projectService, SceneService sceneService, PersonService personService, BlockService blockService) {
         this.projectService = projectService;
         this.sceneService = sceneService;
         this.personService = personService;
+        this.blockService = blockService;
     }
     
     @Override
@@ -168,6 +173,24 @@ public class ProjectWebServiceImpl implements ProjectWebService {
 
         sceneViewModel.setName(scene.getName());
         sceneViewModel.setId(scene.getId());
+
+        List<Block> blocks = blockService.getBlocksByScene(scene);
+        List<BlockViewModel> blockViewModels = new ArrayList<>();
+        for (Block block : blocks) {
+            BlockViewModel bvm = new BlockViewModel();
+            bvm.setId(block.getId());
+            bvm.setOrder(block.getOrder());
+            bvm.setContent(block.getContent());
+            if (block.getPerson() != null) {
+                Person person = personService.read(block.getPerson().getId());
+                if (person != null) {
+                    bvm.setPersonId(person.getId());
+                    bvm.setPersonName(person.getName());
+                }
+            }
+            blockViewModels.add(bvm);
+        }
+        sceneViewModel.setBlocks(blockViewModels);
 
         return sceneViewModel;
     }

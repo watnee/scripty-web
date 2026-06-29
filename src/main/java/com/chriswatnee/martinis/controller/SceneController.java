@@ -223,4 +223,13 @@ public class SceneController {
         Scene scene = sceneWebService.saveCreateSceneBelowCommandModel(commandModel);
         return "redirect:/scene/show?id=" + scene.getId();
     }
+
+    @RequestMapping(value = "/createAndReturn", method = RequestMethod.POST)
+    public String createAndReturn(@RequestParam Integer projectId) {
+        CreateSceneCommandModel commandModel = new CreateSceneCommandModel();
+        commandModel.setProjectId(projectId);
+        commandModel.setName(" ");
+        sceneWebService.saveCreateSceneCommandModel(commandModel);
+        return "redirect:/project/show?id=" + projectId;
+    }
 }

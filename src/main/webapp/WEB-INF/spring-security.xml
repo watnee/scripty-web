@@ -22,6 +22,8 @@
         <form-login login-processing-url="/j_spring_security_check"
                     login-page="/login"
                     authentication-failure-url="/login?login_error=1" />
+        <intercept-url pattern="/api/account/**"
+                       access="ROLE_ADMIN" />
         <intercept-url pattern="/account/**"
                        access="ROLE_ADMIN" />
         <intercept-url pattern="/project/**"

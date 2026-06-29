@@ -1,6 +1,6 @@
-package com.chriswatnee.martinis.dao;
+package com.scripty.dao;
 
-import com.chriswatnee.martinis.dto.User;
+import com.scripty.dto.User;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;

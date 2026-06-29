@@ -1,4 +1,4 @@
-package com.chriswatnee.martinis.viewmodel.user.userlist;
+package com.scripty.viewmodel.user.userlist;
 
 import java.util.List;
 

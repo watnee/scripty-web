@@ -1,7 +1,7 @@
 package com.scripty.bootstrap;
 
-import com.chriswatnee.martinis.dto.User;
-import com.chriswatnee.martinis.service.UserService;
+import com.scripty.dto.User;
+import com.scripty.service.UserService;
 import javax.inject.Inject;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;

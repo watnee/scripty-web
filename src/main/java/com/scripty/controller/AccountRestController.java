@@ -1,10 +1,10 @@
 package com.scripty.controller;
 
-import com.chriswatnee.martinis.commandmodel.user.createuser.CreateUserCommandModel;
-import com.chriswatnee.martinis.commandmodel.user.edituser.EditUserCommandModel;
-import com.chriswatnee.martinis.dto.User;
-import com.chriswatnee.martinis.viewmodel.user.userlist.UserListViewModel;
-import com.chriswatnee.martinis.webservice.UserWebService;
+import com.scripty.commandmodel.user.createuser.CreateUserCommandModel;
+import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
+import com.scripty.dto.User;
+import com.scripty.viewmodel.user.userlist.UserListViewModel;
+import com.scripty.webservice.UserWebService;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;

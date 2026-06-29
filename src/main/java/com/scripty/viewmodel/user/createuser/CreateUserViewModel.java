@@ -1,6 +1,6 @@
-package com.chriswatnee.martinis.viewmodel.user.createuser;
+package com.scripty.viewmodel.user.createuser;
 
-import com.chriswatnee.martinis.commandmodel.user.createuser.CreateUserCommandModel;
+import com.scripty.commandmodel.user.createuser.CreateUserCommandModel;
 
 public class CreateUserViewModel {
 

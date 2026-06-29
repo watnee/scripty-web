@@ -1,13 +1,13 @@
-package com.chriswatnee.martinis.webservice;
+package com.scripty.webservice;
 
-import com.chriswatnee.martinis.commandmodel.user.createuser.CreateUserCommandModel;
-import com.chriswatnee.martinis.commandmodel.user.edituser.EditUserCommandModel;
-import com.chriswatnee.martinis.dto.User;
-import com.chriswatnee.martinis.service.UserService;
-import com.chriswatnee.martinis.viewmodel.user.createuser.CreateUserViewModel;
-import com.chriswatnee.martinis.viewmodel.user.edituser.EditUserViewModel;
-import com.chriswatnee.martinis.viewmodel.user.userlist.UserListViewModel;
-import com.chriswatnee.martinis.viewmodel.user.userlist.UserViewModel;
+import com.scripty.commandmodel.user.createuser.CreateUserCommandModel;
+import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
+import com.scripty.dto.User;
+import com.scripty.service.UserService;
+import com.scripty.viewmodel.user.createuser.CreateUserViewModel;
+import com.scripty.viewmodel.user.edituser.EditUserViewModel;
+import com.scripty.viewmodel.user.userlist.UserListViewModel;
+import com.scripty.viewmodel.user.userlist.UserViewModel;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;

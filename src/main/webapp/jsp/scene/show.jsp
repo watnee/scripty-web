@@ -24,20 +24,12 @@
             <table id="table-blocks">
                 <c:forEach items="${viewModel.blocks}" var="block" varStatus="loop">
                     <tr>
-                        <td>
-                            <c:choose>
-                                <c:when test="${not empty block.personName}">
-                                    <p style="margin-bottom: 0; text-align: center">
-                                        <a href="${pageContext.request.contextPath}/character/show?id=${block.personId}" class="character-name" style="text-transform: uppercase">${block.personName}</a>
-                                    </p>
-                                    <div style="text-align: center">
-                                        ${block.content}
-                                    </div>
-                                </c:when>
-                                <c:otherwise>
-                                    ${block.content}
-                                </c:otherwise>
-                            </c:choose>
+                        <td class="block-content" hx-get="${pageContext.request.contextPath}/block/editInline?id=${block.id}" hx-trigger="click[!event.target.closest('a')&&!event.target.closest('form')]" hx-swap="innerHTML">
+                            <c:if test="${not empty block.personName}">
+                                <p style="margin-bottom: 0; text-align: center">
+                                    <a href="${pageContext.request.contextPath}/character/show?id=${block.personId}" class="character-name" style="text-transform: uppercase">${block.personName}</a>
+                                </p>
+                            </c:if>
                         </td>
                         <td>
                             <span class="nowrap">
@@ -57,7 +49,7 @@
             </table>
             <p>
                 <a href="${pageContext.request.contextPath}/block/create?sceneId=${viewModel.id}" role="button">Create New Block</a>
-                <a href="${pageContext.request.contextPath}/scene/createBelow?id=${viewModel.id}" role="button">Create New Scene</a>
+                <a id="create-scene-btn" hx-get="${pageContext.request.contextPath}/scene/createBelowInline?id=${viewModel.id}" hx-target="#create-scene-btn" hx-swap="afterend" role="button" _="on htmx:afterSwap hide me">Create New Scene</a>
                 <a href="${pageContext.request.contextPath}/character/create?projectId=${viewModel.projectId}" role="button">Create New Character</a>
             </p>
             <nav aria-label="Scene navigation" class="scene-pager">

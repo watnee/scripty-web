@@ -43,6 +43,12 @@ main.home {
     cursor: pointer;
 }
 
+#table-blocks .block-content textarea,
+.table-blocks-all .block-content textarea {
+    border: none;
+    outline: none;
+}
+
 #table-blocks .block-left-controls,
 .table-blocks-all .block-left-controls {
     vertical-align: middle;

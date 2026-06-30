@@ -111,6 +111,15 @@ h1:hover > small a[role="button"],
     margin-left: 22px;
 }
 
+.scene-name-wrap {
+    display: inline-block;
+    width: 100%;
+}
+
+.scene-name-wrap form {
+    width: 100%;
+}
+
 .scene-pager {
     display: flex;
     justify-content: space-between;

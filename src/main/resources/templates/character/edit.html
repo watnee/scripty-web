@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Scripty - Edit Character</title>
+    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
+    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main>
+        <div th:replace="~{fragments/logout :: logout}"></div>
+        <h1>Edit Character</h1>
+        <form th:action="@{/character/edit}" method="post" th:object="${commandModel}">
+            <input type="hidden" th:field="*{id}" />
+            <input type="hidden" th:field="*{projectId}" />
+            <label>
+                Name
+                <input type="text" th:field="*{name}" />
+                <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+            </label>
+            <label>
+                Full Name
+                <input type="text" th:field="*{fullName}" />
+                <span th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></span>
+            </label>
+            <label>
+                Actor
+                <select th:field="*{actorId}">
+                    <option value="">No actor</option>
+                    <option th:each="actor : ${viewModel.actors}" th:value="${actor.id}" th:text="${actor.name}"></option>
+                </select>
+                <span th:if="${#fields.hasErrors('actorId')}" th:errors="*{actorId}"></span>
+            </label>
+            <p>
+                <a th:href="@{/character/show(id=${viewModel.id})}" role="button">Cancel</a>
+                <button type="submit">Submit</button>
+            </p>
+        </form>
+    </main>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

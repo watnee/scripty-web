@@ -12,9 +12,9 @@ import com.scripty.viewmodel.actor.actorlist.ActorListViewModel;
 import com.scripty.viewmodel.actor.actorprofile.ActorProfileViewModel;
 import com.scripty.viewmodel.actor.createactor.CreateActorViewModel;
 import com.scripty.viewmodel.actor.editactor.EditActorViewModel;
-import com.scripty.webservice.ActorWebService;
-import javax.inject.Inject;
-import javax.validation.Valid;
+import com.scripty.service.ActorService;
+import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -31,13 +31,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping(value = "/actor")
 public class ActorController {
     
-    @Inject
-    ActorWebService actorWebService;
+    @Autowired
+    ActorService actorService;
     
     @RequestMapping(value = "/list")
     public String list(Model model) {
 
-        ActorListViewModel viewModel = actorWebService.getActorListViewModel();
+        ActorListViewModel viewModel = actorService.getActorListViewModel();
 
         model.addAttribute("viewModel", viewModel);
 
@@ -47,7 +47,7 @@ public class ActorController {
     @RequestMapping(value = "/show")
     public String show(@RequestParam Integer id, Model model) {
 
-        ActorProfileViewModel viewModel = actorWebService.getActorProfileViewModel(id);
+        ActorProfileViewModel viewModel = actorService.getActorProfileViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
 
@@ -57,7 +57,7 @@ public class ActorController {
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {
         
-        actorWebService.deleteActor(id);
+        actorService.deleteActor(id);
         
         return "redirect:/actor/list";
     }
@@ -66,7 +66,7 @@ public class ActorController {
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model) {
 
-        EditActorViewModel viewModel = actorWebService.getEditActorViewModel(id);
+        EditActorViewModel viewModel = actorService.getEditActorViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditActorCommandModel());
@@ -79,7 +79,7 @@ public class ActorController {
     public String saveEdit(@Valid @ModelAttribute("commandModel") EditActorCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            EditActorViewModel viewModel = actorWebService.getEditActorViewModel(commandModel.getId());
+            EditActorViewModel viewModel = actorService.getEditActorViewModel(commandModel.getId());
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -87,7 +87,7 @@ public class ActorController {
             return "actor/edit";
         }
 
-        Actor actor = actorWebService.saveEditActorCommandModel(commandModel);
+        Actor actor = actorService.saveEditActorCommandModel(commandModel);
 
         return "redirect:/actor/show?id=" + actor.getId();
     }
@@ -96,7 +96,7 @@ public class ActorController {
     @RequestMapping(value = "/create")
     public String create(Model model) {
 
-        CreateActorViewModel viewModel = actorWebService.getCreateActorViewModel();
+        CreateActorViewModel viewModel = actorService.getCreateActorViewModel();
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getCreateActorCommandModel());
@@ -109,7 +109,7 @@ public class ActorController {
     public String saveCreate(@Valid @ModelAttribute("commandModel") CreateActorCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            CreateActorViewModel viewModel = actorWebService.getCreateActorViewModel();
+            CreateActorViewModel viewModel = actorService.getCreateActorViewModel();
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -117,7 +117,7 @@ public class ActorController {
             return "actor/create";
         }
 
-        Actor actor = actorWebService.saveCreateActorCommandModel(commandModel);
+        Actor actor = actorService.saveCreateActorCommandModel(commandModel);
 
         return "redirect:/actor/show?id=" + actor.getId();
     }

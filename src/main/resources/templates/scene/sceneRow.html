@@ -1,0 +1,9 @@
+<tr xmlns:th="http://www.thymeleaf.org">
+    <td><a th:href="@{/scene/show(id=${scene.id})}" style="text-transform: uppercase" th:text="${scene.name}"></a></td>
+    <td>
+        <span class="nowrap">
+            <a th:href="@{/scene/moveDown(id=${scene.id})}" class="move-down" role="button">&#8595;</a>
+            <a th:href="@{/scene/moveUp(id=${scene.id})}" class="move-up" role="button">&#8593;</a>
+        </span>
+    </td>
+</tr>

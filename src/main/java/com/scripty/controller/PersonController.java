@@ -12,9 +12,9 @@ import com.scripty.viewmodel.person.createperson.CreatePersonViewModel;
 import com.scripty.viewmodel.person.editperson.EditPersonViewModel;
 import com.scripty.viewmodel.person.personlist.PersonListViewModel;
 import com.scripty.viewmodel.person.personprofile.PersonProfileViewModel;
-import com.scripty.webservice.PersonWebService;
-import javax.inject.Inject;
-import javax.validation.Valid;
+import com.scripty.service.PersonService;
+import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -31,13 +31,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping(value = "/character")
 public class PersonController {
     
-    @Inject
-    PersonWebService personWebService;
+    @Autowired
+    PersonService personService;
     
     @RequestMapping(value = "/list")
     public String list(@RequestParam Integer projectId, Model model) {
 
-        PersonListViewModel viewModel = personWebService.getPersonListViewModel(projectId);
+        PersonListViewModel viewModel = personService.getPersonListViewModel(projectId);
 
         model.addAttribute("viewModel", viewModel);
 
@@ -47,7 +47,7 @@ public class PersonController {
     @RequestMapping(value = "/show")
     public String show(@RequestParam Integer id, Model model) {
 
-        PersonProfileViewModel viewModel = personWebService.getPersonProfileViewModel(id);
+        PersonProfileViewModel viewModel = personService.getPersonProfileViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
 
@@ -57,7 +57,7 @@ public class PersonController {
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {
         
-        Person person = personWebService.deletePerson(id);
+        Person person = personService.deletePerson(id);
         
         return "redirect:/project/show?id=" + person.getProject().getId();
     }
@@ -66,7 +66,7 @@ public class PersonController {
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model) {
 
-        EditPersonViewModel viewModel = personWebService.getEditPersonViewModel(id);
+        EditPersonViewModel viewModel = personService.getEditPersonViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditPersonCommandModel());
@@ -79,7 +79,7 @@ public class PersonController {
     public String saveEdit(@Valid @ModelAttribute("commandModel") EditPersonCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            EditPersonViewModel viewModel = personWebService.getEditPersonViewModel(commandModel.getId());
+            EditPersonViewModel viewModel = personService.getEditPersonViewModel(commandModel.getId());
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -87,7 +87,7 @@ public class PersonController {
             return "character/edit";
         }
 
-        Person person = personWebService.saveEditPersonCommandModel(commandModel);
+        Person person = personService.saveEditPersonCommandModel(commandModel);
 
         return "redirect:/character/show?id=" + person.getId();
     }
@@ -96,7 +96,7 @@ public class PersonController {
     @RequestMapping(value = "/create")
     public String create(@RequestParam Integer projectId, Model model) {
 
-        CreatePersonViewModel viewModel = personWebService.getCreatePersonViewModel(projectId);
+        CreatePersonViewModel viewModel = personService.getCreatePersonViewModel(projectId);
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getCreatePersonCommandModel());
@@ -109,7 +109,7 @@ public class PersonController {
     public String saveCreate(@Valid @ModelAttribute("commandModel") CreatePersonCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            CreatePersonViewModel viewModel = personWebService.getCreatePersonViewModel(commandModel.getProjectId());
+            CreatePersonViewModel viewModel = personService.getCreatePersonViewModel(commandModel.getProjectId());
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -117,7 +117,7 @@ public class PersonController {
             return "character/create";
         }
 
-        Person person = personWebService.saveCreatePersonCommandModel(commandModel);
+        Person person = personService.saveCreatePersonCommandModel(commandModel);
 
         return "redirect:/character/show?id=" + person.getId();
     }

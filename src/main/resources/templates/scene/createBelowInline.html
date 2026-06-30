@@ -1,0 +1,6 @@
+<div id="create-scene-below-form" xmlns:th="http://www.thymeleaf.org">
+    <form th:action="@{/scene/createBelowInline}" method="POST" hx-boost="false">
+        <input type="hidden" name="id" th:value="${sceneId}" />
+        <input type="text" spellcheck="true" name="name" autofocus placeholder="" _="on blur if my value.trim() is '' remove #create-scene-below-form then show #create-scene-btn" />
+    </form>
+</div>

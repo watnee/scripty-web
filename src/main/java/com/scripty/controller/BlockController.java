@@ -13,9 +13,9 @@ import com.scripty.viewmodel.block.createblock.CreateBlockViewModel;
 import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 import com.scripty.viewmodel.scene.sceneprofile.BlockViewModel;
-import com.scripty.webservice.BlockWebService;
-import javax.inject.Inject;
-import javax.validation.Valid;
+import com.scripty.service.BlockService;
+import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -32,13 +32,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping(value = "/block")
 public class BlockController {
     
-    @Inject
-    BlockWebService blockWebService;
+    @Autowired
+    BlockService blockService;
     
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {
         
-        Block block = blockWebService.deleteBlock(id);
+        Block block = blockService.deleteBlock(id);
         
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
@@ -46,7 +46,7 @@ public class BlockController {
     @RequestMapping(value = "/moveUp")
     public String moveUp(@RequestParam Integer id) {
         
-        Block block = blockWebService.moveBlockUp(id);
+        Block block = blockService.moveBlockUp(id);
         
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
@@ -54,20 +54,20 @@ public class BlockController {
     @RequestMapping(value = "/moveDown")
     public String moveDown(@RequestParam Integer id) {
         
-        Block block = blockWebService.moveBlockDown(id);
+        Block block = blockService.moveBlockDown(id);
         
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
     
     @RequestMapping(value = "/moveTo", method = RequestMethod.POST)
     public String moveTo(@RequestParam Integer id, @RequestParam int position) {
-        Block block = blockWebService.moveBlockTo(id, position);
+        Block block = blockService.moveBlockTo(id, position);
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
 
     @RequestMapping(value = "/editInline")
     public String editInline(@RequestParam Integer id, Model model) {
-        EditBlockViewModel viewModel = blockWebService.getEditBlockViewModel(id);
+        EditBlockViewModel viewModel = blockService.getEditBlockViewModel(id);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditBlockCommandModel());
         return "block/editInline";
@@ -76,20 +76,20 @@ public class BlockController {
     @RequestMapping(value = "/editInline", method = RequestMethod.POST)
     public String saveEditInline(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
-            EditBlockViewModel viewModel = blockWebService.getEditBlockViewModel(commandModel.getId());
+            EditBlockViewModel viewModel = blockService.getEditBlockViewModel(commandModel.getId());
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
             return "block/editInline";
         }
-        Block block = blockWebService.saveEditBlockCommandModel(commandModel);
-        BlockViewModel vm = blockWebService.getBlockViewModel(block.getId());
+        Block block = blockService.saveEditBlockCommandModel(commandModel);
+        BlockViewModel vm = blockService.getBlockViewModel(block.getId());
         model.addAttribute("block", vm);
         return "block/showInline";
     }
 
     @RequestMapping(value = "/showInline")
     public String showInline(@RequestParam Integer id, Model model) {
-        BlockViewModel vm = blockWebService.getBlockViewModel(id);
+        BlockViewModel vm = blockService.getBlockViewModel(id);
         model.addAttribute("block", vm);
         return "block/showInline";
     }
@@ -98,7 +98,7 @@ public class BlockController {
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model) {
 
-        EditBlockViewModel viewModel = blockWebService.getEditBlockViewModel(id);
+        EditBlockViewModel viewModel = blockService.getEditBlockViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditBlockCommandModel());
@@ -111,7 +111,7 @@ public class BlockController {
     public String saveEdit(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            EditBlockViewModel viewModel = blockWebService.getEditBlockViewModel(commandModel.getId());
+            EditBlockViewModel viewModel = blockService.getEditBlockViewModel(commandModel.getId());
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -119,7 +119,7 @@ public class BlockController {
             return "block/edit";
         }
 
-        Block block = blockWebService.saveEditBlockCommandModel(commandModel);
+        Block block = blockService.saveEditBlockCommandModel(commandModel);
 
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
@@ -128,7 +128,7 @@ public class BlockController {
     @RequestMapping(value = "/create")
     public String create(@RequestParam Integer sceneId, Model model) {
 
-        CreateBlockViewModel viewModel = blockWebService.getCreateBlockViewModel(sceneId);
+        CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(sceneId);
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getCreateBlockCommandModel());
@@ -141,7 +141,7 @@ public class BlockController {
     public String saveCreate(@Valid @ModelAttribute("commandModel") CreateBlockCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            CreateBlockViewModel viewModel = blockWebService.getCreateBlockViewModel(commandModel.getSceneId());
+            CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(commandModel.getSceneId());
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -149,7 +149,7 @@ public class BlockController {
             return "block/create";
         }
 
-        Block block = blockWebService.saveCreateBlockCommandModel(commandModel);
+        Block block = blockService.saveCreateBlockCommandModel(commandModel);
 
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
@@ -158,7 +158,7 @@ public class BlockController {
     @RequestMapping(value = "/createBelow")
     public String createBelow(@RequestParam Integer id, Model model) {
 
-        CreateBlockBelowViewModel viewModel = blockWebService.getCreateBlockBelowViewModel(id);
+        CreateBlockBelowViewModel viewModel = blockService.getCreateBlockBelowViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getCreateBlockBelowCommandModel());
@@ -171,7 +171,7 @@ public class BlockController {
     public String saveCreateBelow(@Valid @ModelAttribute("commandModel") CreateBlockBelowCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            CreateBlockBelowViewModel viewModel = blockWebService.getCreateBlockBelowViewModel(commandModel.getSceneId());
+            CreateBlockBelowViewModel viewModel = blockService.getCreateBlockBelowViewModel(commandModel.getSceneId());
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -179,14 +179,14 @@ public class BlockController {
             return "block/createBelow";
         }
 
-        Block block = blockWebService.saveCreateBlockBelowCommandModel(commandModel);
+        Block block = blockService.saveCreateBlockBelowCommandModel(commandModel);
 
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
 
     @RequestMapping(value = "/createInline")
     public String createInline(@RequestParam Integer sceneId, Model model) {
-        CreateBlockViewModel viewModel = blockWebService.getCreateBlockViewModel(sceneId);
+        CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(sceneId);
         model.addAttribute("viewModel", viewModel);
         return "block/createInline";
     }
@@ -197,10 +197,10 @@ public class BlockController {
         commandModel.setSceneId(sceneId);
         commandModel.setContent(content);
         commandModel.setPersonId(personId);
-        Block block = blockWebService.saveCreateBlockCommandModel(commandModel);
-        BlockViewModel vm = blockWebService.getBlockViewModel(block.getId());
+        Block block = blockService.saveCreateBlockCommandModel(commandModel);
+        BlockViewModel vm = blockService.getBlockViewModel(block.getId());
         model.addAttribute("block", vm);
-        CreateBlockBelowViewModel createViewModel = blockWebService.getCreateBlockBelowViewModel(block.getId());
+        CreateBlockBelowViewModel createViewModel = blockService.getCreateBlockBelowViewModel(block.getId());
         model.addAttribute("viewModel", createViewModel);
         model.addAttribute("blockId", block.getId());
         return "block/blockRowWithCreate";
@@ -208,7 +208,7 @@ public class BlockController {
 
     @RequestMapping(value = "/createBelowInline")
     public String createBelowInline(@RequestParam Integer id, Model model) {
-        CreateBlockBelowViewModel viewModel = blockWebService.getCreateBlockBelowViewModel(id);
+        CreateBlockBelowViewModel viewModel = blockService.getCreateBlockBelowViewModel(id);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("blockId", id);
         return "block/createBelowInline";
@@ -220,10 +220,10 @@ public class BlockController {
         commandModel.setId(id);
         commandModel.setContent(content);
         commandModel.setPersonId(personId);
-        Block block = blockWebService.saveCreateBlockBelowCommandModel(commandModel);
-        BlockViewModel vm = blockWebService.getBlockViewModel(block.getId());
+        Block block = blockService.saveCreateBlockBelowCommandModel(commandModel);
+        BlockViewModel vm = blockService.getBlockViewModel(block.getId());
         model.addAttribute("block", vm);
-        CreateBlockBelowViewModel createViewModel = blockWebService.getCreateBlockBelowViewModel(block.getId());
+        CreateBlockBelowViewModel createViewModel = blockService.getCreateBlockBelowViewModel(block.getId());
         model.addAttribute("viewModel", createViewModel);
         model.addAttribute("blockId", block.getId());
         return "block/blockRowWithCreate";

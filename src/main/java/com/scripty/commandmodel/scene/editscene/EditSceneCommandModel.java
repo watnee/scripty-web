@@ -5,8 +5,8 @@
  */
 package com.scripty.commandmodel.scene.editscene;
 
-import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  *
@@ -16,8 +16,8 @@ public class EditSceneCommandModel {
     
     private Integer id;
     
-    @NotEmpty(message = "You must supply a value for Name.")
-    @Length(max = 255, message = "Name must be no more than 255 characters in length.")
+    @NotBlank(message = "You must supply a value for Name.")
+    @Size(max = 255, message = "Name must be no more than 255 characters in length.")
     private String name;
     
     private Integer projectId;

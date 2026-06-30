@@ -1,0 +1,5 @@
+<form xmlns:th="http://www.thymeleaf.org" th:attr="hx-post=@{/scene/editNameInline}" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" hx-trigger="input delay:500ms from:find input, change from:find input">
+    <input type="hidden" name="id" th:value="${commandModel.id}" />
+    <input type="hidden" name="projectId" th:value="${commandModel.projectId}" />
+    <input type="text" name="name" th:value="${commandModel.name}" style="text-transform: uppercase; font-size: inherit; font-weight: inherit" autofocus _="on keydown[key=='Enter'] halt the event then blur() me then send blur to me" />
+</form>

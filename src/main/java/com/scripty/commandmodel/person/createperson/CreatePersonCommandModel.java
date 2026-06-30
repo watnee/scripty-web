@@ -5,8 +5,8 @@
  */
 package com.scripty.commandmodel.person.createperson;
 
-import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  *
@@ -14,11 +14,11 @@ import org.hibernate.validator.constraints.NotEmpty;
  */
 public class CreatePersonCommandModel {
     
-    @NotEmpty(message = "You must supply a value for Name.")
-    @Length(max = 60, message = "Name must be no more than 60 characters in length.")
+    @NotBlank(message = "You must supply a value for Name.")
+    @Size(max = 60, message = "Name must be no more than 60 characters in length.")
     private String name;
-    @NotEmpty(message = "You must supply a value for Username.")
-    @Length(max = 60, message = "Full Name must be no more than 60 characters in length.")
+    @NotBlank(message = "You must supply a value for Username.")
+    @Size(max = 60, message = "Full Name must be no more than 60 characters in length.")
     private String fullName;
     
     private Integer actorId;

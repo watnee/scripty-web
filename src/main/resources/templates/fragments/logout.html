@@ -1,0 +1,6 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<p th:fragment="logout" sec:authorize="isAuthenticated()" style="text-align: right">
+    <span sec:authentication="name"></span> | <a th:href="@{/logout}" hx-boost="false">logout</a>
+</p>
+</html>

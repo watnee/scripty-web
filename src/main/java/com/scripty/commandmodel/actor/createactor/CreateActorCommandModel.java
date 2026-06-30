@@ -5,8 +5,8 @@
  */
 package com.scripty.commandmodel.actor.createactor;
 
-import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  *
@@ -14,14 +14,14 @@ import org.hibernate.validator.constraints.NotEmpty;
  */
 public class CreateActorCommandModel {
     
-    @NotEmpty(message = "You must supply a value for First Name.")
-    @Length(max = 30, message = "First Name must be no more than 30 characters in length.")
+    @NotBlank(message = "You must supply a value for First Name.")
+    @Size(max = 30, message = "First Name must be no more than 30 characters in length.")
     private String first;
-    @Length(max = 30, message = "Last Name must be no more than 30 characters in length.")
+    @Size(max = 30, message = "Last Name must be no more than 30 characters in length.")
     private String last;
-    @Length(max = 20, message = "Phone must be no more than 20 characters in length.")
+    @Size(max = 20, message = "Phone must be no more than 20 characters in length.")
     private String phone;
-    @Length(max = 30, message = "Email must be no more than 30 characters in length.")
+    @Size(max = 30, message = "Email must be no more than 30 characters in length.")
     private String email;
 
     public String getFirst() {

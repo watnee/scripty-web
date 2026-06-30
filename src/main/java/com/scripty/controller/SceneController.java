@@ -14,9 +14,9 @@ import com.scripty.viewmodel.scene.createscenebelow.CreateSceneBelowViewModel;
 import com.scripty.viewmodel.scene.editscene.EditSceneViewModel;
 import com.scripty.viewmodel.scene.allscenes.AllScenesViewModel;
 import com.scripty.viewmodel.scene.sceneprofile.SceneProfileViewModel;
-import com.scripty.webservice.SceneWebService;
-import javax.inject.Inject;
-import javax.validation.Valid;
+import com.scripty.service.SceneService;
+import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -33,13 +33,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping(value = "/scene")
 public class SceneController {
     
-    @Inject
-    SceneWebService sceneWebService;
+    @Autowired
+    SceneService sceneService;
     
     @RequestMapping(value = "/show")
     public String show(@RequestParam Integer id, Model model) {
 
-        SceneProfileViewModel viewModel = sceneWebService.getSceneProfileViewModel(id);
+        SceneProfileViewModel viewModel = sceneService.getSceneProfileViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
 
@@ -49,7 +49,7 @@ public class SceneController {
     @RequestMapping(value = "/all")
     public String all(@RequestParam Integer projectId, Model model) {
 
-        AllScenesViewModel viewModel = sceneWebService.getAllScenesViewModel(projectId);
+        AllScenesViewModel viewModel = sceneService.getAllScenesViewModel(projectId);
 
         model.addAttribute("viewModel", viewModel);
 
@@ -59,7 +59,7 @@ public class SceneController {
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {
         
-        Scene scene = sceneWebService.deleteScene(id);
+        Scene scene = sceneService.deleteScene(id);
         
         return "redirect:/project/show?id=" + scene.getProject().getId();
     }
@@ -67,7 +67,7 @@ public class SceneController {
     @RequestMapping(value = "/moveUp")
     public String moveUp(@RequestParam Integer id) {
         
-        Scene scene = sceneWebService.moveSceneUp(id);
+        Scene scene = sceneService.moveSceneUp(id);
         
         return "redirect:/project/show?id=" + scene.getProject().getId();
     }
@@ -75,7 +75,7 @@ public class SceneController {
     @RequestMapping(value = "/moveDown")
     public String moveDown(@RequestParam Integer id) {
         
-        Scene scene = sceneWebService.moveSceneDown(id);
+        Scene scene = sceneService.moveSceneDown(id);
         
         return "redirect:/project/show?id=" + scene.getProject().getId();
     }
@@ -84,7 +84,7 @@ public class SceneController {
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model) {
 
-        EditSceneViewModel viewModel = sceneWebService.getEditSceneViewModel(id);
+        EditSceneViewModel viewModel = sceneService.getEditSceneViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditSceneCommandModel());
@@ -97,7 +97,7 @@ public class SceneController {
     public String saveEdit(@Valid @ModelAttribute("commandModel") EditSceneCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            EditSceneViewModel viewModel = sceneWebService.getEditSceneViewModel(commandModel.getId());
+            EditSceneViewModel viewModel = sceneService.getEditSceneViewModel(commandModel.getId());
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -105,7 +105,7 @@ public class SceneController {
             return "scene/edit";
         }
 
-        Scene scene = sceneWebService.saveEditSceneCommandModel(commandModel);
+        Scene scene = sceneService.saveEditSceneCommandModel(commandModel);
 
         return "redirect:/scene/show?id=" + scene.getId();
     }
@@ -114,7 +114,7 @@ public class SceneController {
     @RequestMapping(value = "/create")
     public String create(@RequestParam Integer projectId, Model model) {
 
-        CreateSceneViewModel viewModel = sceneWebService.getCreateSceneViewModel(projectId);
+        CreateSceneViewModel viewModel = sceneService.getCreateSceneViewModel(projectId);
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getCreateSceneCommandModel());
@@ -127,7 +127,7 @@ public class SceneController {
     public String saveCreate(@Valid @ModelAttribute("commandModel") CreateSceneCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            CreateSceneViewModel viewModel = sceneWebService.getCreateSceneViewModel(commandModel.getProjectId());
+            CreateSceneViewModel viewModel = sceneService.getCreateSceneViewModel(commandModel.getProjectId());
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -135,7 +135,7 @@ public class SceneController {
             return "scene/create";
         }
 
-        Scene scene = sceneWebService.saveCreateSceneCommandModel(commandModel);
+        Scene scene = sceneService.saveCreateSceneCommandModel(commandModel);
 
         return "redirect:/scene/show?id=" + scene.getId();
     }
@@ -144,7 +144,7 @@ public class SceneController {
     @RequestMapping(value = "/createBelow")
     public String createBelow(@RequestParam Integer id, Model model) {
 
-        CreateSceneBelowViewModel viewModel = sceneWebService.getCreateSceneBelowViewModel(id);
+        CreateSceneBelowViewModel viewModel = sceneService.getCreateSceneBelowViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getCreateSceneBelowCommandModel());
@@ -157,7 +157,7 @@ public class SceneController {
     public String saveCreateBelow(@Valid @ModelAttribute("commandModel") CreateSceneBelowCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            CreateSceneBelowViewModel viewModel = sceneWebService.getCreateSceneBelowViewModel(commandModel.getProjectId());
+            CreateSceneBelowViewModel viewModel = sceneService.getCreateSceneBelowViewModel(commandModel.getProjectId());
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -165,7 +165,7 @@ public class SceneController {
             return "scene/createBelow";
         }
 
-        Scene scene = sceneWebService.saveCreateSceneBelowCommandModel(commandModel);
+        Scene scene = sceneService.saveCreateSceneBelowCommandModel(commandModel);
 
         return "redirect:/scene/show?id=" + scene.getId();
     }
@@ -182,14 +182,14 @@ public class SceneController {
             model.addAttribute("projectId", commandModel.getProjectId());
             return "scene/createInline";
         }
-        Scene scene = sceneWebService.saveCreateSceneCommandModel(commandModel);
+        Scene scene = sceneService.saveCreateSceneCommandModel(commandModel);
         model.addAttribute("scene", scene);
         return "scene/sceneRow";
     }
 
     @RequestMapping(value = "/editNameInline")
     public String editNameInline(@RequestParam Integer id, Model model) {
-        EditSceneViewModel viewModel = sceneWebService.getEditSceneViewModel(id);
+        EditSceneViewModel viewModel = sceneService.getEditSceneViewModel(id);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditSceneCommandModel());
         return "scene/editNameInline";
@@ -198,12 +198,12 @@ public class SceneController {
     @RequestMapping(value = "/editNameInline", method = RequestMethod.POST)
     public String saveEditNameInline(@Valid @ModelAttribute("commandModel") EditSceneCommandModel commandModel, BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
-            EditSceneViewModel viewModel = sceneWebService.getEditSceneViewModel(commandModel.getId());
+            EditSceneViewModel viewModel = sceneService.getEditSceneViewModel(commandModel.getId());
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
             return "scene/editNameInline";
         }
-        Scene scene = sceneWebService.saveEditSceneCommandModel(commandModel);
+        Scene scene = sceneService.saveEditSceneCommandModel(commandModel);
         model.addAttribute("scene", scene);
         return "scene/showNameInline";
     }
@@ -220,7 +220,7 @@ public class SceneController {
             model.addAttribute("sceneId", commandModel.getId());
             return "scene/createBelowInline";
         }
-        Scene scene = sceneWebService.saveCreateSceneBelowCommandModel(commandModel);
+        Scene scene = sceneService.saveCreateSceneBelowCommandModel(commandModel);
         return "redirect:/scene/show?id=" + scene.getId();
     }
 
@@ -229,7 +229,7 @@ public class SceneController {
         CreateSceneCommandModel commandModel = new CreateSceneCommandModel();
         commandModel.setProjectId(projectId);
         commandModel.setName(" ");
-        sceneWebService.saveCreateSceneCommandModel(commandModel);
+        sceneService.saveCreateSceneCommandModel(commandModel);
         return "redirect:/project/show?id=" + projectId;
     }
 }

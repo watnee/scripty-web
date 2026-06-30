@@ -1,0 +1,19 @@
+<tr xmlns:th="http://www.thymeleaf.org" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order}">
+    <td class="block-left-controls">
+        <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" class="create-below" role="button">+</a>
+        <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
+    </td>
+    <td class="block-content" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML">
+        <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
+            <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
+        </p>
+    </td>
+    <td>
+        <span class="nowrap">
+            <a th:href="@{/block/edit(id=${block.id})}" role="button">edit</a>
+            <a th:href="@{/block/delete(id=${block.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this block?') halt">delete</a>
+            <a th:href="@{/block/moveDown(id=${block.id})}" class="move-down" role="button">&#8595;</a>
+            <a th:href="@{/block/moveUp(id=${block.id})}" class="move-up" role="button">&#8593;</a>
+        </span>
+    </td>
+</tr>

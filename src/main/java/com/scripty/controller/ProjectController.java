@@ -14,10 +14,10 @@ import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.commandmodel.scene.createscene.CreateSceneCommandModel;
 import com.scripty.dto.Scene;
-import com.scripty.webservice.ProjectWebService;
-import com.scripty.webservice.SceneWebService;
-import javax.inject.Inject;
-import javax.validation.Valid;
+import com.scripty.service.ProjectService;
+import com.scripty.service.SceneService;
+import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -34,16 +34,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping(value = "/project")
 public class ProjectController {
     
-    @Inject
-    ProjectWebService projectWebService;
+    @Autowired
+    ProjectService projectService;
 
-    @Inject
-    SceneWebService sceneWebService;
+    @Autowired
+    SceneService sceneService;
     
     @RequestMapping(value = "/list")
     public String list(Model model) {
 
-        ProjectListViewModel viewModel = projectWebService.getProjectListViewModel();
+        ProjectListViewModel viewModel = projectService.getProjectListViewModel();
 
         model.addAttribute("viewModel", viewModel);
 
@@ -53,7 +53,7 @@ public class ProjectController {
     @RequestMapping(value = "/show")
     public String show(@RequestParam Integer id, Model model) {
 
-        ProjectProfileViewModel viewModel = projectWebService.getProjectProfileViewModel(id);
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
 
@@ -63,7 +63,7 @@ public class ProjectController {
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {
         
-        projectWebService.deleteProject(id);
+        projectService.deleteProject(id);
         
         return "redirect:/project/list";
     }
@@ -72,7 +72,7 @@ public class ProjectController {
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model) {
 
-        EditProjectViewModel viewModel = projectWebService.getEditProjectViewModel(id);
+        EditProjectViewModel viewModel = projectService.getEditProjectViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditProjectCommandModel());
@@ -85,7 +85,7 @@ public class ProjectController {
     public String saveEdit(@Valid @ModelAttribute("commandModel") EditProjectCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            EditProjectViewModel viewModel = projectWebService.getEditProjectViewModel(commandModel.getId());
+            EditProjectViewModel viewModel = projectService.getEditProjectViewModel(commandModel.getId());
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -93,7 +93,7 @@ public class ProjectController {
             return "project/edit";
         }
 
-        Project project = projectWebService.saveEditProjectCommandModel(commandModel);
+        Project project = projectService.saveEditProjectCommandModel(commandModel);
 
         return "redirect:/project/show?id=" + project.getId();
     }
@@ -102,7 +102,7 @@ public class ProjectController {
     @RequestMapping(value = "/create")
     public String create(Model model) {
 
-        CreateProjectViewModel viewModel = projectWebService.getCreateProjectViewModel();
+        CreateProjectViewModel viewModel = projectService.getCreateProjectViewModel();
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getCreateProjectCommandModel());
@@ -115,7 +115,7 @@ public class ProjectController {
     public String saveCreate(@Valid @ModelAttribute("commandModel") CreateProjectCommandModel commandModel, BindingResult bindingResult, Model model) {
 
         if (bindingResult.hasErrors()) {
-            CreateProjectViewModel viewModel = projectWebService.getCreateProjectViewModel();
+            CreateProjectViewModel viewModel = projectService.getCreateProjectViewModel();
 
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
@@ -123,12 +123,12 @@ public class ProjectController {
             return "project/create";
         }
 
-        Project project = projectWebService.saveCreateProjectCommandModel(commandModel);
+        Project project = projectService.saveCreateProjectCommandModel(commandModel);
 
         CreateSceneCommandModel sceneCommandModel = new CreateSceneCommandModel();
         sceneCommandModel.setProjectId(project.getId());
         sceneCommandModel.setName(" ");
-        Scene scene = sceneWebService.saveCreateSceneCommandModel(sceneCommandModel);
+        Scene scene = sceneService.saveCreateSceneCommandModel(sceneCommandModel);
 
         return "redirect:/scene/show?id=" + scene.getId();
     }

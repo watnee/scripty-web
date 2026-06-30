@@ -1,22 +1,22 @@
 package com.scripty.commandmodel.user.edituser;
 
-import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
 
 public class EditUserCommandModel {
 
     private Integer id;
 
-    @NotEmpty(message = "You must supply a value for Username.")
-    @Length(max = 20, message = "Username must be no more than 20 characters in length.")
+    @NotBlank(message = "You must supply a value for Username.")
+    @Size(max = 20, message = "Username must be no more than 20 characters in length.")
     private String username;
-    @Length(max = 100, message = "Password must be no more than 100 characters in length.")
+    @Size(max = 100, message = "Password must be no more than 100 characters in length.")
     private String password;
-    @NotEmpty(message = "You must supply a value for First Name.")
-    @Length(max = 30, message = "First Name must be no more than 30 characters in length.")
+    @NotBlank(message = "You must supply a value for First Name.")
+    @Size(max = 30, message = "First Name must be no more than 30 characters in length.")
     private String firstName;
-    @NotEmpty(message = "You must supply a value for Last Name.")
-    @Length(max = 30, message = "Last Name must be no more than 30 characters in length.")
+    @NotBlank(message = "You must supply a value for Last Name.")
+    @Size(max = 30, message = "Last Name must be no more than 30 characters in length.")
     private String lastName;
     private boolean admin;
 

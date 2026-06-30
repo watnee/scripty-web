@@ -5,7 +5,7 @@
  */
 package com.scripty.commandmodel.block.createblockbelow;
 
-import org.hibernate.validator.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  *
@@ -15,7 +15,7 @@ public class CreateBlockBelowCommandModel {
     
     private Integer id;
     
-    @NotEmpty(message = "You must supply a value for Content.")
+    @NotBlank(message = "You must supply a value for Content.")
     private String content;
     
     private Integer personId;

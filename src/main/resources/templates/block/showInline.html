@@ -1,0 +1,5 @@
+<th:block xmlns:th="http://www.thymeleaf.org">
+<p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
+    <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
+</p>
+</th:block>

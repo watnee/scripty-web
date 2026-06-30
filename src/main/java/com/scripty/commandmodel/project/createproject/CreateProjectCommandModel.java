@@ -5,8 +5,8 @@
  */
 package com.scripty.commandmodel.project.createproject;
 
-import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  *
@@ -14,8 +14,8 @@ import org.hibernate.validator.constraints.NotEmpty;
  */
 public class CreateProjectCommandModel {
     
-    @NotEmpty(message = "You must supply a value for Title.")
-    @Length(max = 100, message = "Title must be no more than 100 characters in length.")
+    @NotBlank(message = "You must supply a value for Title.")
+    @Size(max = 100, message = "Title must be no more than 100 characters in length.")
     private String title;
 
     public String getTitle() {

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Scripty - Project Profile</title>
+    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
+    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main>
+        <div th:replace="~{fragments/logout :: logout}"></div>
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li><a th:href="@{/project/list}">Projects</a></li>
+                <li aria-current="page" th:text="${viewModel.title}"></li>
+            </ol>
+        </nav>
+        <h1><span th:text="${viewModel.title}"></span> <small><a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/project/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this project?') halt">delete</a></small></h1>
+        <div class="f-row" style="gap: 2rem; align-items: start">
+            <div style="flex: 3">
+                <h2>Scenes <small><a th:href="@{/scene/all(projectId=${viewModel.id})}" role="button">View All</a></small></h2>
+                <th:block th:each="scene : ${viewModel.scenes}">
+                    <h3 style="text-transform: uppercase; margin-bottom: 0.25em">
+                        <a th:href="@{/scene/show(id=${scene.id})}" style="color: inherit; text-decoration: none" th:text="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())} ? 'Untitled Scene' : ${scene.name}"></a>
+                    </h3>
+                    <table class="table-blocks-all" th:id="'table-blocks-' + ${scene.id}">
+                        <tr th:each="block : ${scene.blocks}" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order}">
+                            <td class="block-left-controls">
+                                <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
+                                <span class="drag-handle">&#8942;&#8942;</span>
+                            </td>
+                            <td class="block-content" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML" style="cursor: pointer">
+                                <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
+                                    <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
+                                </p>
+                                <span th:text="${block.content}"></span>
+                            </td>
+                        </tr>
+                        <tr th:attr="hx-get=@{/block/createInline(sceneId=${scene.id})}" hx-trigger="load" hx-swap="outerHTML"></tr>
+                    </table>
+                </th:block>
+                <form th:action="@{/scene/createAndReturn}" method="POST" hx-boost="false" style="display:inline">
+                    <input type="hidden" name="projectId" th:value="${viewModel.id}" />
+                    <button type="submit" role="button">Create New Scene</button>
+                </form>
+            </div>
+            <aside style="flex: 1">
+                <p><a th:href="@{/character/list(projectId=${viewModel.id})}" role="button">Characters</a></p>
+            </aside>
+        </div>
+    </main>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:inline="javascript">
+    document.querySelectorAll('.table-blocks-all').forEach(function(table) {
+        var dragRow = null;
+
+        table.addEventListener('dragstart', function(e) {
+            var tr = e.target.closest('tr');
+            if (!tr || !table.contains(tr)) { e.preventDefault(); return; }
+            dragRow = tr;
+            tr.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        table.addEventListener('dragend', function() {
+            if (dragRow) dragRow.classList.remove('dragging');
+            table.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
+            dragRow = null;
+        });
+
+        table.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            var tr = e.target.closest('tr');
+            if (!tr || !table.contains(tr) || tr === dragRow) return;
+            table.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
+            tr.classList.add('drag-over');
+        });
+
+        table.addEventListener('dragleave', function(e) {
+            var tr = e.target.closest('tr');
+            if (tr) tr.classList.remove('drag-over');
+        });
+
+        table.addEventListener('drop', function(e) {
+            e.preventDefault();
+            var targetRow = e.target.closest('tr');
+            if (!targetRow || !table.contains(targetRow) || !dragRow || targetRow === dragRow) return;
+            var blockId = dragRow.getAttribute('data-block-id');
+            var targetOrder = targetRow.getAttribute('data-block-order');
+            if (blockId && targetOrder) {
+                var params = new URLSearchParams();
+                params.append('id', blockId);
+                params.append('position', targetOrder);
+                fetch(/*[[@{/block/moveTo}]]*/ '/block/moveTo', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: params.toString(),
+                    redirect: 'manual'
+                }).then(function() { window.location.reload(); });
+            } else {
+                var rect = targetRow.getBoundingClientRect();
+                var mid = rect.top + rect.height / 2;
+                if (e.clientY < mid) {
+                    targetRow.parentNode.insertBefore(dragRow, targetRow);
+                } else {
+                    targetRow.parentNode.insertBefore(dragRow, targetRow.nextSibling);
+                }
+            }
+        });
+    });
+    </script>
+</body>
+</html>

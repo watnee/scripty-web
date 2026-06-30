@@ -4,10 +4,10 @@ import com.scripty.commandmodel.user.createuser.CreateUserCommandModel;
 import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
 import com.scripty.dto.User;
 import com.scripty.viewmodel.user.userlist.UserListViewModel;
-import com.scripty.webservice.UserWebService;
+import com.scripty.service.UserService;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -18,18 +18,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping(value = "/api/account")
 public class AccountRestController {
 
-    @Inject
-    UserWebService userWebService;
+    @Autowired
+    UserService userService;
 
     @RequestMapping(method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<?> list() {
-        UserListViewModel viewModel = userWebService.getUserListViewModel();
+        UserListViewModel viewModel = userService.getUserListViewModel();
         return new ResponseEntity<>(viewModel.getUsers(), HttpStatus.OK);
     }
 
@@ -38,7 +38,7 @@ public class AccountRestController {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(buildErrors(bindingResult), HttpStatus.BAD_REQUEST);
         }
-        User user = userWebService.saveCreateUserCommandModel(commandModel);
+        User user = userService.saveCreateUserCommandModel(commandModel);
         Map<String, Object> response = new HashMap<>();
         response.put("id", user.getId());
         response.put("username", user.getUsername());
@@ -54,7 +54,7 @@ public class AccountRestController {
             return new ResponseEntity<>(buildErrors(bindingResult), HttpStatus.BAD_REQUEST);
         }
         commandModel.setId(id);
-        User user = userWebService.saveEditUserCommandModel(commandModel);
+        User user = userService.saveEditUserCommandModel(commandModel);
         Map<String, Object> response = new HashMap<>();
         response.put("id", user.getId());
         response.put("username", user.getUsername());
@@ -66,7 +66,7 @@ public class AccountRestController {
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = "application/json")
     public ResponseEntity<?> delete(@PathVariable Integer id) {
-        User user = userWebService.deleteUser(id);
+        User user = userService.deleteUser(id);
         Map<String, Object> response = new HashMap<>();
         response.put("id", user.getId());
         response.put("username", user.getUsername());

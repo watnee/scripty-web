@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Scripty - Scene Profile</title>
+    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
+    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main>
+        <div th:replace="~{fragments/logout :: logout}"></div>
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li><a th:href="@{/project/list}">Projects</a></li>
+                <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}"></a></li>
+                <li aria-current="page" style="text-transform: uppercase" th:text="${viewModel.name}"></li>
+            </ol>
+        </nav>
+        <h1><span class="scene-name-wrap"><span class="scene-name-display" th:attr="hx-get=@{/scene/editNameInline(id=${viewModel.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; text-transform: uppercase; min-width: 10em; display: inline-block"><th:block th:if="${#strings.isEmpty(viewModel.name) || #strings.isEmpty(viewModel.name.trim())}"><span style="color: #ccc; font-style: italic">click to name scene</span></th:block><th:block th:unless="${#strings.isEmpty(viewModel.name) || #strings.isEmpty(viewModel.name.trim())}" th:text="${viewModel.name}"></th:block></span></span> <small><a th:href="@{/scene/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this scene?') halt">delete</a></small></h1>
+        <table id="table-blocks">
+            <tr th:each="block,loop : ${viewModel.blocks}" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order}">
+                <td class="block-left-controls">
+                    <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" class="create-below" role="button">+</a>
+                    <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
+                </td>
+                <td class="block-content" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML">
+                    <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
+                        <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
+                    </p>
+                </td>
+                <td>
+                    <span class="nowrap">
+                        <a th:href="@{/block/edit(id=${block.id})}" role="button">edit</a>
+                        <a th:href="@{/block/delete(id=${block.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this block?') halt">delete</a>
+                        <a th:if="${not loop.last}" th:href="@{/block/moveDown(id=${block.id})}" class="move-down" role="button">&#8595;</a>
+                        <a th:if="${not loop.first}" th:href="@{/block/moveUp(id=${block.id})}" class="move-up" role="button">&#8593;</a>
+                    </span>
+                </td>
+            </tr>
+            <tr th:attr="hx-get=@{/block/createInline(sceneId=${viewModel.id})}" hx-trigger="load" hx-swap="outerHTML"></tr>
+        </table>
+        <p>
+            <a id="create-scene-btn" th:attr="hx-get=@{/scene/createBelowInline(id=${viewModel.id})}" hx-target="#create-scene-btn" hx-swap="afterend" role="button" _="on htmx:afterSwap hide me">Create New Scene</a>
+            <a th:href="@{/character/create(projectId=${viewModel.projectId})}" role="button">Create New Character</a>
+        </p>
+        <nav aria-label="Scene navigation" class="scene-pager">
+            <a th:if="${not #strings.isEmpty(viewModel.previousSceneName)}" th:href="@{/scene/show(id=${viewModel.previousSceneId})}" th:title="${viewModel.previousSceneName}">&larr; Previous Scene</a>
+            <a th:if="${not #strings.isEmpty(viewModel.nextSceneName)}" th:href="@{/scene/show(id=${viewModel.nextSceneId})}" th:title="${viewModel.nextSceneName}" style="margin-left: auto">Next Scene &rarr;</a>
+        </nav>
+    </main>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:inline="javascript">
+    (function() {
+        var table = document.getElementById('table-blocks');
+        var dragRow = null;
+
+        table.addEventListener('dragstart', function(e) {
+            var tr = e.target.closest('tr');
+            if (!tr || !table.contains(tr)) { e.preventDefault(); return; }
+            dragRow = tr;
+            tr.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        table.addEventListener('dragend', function() {
+            if (dragRow) dragRow.classList.remove('dragging');
+            table.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
+            dragRow = null;
+        });
+
+        table.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            var tr = e.target.closest('tr');
+            if (!tr || !table.contains(tr) || tr === dragRow) return;
+            table.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
+            tr.classList.add('drag-over');
+        });
+
+        table.addEventListener('dragleave', function(e) {
+            var tr = e.target.closest('tr');
+            if (tr) tr.classList.remove('drag-over');
+        });
+
+        table.addEventListener('drop', function(e) {
+            e.preventDefault();
+            var targetRow = e.target.closest('tr');
+            if (!targetRow || !table.contains(targetRow) || !dragRow || targetRow === dragRow) return;
+            var blockId = dragRow.getAttribute('data-block-id');
+            var targetOrder = targetRow.getAttribute('data-block-order');
+            if (blockId && targetOrder) {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = /*[[@{/block/moveTo}]]*/ '/block/moveTo';
+                form.innerHTML = '<input type="hidden" name="id" value="' + blockId + '">' +
+                                 '<input type="hidden" name="position" value="' + targetOrder + '">';
+                document.body.appendChild(form);
+                form.submit();
+            } else {
+                var rect = targetRow.getBoundingClientRect();
+                var mid = rect.top + rect.height / 2;
+                if (e.clientY < mid) {
+                    targetRow.parentNode.insertBefore(dragRow, targetRow);
+                } else {
+                    targetRow.parentNode.insertBefore(dragRow, targetRow.nextSibling);
+                }
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

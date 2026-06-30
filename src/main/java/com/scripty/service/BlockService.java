@@ -1,29 +1,29 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.scripty.service;
 
+import com.scripty.commandmodel.block.createblock.CreateBlockCommandModel;
+import com.scripty.commandmodel.block.createblockbelow.CreateBlockBelowCommandModel;
+import com.scripty.commandmodel.block.editblock.EditBlockCommandModel;
 import com.scripty.dto.Block;
-import com.scripty.dto.Scene;
-import java.util.List;
+import com.scripty.viewmodel.block.createblock.CreateBlockViewModel;
+import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
+import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
+import com.scripty.viewmodel.scene.sceneprofile.BlockViewModel;
 
-/**
- *
- * @author chris
- */
 public interface BlockService {
-    
-    public Block create(Block block);
-    public Block createBelow(Block block);
-    public Block read(Integer id);
-    public void update(Block block);
-    public void delete(Block block);
-    public void moveUp(Block block);
-    public void moveDown(Block block);
-    public void moveTo(Block block, int newOrder);
-    public List<Block> list();
-    public List<Block> getBlocksByScene(Scene scene);
-    
+
+    Block read(Integer id);
+
+    CreateBlockViewModel getCreateBlockViewModel(Integer sceneId);
+    CreateBlockBelowViewModel getCreateBlockBelowViewModel(Integer id);
+    EditBlockViewModel getEditBlockViewModel(Integer id);
+    BlockViewModel getBlockViewModel(Integer id);
+
+    Block saveCreateBlockCommandModel(CreateBlockCommandModel createBlockCommandModel);
+    Block saveCreateBlockBelowCommandModel(CreateBlockBelowCommandModel createBlockBelowCommandModel);
+    Block saveEditBlockCommandModel(EditBlockCommandModel editBlockCommandModel);
+
+    Block deleteBlock(Integer id);
+    Block moveBlockUp(Integer id);
+    Block moveBlockDown(Integer id);
+    Block moveBlockTo(Integer id, int newOrder);
 }

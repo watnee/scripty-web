@@ -1,0 +1,13 @@
+<tr xmlns:th="http://www.thymeleaf.org" draggable="true">
+    <td class="block-left-controls">
+        <a th:attr="hx-get=@{/block/createInline(sceneId=${viewModel.sceneId})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
+        <span class="drag-handle">&#8942;&#8942;</span>
+    </td>
+    <td class="block-content">
+        <form th:attr="hx-post=@{/block/createInline}" hx-target="closest tr" hx-swap="outerHTML" hx-trigger="input delay:500ms from:find textarea, keydown[key=='Enter'&amp;&amp;!event.shiftKey] from:find textarea, createNext">
+            <input type="hidden" name="sceneId" th:value="${viewModel.sceneId}" />
+            <textarea spellcheck="true" rows="1" style="width: 100%; height: 1.5em; min-height: 1.5em; padding: 0.25em;" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey)event.preventDefault()" _="on blur if my value.trim() is '' and closest &lt;table/&gt;'s querySelectorAll('tr').length > 1 remove closest &lt;tr/&gt;"></textarea>
+        </form>
+    </td>
+    <td></td>
+</tr>

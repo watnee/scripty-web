@@ -1,0 +1,1 @@
+<span xmlns:th="http://www.thymeleaf.org" class="scene-name-display" th:attr="hx-get=@{/scene/editNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; text-transform: uppercase" th:text="${scene.name}"></span>

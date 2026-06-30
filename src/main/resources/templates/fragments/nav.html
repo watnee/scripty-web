@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<header th:fragment="nav(currentPage)">
+    <nav>
+        <a th:href="@{/}"><strong>Scripty</strong></a>
+        <th:block sec:authorize="isAuthenticated()">
+            <a th:href="@{/project/list}" th:aria-current="${currentPage == 'projects'} ? 'page'">Projects</a>
+            <a th:href="@{/actor/list}" th:aria-current="${currentPage == 'casting'} ? 'page'">Casting</a>
+            <a sec:authorize="hasRole('ROLE_ADMIN')" th:href="@{/account/list}" th:aria-current="${currentPage == 'accounts'} ? 'page'">Accounts</a>
+        </th:block>
+    </nav>
+</header>
+</html>

@@ -1,23 +1,23 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.scripty.service;
 
+import com.scripty.commandmodel.actor.createactor.CreateActorCommandModel;
+import com.scripty.commandmodel.actor.editactor.EditActorCommandModel;
 import com.scripty.dto.Actor;
-import java.util.List;
+import com.scripty.viewmodel.actor.actorlist.ActorListViewModel;
+import com.scripty.viewmodel.actor.actorprofile.ActorProfileViewModel;
+import com.scripty.viewmodel.actor.createactor.CreateActorViewModel;
+import com.scripty.viewmodel.actor.editactor.EditActorViewModel;
 
-/**
- *
- * @author chris
- */
 public interface ActorService {
-    
-    public Actor create(Actor actor);
-    public Actor read(Integer id);
-    public void update(Actor actor);
-    public void delete(Actor actor);
-    public List<Actor> list();
-    
+
+    ActorListViewModel getActorListViewModel();
+    ActorProfileViewModel getActorProfileViewModel(Integer id);
+
+    CreateActorViewModel getCreateActorViewModel();
+    EditActorViewModel getEditActorViewModel(Integer id);
+
+    Actor saveCreateActorCommandModel(CreateActorCommandModel createActorCommandModel);
+    Actor saveEditActorCommandModel(EditActorCommandModel editActorCommandModel);
+
+    Actor deleteActor(Integer id);
 }

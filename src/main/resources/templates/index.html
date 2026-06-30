@@ -11,7 +11,7 @@
     <div th:replace="~{fragments/nav :: nav('index')}"></div>
     <main class="home">
         <h1>Scripty</h1>
-        <p sec:authorize="!isAuthenticated()"><a th:href="@{/login}" role="button">Login</a></p>
+        <p sec:authorize="!isAuthenticated()"><a th:href="@{/login}" role="button" class="pill-button">Login</a></p>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>

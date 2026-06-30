@@ -95,6 +95,10 @@ h1 > small a[role="button"],
     font-size: 0.5em;
 }
 
+h1 > small a[role="button"].versions-btn {
+    opacity: 1;
+}
+
 h1 > small a[role="button"]:focus,
 h1:hover > small a[role="button"],
 #table-scenes tr a[role="button"]:focus,

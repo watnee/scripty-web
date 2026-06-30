@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Scripty WebApp (Tomcat)",
-      "runtimeExecutable": "java",
-      "runtimeArgs": ["-jar", "target/dependency/webapp-runner.jar", "--port", "8080", "target/spring-mvc-railway-webapp.war"],
-      "port": 8080
+      "name": "Scripty Spring Boot",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["JAVA_HOME=/usr/local/opt/openjdk@17", "ADMIN_USERNAME=test", "ADMIN_PASSWORD=password", "mvn", "spring-boot:run"],
+      "port": 8080,
+      "autoPort": true
     }
   ]
 }

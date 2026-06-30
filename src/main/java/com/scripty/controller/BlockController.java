@@ -14,6 +14,7 @@ import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 import com.scripty.viewmodel.scene.sceneprofile.BlockViewModel;
 import com.scripty.service.BlockService;
+import com.scripty.service.ProjectVersionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -34,12 +35,16 @@ public class BlockController {
     
     @Autowired
     BlockService blockService;
+
+    @Autowired
+    ProjectVersionService projectVersionService;
     
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {
         
         Block block = blockService.deleteBlock(id);
-        
+        projectVersionService.autoSaveVersionForBlock(block.getId());
+
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
     
@@ -47,7 +52,8 @@ public class BlockController {
     public String moveUp(@RequestParam Integer id) {
         
         Block block = blockService.moveBlockUp(id);
-        
+        projectVersionService.autoSaveVersionForBlock(block.getId());
+
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
     
@@ -55,13 +61,15 @@ public class BlockController {
     public String moveDown(@RequestParam Integer id) {
         
         Block block = blockService.moveBlockDown(id);
-        
+        projectVersionService.autoSaveVersionForBlock(block.getId());
+
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
     
     @RequestMapping(value = "/moveTo", method = RequestMethod.POST)
     public String moveTo(@RequestParam Integer id, @RequestParam int position) {
         Block block = blockService.moveBlockTo(id, position);
+        projectVersionService.autoSaveVersionForBlock(block.getId());
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
 
@@ -82,6 +90,7 @@ public class BlockController {
             return "block/editInline";
         }
         Block block = blockService.saveEditBlockCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForBlock(block.getId());
         BlockViewModel vm = blockService.getBlockViewModel(block.getId());
         model.addAttribute("block", vm);
         return "block/showInline";
@@ -120,6 +129,7 @@ public class BlockController {
         }
 
         Block block = blockService.saveEditBlockCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForBlock(block.getId());
 
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
@@ -150,6 +160,7 @@ public class BlockController {
         }
 
         Block block = blockService.saveCreateBlockCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForBlock(block.getId());
 
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
@@ -180,6 +191,7 @@ public class BlockController {
         }
 
         Block block = blockService.saveCreateBlockBelowCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForBlock(block.getId());
 
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
@@ -198,6 +210,7 @@ public class BlockController {
         commandModel.setContent(content);
         commandModel.setPersonId(personId);
         Block block = blockService.saveCreateBlockCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForBlock(block.getId());
         BlockViewModel vm = blockService.getBlockViewModel(block.getId());
         model.addAttribute("block", vm);
         CreateBlockBelowViewModel createViewModel = blockService.getCreateBlockBelowViewModel(block.getId());
@@ -221,6 +234,7 @@ public class BlockController {
         commandModel.setContent(content);
         commandModel.setPersonId(personId);
         Block block = blockService.saveCreateBlockBelowCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForBlock(block.getId());
         BlockViewModel vm = blockService.getBlockViewModel(block.getId());
         model.addAttribute("block", vm);
         CreateBlockBelowViewModel createViewModel = blockService.getCreateBlockBelowViewModel(block.getId());

@@ -15,6 +15,7 @@ import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.commandmodel.scene.createscene.CreateSceneCommandModel;
 import com.scripty.dto.Scene;
 import com.scripty.service.ProjectService;
+import com.scripty.service.ProjectVersionService;
 import com.scripty.service.SceneService;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
@@ -36,6 +37,9 @@ public class ProjectController {
     
     @Autowired
     ProjectService projectService;
+
+    @Autowired
+    ProjectVersionService projectVersionService;
 
     @Autowired
     SceneService sceneService;
@@ -94,6 +98,7 @@ public class ProjectController {
         }
 
         Project project = projectService.saveEditProjectCommandModel(commandModel);
+        projectVersionService.autoSaveVersion(project.getId());
 
         return "redirect:/project/show?id=" + project.getId();
     }

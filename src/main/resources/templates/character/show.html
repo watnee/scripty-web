@@ -18,7 +18,7 @@
                 <li aria-current="page" th:text="${viewModel.name}"></li>
             </ol>
         </nav>
-        <h1><span th:text="${viewModel.name}"></span> <small><a th:href="@{/character/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/character/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this character?') halt">delete</a></small></h1>
+        <h1><span th:text="${viewModel.name}"></span> <small th:unless="${viewModel.projectLocked}"><a th:href="@{/character/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/character/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this character?') halt">delete</a></small></h1>
         <p>Full Name: <span th:text="${viewModel.fullName}"></span></p>
         <p th:if="${not #strings.isEmpty(viewModel.actorName)}">Actor: <a th:href="@{/actor/show(id=${viewModel.actorId})}" th:text="${viewModel.actorName}"></a></p>
     </main>

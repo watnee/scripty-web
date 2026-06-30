@@ -15,6 +15,7 @@ public class ProjectProfileViewModel {
     
     private int id;
     private String title;
+    private boolean locked;
     private List<SceneViewModel> scenes;
     private List<PersonViewModel> persons;
 
@@ -32,6 +33,14 @@ public class ProjectProfileViewModel {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public boolean isLocked() {
+        return locked;
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
     }
 
     public List<SceneViewModel> getScenes() {

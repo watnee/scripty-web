@@ -17,6 +17,7 @@ public class SceneProfileViewModel {
     private String name;
     private int projectId;
     private String projectTitle;
+    private boolean projectLocked;
     private int previousSceneId;
     private String previousSceneName;
     private int nextSceneId;
@@ -53,6 +54,14 @@ public class SceneProfileViewModel {
 
     public void setProjectTitle(String projectTitle) {
         this.projectTitle = projectTitle;
+    }
+
+    public boolean isProjectLocked() {
+        return projectLocked;
+    }
+
+    public void setProjectLocked(boolean projectLocked) {
+        this.projectLocked = projectLocked;
     }
 
     public int getPreviousSceneId() {

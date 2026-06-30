@@ -76,6 +76,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         vm.setId(project.getId());
         vm.setTitle(project.getTitle());
+        vm.setLocked(project.isLocked());
 
         List<SceneViewModel> sceneViewModels = new ArrayList<>();
         for (Scene scene : scenes) {
@@ -154,5 +155,38 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(id).orElse(null);
         projectRepository.delete(project);
         return project;
+    }
+
+    @Override
+    public Project toggleLock(Integer id) {
+        Project project = projectRepository.findById(id).orElse(null);
+        project.setLocked(!project.isLocked());
+        return projectRepository.save(project);
+    }
+
+    @Override
+    public boolean isProjectLocked(Integer projectId) {
+        Project project = projectRepository.findById(projectId).orElse(null);
+        return project != null && project.isLocked();
+    }
+
+    @Override
+    public boolean isProjectLockedBySceneId(Integer sceneId) {
+        Project project = projectRepository.findBySceneId(sceneId);
+        return project != null && project.isLocked();
+    }
+
+    @Override
+    public boolean isProjectLockedByBlockId(Integer blockId) {
+        Block block = blockRepository.findById(blockId).orElse(null);
+        if (block == null || block.getScene() == null) return false;
+        return isProjectLockedBySceneId(block.getScene().getId());
+    }
+
+    @Override
+    public boolean isProjectLockedByPersonId(Integer personId) {
+        Person person = personRepository.findById(personId).orElse(null);
+        if (person == null || person.getProject() == null) return false;
+        return isProjectLocked(person.getProject().getId());
     }
 }

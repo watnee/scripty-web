@@ -13,6 +13,7 @@ import com.scripty.viewmodel.person.editperson.EditPersonViewModel;
 import com.scripty.viewmodel.person.personlist.PersonListViewModel;
 import com.scripty.viewmodel.person.personprofile.PersonProfileViewModel;
 import com.scripty.service.PersonService;
+import com.scripty.service.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -33,7 +34,10 @@ public class PersonController {
     
     @Autowired
     PersonService personService;
-    
+
+    @Autowired
+    ProjectService projectService;
+
     @RequestMapping(value = "/list")
     public String list(@RequestParam Integer projectId, Model model) {
 
@@ -56,15 +60,19 @@ public class PersonController {
     
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {
-        
+        if (projectService.isProjectLockedByPersonId(id)) {
+            return "redirect:/character/show?id=" + id;
+        }
         Person person = personService.deletePerson(id);
-        
         return "redirect:/project/show?id=" + person.getProject().getId();
     }
-    
+
     // Show Form
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model) {
+        if (projectService.isProjectLockedByPersonId(id)) {
+            return "redirect:/character/show?id=" + id;
+        }
 
         EditPersonViewModel viewModel = personService.getEditPersonViewModel(id);
 
@@ -77,6 +85,9 @@ public class PersonController {
     // Handle Form Submission
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
     public String saveEdit(@Valid @ModelAttribute("commandModel") EditPersonCommandModel commandModel, BindingResult bindingResult, Model model) {
+        if (projectService.isProjectLockedByPersonId(commandModel.getId())) {
+            return "redirect:/character/show?id=" + commandModel.getId();
+        }
 
         if (bindingResult.hasErrors()) {
             EditPersonViewModel viewModel = personService.getEditPersonViewModel(commandModel.getId());
@@ -91,10 +102,13 @@ public class PersonController {
 
         return "redirect:/character/show?id=" + person.getId();
     }
-    
+
     // Show Form
     @RequestMapping(value = "/create")
     public String create(@RequestParam Integer projectId, Model model) {
+        if (projectService.isProjectLocked(projectId)) {
+            return "redirect:/project/show?id=" + projectId;
+        }
 
         CreatePersonViewModel viewModel = personService.getCreatePersonViewModel(projectId);
 
@@ -107,6 +121,9 @@ public class PersonController {
     // Handle Form Submission
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public String saveCreate(@Valid @ModelAttribute("commandModel") CreatePersonCommandModel commandModel, BindingResult bindingResult, Model model) {
+        if (projectService.isProjectLocked(commandModel.getProjectId())) {
+            return "redirect:/project/show?id=" + commandModel.getProjectId();
+        }
 
         if (bindingResult.hasErrors()) {
             CreatePersonViewModel viewModel = personService.getCreatePersonViewModel(commandModel.getProjectId());

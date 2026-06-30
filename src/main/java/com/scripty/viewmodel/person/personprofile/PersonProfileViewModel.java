@@ -18,6 +18,7 @@ public class PersonProfileViewModel {
     private String actorName;
     private int projectId;
     private String projectTitle;
+    private boolean projectLocked;
 
     public int getId() {
         return id;
@@ -74,5 +75,12 @@ public class PersonProfileViewModel {
     public void setProjectTitle(String projectTitle) {
         this.projectTitle = projectTitle;
     }
-    
+
+    public boolean isProjectLocked() {
+        return projectLocked;
+    }
+
+    public void setProjectLocked(boolean projectLocked) {
+        this.projectLocked = projectLocked;
+    }
 }

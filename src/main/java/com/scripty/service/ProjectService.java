@@ -24,4 +24,10 @@ public interface ProjectService {
     Project saveEditProjectCommandModel(EditProjectCommandModel editProjectCommandModel);
 
     Project deleteProject(Integer id);
+
+    Project toggleLock(Integer id);
+    boolean isProjectLocked(Integer projectId);
+    boolean isProjectLockedBySceneId(Integer sceneId);
+    boolean isProjectLockedByBlockId(Integer blockId);
+    boolean isProjectLockedByPersonId(Integer personId);
 }

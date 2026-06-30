@@ -1,0 +1,1 @@
+ALTER TABLE project ADD COLUMN locked tinyint(1) NOT NULL DEFAULT 0;

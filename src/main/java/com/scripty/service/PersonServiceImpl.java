@@ -59,6 +59,7 @@ public class PersonServiceImpl implements PersonService {
 
         vm.setProjectId(project.getId());
         vm.setProjectTitle(project.getTitle());
+        vm.setProjectLocked(project.isLocked());
 
         List<CharacterViewModel> characterViewModels = new ArrayList<>();
         for (Person person : persons) {
@@ -93,6 +94,7 @@ public class PersonServiceImpl implements PersonService {
             if (project != null) {
                 vm.setProjectId(project.getId());
                 vm.setProjectTitle(project.getTitle());
+                vm.setProjectLocked(project.isLocked());
             }
         }
 

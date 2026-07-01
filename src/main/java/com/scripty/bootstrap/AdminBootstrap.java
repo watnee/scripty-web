@@ -40,6 +40,7 @@ public class AdminBootstrap implements CommandLineRunner {
         admin.setPassword(password);
         admin.setEnabled(true);
         admin.setAdmin(true);
+        admin.setWriter(true);
         admin.setFirstName(firstName);
         admin.setLastName(lastName);
 

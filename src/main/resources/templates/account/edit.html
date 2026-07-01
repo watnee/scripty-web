@@ -38,6 +38,10 @@
                 <input type="checkbox" th:field="*{admin}" />
                 Admin
             </label>
+            <label>
+                <input type="checkbox" th:field="*{writer}" />
+                Writer
+            </label>
             <p>
                 <a th:href="@{/account/list}" role="button">Cancel</a>
                 <button type="submit">Submit</button>

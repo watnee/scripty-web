@@ -8,6 +8,7 @@ public class UserViewModel {
     private String lastName;
     private boolean enabled;
     private boolean admin;
+    private boolean writer;
 
     public int getId() {
         return id;
@@ -55,6 +56,14 @@ public class UserViewModel {
 
     public void setAdmin(boolean admin) {
         this.admin = admin;
+    }
+
+    public boolean isWriter() {
+        return writer;
+    }
+
+    public void setWriter(boolean writer) {
+        this.writer = writer;
     }
 
 }

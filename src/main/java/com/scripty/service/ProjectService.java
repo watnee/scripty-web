@@ -24,4 +24,11 @@ public interface ProjectService {
     Project saveEditProjectCommandModel(EditProjectCommandModel editProjectCommandModel);
 
     Project deleteProject(Integer id);
+
+    Project lockProject(Integer id, String username);
+    Project unlockProject(Integer id, String username);
+    boolean isLockedByOther(Integer projectId, String username);
+    boolean isLockedByOtherForScene(Integer sceneId, String username);
+    boolean isLockedByOtherForBlock(Integer blockId, String username);
+    boolean isLockedByOtherForPerson(Integer personId, String username);
 }

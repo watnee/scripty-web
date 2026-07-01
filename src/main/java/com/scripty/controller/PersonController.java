@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import com.scripty.service.ProjectService;
+import java.security.Principal;
 
 /**
  *
@@ -30,9 +32,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping(value = "/character")
 public class PersonController {
-    
+
     @Autowired
     PersonService personService;
+
+    @Autowired
+    ProjectService projectService;
     
     @RequestMapping(value = "/list")
     public String list(@RequestParam Integer projectId, Model model) {
@@ -55,70 +60,67 @@ public class PersonController {
     }
     
     @RequestMapping(value = "/delete")
-    public String delete(@RequestParam Integer id) {
-        
+    public String delete(@RequestParam Integer id, Principal principal) {
+        if (projectService.isLockedByOtherForPerson(id, principal.getName())) {
+            return "redirect:/character/show?id=" + id;
+        }
         Person person = personService.deletePerson(id);
-        
         return "redirect:/project/show?id=" + person.getProject().getId();
     }
-    
+
     // Show Form
     @RequestMapping(value = "/edit")
-    public String edit(@RequestParam Integer id, Model model) {
-
+    public String edit(@RequestParam Integer id, Model model, Principal principal) {
+        if (projectService.isLockedByOtherForPerson(id, principal.getName())) {
+            return "redirect:/character/show?id=" + id;
+        }
         EditPersonViewModel viewModel = personService.getEditPersonViewModel(id);
-
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditPersonCommandModel());
-
         return "character/edit";
     }
 
     // Handle Form Submission
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
-    public String saveEdit(@Valid @ModelAttribute("commandModel") EditPersonCommandModel commandModel, BindingResult bindingResult, Model model) {
-
+    public String saveEdit(@Valid @ModelAttribute("commandModel") EditPersonCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
+        if (projectService.isLockedByOtherForPerson(commandModel.getId(), principal.getName())) {
+            return "redirect:/character/show?id=" + commandModel.getId();
+        }
         if (bindingResult.hasErrors()) {
             EditPersonViewModel viewModel = personService.getEditPersonViewModel(commandModel.getId());
-
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
-
             return "character/edit";
         }
-
         Person person = personService.saveEditPersonCommandModel(commandModel);
-
         return "redirect:/character/show?id=" + person.getId();
     }
-    
+
     // Show Form
     @RequestMapping(value = "/create")
-    public String create(@RequestParam Integer projectId, Model model) {
-
+    public String create(@RequestParam Integer projectId, Model model, Principal principal) {
+        if (projectService.isLockedByOther(projectId, principal.getName())) {
+            return "redirect:/project/show?id=" + projectId;
+        }
         CreatePersonViewModel viewModel = personService.getCreatePersonViewModel(projectId);
-
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getCreatePersonCommandModel());
-
         return "character/create";
     }
 
     // Handle Form Submission
     @RequestMapping(value = "/create", method = RequestMethod.POST)
-    public String saveCreate(@Valid @ModelAttribute("commandModel") CreatePersonCommandModel commandModel, BindingResult bindingResult, Model model) {
-
+    public String saveCreate(@Valid @ModelAttribute("commandModel") CreatePersonCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
+        if (projectService.isLockedByOther(commandModel.getProjectId(), principal.getName())) {
+            return "redirect:/project/show?id=" + commandModel.getProjectId();
+        }
         if (bindingResult.hasErrors()) {
             CreatePersonViewModel viewModel = personService.getCreatePersonViewModel(commandModel.getProjectId());
-
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
-
             return "character/create";
         }
-
         Person person = personService.saveCreatePersonCommandModel(commandModel);
-
         return "redirect:/character/show?id=" + person.getId();
     }
 }

@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import java.security.Principal;
 
 /**
  *
@@ -51,50 +52,63 @@ public class ProjectController {
     }
     
     @RequestMapping(value = "/show")
-    public String show(@RequestParam Integer id, Model model) {
-
+    public String show(@RequestParam Integer id, Model model, Principal principal) {
         ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
-
+        Project project = projectService.read(id);
         model.addAttribute("viewModel", viewModel);
-
+        model.addAttribute("locked", project.isLocked());
+        model.addAttribute("lockedBy", project.getLockedBy());
+        model.addAttribute("isWriter", principal.getName().equals(project.getLockedBy()));
+        model.addAttribute("lockedByOther", project.isLocked() && !principal.getName().equals(project.getLockedBy()));
         return "project/show";
     }
     
     @RequestMapping(value = "/delete")
-    public String delete(@RequestParam Integer id) {
-        
+    public String delete(@RequestParam Integer id, Principal principal) {
+        if (projectService.isLockedByOther(id, principal.getName())) {
+            return "redirect:/project/show?id=" + id;
+        }
         projectService.deleteProject(id);
-        
         return "redirect:/project/list";
     }
-    
+
+    @RequestMapping(value = "/lock", method = RequestMethod.POST)
+    public String lock(@RequestParam Integer id, Principal principal) {
+        projectService.lockProject(id, principal.getName());
+        return "redirect:/project/show?id=" + id;
+    }
+
+    @RequestMapping(value = "/unlock", method = RequestMethod.POST)
+    public String unlock(@RequestParam Integer id, Principal principal) {
+        projectService.unlockProject(id, principal.getName());
+        return "redirect:/project/show?id=" + id;
+    }
+
     // Show Form
     @RequestMapping(value = "/edit")
-    public String edit(@RequestParam Integer id, Model model) {
-
+    public String edit(@RequestParam Integer id, Model model, Principal principal) {
+        if (projectService.isLockedByOther(id, principal.getName())) {
+            return "redirect:/project/show?id=" + id;
+        }
         EditProjectViewModel viewModel = projectService.getEditProjectViewModel(id);
-
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditProjectCommandModel());
-
         return "project/edit";
     }
 
     // Handle Form Submission
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
-    public String saveEdit(@Valid @ModelAttribute("commandModel") EditProjectCommandModel commandModel, BindingResult bindingResult, Model model) {
-
+    public String saveEdit(@Valid @ModelAttribute("commandModel") EditProjectCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
+        if (projectService.isLockedByOther(commandModel.getId(), principal.getName())) {
+            return "redirect:/project/show?id=" + commandModel.getId();
+        }
         if (bindingResult.hasErrors()) {
             EditProjectViewModel viewModel = projectService.getEditProjectViewModel(commandModel.getId());
-
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
-
             return "project/edit";
         }
-
         Project project = projectService.saveEditProjectCommandModel(commandModel);
-
         return "redirect:/project/show?id=" + project.getId();
     }
     

@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import com.scripty.service.ProjectService;
+import java.security.Principal;
 
 /**
  *
@@ -31,36 +33,49 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping(value = "/block")
 public class BlockController {
-    
+
     @Autowired
     BlockService blockService;
+
+    @Autowired
+    ProjectService projectService;
     
     @RequestMapping(value = "/delete")
-    public String delete(@RequestParam Integer id) {
-        
+    public String delete(@RequestParam Integer id, Principal principal) {
+        if (projectService.isLockedByOtherForBlock(id, principal.getName())) {
+            Block block = blockService.read(id);
+            return "redirect:/scene/show?id=" + block.getScene().getId();
+        }
         Block block = blockService.deleteBlock(id);
-        
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
-    
+
     @RequestMapping(value = "/moveUp")
-    public String moveUp(@RequestParam Integer id) {
-        
+    public String moveUp(@RequestParam Integer id, Principal principal) {
+        if (projectService.isLockedByOtherForBlock(id, principal.getName())) {
+            Block block = blockService.read(id);
+            return "redirect:/scene/show?id=" + block.getScene().getId();
+        }
         Block block = blockService.moveBlockUp(id);
-        
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
-    
+
     @RequestMapping(value = "/moveDown")
-    public String moveDown(@RequestParam Integer id) {
-        
+    public String moveDown(@RequestParam Integer id, Principal principal) {
+        if (projectService.isLockedByOtherForBlock(id, principal.getName())) {
+            Block block = blockService.read(id);
+            return "redirect:/scene/show?id=" + block.getScene().getId();
+        }
         Block block = blockService.moveBlockDown(id);
-        
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
-    
+
     @RequestMapping(value = "/moveTo", method = RequestMethod.POST)
-    public String moveTo(@RequestParam Integer id, @RequestParam int position) {
+    public String moveTo(@RequestParam Integer id, @RequestParam int position, Principal principal) {
+        if (projectService.isLockedByOtherForBlock(id, principal.getName())) {
+            Block block = blockService.read(id);
+            return "redirect:/scene/show?id=" + block.getScene().getId();
+        }
         Block block = blockService.moveBlockTo(id, position);
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
@@ -74,7 +89,12 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/editInline", method = RequestMethod.POST)
-    public String saveEditInline(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model) {
+    public String saveEditInline(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
+        if (projectService.isLockedByOtherForBlock(commandModel.getId(), principal.getName())) {
+            BlockViewModel vm = blockService.getBlockViewModel(commandModel.getId());
+            model.addAttribute("block", vm);
+            return "block/showInline";
+        }
         if (bindingResult.hasErrors()) {
             EditBlockViewModel viewModel = blockService.getEditBlockViewModel(commandModel.getId());
             model.addAttribute("viewModel", viewModel);
@@ -108,19 +128,17 @@ public class BlockController {
 
     // Handle Form Submission
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
-    public String saveEdit(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model) {
-
+    public String saveEdit(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
+        if (projectService.isLockedByOtherForBlock(commandModel.getId(), principal.getName())) {
+            return "redirect:/scene/show?id=" + blockService.read(commandModel.getId()).getScene().getId();
+        }
         if (bindingResult.hasErrors()) {
             EditBlockViewModel viewModel = blockService.getEditBlockViewModel(commandModel.getId());
-
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
-
             return "block/edit";
         }
-
         Block block = blockService.saveEditBlockCommandModel(commandModel);
-
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
     
@@ -192,7 +210,10 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/createInline", method = RequestMethod.POST)
-    public String saveCreateInline(@RequestParam Integer sceneId, @RequestParam String content, @RequestParam(required = false) Integer personId, Model model) {
+    public String saveCreateInline(@RequestParam Integer sceneId, @RequestParam String content, @RequestParam(required = false) Integer personId, Model model, Principal principal) {
+        if (projectService.isLockedByOtherForScene(sceneId, principal.getName())) {
+            return "redirect:/scene/show?id=" + sceneId;
+        }
         CreateBlockCommandModel commandModel = new CreateBlockCommandModel();
         commandModel.setSceneId(sceneId);
         commandModel.setContent(content);
@@ -215,7 +236,10 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/createBelowInline", method = RequestMethod.POST)
-    public String saveCreateBelowInline(@RequestParam Integer id, @RequestParam String content, @RequestParam(required = false) Integer personId, Model model) {
+    public String saveCreateBelowInline(@RequestParam Integer id, @RequestParam String content, @RequestParam(required = false) Integer personId, Model model, Principal principal) {
+        if (projectService.isLockedByOtherForBlock(id, principal.getName())) {
+            return "redirect:/scene/show?id=" + blockService.read(id).getScene().getId();
+        }
         CreateBlockBelowCommandModel commandModel = new CreateBlockBelowCommandModel();
         commandModel.setId(id);
         commandModel.setContent(content);

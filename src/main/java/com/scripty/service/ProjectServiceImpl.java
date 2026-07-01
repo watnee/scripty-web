@@ -155,4 +155,49 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.delete(project);
         return project;
     }
+
+    @Override
+    public Project lockProject(Integer id, String username) {
+        Project project = projectRepository.findById(id).orElse(null);
+        project.setLockedBy(username);
+        return projectRepository.save(project);
+    }
+
+    @Override
+    public Project unlockProject(Integer id, String username) {
+        Project project = projectRepository.findById(id).orElse(null);
+        if (username.equals(project.getLockedBy())) {
+            project.setLockedBy(null);
+            projectRepository.save(project);
+        }
+        return project;
+    }
+
+    @Override
+    public boolean isLockedByOther(Integer projectId, String username) {
+        Project project = projectRepository.findById(projectId).orElse(null);
+        return project != null && project.isLocked() && !project.getLockedBy().equals(username);
+    }
+
+    @Override
+    public boolean isLockedByOtherForScene(Integer sceneId, String username) {
+        Project project = projectRepository.findBySceneId(sceneId);
+        return project != null && project.isLocked() && !project.getLockedBy().equals(username);
+    }
+
+    @Override
+    public boolean isLockedByOtherForBlock(Integer blockId, String username) {
+        Block block = blockRepository.findById(blockId).orElse(null);
+        if (block == null) return false;
+        Project project = projectRepository.findBySceneId(block.getScene().getId());
+        return project != null && project.isLocked() && !project.getLockedBy().equals(username);
+    }
+
+    @Override
+    public boolean isLockedByOtherForPerson(Integer personId, String username) {
+        Person person = personRepository.findById(personId).orElse(null);
+        if (person == null) return false;
+        Project project = person.getProject();
+        return project != null && project.isLocked() && !project.getLockedBy().equals(username);
+    }
 }

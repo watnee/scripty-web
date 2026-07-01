@@ -18,6 +18,8 @@ public class EditUserCommandModel {
     @NotBlank(message = "You must supply a value for Last Name.")
     @Size(max = 30, message = "Last Name must be no more than 30 characters in length.")
     private String lastName;
+    @Size(max = 50, message = "Team must be no more than 50 characters in length.")
+    private String team;
     private boolean admin;
 
     public Integer getId() {
@@ -58,6 +60,14 @@ public class EditUserCommandModel {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getTeam() {
+        return team;
+    }
+
+    public void setTeam(String team) {
+        this.team = team;
     }
 
     public boolean isAdmin() {

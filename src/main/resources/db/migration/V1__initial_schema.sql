@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `user` (
 	enabled tinyint(1) NOT NULL,
 	first_name varchar(30) NOT NULL,
 	last_name varchar(30) NOT NULL,
+	team varchar(50) NULL,
 	PRIMARY KEY (id),
 	INDEX idx_user_username (username)
 );
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS authority (
 CREATE TABLE IF NOT EXISTS project (
 	id int NOT NULL AUTO_INCREMENT,
 	title varchar(100) NOT NULL,
+	team varchar(50) NULL,
 	PRIMARY KEY (id)
 );
 

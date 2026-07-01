@@ -13,6 +13,7 @@ public class ProjectViewModel {
     
     private int id;
     private String title;
+    private String team;
 
     public int getId() {
         return id;
@@ -29,5 +30,12 @@ public class ProjectViewModel {
     public void setTitle(String title) {
         this.title = title;
     }
-    
+
+    public String getTeam() {
+        return team;
+    }
+
+    public void setTeam(String team) {
+        this.team = team;
+    }
 }

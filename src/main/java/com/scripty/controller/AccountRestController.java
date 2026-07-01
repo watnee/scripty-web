@@ -3,6 +3,7 @@ package com.scripty.controller;
 import com.scripty.commandmodel.user.createuser.CreateUserCommandModel;
 import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
 import com.scripty.dto.User;
+import com.scripty.viewmodel.user.accountprofile.AccountProfileViewModel;
 import com.scripty.viewmodel.user.userlist.UserListViewModel;
 import com.scripty.service.UserService;
 import java.util.HashMap;
@@ -44,8 +45,23 @@ public class AccountRestController {
         response.put("username", user.getUsername());
         response.put("firstName", user.getFirstName());
         response.put("lastName", user.getLastName());
+        response.put("team", user.getTeam());
         response.put("admin", user.isAdmin());
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
+    public ResponseEntity<?> show(@PathVariable Integer id) {
+        AccountProfileViewModel viewModel = userService.getAccountProfileViewModel(id);
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", viewModel.getId());
+        response.put("username", viewModel.getUsername());
+        response.put("firstName", viewModel.getFirstName());
+        response.put("lastName", viewModel.getLastName());
+        response.put("team", viewModel.getTeam());
+        response.put("admin", viewModel.isAdmin());
+        response.put("enabled", viewModel.isEnabled());
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = "application/json")
@@ -60,6 +76,7 @@ public class AccountRestController {
         response.put("username", user.getUsername());
         response.put("firstName", user.getFirstName());
         response.put("lastName", user.getLastName());
+        response.put("team", user.getTeam());
         response.put("admin", user.isAdmin());
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

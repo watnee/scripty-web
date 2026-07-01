@@ -15,6 +15,7 @@ public class ProjectProfileViewModel {
     
     private int id;
     private String title;
+    private String team;
     private List<SceneViewModel> scenes;
     private List<PersonViewModel> persons;
 
@@ -32,6 +33,14 @@ public class ProjectProfileViewModel {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getTeam() {
+        return team;
+    }
+
+    public void setTeam(String team) {
+        this.team = team;
     }
 
     public List<SceneViewModel> getScenes() {

@@ -282,6 +282,9 @@ public class BlockServiceImpl implements BlockService {
     @Transactional
     public Block toggleBookmark(Integer id) {
         Block block = blockRepository.findById(id).orElse(null);
+        if (block == null) {
+            throw new IllegalArgumentException("Block not found");
+        }
         block.setBookmarked(!block.isBookmarked());
         return blockRepository.save(block);
     }

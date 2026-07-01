@@ -18,6 +18,10 @@
                 <li aria-current="page" style="text-transform: uppercase" th:text="${viewModel.name}"></li>
             </ol>
         </nav>
+        <div class="text-size-control">
+            <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
+            <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
+        </div>
         <h1><span class="scene-name-wrap"><span class="scene-name-display" th:attr="hx-get=@{/scene/editNameInline(id=${viewModel.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; text-transform: uppercase; min-width: 10em; display: inline-block"><th:block th:if="${#strings.isEmpty(viewModel.name) || #strings.isEmpty(viewModel.name.trim())}"><span style="color: #ccc; font-style: italic">click to name scene</span></th:block><th:block th:unless="${#strings.isEmpty(viewModel.name) || #strings.isEmpty(viewModel.name.trim())}" th:text="${viewModel.name}"></th:block></span></span> <small><a th:href="@{/scene/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this scene?') halt">delete</a></small></h1>
         <table id="table-blocks">
             <tr th:each="block,loop : ${viewModel.blocks}" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order}">
@@ -52,6 +56,7 @@
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:src="@{/js/text-size.js}"></script>
     <script th:inline="javascript">
     (function() {
         var table = document.getElementById('table-blocks');

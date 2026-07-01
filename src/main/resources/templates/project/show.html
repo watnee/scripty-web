@@ -17,6 +17,10 @@
                 <li aria-current="page" th:text="${viewModel.title}"></li>
             </ol>
         </nav>
+        <div class="text-size-control">
+            <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
+            <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
+        </div>
         <h1><span th:text="${viewModel.title}"></span> <small><a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/project/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this project?') halt">delete</a></small></h1>
         <p th:if="${viewModel.team != null and !viewModel.team.isEmpty()}">Team: <span th:text="${viewModel.team}"></span></p>
         <div class="f-row" style="gap: 2rem; align-items: start">
@@ -54,6 +58,7 @@
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:src="@{/js/text-size.js}"></script>
     <script th:inline="javascript">
     document.querySelectorAll('.table-blocks-all').forEach(function(table) {
         var dragRow = null;

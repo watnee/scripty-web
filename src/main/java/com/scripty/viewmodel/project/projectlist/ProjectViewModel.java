@@ -13,6 +13,7 @@ public class ProjectViewModel {
     
     private int id;
     private String title;
+    private boolean locked;
 
     public int getId() {
         return id;
@@ -29,5 +30,13 @@ public class ProjectViewModel {
     public void setTitle(String title) {
         this.title = title;
     }
-    
+
+    public boolean isLocked() {
+        return locked;
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+    }
+
 }

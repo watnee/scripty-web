@@ -62,15 +62,27 @@ public class ProjectController {
     
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {
-        
+        Project project = projectService.read(id);
+        if (project.isLocked()) {
+            return "redirect:/project/show?id=" + id;
+        }
         projectService.deleteProject(id);
-        
+
         return "redirect:/project/list";
     }
+
+    @RequestMapping(value = "/toggleLock", method = RequestMethod.POST)
+    public String toggleLock(@RequestParam Integer id) {
+        projectService.toggleLock(id);
+        return "redirect:/project/show?id=" + id;
+    }
     
-    // Show Form
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model) {
+        Project project = projectService.read(id);
+        if (project.isLocked()) {
+            return "redirect:/project/show?id=" + id;
+        }
 
         EditProjectViewModel viewModel = projectService.getEditProjectViewModel(id);
 
@@ -80,9 +92,12 @@ public class ProjectController {
         return "project/edit";
     }
 
-    // Handle Form Submission
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
     public String saveEdit(@Valid @ModelAttribute("commandModel") EditProjectCommandModel commandModel, BindingResult bindingResult, Model model) {
+        Project project = projectService.read(commandModel.getId());
+        if (project.isLocked()) {
+            return "redirect:/project/show?id=" + commandModel.getId();
+        }
 
         if (bindingResult.hasErrors()) {
             EditProjectViewModel viewModel = projectService.getEditProjectViewModel(commandModel.getId());
@@ -93,7 +108,7 @@ public class ProjectController {
             return "project/edit";
         }
 
-        Project project = projectService.saveEditProjectCommandModel(commandModel);
+        project = projectService.saveEditProjectCommandModel(commandModel);
 
         return "redirect:/project/show?id=" + project.getId();
     }

@@ -24,4 +24,6 @@ public interface ProjectService {
     Project saveEditProjectCommandModel(EditProjectCommandModel editProjectCommandModel);
 
     Project deleteProject(Integer id);
+
+    Project toggleLock(Integer id);
 }

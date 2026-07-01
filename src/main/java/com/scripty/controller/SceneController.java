@@ -14,6 +14,8 @@ import com.scripty.viewmodel.scene.createscenebelow.CreateSceneBelowViewModel;
 import com.scripty.viewmodel.scene.editscene.EditSceneViewModel;
 import com.scripty.viewmodel.scene.allscenes.AllScenesViewModel;
 import com.scripty.viewmodel.scene.sceneprofile.SceneProfileViewModel;
+import com.scripty.dto.Project;
+import com.scripty.service.ProjectService;
 import com.scripty.service.SceneService;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
@@ -35,6 +37,9 @@ public class SceneController {
     
     @Autowired
     SceneService sceneService;
+
+    @Autowired
+    ProjectService projectService;
     
     @RequestMapping(value = "/show")
     public String show(@RequestParam Integer id, Model model) {
@@ -58,25 +63,34 @@ public class SceneController {
     
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {
-        
-        Scene scene = sceneService.deleteScene(id);
-        
+        Scene scene = sceneService.read(id);
+        Project project = projectService.getProjectByScene(scene);
+        if (project.isLocked()) {
+            return "redirect:/project/show?id=" + project.getId();
+        }
+        scene = sceneService.deleteScene(id);
         return "redirect:/project/show?id=" + scene.getProject().getId();
     }
-    
+
     @RequestMapping(value = "/moveUp")
     public String moveUp(@RequestParam Integer id) {
-        
-        Scene scene = sceneService.moveSceneUp(id);
-        
+        Scene scene = sceneService.read(id);
+        Project project = projectService.getProjectByScene(scene);
+        if (project.isLocked()) {
+            return "redirect:/project/show?id=" + project.getId();
+        }
+        scene = sceneService.moveSceneUp(id);
         return "redirect:/project/show?id=" + scene.getProject().getId();
     }
-    
+
     @RequestMapping(value = "/moveDown")
     public String moveDown(@RequestParam Integer id) {
-        
-        Scene scene = sceneService.moveSceneDown(id);
-        
+        Scene scene = sceneService.read(id);
+        Project project = projectService.getProjectByScene(scene);
+        if (project.isLocked()) {
+            return "redirect:/project/show?id=" + project.getId();
+        }
+        scene = sceneService.moveSceneDown(id);
         return "redirect:/project/show?id=" + scene.getProject().getId();
     }
     
@@ -92,9 +106,12 @@ public class SceneController {
         return "scene/edit";
     }
 
-    // Handle Form Submission
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
     public String saveEdit(@Valid @ModelAttribute("commandModel") EditSceneCommandModel commandModel, BindingResult bindingResult, Model model) {
+        Project project = projectService.read(commandModel.getProjectId());
+        if (project.isLocked()) {
+            return "redirect:/project/show?id=" + project.getId();
+        }
 
         if (bindingResult.hasErrors()) {
             EditSceneViewModel viewModel = sceneService.getEditSceneViewModel(commandModel.getId());
@@ -122,9 +139,12 @@ public class SceneController {
         return "scene/create";
     }
 
-    // Handle Form Submission
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public String saveCreate(@Valid @ModelAttribute("commandModel") CreateSceneCommandModel commandModel, BindingResult bindingResult, Model model) {
+        Project project = projectService.read(commandModel.getProjectId());
+        if (project.isLocked()) {
+            return "redirect:/project/show?id=" + project.getId();
+        }
 
         if (bindingResult.hasErrors()) {
             CreateSceneViewModel viewModel = sceneService.getCreateSceneViewModel(commandModel.getProjectId());
@@ -226,6 +246,10 @@ public class SceneController {
 
     @RequestMapping(value = "/createAndReturn", method = RequestMethod.POST)
     public String createAndReturn(@RequestParam Integer projectId) {
+        Project project = projectService.read(projectId);
+        if (project.isLocked()) {
+            return "redirect:/project/show?id=" + projectId;
+        }
         CreateSceneCommandModel commandModel = new CreateSceneCommandModel();
         commandModel.setProjectId(projectId);
         commandModel.setName(" ");

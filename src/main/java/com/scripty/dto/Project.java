@@ -18,6 +18,9 @@ public class Project {
     @Column(nullable = false, length = 100)
     private String title;
 
+    @Column(nullable = false)
+    private boolean locked;
+
     public Integer getId() {
         return id;
     }
@@ -32,5 +35,13 @@ public class Project {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public boolean isLocked() {
+        return locked;
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
     }
 }

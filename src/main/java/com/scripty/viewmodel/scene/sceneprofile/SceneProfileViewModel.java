@@ -22,6 +22,7 @@ public class SceneProfileViewModel {
     private int nextSceneId;
     private String nextSceneName;
     private List<BlockViewModel> blocks;
+    private boolean projectLocked;
 
     public int getId() {
         return id;
@@ -94,5 +95,13 @@ public class SceneProfileViewModel {
     public void setBlocks(List<BlockViewModel> blocks) {
         this.blocks = blocks;
     }
-    
+
+    public boolean isProjectLocked() {
+        return projectLocked;
+    }
+
+    public void setProjectLocked(boolean projectLocked) {
+        this.projectLocked = projectLocked;
+    }
+
 }

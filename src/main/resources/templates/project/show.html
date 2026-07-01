@@ -17,7 +17,20 @@
                 <li aria-current="page" th:text="${viewModel.title}"></li>
             </ol>
         </nav>
-        <h1><span th:text="${viewModel.title}"></span> <small><a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/project/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this project?') halt">delete</a></small></h1>
+        <h1>
+            <span th:text="${viewModel.title}"></span>
+            <span th:if="${viewModel.locked}" style="color: red; font-size: 0.6em">&#128274; Locked</span>
+            <small>
+                <form th:action="@{/project/toggleLock}" method="post" style="display:inline">
+                    <input type="hidden" name="id" th:value="${viewModel.id}" />
+                    <button type="submit" role="button" th:text="${viewModel.locked} ? 'Unlock' : 'Lock'"></button>
+                </form>
+                <th:block th:if="${!viewModel.locked}">
+                    <a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a>
+                    <a th:href="@{/project/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this project?') halt">delete</a>
+                </th:block>
+            </small>
+        </h1>
         <div class="f-row" style="gap: 2rem; align-items: start">
             <div style="flex: 3">
                 <h2>Scenes <small><a th:href="@{/scene/all(projectId=${viewModel.id})}" role="button">View All</a></small></h2>
@@ -26,22 +39,28 @@
                         <a th:href="@{/scene/show(id=${scene.id})}" style="color: inherit; text-decoration: none" th:text="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())} ? 'Untitled Scene' : ${scene.name}"></a>
                     </h3>
                     <table class="table-blocks-all" th:id="'table-blocks-' + ${scene.id}">
-                        <tr th:each="block : ${scene.blocks}" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order}">
-                            <td class="block-left-controls">
+                        <tr th:each="block : ${scene.blocks}" th:draggable="${!viewModel.locked}" th:attr="data-block-id=${block.id},data-block-order=${block.order}">
+                            <td class="block-left-controls" th:if="${!viewModel.locked}">
                                 <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
                                 <span class="drag-handle">&#8942;&#8942;</span>
                             </td>
-                            <td class="block-content" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML" style="cursor: pointer">
+                            <td class="block-content" th:if="${!viewModel.locked}" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML" style="cursor: pointer">
+                                <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
+                                    <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
+                                </p>
+                                <span th:text="${block.content}"></span>
+                            </td>
+                            <td class="block-content" th:if="${viewModel.locked}">
                                 <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
                                     <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
                                 </p>
                                 <span th:text="${block.content}"></span>
                             </td>
                         </tr>
-                        <tr th:attr="hx-get=@{/block/createInline(sceneId=${scene.id})}" hx-trigger="load" hx-swap="outerHTML"></tr>
+                        <tr th:if="${!viewModel.locked}" th:attr="hx-get=@{/block/createInline(sceneId=${scene.id})}" hx-trigger="load" hx-swap="outerHTML"></tr>
                     </table>
                 </th:block>
-                <form th:action="@{/scene/createAndReturn}" method="POST" hx-boost="false" style="display:inline">
+                <form th:if="${!viewModel.locked}" th:action="@{/scene/createAndReturn}" method="POST" hx-boost="false" style="display:inline">
                     <input type="hidden" name="projectId" th:value="${viewModel.id}" />
                     <button type="submit" role="button">Create New Scene</button>
                 </form>

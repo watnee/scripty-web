@@ -1,21 +1,19 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.scripty.controller;
 
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.dto.Project;
+import com.scripty.dto.Scene;
+import com.scripty.dto.User;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.commandmodel.scene.createscene.CreateSceneCommandModel;
-import com.scripty.dto.Scene;
 import com.scripty.service.ProjectService;
 import com.scripty.service.SceneService;
+import com.scripty.service.UserService;
+import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -26,30 +24,37 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- *
- * @author chris
- */
 @Controller
 @RequestMapping(value = "/project")
 public class ProjectController {
-    
+
     @Autowired
     ProjectService projectService;
 
     @Autowired
     SceneService sceneService;
-    
-    @RequestMapping(value = "/list")
-    public String list(Model model) {
 
-        ProjectListViewModel viewModel = projectService.getProjectListViewModel();
+    @Autowired
+    UserService userService;
+
+    @RequestMapping(value = "/list")
+    public String list(Model model, Principal principal) {
+
+        String userTeam = null;
+        if (principal != null) {
+            User currentUser = userService.readByUsername(principal.getName());
+            if (currentUser != null) {
+                userTeam = currentUser.getTeam();
+            }
+        }
+
+        ProjectListViewModel viewModel = projectService.getProjectListViewModel(userTeam);
 
         model.addAttribute("viewModel", viewModel);
 
         return "project/list";
     }
-    
+
     @RequestMapping(value = "/show")
     public String show(@RequestParam Integer id, Model model) {
 
@@ -59,16 +64,15 @@ public class ProjectController {
 
         return "project/show";
     }
-    
+
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {
-        
+
         projectService.deleteProject(id);
-        
+
         return "redirect:/project/list";
     }
-    
-    // Show Form
+
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model) {
 
@@ -80,7 +84,6 @@ public class ProjectController {
         return "project/edit";
     }
 
-    // Handle Form Submission
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
     public String saveEdit(@Valid @ModelAttribute("commandModel") EditProjectCommandModel commandModel, BindingResult bindingResult, Model model) {
 
@@ -97,8 +100,7 @@ public class ProjectController {
 
         return "redirect:/project/show?id=" + project.getId();
     }
-    
-    // Show Form
+
     @RequestMapping(value = "/create")
     public String create(Model model) {
 
@@ -110,7 +112,6 @@ public class ProjectController {
         return "project/create";
     }
 
-    // Handle Form Submission
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public String saveCreate(@Valid @ModelAttribute("commandModel") CreateProjectCommandModel commandModel, BindingResult bindingResult, Model model) {
 

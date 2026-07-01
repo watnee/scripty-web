@@ -61,6 +61,34 @@ public class ProjectServiceImpl implements ProjectService {
             ProjectViewModel pvm = new ProjectViewModel();
             pvm.setId(project.getId());
             pvm.setTitle(project.getTitle());
+            pvm.setTeam(project.getTeam());
+            projectViewModels.add(pvm);
+        }
+        vm.setProjects(projectViewModels);
+        return vm;
+    }
+
+    @Override
+    public ProjectListViewModel getProjectListViewModel(String userTeam) {
+        ProjectListViewModel vm = new ProjectListViewModel();
+        List<Project> projects = projectRepository.findAllByOrderByTitleAsc();
+
+        if (userTeam != null && !userTeam.isEmpty()) {
+            List<Project> filtered = new ArrayList<>();
+            for (Project project : projects) {
+                if (project.getTeam() == null || project.getTeam().isEmpty() || project.getTeam().equals(userTeam)) {
+                    filtered.add(project);
+                }
+            }
+            projects = filtered;
+        }
+
+        List<ProjectViewModel> projectViewModels = new ArrayList<>();
+        for (Project project : projects) {
+            ProjectViewModel pvm = new ProjectViewModel();
+            pvm.setId(project.getId());
+            pvm.setTitle(project.getTitle());
+            pvm.setTeam(project.getTeam());
             projectViewModels.add(pvm);
         }
         vm.setProjects(projectViewModels);
@@ -76,6 +104,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         vm.setId(project.getId());
         vm.setTitle(project.getTitle());
+        vm.setTeam(project.getTeam());
 
         List<SceneViewModel> sceneViewModels = new ArrayList<>();
         for (Scene scene : scenes) {
@@ -131,6 +160,7 @@ public class ProjectServiceImpl implements ProjectService {
         EditProjectCommandModel commandModel = new EditProjectCommandModel();
         commandModel.setId(project.getId());
         commandModel.setTitle(project.getTitle());
+        commandModel.setTeam(project.getTeam());
         vm.setEditProjectCommandModel(commandModel);
         return vm;
     }
@@ -139,6 +169,7 @@ public class ProjectServiceImpl implements ProjectService {
     public Project saveCreateProjectCommandModel(CreateProjectCommandModel cmd) {
         Project project = new Project();
         project.setTitle(cmd.getTitle());
+        project.setTeam(cmd.getTeam());
         return projectRepository.save(project);
     }
 
@@ -146,6 +177,7 @@ public class ProjectServiceImpl implements ProjectService {
     public Project saveEditProjectCommandModel(EditProjectCommandModel cmd) {
         Project project = projectRepository.findById(cmd.getId()).orElse(null);
         project.setTitle(cmd.getTitle());
+        project.setTeam(cmd.getTeam());
         projectRepository.save(project);
         return project;
     }

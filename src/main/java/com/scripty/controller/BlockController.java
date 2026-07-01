@@ -65,6 +65,12 @@ public class BlockController {
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
 
+    @RequestMapping(value = "/toggleBookmark")
+    public String toggleBookmark(@RequestParam Integer id) {
+        Block block = blockService.toggleBookmark(id);
+        return "redirect:/scene/show?id=" + block.getScene().getId();
+    }
+
     @RequestMapping(value = "/editInline")
     public String editInline(@RequestParam Integer id, Model model) {
         EditBlockViewModel viewModel = blockService.getEditBlockViewModel(id);

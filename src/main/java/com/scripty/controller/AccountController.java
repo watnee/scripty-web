@@ -3,6 +3,7 @@ package com.scripty.controller;
 import com.scripty.commandmodel.user.createuser.CreateUserCommandModel;
 import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
 import com.scripty.dto.User;
+import com.scripty.viewmodel.user.accountprofile.AccountProfileViewModel;
 import com.scripty.viewmodel.user.createuser.CreateUserViewModel;
 import com.scripty.viewmodel.user.edituser.EditUserViewModel;
 import com.scripty.viewmodel.user.userlist.UserListViewModel;
@@ -32,6 +33,16 @@ public class AccountController {
         model.addAttribute("viewModel", viewModel);
 
         return "account/list";
+    }
+
+    @RequestMapping(value = "/show")
+    public String show(@RequestParam Integer id, Model model) {
+
+        AccountProfileViewModel viewModel = userService.getAccountProfileViewModel(id);
+
+        model.addAttribute("viewModel", viewModel);
+
+        return "account/show";
     }
 
     @RequestMapping(value = "/delete")

@@ -17,6 +17,7 @@ public class Project {
 
     @Column(nullable = false, length = 100)
     private String title;
+    private String team;
 
     public Integer getId() {
         return id;
@@ -32,5 +33,13 @@ public class Project {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getTeam() {
+        return team;
+    }
+
+    public void setTeam(String team) {
+        this.team = team;
     }
 }

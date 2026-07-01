@@ -111,6 +111,20 @@ h1:hover > small a[role="button"],
     margin-left: 22px;
 }
 
+.text-size-control {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+}
+
+.text-size-control button {
+    font-size: 0.85rem;
+    padding: 0.15em 0.5em;
+    cursor: pointer;
+}
+
 .scene-pager {
     display: flex;
     justify-content: space-between;

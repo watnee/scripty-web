@@ -1,6 +1,6 @@
-package com.scripty.viewmodel.user.userlist;
+package com.scripty.viewmodel.user.accountprofile;
 
-public class UserViewModel {
+public class AccountProfileViewModel {
 
     private int id;
     private String username;
@@ -65,5 +65,4 @@ public class UserViewModel {
     public void setAdmin(boolean admin) {
         this.admin = admin;
     }
-
 }

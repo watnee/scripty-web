@@ -31,6 +31,9 @@ public class User {
     @Column(name = "last_name", nullable = false, length = 30)
     private String lastName;
 
+    @Column(length = 50)
+    private String team;
+
     @Transient
     private boolean admin;
 
@@ -80,6 +83,14 @@ public class User {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getTeam() {
+        return team;
+    }
+
+    public void setTeam(String team) {
+        this.team = team;
     }
 
     public boolean isAdmin() {

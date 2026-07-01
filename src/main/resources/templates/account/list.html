@@ -22,14 +22,16 @@
                 <tr>
                     <th>Username</th>
                     <th>Name</th>
+                    <th>Team</th>
                     <th>Role</th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
                 <tr th:each="user : ${viewModel.users}">
-                    <td th:text="${user.username}"></td>
+                    <td><a th:href="@{/account/show(id=${user.id})}" th:text="${user.username}"></a></td>
                     <td th:text="${user.firstName} + ' ' + ${user.lastName}"></td>
+                    <td th:text="${user.team}"></td>
                     <td th:text="${user.admin} ? 'Admin' : 'User'"></td>
                     <td>
                         <a th:href="@{/account/edit(id=${user.id})}" role="button">edit</a>

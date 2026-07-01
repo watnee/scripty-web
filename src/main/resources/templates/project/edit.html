@@ -19,6 +19,11 @@
                 <input type="text" spellcheck="true" th:field="*{title}" />
                 <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></span>
             </label>
+            <label>
+                Team
+                <input type="text" th:field="*{team}" />
+                <span th:if="${#fields.hasErrors('team')}" th:errors="*{team}"></span>
+            </label>
             <p>
                 <a th:href="@{/project/show(id=${viewModel.id})}" role="button">Cancel</a>
                 <button type="submit">Submit</button>

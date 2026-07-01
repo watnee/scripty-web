@@ -15,6 +15,7 @@ public interface ProjectService {
     Project getProjectByScene(Scene scene);
 
     ProjectListViewModel getProjectListViewModel();
+    ProjectListViewModel getProjectListViewModel(String userTeam);
     ProjectProfileViewModel getProjectProfileViewModel(Integer id);
 
     CreateProjectViewModel getCreateProjectViewModel();

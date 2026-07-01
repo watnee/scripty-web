@@ -90,6 +90,7 @@ public class SceneServiceImpl implements SceneService {
             bvm.setOrder(block.getOrder());
             bvm.setContent(block.getContent());
             bvm.setFont(block.getFont());
+            bvm.setBookmarked(block.isBookmarked());
             if (block.getPerson() != null) {
                 Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
                 if (person != null) {

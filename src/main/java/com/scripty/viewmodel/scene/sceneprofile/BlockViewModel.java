@@ -17,6 +17,7 @@ public class BlockViewModel {
     private int personId;
     private String personName;
     private String font;
+    private boolean bookmarked;
 
     public int getId() {
         return id;
@@ -64,6 +65,14 @@ public class BlockViewModel {
 
     public void setFont(String font) {
         this.font = font;
+    }
+
+    public boolean isBookmarked() {
+        return bookmarked;
+    }
+
+    public void setBookmarked(boolean bookmarked) {
+        this.bookmarked = bookmarked;
     }
 
 }

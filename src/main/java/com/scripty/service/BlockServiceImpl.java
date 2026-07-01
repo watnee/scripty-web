@@ -125,6 +125,7 @@ public class BlockServiceImpl implements BlockService {
         vm.setOrder(block.getOrder());
         vm.setContent(block.getContent());
         vm.setFont(normalizeFont(block.getFont()));
+        vm.setBookmarked(block.isBookmarked());
         if (block.getPerson() != null) {
             Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
             if (person != null) {
@@ -158,6 +159,7 @@ public class BlockServiceImpl implements BlockService {
         block.setContent(content);
         if (person != null) block.setPerson(person);
         block.setScene(scene);
+        block.setBookmarked(false);
 
         int order = blockRepository.countBySceneId(scene.getId()) + 1;
         block.setOrder(order);
@@ -188,6 +190,7 @@ public class BlockServiceImpl implements BlockService {
         block.setContent(content);
         if (person != null) block.setPerson(person);
         block.setScene(scene);
+        block.setBookmarked(false);
 
         int newOrder = existingBlock.getOrder() + 1;
         blockRepository.incrementOrdersAbove(existingBlock.getOrder(), scene.getId());
@@ -282,6 +285,17 @@ public class BlockServiceImpl implements BlockService {
         block.setOrder(newOrder);
         blockRepository.save(block);
         return block;
+    }
+
+    @Override
+    @Transactional
+    public Block toggleBookmark(Integer id) {
+        Block block = blockRepository.findById(id).orElse(null);
+        if (block == null) {
+            throw new IllegalArgumentException("Block not found");
+        }
+        block.setBookmarked(!block.isBookmarked());
+        return blockRepository.save(block);
     }
 
     private List<CreatePersonViewModel> translateCreatePersonViewModel(List<Person> persons) {

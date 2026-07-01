@@ -27,6 +27,9 @@ public class Block {
     @Column(name = "font")
     private String font;
 
+    @Column(nullable = false)
+    private boolean bookmarked;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id")
     private Person person;
@@ -81,5 +84,13 @@ public class Block {
 
     public void setScene(Scene scene) {
         this.scene = scene;
+    }
+
+    public boolean isBookmarked() {
+        return bookmarked;
+    }
+
+    public void setBookmarked(boolean bookmarked) {
+        this.bookmarked = bookmarked;
     }
 }

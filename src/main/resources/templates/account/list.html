@@ -30,7 +30,7 @@
                 <tr th:each="user : ${viewModel.users}">
                     <td th:text="${user.username}"></td>
                     <td th:text="${user.firstName} + ' ' + ${user.lastName}"></td>
-                    <td th:text="${user.admin} ? 'Admin' : (${user.director} ? 'Director' : 'User')"></td>
+                    <td th:text="${user.admin and user.director} ? 'Admin, Director' : (${user.admin} ? 'Admin' : (${user.director} ? 'Director' : 'User'))"></td>
                     <td>
                         <a th:href="@{/account/edit(id=${user.id})}" role="button">edit</a>
                         <a th:href="@{/account/delete(id=${user.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this account?') halt">delete</a>

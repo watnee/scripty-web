@@ -16,6 +16,7 @@ public class BlockViewModel {
     private String content;
     private int personId;
     private String personName;
+    private boolean bookmarked;
 
     public int getId() {
         return id;
@@ -55,6 +56,14 @@ public class BlockViewModel {
 
     public void setPersonName(String personName) {
         this.personName = personName;
+    }
+
+    public boolean isBookmarked() {
+        return bookmarked;
+    }
+
+    public void setBookmarked(boolean bookmarked) {
+        this.bookmarked = bookmarked;
     }
 
 }

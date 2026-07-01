@@ -10,6 +10,7 @@
     </td>
     <td>
         <span class="nowrap">
+            <a th:href="@{/block/toggleBookmark(id=${block.id})}" th:title="${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:attr="aria-label=${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:text="${block.bookmarked} ? '★' : '☆'"></a>
             <a th:href="@{/block/edit(id=${block.id})}" role="button">edit</a>
             <a th:href="@{/block/delete(id=${block.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this block?') halt">delete</a>
             <a th:href="@{/block/moveDown(id=${block.id})}" class="move-down" role="button">&#8595;</a>

@@ -42,6 +42,9 @@
                                 </p>
                                 <span th:text="${block.content}"></span>
                             </td>
+                            <td>
+                                <a th:href="@{/block/toggleBookmark(id=${block.id})}" th:title="${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:attr="aria-label=${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:text="${block.bookmarked} ? '★' : '☆'"></a>
+                            </td>
                         </tr>
                         <tr th:attr="hx-get=@{/block/createInline(sceneId=${scene.id})}" hx-trigger="load" hx-swap="outerHTML"></tr>
                     </table>

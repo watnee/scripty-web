@@ -59,6 +59,16 @@ public class ProjectController {
 
         return "project/show";
     }
+
+    @RequestMapping(value = "/print")
+    public String print(@RequestParam Integer id, Model model) {
+
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+
+        model.addAttribute("viewModel", viewModel);
+
+        return "project/print";
+    }
     
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {

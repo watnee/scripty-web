@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${viewModel.title} + ' - Print'">Project - Print</title>
+    <style>
+        @page {
+            margin: 1in;
+        }
+        body {
+            font-family: "Courier New", Courier, monospace;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #000;
+            background: #fff;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 1in;
+        }
+        .print-controls {
+            text-align: center;
+            margin-bottom: 2em;
+        }
+        .print-controls button {
+            font-size: 1em;
+            padding: 0.5em 2em;
+            cursor: pointer;
+            margin-right: 0.5em;
+        }
+        h1.title {
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 14pt;
+            margin-bottom: 2em;
+        }
+        .scene-heading {
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-top: 2em;
+            margin-bottom: 1em;
+        }
+        .block {
+            margin-bottom: 1em;
+        }
+        .character-name {
+            text-align: center;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+        .dialogue {
+            margin-left: 1.5in;
+            margin-right: 1.5in;
+        }
+        .action {
+            margin-left: 0;
+            margin-right: 0;
+        }
+        @media print {
+            .print-controls {
+                display: none;
+            }
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-controls">
+        <button onclick="window.print()">Print</button>
+        <button onclick="window.close()">Close</button>
+    </div>
+    <h1 class="title" th:text="${viewModel.title}"></h1>
+    <th:block th:each="scene : ${viewModel.scenes}">
+        <p class="scene-heading" th:text="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())} ? 'UNTITLED SCENE' : ${scene.name}"></p>
+        <th:block th:each="block : ${scene.blocks}">
+            <div class="block">
+                <p th:if="${not #strings.isEmpty(block.personName)}" class="character-name" th:text="${block.personName}"></p>
+                <p th:classappend="${#strings.isEmpty(block.personName)} ? 'action' : 'dialogue'" th:text="${block.content}"></p>
+            </div>
+        </th:block>
+    </th:block>
+</body>
+</html>

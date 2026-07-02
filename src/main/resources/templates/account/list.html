@@ -35,7 +35,8 @@
                     <td><a th:href="@{/account/show(id=${user.id})}" th:text="${user.username}"></a></td>
                     <td th:text="${user.firstName} + ' ' + ${user.lastName}"></td>
                     <td th:text="${user.team}"></td>
-                    <td th:text="${user.admin} ? (${user.director} ? (${user.producer} ? 'Admin, Director, Producer' : 'Admin, Director') : (${user.producer} ? 'Admin, Producer' : 'Admin')) : (${user.director} ? (${user.producer} ? 'Director, Producer' : 'Director') : (${user.producer} ? 'Producer' : 'User'))"></td>
+                    <td th:with="roles=${ {user.admin ? 'Admin' : null, user.director ? 'Director' : null, user.producer ? 'Producer' : null, user.writer ? 'Writer' : null}.?[#this != null] }"
+                        th:text="${#lists.isEmpty(roles)} ? 'User' : ${#strings.listJoin(roles, ', ')}"></td>
                     <td>
                         <a th:href="@{/account/edit(id=${user.id})}" role="button">edit</a>
                         <a th:href="@{/account/delete(id=${user.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this account?') halt">delete</a>

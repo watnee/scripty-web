@@ -49,6 +49,9 @@ public class UserServiceImpl implements UserService {
         if (user.isProducer()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_PRODUCER"));
         }
+        if (user.isWriter()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_WRITER"));
+        }
         return saved;
     }
 
@@ -60,6 +63,7 @@ public class UserServiceImpl implements UserService {
             user.setAdmin(authorities.stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())));
             user.setDirector(authorities.stream().anyMatch(a -> "ROLE_DIRECTOR".equals(a.getAuthority())));
             user.setProducer(authorities.stream().anyMatch(a -> "ROLE_PRODUCER".equals(a.getAuthority())));
+            user.setWriter(authorities.stream().anyMatch(a -> "ROLE_WRITER".equals(a.getAuthority())));
         }
         return user;
     }
@@ -72,6 +76,7 @@ public class UserServiceImpl implements UserService {
             user.setAdmin(authorities.stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())));
             user.setDirector(authorities.stream().anyMatch(a -> "ROLE_DIRECTOR".equals(a.getAuthority())));
             user.setProducer(authorities.stream().anyMatch(a -> "ROLE_PRODUCER".equals(a.getAuthority())));
+            user.setWriter(authorities.stream().anyMatch(a -> "ROLE_WRITER".equals(a.getAuthority())));
         }
         return user;
     }
@@ -101,6 +106,9 @@ public class UserServiceImpl implements UserService {
         if (user.isProducer()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_PRODUCER"));
         }
+        if (user.isWriter()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_WRITER"));
+        }
     }
 
     @Override
@@ -118,6 +126,7 @@ public class UserServiceImpl implements UserService {
             user.setAdmin(authorities.stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())));
             user.setDirector(authorities.stream().anyMatch(a -> "ROLE_DIRECTOR".equals(a.getAuthority())));
             user.setProducer(authorities.stream().anyMatch(a -> "ROLE_PRODUCER".equals(a.getAuthority())));
+            user.setWriter(authorities.stream().anyMatch(a -> "ROLE_WRITER".equals(a.getAuthority())));
         }
         return users;
     }
@@ -138,6 +147,7 @@ public class UserServiceImpl implements UserService {
             uvm.setAdmin(user.isAdmin());
             uvm.setDirector(user.isDirector());
             uvm.setProducer(user.isProducer());
+            uvm.setWriter(user.isWriter());
             userViewModels.add(uvm);
         }
         vm.setUsers(userViewModels);
@@ -165,6 +175,7 @@ public class UserServiceImpl implements UserService {
         commandModel.setAdmin(user.isAdmin());
         commandModel.setDirector(user.isDirector());
         commandModel.setProducer(user.isProducer());
+        commandModel.setWriter(user.isWriter());
         vm.setEditUserCommandModel(commandModel);
         return vm;
     }
@@ -181,6 +192,7 @@ public class UserServiceImpl implements UserService {
         user.setAdmin(cmd.isAdmin());
         user.setDirector(cmd.isDirector());
         user.setProducer(cmd.isProducer());
+        user.setWriter(cmd.isWriter());
         return create(user);
     }
 
@@ -195,6 +207,7 @@ public class UserServiceImpl implements UserService {
         user.setAdmin(cmd.isAdmin());
         user.setDirector(cmd.isDirector());
         user.setProducer(cmd.isProducer());
+        user.setWriter(cmd.isWriter());
         update(user);
         return user;
     }

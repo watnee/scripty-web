@@ -22,6 +22,7 @@ public class CreateUserCommandModel {
     private boolean admin;
     private boolean director;
     private boolean producer;
+    private boolean writer;
 
     public String getUsername() {
         return username;
@@ -85,5 +86,13 @@ public class CreateUserCommandModel {
 
     public void setProducer(boolean producer) {
         this.producer = producer;
+    }
+
+    public boolean isWriter() {
+        return writer;
+    }
+
+    public void setWriter(boolean writer) {
+        this.writer = writer;
     }
 }

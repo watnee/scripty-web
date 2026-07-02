@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#111111">
@@ -22,7 +22,7 @@
             </ol>
         </nav>
         <h1>Version History</h1>
-        <form th:action="@{/project/version/create}" method="POST" hx-boost="false" style="margin-bottom: 2rem; display: flex; gap: 0.5rem; align-items: end">
+        <form sec:authorize="!hasRole('WRITER')" th:action="@{/project/version/create}" method="POST" hx-boost="false" style="margin-bottom: 2rem; display: flex; gap: 0.5rem; align-items: end">
             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
             <label>
                 Label
@@ -51,7 +51,7 @@
                     <td th:text="${version.sceneCount}"></td>
                     <td th:text="${version.blockCount}"></td>
                     <td th:text="${version.characterCount}"></td>
-                    <td class="nowrap">
+                    <td class="nowrap" sec:authorize="!hasRole('WRITER')">
                         <form th:action="@{/project/version/restore}" method="POST" hx-boost="false" style="display: inline">
                             <input type="hidden" name="id" th:value="${version.id}" />
                             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />

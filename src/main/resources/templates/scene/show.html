@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#111111">
@@ -64,7 +64,7 @@
         </table>
         <p>
             <a id="create-scene-btn" th:attr="hx-get=@{/scene/createBelowInline(id=${viewModel.id})}" hx-target="#create-scene-btn" hx-swap="afterend" role="button" _="on htmx:afterSwap hide me">Create New Scene</a>
-            <a th:href="@{/character/create(projectId=${viewModel.projectId})}" role="button">Create New Character</a>
+            <a sec:authorize="!hasRole('WRITER')" th:href="@{/character/create(projectId=${viewModel.projectId})}" role="button">Create New Character</a>
         </p>
         <nav aria-label="Scene navigation" class="scene-pager">
             <a th:if="${not #strings.isEmpty(viewModel.previousSceneName)}" th:href="@{/scene/show(id=${viewModel.previousSceneId})}" th:title="${viewModel.previousSceneName}">&larr; Previous Scene</a>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#111111">
@@ -25,7 +25,7 @@
                 <td><a th:href="@{/actor/show(id=${actor.id})}" th:text="${actor.first} + ' ' + ${actor.last}"></a></td>
             </tr>
         </table>
-        <p><a th:href="@{/actor/create}" role="button">Create New Actor</a></p>
+        <p sec:authorize="!hasRole('WRITER')"><a th:href="@{/actor/create}" role="button">Create New Actor</a></p>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>

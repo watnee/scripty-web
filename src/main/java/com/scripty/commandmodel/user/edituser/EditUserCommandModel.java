@@ -23,6 +23,7 @@ public class EditUserCommandModel {
     private boolean admin;
     private boolean director;
     private boolean producer;
+    private boolean writer;
 
     public Integer getId() {
         return id;
@@ -94,5 +95,13 @@ public class EditUserCommandModel {
 
     public void setProducer(boolean producer) {
         this.producer = producer;
+    }
+
+    public boolean isWriter() {
+        return writer;
+    }
+
+    public void setWriter(boolean writer) {
+        this.writer = writer;
     }
 }

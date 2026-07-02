@@ -41,6 +41,8 @@ public class User {
     private boolean director;
     @Transient
     private boolean producer;
+    @Transient
+    private boolean writer;
 
     public Integer getId() {
         return id;
@@ -120,5 +122,13 @@ public class User {
 
     public void setProducer(boolean producer) {
         this.producer = producer;
+    }
+
+    public boolean isWriter() {
+        return writer;
+    }
+
+    public void setWriter(boolean writer) {
+        this.writer = writer;
     }
 }

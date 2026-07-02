@@ -6,6 +6,7 @@
 package com.scripty.viewmodel.project.editproject;
 
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
+import java.util.List;
 
 /**
  *
@@ -17,6 +18,7 @@ public class EditProjectViewModel {
     
     // Specifically to handle redisplaying when validation errors happen
     private EditProjectCommandModel editProjectCommandModel;
+    private List<String> teams;
 
     public EditProjectCommandModel getEditProjectCommandModel() {
         return editProjectCommandModel;
@@ -33,5 +35,12 @@ public class EditProjectViewModel {
     public void setId(int id) {
         this.id = id;
     }
-    
+
+    public List<String> getTeams() {
+        return teams;
+    }
+
+    public void setTeams(List<String> teams) {
+        this.teams = teams;
+    }
 }

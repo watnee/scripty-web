@@ -10,6 +10,8 @@ import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.SceneRepository;
+import com.scripty.repository.TeamRepository;
+import com.scripty.dto.Team;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
@@ -30,16 +32,19 @@ public class ProjectServiceImpl implements ProjectService {
     private final SceneRepository sceneRepository;
     private final PersonRepository personRepository;
     private final BlockRepository blockRepository;
+    private final TeamRepository teamRepository;
 
     @Autowired
     public ProjectServiceImpl(ProjectRepository projectRepository,
                               SceneRepository sceneRepository,
                               PersonRepository personRepository,
-                              BlockRepository blockRepository) {
+                              BlockRepository blockRepository,
+                              TeamRepository teamRepository) {
         this.projectRepository = projectRepository;
         this.sceneRepository = sceneRepository;
         this.personRepository = personRepository;
         this.blockRepository = blockRepository;
+        this.teamRepository = teamRepository;
     }
 
     @Override
@@ -148,6 +153,14 @@ public class ProjectServiceImpl implements ProjectService {
     public CreateProjectViewModel getCreateProjectViewModel() {
         CreateProjectViewModel vm = new CreateProjectViewModel();
         vm.setCreateProjectCommandModel(new CreateProjectCommandModel());
+        
+        List<Team> teams = teamRepository.findAllByOrderByNameAsc();
+        List<String> teamNames = new ArrayList<>();
+        for (Team t : teams) {
+            teamNames.add(t.getName());
+        }
+        vm.setTeams(teamNames);
+        
         return vm;
     }
 
@@ -161,6 +174,14 @@ public class ProjectServiceImpl implements ProjectService {
         commandModel.setTitle(project.getTitle());
         commandModel.setTeam(project.getTeam());
         vm.setEditProjectCommandModel(commandModel);
+        
+        List<Team> teams = teamRepository.findAllByOrderByNameAsc();
+        List<String> teamNames = new ArrayList<>();
+        for (Team t : teams) {
+            teamNames.add(t.getName());
+        }
+        vm.setTeams(teamNames);
+        
         return vm;
     }
 

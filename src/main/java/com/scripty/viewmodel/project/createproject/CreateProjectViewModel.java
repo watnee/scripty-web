@@ -6,6 +6,7 @@
 package com.scripty.viewmodel.project.createproject;
 
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
+import java.util.List;
 
 /**
  *
@@ -15,6 +16,7 @@ public class CreateProjectViewModel {
     
     // Specifically to handle redisplaying when validation errors happen
     private CreateProjectCommandModel createProjectCommandModel;
+    private List<String> teams;
 
     public CreateProjectCommandModel getCreateProjectCommandModel() {
         return createProjectCommandModel;
@@ -23,5 +25,12 @@ public class CreateProjectViewModel {
     public void setCreateProjectCommandModel(CreateProjectCommandModel createProjectCommandModel) {
         this.createProjectCommandModel = createProjectCommandModel;
     }
-    
+
+    public List<String> getTeams() {
+        return teams;
+    }
+
+    public void setTeams(List<String> teams) {
+        this.teams = teams;
+    }
 }

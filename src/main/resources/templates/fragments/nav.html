@@ -6,6 +6,7 @@
         <th:block sec:authorize="isAuthenticated()">
             <a th:href="@{/project/list}" th:aria-current="${currentPage == 'projects'} ? 'page'">Projects</a>
             <a th:href="@{/actor/list}" th:aria-current="${currentPage == 'casting'} ? 'page'">Casting</a>
+            <a th:href="@{/team/list}" th:aria-current="${currentPage == 'teams'} ? 'page'">Teams</a>
             <a sec:authorize="hasRole('ROLE_ADMIN')" th:href="@{/account/list}" th:aria-current="${currentPage == 'accounts'} ? 'page'">Accounts</a>
             
             <div class="nav-dropdown" id="history-dropdown" style="display: none;">

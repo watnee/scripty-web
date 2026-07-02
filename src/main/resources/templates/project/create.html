@@ -20,7 +20,10 @@
             </label>
             <label>
                 Team
-                <input type="text" th:field="*{team}" />
+                <select th:field="*{team}">
+                    <option value="">No team</option>
+                    <option th:each="t : ${viewModel.teams}" th:value="${t}" th:text="${t}"></option>
+                </select>
                 <span th:if="${#fields.hasErrors('team')}" th:errors="*{team}"></span>
             </label>
             <p>

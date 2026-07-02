@@ -13,3 +13,7 @@ spring:
   h2:
     console:
       enabled: true
+
+ADMIN_USERNAME: admin
+ADMIN_PASSWORD: admin
+

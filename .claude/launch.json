@@ -4,8 +4,9 @@
     {
       "name": "Scripty",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home && export PATH=$JAVA_HOME/bin:$PATH && mvn spring-boot:run -Dspring-boot.run.profiles=dev"],
-      "port": 8080
+      "runtimeArgs": ["-c", "export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home && export PATH=$JAVA_HOME/bin:$PATH && export ADMIN_USERNAME=${ADMIN_USERNAME:-admin} ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin} && mvn spring-boot:run -Dspring-boot.run.profiles=dev -Dspring-boot.run.arguments=--server.port=${PORT:-8080}"],
+      "port": 8080,
+      "autoPort": true
     }
   ]
 }

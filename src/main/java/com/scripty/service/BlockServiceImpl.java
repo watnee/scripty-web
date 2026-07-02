@@ -85,8 +85,9 @@ public class BlockServiceImpl implements BlockService {
     public EditBlockViewModel getEditBlockViewModel(Integer id) {
         EditBlockViewModel vm = new EditBlockViewModel();
         Block existingBlock = blockRepository.findById(id).orElse(null);
-        List<Person> allPersons = personRepository.findAll();
         Scene scene = sceneRepository.findById(existingBlock.getScene().getId()).orElse(null);
+        Project project = projectRepository.findBySceneId(scene.getId());
+        List<Person> allPersons = personRepository.findByProjectIdOrderByNameAsc(project.getId());
 
         vm.setSceneId(scene.getId());
 

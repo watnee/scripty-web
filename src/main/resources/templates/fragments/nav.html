@@ -21,6 +21,57 @@
             }
         });
 
+        function isEditable(el) {
+            if (!el) return false;
+            const tagName = el.tagName;
+            return tagName === 'TEXTAREA' ||
+                   (tagName === 'INPUT' && ['text', 'search', 'url', 'tel', 'email', 'password', 'number'].includes(el.type)) ||
+                   el.isContentEditable;
+        }
+
+        // Global keyboard shortcuts for undo and redo
+        document.addEventListener('keydown', function(e) {
+            const undoBtn = document.getElementById('nav-undo');
+            const redoBtn = document.getElementById('nav-redo');
+            if (!undoBtn || !redoBtn) return;
+
+            const dropdown = document.getElementById('history-dropdown');
+            if (!dropdown || dropdown.style.display === 'none') return;
+
+            const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+            const hasCmd = e.metaKey;
+            const hasCtrl = e.ctrlKey;
+            const hasValidModifier = hasCmd || hasCtrl;
+
+            if (hasValidModifier) {
+                let action = null;
+                if (e.key.toLowerCase() === 'z') {
+                    action = e.shiftKey ? 'redo' : 'undo';
+                } else if (e.key.toLowerCase() === 'y') {
+                    // Only allow Y modifier if it is Control, or if it is Command on non-Mac.
+                    // Specifically exclude Command + Y on Mac to avoid conflict with Safari's History shortcut.
+                    if (hasCtrl || (hasCmd && !isMac)) {
+                        action = 'redo';
+                    }
+                }
+
+                if (action) {
+                    e.preventDefault();
+                    const activeEl = document.activeElement;
+                    if (isEditable(activeEl)) {
+                        activeEl.focus();
+                        document.execCommand(action);
+                    } else {
+                        if (action === 'undo') {
+                            undoBtn.click();
+                        } else {
+                            redoBtn.click();
+                        }
+                    }
+                }
+            }
+        });
+
         function initHistoryDropdown() {
             const dropdown = document.getElementById('history-dropdown');
             if (!dropdown) return;
@@ -31,6 +82,14 @@
             const redoBtn = document.getElementById('nav-redo');
 
             if (!toggleBtn || !versionHistoryLink || !undoBtn || !redoBtn) return;
+
+            // Dynamically display keyboard shortcuts based on OS
+            const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+            const undoShortcut = isMac ? ' (⌘Z)' : ' (Ctrl+Z)';
+            const redoShortcut = isMac ? ' (⌘⇧Z)' : ' (Ctrl+Y)';
+            
+            undoBtn.textContent = 'Undo' + undoShortcut;
+            redoBtn.textContent = 'Redo' + redoShortcut;
 
             // Toggle dropdown open/close
             toggleBtn.onclick = function(e) {

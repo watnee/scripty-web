@@ -136,6 +136,6 @@ public class ProjectController {
         sceneCommandModel.setName(" ");
         Scene scene = sceneService.saveCreateSceneCommandModel(sceneCommandModel);
 
-        return "redirect:/scene/show?id=" + scene.getId();
+        return "redirect:/project/show?id=" + project.getId();
     }
 }

@@ -14,6 +14,7 @@ import com.scripty.viewmodel.scene.createscenebelow.CreateSceneBelowViewModel;
 import com.scripty.viewmodel.scene.editscene.EditSceneViewModel;
 import com.scripty.viewmodel.scene.allscenes.AllScenesViewModel;
 import com.scripty.viewmodel.scene.sceneprofile.SceneProfileViewModel;
+import com.scripty.service.ProjectVersionService;
 import com.scripty.service.SceneService;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
@@ -35,6 +36,9 @@ public class SceneController {
     
     @Autowired
     SceneService sceneService;
+
+    @Autowired
+    ProjectVersionService projectVersionService;
     
     @RequestMapping(value = "/show")
     public String show(@RequestParam Integer id, Model model) {
@@ -60,7 +64,8 @@ public class SceneController {
     public String delete(@RequestParam Integer id) {
         
         Scene scene = sceneService.deleteScene(id);
-        
+        projectVersionService.autoSaveVersionForScene(scene.getId());
+
         return "redirect:/project/show?id=" + scene.getProject().getId();
     }
     
@@ -68,7 +73,8 @@ public class SceneController {
     public String moveUp(@RequestParam Integer id) {
         
         Scene scene = sceneService.moveSceneUp(id);
-        
+        projectVersionService.autoSaveVersionForScene(scene.getId());
+
         return "redirect:/project/show?id=" + scene.getProject().getId();
     }
     
@@ -76,7 +82,8 @@ public class SceneController {
     public String moveDown(@RequestParam Integer id) {
         
         Scene scene = sceneService.moveSceneDown(id);
-        
+        projectVersionService.autoSaveVersionForScene(scene.getId());
+
         return "redirect:/project/show?id=" + scene.getProject().getId();
     }
     
@@ -106,10 +113,11 @@ public class SceneController {
         }
 
         Scene scene = sceneService.saveEditSceneCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForScene(scene.getId());
 
         return "redirect:/scene/show?id=" + scene.getId();
     }
-    
+
     // Show Form
     @RequestMapping(value = "/create")
     public String create(@RequestParam Integer projectId, Model model) {
@@ -136,10 +144,11 @@ public class SceneController {
         }
 
         Scene scene = sceneService.saveCreateSceneCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForScene(scene.getId());
 
         return "redirect:/scene/show?id=" + scene.getId();
     }
-    
+
     // Show Form
     @RequestMapping(value = "/createBelow")
     public String createBelow(@RequestParam Integer id, Model model) {
@@ -166,6 +175,7 @@ public class SceneController {
         }
 
         Scene scene = sceneService.saveCreateSceneBelowCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForScene(scene.getId());
 
         return "redirect:/scene/show?id=" + scene.getId();
     }
@@ -183,6 +193,7 @@ public class SceneController {
             return "scene/createInline";
         }
         Scene scene = sceneService.saveCreateSceneCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForScene(scene.getId());
         model.addAttribute("scene", scene);
         return "scene/sceneRow";
     }
@@ -204,6 +215,7 @@ public class SceneController {
             return "scene/editNameInline";
         }
         Scene scene = sceneService.saveEditSceneCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForScene(scene.getId());
         model.addAttribute("scene", scene);
         return "scene/showNameInline";
     }
@@ -221,6 +233,7 @@ public class SceneController {
             return "scene/createBelowInline";
         }
         Scene scene = sceneService.saveCreateSceneBelowCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForScene(scene.getId());
         return "redirect:/scene/show?id=" + scene.getId();
     }
 
@@ -230,6 +243,7 @@ public class SceneController {
         commandModel.setProjectId(projectId);
         commandModel.setName(" ");
         sceneService.saveCreateSceneCommandModel(commandModel);
+        projectVersionService.autoSaveVersion(projectId);
         return "redirect:/project/show?id=" + projectId;
     }
 }

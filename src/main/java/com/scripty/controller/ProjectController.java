@@ -11,6 +11,7 @@ import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.commandmodel.scene.createscene.CreateSceneCommandModel;
 import com.scripty.service.ProjectService;
+import com.scripty.service.ProjectVersionService;
 import com.scripty.service.SceneService;
 import com.scripty.service.UserService;
 import java.security.Principal;
@@ -30,6 +31,9 @@ public class ProjectController {
 
     @Autowired
     ProjectService projectService;
+
+    @Autowired
+    ProjectVersionService projectVersionService;
 
     @Autowired
     SceneService sceneService;
@@ -97,6 +101,7 @@ public class ProjectController {
         }
 
         Project project = projectService.saveEditProjectCommandModel(commandModel);
+        projectVersionService.autoSaveVersion(project.getId());
 
         return "redirect:/project/show?id=" + project.getId();
     }

@@ -13,6 +13,7 @@ import com.scripty.viewmodel.person.editperson.EditPersonViewModel;
 import com.scripty.viewmodel.person.personlist.PersonListViewModel;
 import com.scripty.viewmodel.person.personprofile.PersonProfileViewModel;
 import com.scripty.service.PersonService;
+import com.scripty.service.ProjectVersionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -33,6 +34,9 @@ public class PersonController {
     
     @Autowired
     PersonService personService;
+
+    @Autowired
+    ProjectVersionService projectVersionService;
     
     @RequestMapping(value = "/list")
     public String list(@RequestParam Integer projectId, Model model) {
@@ -58,7 +62,8 @@ public class PersonController {
     public String delete(@RequestParam Integer id) {
         
         Person person = personService.deletePerson(id);
-        
+        projectVersionService.autoSaveVersionForPerson(person.getId());
+
         return "redirect:/project/show?id=" + person.getProject().getId();
     }
     
@@ -88,6 +93,7 @@ public class PersonController {
         }
 
         Person person = personService.saveEditPersonCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForPerson(person.getId());
 
         return "redirect:/character/show?id=" + person.getId();
     }
@@ -118,6 +124,7 @@ public class PersonController {
         }
 
         Person person = personService.saveCreatePersonCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForPerson(person.getId());
 
         return "redirect:/character/show?id=" + person.getId();
     }

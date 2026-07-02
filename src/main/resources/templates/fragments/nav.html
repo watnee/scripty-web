@@ -7,7 +7,122 @@
             <a th:href="@{/project/list}" th:aria-current="${currentPage == 'projects'} ? 'page'">Projects</a>
             <a th:href="@{/actor/list}" th:aria-current="${currentPage == 'casting'} ? 'page'">Casting</a>
             <a sec:authorize="hasRole('ROLE_ADMIN')" th:href="@{/account/list}" th:aria-current="${currentPage == 'accounts'} ? 'page'">Accounts</a>
+            
+            <div class="nav-dropdown" id="history-dropdown" style="display: none;">
+                <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">History ▾</button>
+                <div class="nav-dropdown-menu">
+                    <a class="nav-dropdown-item" id="nav-version-history" href="#">Version History</a>
+                    <hr class="nav-dropdown-divider">
+                    <button class="nav-dropdown-item" id="nav-undo" type="button">Undo</button>
+                    <button class="nav-dropdown-item" id="nav-redo" type="button">Redo</button>
+                </div>
+            </div>
         </th:block>
     </nav>
+    <script th:inline="javascript">
+    (function() {
+        let lastFocusedEditable = null;
+
+        // Track last focused input/textarea
+        document.addEventListener('focusin', function(e) {
+            if (e.target.tagName === 'TEXTAREA' || (e.target.tagName === 'INPUT' && (e.target.type === 'text' || e.target.type === 'textarea'))) {
+                lastFocusedEditable = e.target;
+            }
+        });
+
+        function initHistoryDropdown() {
+            const dropdown = document.getElementById('history-dropdown');
+            if (!dropdown) return;
+
+            const toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
+            const versionHistoryLink = document.getElementById('nav-version-history');
+            const undoBtn = document.getElementById('nav-undo');
+            const redoBtn = document.getElementById('nav-redo');
+
+            if (!toggleBtn || !versionHistoryLink || !undoBtn || !redoBtn) return;
+
+            // Toggle dropdown open/close
+            toggleBtn.onclick = function(e) {
+                e.stopPropagation();
+                const isOpen = dropdown.classList.contains('open');
+                // Close all first
+                document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+                toggleBtn.setAttribute('aria-expanded', !isOpen);
+                if (!isOpen) {
+                    dropdown.classList.add('open');
+                }
+            };
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.classList.remove('open');
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            // Resolve Project ID from URL or page DOM
+            let projectId = null;
+            const params = new URLSearchParams(window.location.search);
+            
+            if (window.location.pathname.startsWith('/project/show') && params.has('id')) {
+                projectId = params.get('id');
+            } else if (params.has('projectId')) {
+                projectId = params.get('projectId');
+            } else {
+                // Check breadcrumbs link to project show page
+                const projectLink = document.querySelector('a[href*="/project/show?id="], a[href*="/project/show/"]');
+                if (projectLink) {
+                    const href = projectLink.getAttribute('href');
+                    const match = href.match(/[\?&]id=(\d+)/);
+                    if (match) {
+                        projectId = match[1];
+                    }
+                }
+            }
+
+            if (projectId) {
+                // Update Version History href
+                versionHistoryLink.href = /*[[@{/project/version/list}]]*/ '/project/version/list';
+                versionHistoryLink.href += '?projectId=' + projectId;
+                dropdown.style.display = 'inline-block';
+            } else {
+                dropdown.style.display = 'none';
+            }
+
+            // Undo action
+            undoBtn.onclick = function(e) {
+                e.preventDefault();
+                dropdown.classList.remove('open');
+                let el = lastFocusedEditable || document.querySelector('textarea, input[type="text"]');
+                if (el) {
+                    el.focus();
+                    document.execCommand('undo');
+                }
+            };
+
+            // Redo action
+            redoBtn.onclick = function(e) {
+                e.preventDefault();
+                dropdown.classList.remove('open');
+                let el = lastFocusedEditable || document.querySelector('textarea, input[type="text"]');
+                if (el) {
+                    el.focus();
+                    document.execCommand('redo');
+                }
+            };
+        }
+
+        // Run on initial load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initHistoryDropdown);
+        } else {
+            initHistoryDropdown();
+        }
+
+        // Run on HTMX content swaps
+        document.body.addEventListener('htmx:afterSwap', initHistoryDropdown);
+    })();
+    </script>
 </header>
 </html>

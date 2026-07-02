@@ -95,6 +95,10 @@ h1 > small a[role="button"],
     font-size: 0.5em;
 }
 
+h1 > small a[role="button"].versions-btn {
+    opacity: 1;
+}
+
 h1 > small a[role="button"]:focus,
 h1:hover > small a[role="button"],
 #table-scenes tr a[role="button"]:focus,
@@ -137,4 +141,98 @@ body.htmx-settling {
 body.htmx-swapping {
     opacity: 0;
     transition: opacity 0.1s ease-out;
+}
+
+/* History Dropdown container */
+.nav-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Dropdown Toggle Button */
+.nav-dropdown-toggle {
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: color 0.2s ease, background-color 0.2s ease;
+    border-radius: 4px;
+}
+
+.nav-dropdown-toggle:hover, .nav-dropdown-toggle:focus {
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    outline: none;
+}
+
+/* Dropdown Menu */
+.nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: var(--box-bg, #ffffff);
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border, #e0e0e0);
+    border-radius: 6px;
+    z-index: 1000;
+    padding: 0.5rem 0;
+    margin-top: 0.25rem;
+    animation: fadeIn 0.15s ease-out;
+}
+
+/* Show the dropdown menu */
+.nav-dropdown.open .nav-dropdown-menu {
+    display: block;
+}
+
+/* Dropdown Items */
+.nav-dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 1.25rem;
+    clear: both;
+    font-weight: 400;
+    color: var(--fg, #333333);
+    text-align: left;
+    white-space: nowrap;
+    background: none;
+    border: none;
+    font-size: 0.95rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    box-sizing: border-box;
+}
+
+.nav-dropdown-item:hover, .nav-dropdown-item:focus {
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    color: var(--accent, inherit);
+    outline: none;
+}
+
+/* Divider */
+.nav-dropdown-divider {
+    height: 1px;
+    margin: 0.5rem 0;
+    overflow: hidden;
+    background-color: var(--border, #e0e0e0);
+    border: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

@@ -71,6 +71,12 @@ public class BlockController {
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
 
+    @RequestMapping(value = "/togglePinned")
+    public String togglePinned(@RequestParam Integer id) {
+        Block block = blockService.togglePinned(id);
+        return "redirect:/scene/show?id=" + block.getScene().getId();
+    }
+
     @RequestMapping(value = "/editInline")
     public String editInline(@RequestParam Integer id, Model model) {
         EditBlockViewModel viewModel = blockService.getEditBlockViewModel(id);

@@ -9,11 +9,8 @@ public class UserViewModel {
     private String team;
     private boolean enabled;
     private boolean admin;
-<<<<<<< HEAD
     private boolean director;
-=======
     private boolean producer;
->>>>>>> origin/master
 
     public int getId() {
         return id;
@@ -71,21 +68,19 @@ public class UserViewModel {
         this.admin = admin;
     }
 
-<<<<<<< HEAD
     public boolean isDirector() {
         return director;
     }
 
     public void setDirector(boolean director) {
         this.director = director;
-=======
+    }
+
     public boolean isProducer() {
         return producer;
     }
 
     public void setProducer(boolean producer) {
         this.producer = producer;
->>>>>>> origin/master
     }
-
 }

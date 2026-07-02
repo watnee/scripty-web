@@ -27,6 +27,9 @@ public class Block {
     @Column(nullable = false)
     private boolean bookmarked;
 
+    @Column(nullable = false)
+    private boolean pinned;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id")
     private Person person;
@@ -81,5 +84,13 @@ public class Block {
 
     public void setBookmarked(boolean bookmarked) {
         this.bookmarked = bookmarked;
+    }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
     }
 }

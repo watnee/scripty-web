@@ -118,6 +118,7 @@ public class BlockServiceImpl implements BlockService {
         vm.setOrder(block.getOrder());
         vm.setContent(block.getContent());
         vm.setBookmarked(block.isBookmarked());
+        vm.setPinned(block.isPinned());
         if (block.getPerson() != null) {
             Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
             if (person != null) {
@@ -152,6 +153,7 @@ public class BlockServiceImpl implements BlockService {
         if (person != null) block.setPerson(person);
         block.setScene(scene);
         block.setBookmarked(false);
+        block.setPinned(false);
 
         int order = blockRepository.countBySceneId(scene.getId()) + 1;
         block.setOrder(order);
@@ -183,6 +185,7 @@ public class BlockServiceImpl implements BlockService {
         if (person != null) block.setPerson(person);
         block.setScene(scene);
         block.setBookmarked(false);
+        block.setPinned(false);
 
         int newOrder = existingBlock.getOrder() + 1;
         blockRepository.incrementOrdersAbove(existingBlock.getOrder(), scene.getId());
@@ -286,6 +289,17 @@ public class BlockServiceImpl implements BlockService {
             throw new IllegalArgumentException("Block not found");
         }
         block.setBookmarked(!block.isBookmarked());
+        return blockRepository.save(block);
+    }
+
+    @Override
+    @Transactional
+    public Block togglePinned(Integer id) {
+        Block block = blockRepository.findById(id).orElse(null);
+        if (block == null) {
+            throw new IllegalArgumentException("Block not found");
+        }
+        block.setPinned(!block.isPinned());
         return blockRepository.save(block);
     }
 

@@ -43,7 +43,10 @@
                                 <span th:text="${block.content}"></span>
                             </td>
                             <td>
-                                <a th:href="@{/block/toggleBookmark(id=${block.id})}" th:title="${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:attr="aria-label=${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:text="${block.bookmarked} ? '★' : '☆'"></a>
+                                <span class="nowrap">
+                                    <a th:href="@{/block/toggleBookmark(id=${block.id})}" th:title="${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:attr="aria-label=${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:text="${block.bookmarked} ? '★' : '☆'"></a>
+                                    <a th:href="@{/block/togglePinned(id=${block.id})}" th:title="${block.pinned} ? 'Unpin block' : 'Pin block'" th:attr="aria-label=${block.pinned} ? 'Unpin block' : 'Pin block'" th:style="${block.pinned} ? 'text-decoration: none;' : 'filter: grayscale(100%); opacity: 0.3; text-decoration: none;'">📌</a>
+                                </span>
                             </td>
                         </tr>
                         <tr th:attr="hx-get=@{/block/createInline(sceneId=${scene.id})}" hx-trigger="load" hx-swap="outerHTML"></tr>

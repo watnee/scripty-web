@@ -27,4 +27,5 @@ public interface BlockService {
     Block moveBlockDown(Integer id);
     Block moveBlockTo(Integer id, int newOrder);
     Block toggleBookmark(Integer id);
+    Block togglePinned(Integer id);
 }

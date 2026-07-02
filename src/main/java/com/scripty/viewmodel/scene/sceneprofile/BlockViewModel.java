@@ -17,6 +17,7 @@ public class BlockViewModel {
     private int personId;
     private String personName;
     private boolean bookmarked;
+    private boolean pinned;
 
     public int getId() {
         return id;
@@ -64,6 +65,14 @@ public class BlockViewModel {
 
     public void setBookmarked(boolean bookmarked) {
         this.bookmarked = bookmarked;
+    }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
     }
 
 }

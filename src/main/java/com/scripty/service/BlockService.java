@@ -28,4 +28,6 @@ public interface BlockService {
     Block moveBlockTo(Integer id, int newOrder);
     Block toggleBookmark(Integer id);
     Block togglePinned(Integer id);
+    void addTagsToBlocks(java.util.List<Integer> ids, String tags);
 }
+

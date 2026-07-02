@@ -106,6 +106,7 @@ public class BlockServiceImpl implements BlockService {
             commandModel.setPersonId(existingBlock.getPerson().getId());
         }
         commandModel.setSceneId(scene.getId());
+        commandModel.setTags(existingBlock.getTags());
         vm.setEditBlockCommandModel(commandModel);
         return vm;
     }
@@ -119,6 +120,7 @@ public class BlockServiceImpl implements BlockService {
         vm.setContent(block.getContent());
         vm.setBookmarked(block.isBookmarked());
         vm.setPinned(block.isPinned());
+        vm.setTags(block.getTags());
         if (block.getPerson() != null) {
             Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
             if (person != null) {
@@ -216,6 +218,9 @@ public class BlockServiceImpl implements BlockService {
         block.setContent(content);
         block.setPerson(person);
         block.setScene(scene);
+        if (cmd.getTags() != null) {
+            block.setTags(cmd.getTags());
+        }
         blockRepository.save(block);
         return block;
     }
@@ -372,5 +377,59 @@ public class BlockServiceImpl implements BlockService {
         newPerson.setFullName(characterName);
         newPerson.setProject(project);
         return personRepository.save(newPerson);
+    }
+
+    @Override
+    @Transactional
+    public void addTagsToBlocks(List<Integer> ids, String tagsToAdd) {
+        if (ids == null || ids.isEmpty() || tagsToAdd == null || tagsToAdd.trim().isEmpty()) {
+            return;
+        }
+
+        String[] newTagsArray = tagsToAdd.split(",");
+        List<String> newTagsList = new ArrayList<>();
+        for (String t : newTagsArray) {
+            String trimmed = t.trim();
+            if (!trimmed.isEmpty()) {
+                newTagsList.add(trimmed);
+            }
+        }
+
+        if (newTagsList.isEmpty()) {
+            return;
+        }
+
+        for (Integer id : ids) {
+            Block block = blockRepository.findById(id).orElse(null);
+            if (block != null) {
+                String existingTags = block.getTags();
+                List<String> combinedTags = new ArrayList<>();
+                if (existingTags != null && !existingTags.trim().isEmpty()) {
+                    String[] existingArray = existingTags.split(",");
+                    for (String t : existingArray) {
+                        String trimmed = t.trim();
+                        if (!trimmed.isEmpty()) {
+                            combinedTags.add(trimmed);
+                        }
+                    }
+                }
+
+                for (String newTag : newTagsList) {
+                    boolean exists = false;
+                    for (String existingTag : combinedTags) {
+                        if (existingTag.equalsIgnoreCase(newTag)) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        combinedTags.add(newTag);
+                    }
+                }
+
+                block.setTags(String.join(", ", combinedTags));
+                blockRepository.save(block);
+            }
+        }
     }
 }

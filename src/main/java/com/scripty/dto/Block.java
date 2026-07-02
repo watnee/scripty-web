@@ -93,4 +93,16 @@ public class Block {
     public void setPinned(boolean pinned) {
         this.pinned = pinned;
     }
+
+    @Column(name = "tags")
+    private String tags;
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
 }
+

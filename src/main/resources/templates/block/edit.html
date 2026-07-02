@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111111">
+    <link rel="manifest" th:href="@{/manifest.json}">
     <meta charset="UTF-8">
     <title>Scripty - Edit Block</title>
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
@@ -28,6 +31,11 @@
                     <option th:each="person : ${viewModel.persons}" th:value="${person.id}" th:text="${person.name}"></option>
                 </select>
                 <span th:if="${#fields.hasErrors('personId')}" th:errors="*{personId}"></span>
+            </label>
+            <label>
+                Tags (comma separated)
+                <input type="text" th:field="*{tags}" placeholder="e.g. funny, action" style="width: 100%; max-width: 600px; box-sizing: border-box;" />
+                <span th:if="${#fields.hasErrors('tags')}" th:errors="*{tags}"></span>
             </label>
             <p>
                 <a th:href="@{/scene/show(id=${viewModel.sceneId})}" role="button">Cancel</a>

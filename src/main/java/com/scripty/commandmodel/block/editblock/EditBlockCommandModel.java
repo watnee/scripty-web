@@ -52,5 +52,15 @@ public class EditBlockCommandModel {
     public void setSceneId(Integer sceneId) {
         this.sceneId = sceneId;
     }
-    
+
+    private String tags;
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
 }
+

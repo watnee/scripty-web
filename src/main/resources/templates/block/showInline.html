@@ -3,4 +3,10 @@
     <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
 </p>
 <span th:text="${block.content}"></span>
+<div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list">
+    <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
+          th:if="${not #strings.isEmpty(#strings.trim(tag))}"
+          th:text="${#strings.trim(tag)}"
+          class="block-tag"></span>
+</div>
 </th:block>

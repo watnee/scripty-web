@@ -254,4 +254,22 @@ public class BlockController {
         model.addAttribute("blockId", block.getId());
         return "block/blockRowWithCreate";
     }
+
+    @RequestMapping(value = "/bulkAddTags", method = RequestMethod.POST)
+    public String bulkAddTags(@RequestParam String ids, @RequestParam String tags, @RequestParam Integer sceneId) {
+        if (ids != null && !ids.trim().isEmpty()) {
+            java.util.List<Integer> blockIds = new java.util.ArrayList<>();
+            for (String idStr : ids.split(",")) {
+                try {
+                    blockIds.add(Integer.parseInt(idStr.trim()));
+                } catch (NumberFormatException e) {
+                    // Ignore
+                }
+            }
+            blockService.addTagsToBlocks(blockIds, tags);
+            projectVersionService.autoSaveVersionForScene(sceneId);
+        }
+        return "redirect:/scene/show?id=" + sceneId;
+    }
 }
+

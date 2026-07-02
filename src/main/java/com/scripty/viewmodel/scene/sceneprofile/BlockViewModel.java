@@ -75,4 +75,14 @@ public class BlockViewModel {
         this.pinned = pinned;
     }
 
+    private String tags;
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
 }
+

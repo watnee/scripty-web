@@ -129,6 +129,32 @@ h1:hover > small a[role="button"],
     cursor: pointer;
 }
 
+.text-size-control .nav-dropdown-toggle {
+    background: var(--interactive-bg);
+    border: 1px solid var(--muted-fg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 4px -2px var(--fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg);
+    font-size: 0.85rem;
+    padding: 0.15em 0.5em;
+}
+
+.text-size-control .nav-dropdown-toggle:hover,
+.text-size-control .nav-dropdown-toggle:focus {
+    filter: brightness(1.1);
+    box-shadow: 0 3px 6px -2px var(--fg);
+    background-color: var(--interactive-bg);
+}
+
+.text-size-control .nav-dropdown-toggle[aria-expanded="true"] {
+    box-shadow: 0 2px 4px -1px var(--fg) inset;
+    background: var(--pressed-interactive-bg);
+    color: var(--accent);
+}
+
 .scene-pager {
     display: flex;
     justify-content: space-between;

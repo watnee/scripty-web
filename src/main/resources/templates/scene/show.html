@@ -30,8 +30,9 @@
             <input type="text" id="bulk-tags-input" placeholder="Add tags to selected blocks (comma separated)..." style="flex-grow: 1; max-width: 400px; margin: 0;" />
             <button type="button" id="bulk-add-tags-btn" style="margin: 0;">Add Tags</button>
         </div>
+        <div id="tag-filter-container" class="tag-filter-bar" style="display: none;"></div>
         <table id="table-blocks">
-            <tr th:each="block,loop : ${viewModel.blocks}" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order}">
+            <tr th:each="block,loop : ${viewModel.blocks}" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order},data-tags=${block.tags}">
                 <td class="block-left-controls">
                     <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" style="margin-right: 8px;" />
                     <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" class="create-below" role="button">+</a>
@@ -46,7 +47,7 @@
                         <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
                               th:if="${not #strings.isEmpty(#strings.trim(tag))}"
                               th:text="${#strings.trim(tag)}"
-                              class="block-tag"></span>
+                              class="block-tag clickable"></span>
                     </div>
                 </td>
                 <td>
@@ -176,6 +177,147 @@
                 form.submit();
             });
         }
+    })();
+    </script>
+    <script>
+    (function() {
+        var table = document.getElementById('table-blocks');
+        if (!table) return;
+
+        var filterContainer = document.getElementById('tag-filter-container');
+        if (!filterContainer) return;
+
+        var currentActiveTag = 'all';
+
+        function buildTagFilter() {
+            var rows = table.querySelectorAll('tr[data-tags]');
+            var tagCounts = {};
+            var totalBlocks = 0;
+
+            rows.forEach(function(row) {
+                totalBlocks++;
+                var tagsAttr = row.getAttribute('data-tags');
+                if (tagsAttr) {
+                    var tags = tagsAttr.split(',');
+                    var uniqueRowTags = new Set();
+                    tags.forEach(function(tag) {
+                        var trimmed = tag.trim();
+                        if (trimmed) {
+                            var lower = trimmed.toLowerCase();
+                            uniqueRowTags.add(lower);
+                            if (!tagCounts[lower]) {
+                                tagCounts[lower] = { name: trimmed, count: 0 };
+                            }
+                        }
+                    });
+                    uniqueRowTags.forEach(function(lowerTag) {
+                        tagCounts[lowerTag].count++;
+                    });
+                }
+            });
+
+            var uniqueTagsKeys = Object.keys(tagCounts);
+            if (uniqueTagsKeys.length === 0) {
+                filterContainer.style.display = 'none';
+                return;
+            }
+            filterContainer.style.display = 'flex';
+            filterContainer.innerHTML = '';
+
+            var label = document.createElement('span');
+            label.className = 'tag-filter-label';
+            label.textContent = 'Filter by Tags:';
+            filterContainer.appendChild(label);
+
+            var allPill = document.createElement('div');
+            allPill.className = 'tag-filter-pill' + (currentActiveTag === 'all' ? ' active' : '');
+            allPill.setAttribute('data-filter-tag', 'all');
+            allPill.innerHTML = 'All <span class="tag-count">' + totalBlocks + '</span>';
+            allPill.addEventListener('click', function() {
+                setFilter('all');
+            });
+            filterContainer.appendChild(allPill);
+
+            uniqueTagsKeys.sort();
+
+            uniqueTagsKeys.forEach(function(key) {
+                var tagInfo = tagCounts[key];
+                var pill = document.createElement('div');
+                pill.className = 'tag-filter-pill' + (currentActiveTag === key ? ' active' : '');
+                pill.setAttribute('data-filter-tag', key);
+                pill.innerHTML = escapeHtml(tagInfo.name) + ' <span class="tag-count">' + tagInfo.count + '</span>';
+                pill.addEventListener('click', function() {
+                    setFilter(key);
+                });
+                filterContainer.appendChild(pill);
+            });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function setFilter(tagKey) {
+            currentActiveTag = tagKey;
+            
+            var pills = filterContainer.querySelectorAll('.tag-filter-pill');
+            pills.forEach(function(pill) {
+                if (pill.getAttribute('data-filter-tag') === tagKey) {
+                    pill.classList.add('active');
+                } else {
+                    pill.classList.remove('active');
+                }
+            });
+
+            var rows = table.querySelectorAll('tr');
+            rows.forEach(function(row) {
+                var tagsAttr = row.getAttribute('data-tags');
+                if (tagsAttr !== null) {
+                    if (tagKey === 'all') {
+                        row.classList.remove('filtered-out');
+                    } else {
+                        var tags = tagsAttr.split(',').map(function(t) { return t.trim().toLowerCase(); });
+                        if (tags.includes(tagKey)) {
+                            row.classList.remove('filtered-out');
+                        } else {
+                            row.classList.add('filtered-out');
+                        }
+                    }
+                } else {
+                    if (row.querySelector('form[hx-post*="/block/createInline"]') || row.getAttribute('hx-get')) {
+                        if (tagKey === 'all') {
+                            row.classList.remove('filtered-out');
+                        } else {
+                            row.classList.add('filtered-out');
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            var badge = e.target.closest('.block-tag.clickable');
+            if (badge) {
+                var tagText = badge.textContent.trim().toLowerCase();
+                var pill = filterContainer.querySelector('.tag-filter-pill[data-filter-tag="' + tagText + '"]');
+                if (pill) {
+                    setFilter(tagText);
+                    filterContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+        });
+
+        buildTagFilter();
+
+        document.body.addEventListener('htmx:afterOnLoad', function() {
+            buildTagFilter();
+            var activePill = filterContainer.querySelector('.tag-filter-pill[data-filter-tag="' + currentActiveTag + '"]');
+            if (activePill) {
+                setFilter(currentActiveTag);
+            } else {
+                setFilter('all');
+            }
+        });
     })();
     </script>
 </body>

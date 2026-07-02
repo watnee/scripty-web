@@ -7,6 +7,6 @@
     <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
           th:if="${not #strings.isEmpty(#strings.trim(tag))}"
           th:text="${#strings.trim(tag)}"
-          class="block-tag"></span>
+          class="block-tag clickable"></span>
 </div>
 </th:block>

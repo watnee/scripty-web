@@ -1,4 +1,4 @@
-<tr xmlns:th="http://www.thymeleaf.org" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order}">
+<tr xmlns:th="http://www.thymeleaf.org" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order},data-tags=${block.tags}">
     <td class="block-left-controls">
         <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" style="margin-right: 8px;" />
         <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" class="create-below" role="button">+</a>
@@ -13,7 +13,7 @@
             <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
                   th:if="${not #strings.isEmpty(#strings.trim(tag))}"
                   th:text="${#strings.trim(tag)}"
-                  class="block-tag"></span>
+                  class="block-tag clickable"></span>
         </div>
     </td>
     <td>

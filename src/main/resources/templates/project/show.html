@@ -27,7 +27,7 @@
             <div style="flex: 3">
                 <h2>Scenes <small><a th:href="@{/scene/all(projectId=${viewModel.id})}" role="button">View All</a></small></h2>
                 <th:block th:each="scene : ${viewModel.scenes}">
-                    <h3 style="text-transform: uppercase; margin-bottom: 0.25em">
+                    <h3 class="scene-header" style="text-transform: uppercase; margin-bottom: 0.25em">
                         <a th:href="@{/scene/show(id=${scene.id})}" style="color: inherit; text-decoration: none" th:text="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())} ? 'Untitled Scene' : ${scene.name}"></a>
                     </h3>
                     <table class="table-blocks-all" th:id="'table-blocks-' + ${scene.id}">

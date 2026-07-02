@@ -236,3 +236,11 @@ body.htmx-swapping {
         transform: translateY(0);
     }
 }
+
+.scene-header {
+    font-size: 1em !important;
+}
+
+h1.scene-header > small a[role="button"] {
+    font-size: 0.75em;
+}

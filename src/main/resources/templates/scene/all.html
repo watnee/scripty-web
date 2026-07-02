@@ -23,7 +23,7 @@
         </nav>
         <h1><span th:text="${viewModel.projectTitle}"></span> <small>All Scenes</small></h1>
         <th:block th:each="scene : ${viewModel.scenes}">
-            <h2 class="scene-header" style="text-transform: uppercase"><a th:href="@{/scene/show(id=${scene.id})}" th:text="${scene.name}"></a> <small><a th:href="@{/scene/show(id=${scene.id})}" role="button">view</a></small></h2>
+            <h2 class="scene-header"><a th:href="@{/scene/show(id=${scene.id})}" th:text="${scene.name}"></a> <small><a th:href="@{/scene/show(id=${scene.id})}" role="button">view</a></small></h2>
             <table class="table-blocks-all">
                 <tr th:each="block : ${scene.blocks}">
                     <td class="block-content">

@@ -46,9 +46,9 @@
                     <button type="button" id="project-bulk-delete-btn" class="bad" style="margin: 0;" title="Delete selected blocks">🗑️</button>
                 </div>
                 <th:block th:each="scene : ${viewModel.scenes}">
-                    <h3 class="scene-header" style="text-transform: uppercase; margin-bottom: 0.25em">
+                    <h3 class="scene-header" style="margin-bottom: 0.25em">
                         <span class="scene-name-wrap">
-                            <span class="scene-name-display" th:attr="hx-get=@{/scene/editNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; text-transform: uppercase; min-width: 10em; display: inline-block">
+                            <span class="scene-name-display" th:attr="hx-get=@{/scene/editNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; min-width: 10em; display: inline-block">
                                 <th:block th:if="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}">
                                     <span style="color: #ccc; font-style: italic">click to name scene</span>
                                 </th:block>

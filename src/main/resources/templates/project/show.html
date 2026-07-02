@@ -21,6 +21,15 @@
             </ol>
         </nav>
         <div class="text-size-control">
+            <div class="nav-dropdown" id="history-dropdown" style="display: none;">
+                <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false" title="History">🕒</button>
+                <div class="nav-dropdown-menu">
+                    <a class="nav-dropdown-item" id="nav-version-history" href="#">Version History</a>
+                    <hr class="nav-dropdown-divider">
+                    <button class="nav-dropdown-item" id="nav-undo" type="button">Undo</button>
+                    <button class="nav-dropdown-item" id="nav-redo" type="button">Redo</button>
+                </div>
+            </div>
             <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
             <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
         </div>
@@ -28,6 +37,14 @@
         <div class="f-row" style="gap: 2rem; align-items: start">
             <div style="flex: 3">
                 <h2>Scenes <small><a th:href="@{/scene/all(projectId=${viewModel.id})}" role="button">View All</a></small></h2>
+                <div class="tags-bulk-action" style="margin-bottom: 1.5rem;">
+                    <label style="display: flex; align-items: center; margin: 0 0.5rem 0 0; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="project-select-all-blocks" style="margin-right: 6px;" /> Select All
+                    </label>
+                    <input type="text" id="project-bulk-tags-input" placeholder="Add tags to selected blocks (comma separated)..." style="flex-grow: 1; max-width: 400px; margin: 0;" />
+                    <button type="button" id="project-bulk-add-tags-btn" style="margin: 0;">Add Tags</button>
+                    <button type="button" id="project-bulk-delete-btn" class="bad" style="margin: 0;" title="Delete selected blocks">🗑️</button>
+                </div>
                 <th:block th:each="scene : ${viewModel.scenes}">
                     <h3 class="scene-header" style="text-transform: uppercase; margin-bottom: 0.25em">
                         <span class="scene-name-wrap">
@@ -45,6 +62,7 @@
                     <table class="table-blocks-all" th:id="'table-blocks-' + ${scene.id}">
                         <tr th:each="block : ${scene.blocks}" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order}">
                             <td class="block-left-controls">
+                                <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" style="margin-right: 8px;" />
                                 <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
                                 <span class="drag-handle">&#8942;&#8942;</span>
                             </td>
@@ -137,5 +155,157 @@
         });
     });
     </script>
+    <script th:inline="javascript">
+    (function() {
+        var bulkAddTagsBtn = document.getElementById('project-bulk-add-tags-btn');
+        if (bulkAddTagsBtn) {
+            bulkAddTagsBtn.addEventListener('click', function() {
+                var checkboxes = document.querySelectorAll('.block-select-checkbox:checked');
+                if (checkboxes.length === 0) {
+                    alert('Please select at least one block.');
+                    return;
+                }
+                var tagsInput = document.getElementById('project-bulk-tags-input');
+                var tags = tagsInput ? tagsInput.value.trim() : '';
+                if (!tags) {
+                    alert('Please enter tags to add.');
+                    return;
+                }
+                
+                var ids = Array.from(checkboxes).map(function(cb) {
+                    return cb.value;
+                });
+                
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = /*[[@{/block/bulkAddTags}]]*/ '/block/bulkAddTags';
+                
+                var idsInput = document.createElement('input');
+                idsInput.type = 'hidden';
+                idsInput.name = 'ids';
+                idsInput.value = ids.join(',');
+                form.appendChild(idsInput);
+                
+                var tagsValInput = document.createElement('input');
+                tagsValInput.type = 'hidden';
+                tagsValInput.name = 'tags';
+                tagsValInput.value = tags;
+                form.appendChild(tagsValInput);
+                
+                var projectIdInput = document.createElement('input');
+                projectIdInput.type = 'hidden';
+                projectIdInput.name = 'projectId';
+                projectIdInput.value = /*[[${viewModel.id}]]*/ '';
+                form.appendChild(projectIdInput);
+                
+                var sceneIdInput = document.createElement('input');
+                sceneIdInput.type = 'hidden';
+                sceneIdInput.name = 'sceneId';
+                var firstTr = checkboxes[0].closest('tr');
+                var sceneId = '';
+                if (firstTr) {
+                    var table = firstTr.closest('table');
+                    if (table) {
+                        sceneId = table.id.replace('table-blocks-', '');
+                    }
+                }
+                sceneIdInput.value = sceneId;
+                form.appendChild(sceneIdInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
+
+        var bulkDeleteBtn = document.getElementById('project-bulk-delete-btn');
+        if (bulkDeleteBtn) {
+            bulkDeleteBtn.addEventListener('click', function() {
+                var checkboxes = document.querySelectorAll('.block-select-checkbox:checked');
+                if (checkboxes.length === 0) {
+                    alert('Please select at least one block.');
+                    return;
+                }
+                
+                var count = checkboxes.length;
+                var confirmMsg = 'Are you sure you want to delete the ' + count + ' selected block' + (count > 1 ? 's' : '') + '?';
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+                
+                var ids = Array.from(checkboxes).map(function(cb) {
+                    return cb.value;
+                });
+                
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = /*[[@{/block/bulkDelete}]]*/ '/block/bulkDelete';
+                
+                var idsInput = document.createElement('input');
+                idsInput.type = 'hidden';
+                idsInput.name = 'ids';
+                idsInput.value = ids.join(',');
+                form.appendChild(idsInput);
+                
+                var projectIdInput = document.createElement('input');
+                projectIdInput.type = 'hidden';
+                projectIdInput.name = 'projectId';
+                projectIdInput.value = /*[[${viewModel.id}]]*/ '';
+                form.appendChild(projectIdInput);
+                
+                var sceneIdInput = document.createElement('input');
+                sceneIdInput.type = 'hidden';
+                sceneIdInput.name = 'sceneId';
+                var firstTr = checkboxes[0].closest('tr');
+                var sceneId = '';
+                if (firstTr) {
+                    var table = firstTr.closest('table');
+                    if (table) {
+                        sceneId = table.id.replace('table-blocks-', '');
+                    }
+                }
+                sceneIdInput.value = sceneId;
+                form.appendChild(sceneIdInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
+
+        var selectAllCheckbox = document.getElementById('project-select-all-blocks');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                var checkboxes = document.querySelectorAll('.block-select-checkbox');
+                checkboxes.forEach(function(cb) {
+                    cb.checked = selectAllCheckbox.checked;
+                });
+            });
+        }
+
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.classList.contains('block-select-checkbox')) {
+                var selectAllCheckbox = document.getElementById('project-select-all-blocks');
+                if (selectAllCheckbox) {
+                    var checkboxes = document.querySelectorAll('.block-select-checkbox');
+                    var allChecked = checkboxes.length > 0;
+                    checkboxes.forEach(function(cb) {
+                        if (!cb.checked) allChecked = false;
+                    });
+                    selectAllCheckbox.checked = allChecked;
+                }
+            }
+        });
+
+        document.body.addEventListener('htmx:afterOnLoad', function() {
+            var selectAllCheckbox = document.getElementById('project-select-all-blocks');
+            if (selectAllCheckbox) {
+                var checkboxes = document.querySelectorAll('.block-select-checkbox');
+                var allChecked = checkboxes.length > 0;
+                checkboxes.forEach(function(cb) {
+                    if (!cb.checked) allChecked = false;
+                });
+                selectAllCheckbox.checked = allChecked;
+            }
+        });
+    })();
 </body>
 </html>

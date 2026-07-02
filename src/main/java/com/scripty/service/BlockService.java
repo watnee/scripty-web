@@ -29,5 +29,6 @@ public interface BlockService {
     Block toggleBookmark(Integer id);
     Block togglePinned(Integer id);
     void addTagsToBlocks(java.util.List<Integer> ids, String tags);
+    void deleteBlocks(java.util.List<Integer> ids);
 }
 

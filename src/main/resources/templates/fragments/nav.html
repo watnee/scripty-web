@@ -8,16 +8,6 @@
             <a th:href="@{/actor/list}" th:aria-current="${currentPage == 'casting'} ? 'page'">Casting</a>
             <a th:href="@{/team/list}" th:aria-current="${currentPage == 'teams'} ? 'page'">Teams</a>
             <a sec:authorize="hasRole('ROLE_ADMIN')" th:href="@{/account/list}" th:aria-current="${currentPage == 'accounts'} ? 'page'">Accounts</a>
-            
-            <div class="nav-dropdown" id="history-dropdown" style="display: none;">
-                <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">History ▾</button>
-                <div class="nav-dropdown-menu">
-                    <a class="nav-dropdown-item" id="nav-version-history" href="#">Version History</a>
-                    <hr class="nav-dropdown-divider">
-                    <button class="nav-dropdown-item" id="nav-undo" type="button">Undo</button>
-                    <button class="nav-dropdown-item" id="nav-redo" type="button">Redo</button>
-                </div>
-            </div>
         </th:block>
     </nav>
     <script th:inline="javascript">

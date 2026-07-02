@@ -256,7 +256,7 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/bulkAddTags", method = RequestMethod.POST)
-    public String bulkAddTags(@RequestParam String ids, @RequestParam String tags, @RequestParam Integer sceneId) {
+    public String bulkAddTags(@RequestParam String ids, @RequestParam String tags, @RequestParam(required = false) Integer sceneId, @RequestParam(required = false) Integer projectId) {
         if (ids != null && !ids.trim().isEmpty()) {
             java.util.List<Integer> blockIds = new java.util.ArrayList<>();
             for (String idStr : ids.split(",")) {
@@ -267,7 +267,38 @@ public class BlockController {
                 }
             }
             blockService.addTagsToBlocks(blockIds, tags);
-            projectVersionService.autoSaveVersionForScene(sceneId);
+            if (projectId != null) {
+                projectVersionService.autoSaveVersion(projectId);
+            } else if (sceneId != null) {
+                projectVersionService.autoSaveVersionForScene(sceneId);
+            }
+        }
+        if (projectId != null) {
+            return "redirect:/project/show?id=" + projectId;
+        }
+        return "redirect:/scene/show?id=" + sceneId;
+    }
+
+    @RequestMapping(value = "/bulkDelete", method = RequestMethod.POST)
+    public String bulkDelete(@RequestParam String ids, @RequestParam(required = false) Integer sceneId, @RequestParam(required = false) Integer projectId) {
+        if (ids != null && !ids.trim().isEmpty()) {
+            java.util.List<Integer> blockIds = new java.util.ArrayList<>();
+            for (String idStr : ids.split(",")) {
+                try {
+                    blockIds.add(Integer.parseInt(idStr.trim()));
+                } catch (NumberFormatException e) {
+                    // Ignore
+                }
+            }
+            blockService.deleteBlocks(blockIds);
+            if (projectId != null) {
+                projectVersionService.autoSaveVersion(projectId);
+            } else if (sceneId != null) {
+                projectVersionService.autoSaveVersionForScene(sceneId);
+            }
+        }
+        if (projectId != null) {
+            return "redirect:/project/show?id=" + projectId;
         }
         return "redirect:/scene/show?id=" + sceneId;
     }

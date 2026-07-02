@@ -432,4 +432,27 @@ public class BlockServiceImpl implements BlockService {
             }
         }
     }
+
+    @Override
+    @Transactional
+    public void deleteBlocks(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        java.util.Set<Integer> sceneIds = new java.util.HashSet<>();
+        for (Integer id : ids) {
+            blockRepository.findById(id).ifPresent(block -> {
+                sceneIds.add(block.getScene().getId());
+            });
+        }
+        blockRepository.deleteAllById(ids);
+        for (Integer sceneId : sceneIds) {
+            List<Block> remainingBlocks = blockRepository.findBySceneIdOrderByOrderAsc(sceneId);
+            int order = 1;
+            for (Block b : remainingBlocks) {
+                b.setOrder(order++);
+                blockRepository.save(b);
+            }
+        }
+    }
 }

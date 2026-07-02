@@ -18,7 +18,7 @@
 
             <label>
                 Content
-                <textarea spellcheck="true" rows="1" cols="30" th:field="*{content}"></textarea>
+                <textarea spellcheck="true" rows="3" cols="80" th:field="*{content}"></textarea>
                 <span th:if="${#fields.hasErrors('content')}" th:errors="*{content}"></span>
             </label>
             <label>

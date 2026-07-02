@@ -244,3 +244,20 @@ body.htmx-swapping {
 h1.scene-header > small a[role="button"] {
     font-size: 0.75em;
 }
+
+.scene-name-wrap input[name="name"],
+#create-scene-row input[type="text"],
+#create-scene-below-form input[type="text"],
+form[action*="/scene/"] input[type="text"],
+form[hx-post*="/scene/"] input[type="text"] {
+    width: 100%;
+    max-width: 600px;
+    box-sizing: border-box;
+}
+
+form[action*="/block/"] textarea,
+form[hx-post*="/block/"] textarea {
+    width: 100%;
+    max-width: 800px;
+    box-sizing: border-box;
+}

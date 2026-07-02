@@ -15,10 +15,7 @@
         <form th:action="@{/block/edit}" method="post" th:object="${commandModel}">
             <input type="hidden" th:field="*{id}" />
             <input type="hidden" th:field="*{sceneId}" />
-            <p>
-                <button type="button" id="undo-btn" onclick="document.querySelector('textarea[name=content]').focus(); document.execCommand('undo')">&#8592; Undo</button>
-                <button type="button" id="redo-btn" onclick="document.querySelector('textarea[name=content]').focus(); document.execCommand('redo')">Redo &#8594;</button>
-            </p>
+
             <label>
                 Content
                 <textarea spellcheck="true" rows="1" cols="30" th:field="*{content}"></textarea>

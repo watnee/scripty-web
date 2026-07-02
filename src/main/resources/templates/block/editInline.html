@@ -3,10 +3,7 @@
     <script>document.currentScript.previousElementSibling.querySelector('.save-time').textContent = new Date().toLocaleTimeString();</script>
     <input type="hidden" name="id" th:value="${commandModel.id}" />
     <input type="hidden" name="sceneId" th:value="${commandModel.sceneId}" />
-    <p>
-        <button type="button" onclick="this.closest('form').querySelector('textarea').focus(); document.execCommand('undo')">&#8592; Undo</button>
-        <button type="button" onclick="this.closest('form').querySelector('textarea').focus(); document.execCommand('redo')">Redo &#8594;</button>
-    </p>
+
     <textarea spellcheck="true" rows="1" style="width: 100%; height: 1.5em; min-height: 1.5em; padding: 0.25em;" name="content" th:text="${commandModel.content}"></textarea>
     <input type="hidden" name="personId" th:value="${commandModel.personId}" />
 </form>

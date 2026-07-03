@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v1';
+const CACHE_NAME = 'scripty-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/offline.html',
@@ -80,27 +80,59 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy for static assets: Cache-First, fall back to network
+  // Cache-First only for immutable static assets; everything else (htmx
+  // fragments like /block/editInline) must hit the network or it goes stale.
+  const isStaticAsset = url.origin !== self.location.origin
+    || url.pathname.startsWith('/css/')
+    || url.pathname.startsWith('/js/')
+    || url.pathname.startsWith('/icons/')
+    || url.pathname.startsWith('/fonts/')
+    || url.pathname === '/favicon.ico'
+    || url.pathname === '/manifest.json'
+    || url.pathname === '/offline.html';
+
+  if (isStaticAsset) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(event.request).then((networkResponse) => {
+          // If response is valid, cache it dynamically for our own origin
+          if (networkResponse && networkResponse.status === 200 && url.origin === self.location.origin) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        }).catch(() => {
+          // Fallback if resource is not found (e.g. image fallback)
+          if (event.request.destination === 'image') {
+            return caches.match('/icons/icon-192.png');
+          }
+        });
+      })
+    );
+    return;
+  }
+
+  // Dynamic GETs: Network-First, fall back to cache only when offline
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
-        // If response is valid, cache it dynamically for our own origin
-        if (networkResponse && networkResponse.status === 200 && url.origin === self.location.origin) {
-          const responseClone = networkResponse.clone();
+    fetch(event.request)
+      .then((response) => {
+        if (response.status === 200) {
+          const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
           });
         }
-        return networkResponse;
-      }).catch(() => {
-        // Fallback if resource is not found (e.g. image fallback)
-        if (event.request.destination === 'image') {
-          return caches.match('/icons/icon-192.png');
-        }
-      });
-    })
+        return response;
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          return cachedResponse || caches.match('/offline.html');
+        });
+      })
   );
 });

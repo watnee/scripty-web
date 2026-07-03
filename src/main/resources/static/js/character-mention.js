@@ -14,6 +14,24 @@
         });
     }
 
+    // Read by the hx-trigger input filters on the block forms: while the
+    // caret sits in an @token that is plausibly still being typed (matches a
+    // character, or is a single word so far), hold the delayed autosave so a
+    // half-typed mention is never saved. Enter still saves explicitly.
+    window.characterMentionHold = function(evt) {
+        var t = evt.target;
+        if (!t || t.tagName !== 'TEXTAREA' || t.name !== 'content') return false;
+        var form = t.closest('form');
+        if (!form || !form.querySelector('.character-mention-data')) return false;
+        var token = findToken(t);
+        if (!token) return false;
+        var query = token.query.toLowerCase();
+        if (query.indexOf(' ') === -1) return true;
+        return getPersons(form).some(function(p) {
+            return p.name.toLowerCase().indexOf(query) !== -1;
+        });
+    };
+
     // Finds an "@query" token ending at the caret; the @ must start the text
     // or follow whitespace so email-like text doesn't trigger the menu.
     function findToken(textarea) {
@@ -166,7 +184,16 @@
     });
 
     document.addEventListener('blur', function(e) {
-        if (e.target === activeTextarea) closeMenu();
+        var t = e.target;
+        if (t === activeTextarea) closeMenu();
+        // An active token holds back the edit form's autosave; flush the
+        // pending change when the user leaves the field so it isn't lost.
+        if (t && t.tagName === 'TEXTAREA' && t.name === 'content' && window.htmx) {
+            var form = t.closest('form');
+            if (form && (form.getAttribute('hx-post') || '').indexOf('editInline') !== -1 && findToken(t)) {
+                window.htmx.trigger(form, 'forceSave');
+            }
+        }
     }, true);
 
     document.addEventListener('scroll', function(e) {

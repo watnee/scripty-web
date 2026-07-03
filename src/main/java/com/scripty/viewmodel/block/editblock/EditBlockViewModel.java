@@ -16,7 +16,16 @@ public class EditBlockViewModel {
     
     private int sceneId;
     private List<EditPersonViewModel> persons;
-    
+    private String personName;
+
+    public String getPersonName() {
+        return personName;
+    }
+
+    public void setPersonName(String personName) {
+        this.personName = personName;
+    }
+
     // Specifically to handle redisplaying when validation errors happen
     private EditBlockCommandModel createBlockCommandModel;
 

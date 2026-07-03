@@ -104,7 +104,16 @@ public class BlockServiceImpl implements BlockService {
         commandModel.setId(existingBlock.getId());
         commandModel.setContent(existingBlock.getContent());
         if (existingBlock.getPerson() != null) {
-            commandModel.setPersonId(existingBlock.getPerson().getId());
+            Integer personId = existingBlock.getPerson().getId();
+            commandModel.setPersonId(personId);
+            // resolve the name from the already-loaded list; the block's
+            // person is a lazy proxy and there is no open session here
+            for (Person p : allPersons) {
+                if (p.getId() == personId) {
+                    vm.setPersonName(p.getName());
+                    break;
+                }
+            }
         }
         commandModel.setSceneId(scene.getId());
         commandModel.setTags(existingBlock.getTags());

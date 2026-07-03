@@ -621,3 +621,23 @@ kbd {
     color: var(--accent, #475569);
     font-size: 1rem;
 }
+/* Focus mode: hide distractions while writing on the project page */
+#focus-toggle[aria-pressed="true"] {
+    box-shadow: 0 2px 4px -1px var(--fg) inset;
+    background: var(--pressed-interactive-bg);
+    color: var(--accent);
+}
+
+body.focus-mode header,
+body.focus-mode .focus-hide,
+body.focus-mode #history-dropdown,
+body.focus-mode .scene-header small,
+body.focus-mode .table-blocks-all .block-left-controls,
+body.focus-mode .table-blocks-all tr > td:last-child {
+    display: none !important;
+}
+
+body.focus-mode .scenes-column {
+    max-width: 46rem;
+    margin: 0 auto;
+}

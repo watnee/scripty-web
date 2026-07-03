@@ -98,7 +98,7 @@ html:not([data-theme-setting]) #theme-dropdown .theme-toggle-btn .system-icon {
 header {
     position: relative; /* Set relative positioning so absolute theme toggle aligns to it */
     border-bottom: none;
-    padding: 0.75rem 1.5rem;
+    padding: 0.4rem 1.5rem;
 }
 
 header nav {
@@ -373,6 +373,8 @@ body.htmx-swapping {
 
 .scene-header {
     font-size: 1em !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
 }
 
 h1.scene-header > small a[role="button"] {
@@ -422,8 +424,8 @@ form[hx-post*="/block/"] textarea {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
     background-color: var(--box-bg, #ffffff);
     border: 1px solid var(--border, #e0e0e0);
     border-radius: 6px;
@@ -1105,4 +1107,42 @@ kbd {
         max-width: 100% !important;
         width: 100% !important;
     }
+}
+
+/* Compact top layout rules */
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.top-bar nav[aria-label="Breadcrumb"] {
+    margin: 0 !important;
+}
+
+.top-bar .text-size-control {
+    margin: 0 !important;
+    flex-grow: 1;
+}
+
+main {
+    padding-top: 0.4rem !important;
+}
+
+main h1 {
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.4rem !important;
+}
+
+main h2 {
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.4rem !important;
+}
+
+main h3 {
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.4rem !important;
 }

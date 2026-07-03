@@ -1,8 +1,6 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <form hx-post="${pageContext.request.contextPath}/block/editInline" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="input delay:500ms from:find textarea, change from:find select">
-    <small class="save-timestamp" style="color: #999; font-size: 0.75em;">Saved <span class="save-time"></span></small>
-    <script>document.currentScript.previousElementSibling.querySelector('.save-time').textContent = new Date().toLocaleTimeString();</script>
     <input type="hidden" name="id" value="${commandModel.id}" />
     <input type="hidden" name="sceneId" value="${commandModel.sceneId}" />
     <p>

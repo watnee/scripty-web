@@ -470,3 +470,154 @@ tr.filtered-out {
 .default-project-badge.is-default::before {
     content: "★ ";
 }
+
+/* Help Page Specific Styling */
+.help-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+.help-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.help-search-wrapper {
+    position: relative;
+    max-width: 500px;
+    margin: 1.5rem auto 0 auto;
+}
+
+.help-search-input {
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    border-radius: 50px;
+    border: 1px solid var(--border, #cbd5e1);
+    background-color: var(--box-bg, #ffffff);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.help-search-input:focus {
+    outline: none;
+    border-color: var(--accent, #475569);
+    box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.15);
+}
+
+.help-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border, #cbd5e1);
+    padding-bottom: 1rem;
+}
+
+.help-tab-btn {
+    background: none;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--muted-fg, #64748b);
+    cursor: pointer;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+}
+
+.help-tab-btn:hover {
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    color: var(--accent, inherit);
+}
+
+.help-tab-btn.active {
+    background-color: var(--accent, #475569);
+    color: var(--bg, #ffffff);
+}
+
+.help-content-section {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.help-content-section.active {
+    display: block;
+}
+
+.help-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.help-card {
+    background-color: var(--box-bg, #ffffff);
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.help-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.06);
+    border-color: var(--accent, #475569);
+}
+
+.help-card h3 {
+    margin-top: 0;
+    color: var(--accent, #1e293b);
+    border-bottom: 1px dashed var(--border, #cbd5e1);
+    padding-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.help-card p, .help-card ul {
+    margin-bottom: 0;
+}
+
+kbd {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    color: #334155;
+    display: inline-block;
+    font-size: 0.85em;
+    font-weight: 700;
+    line-height: 1;
+    padding: 2px 5px;
+    white-space: nowrap;
+}
+
+.help-shortcut-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.help-shortcut-row:last-child {
+    border-bottom: none;
+}
+
+.help-tip-box {
+    background: linear-gradient(135deg, rgba(71, 85, 105, 0.05), rgba(71, 85, 105, 0.01));
+    border-left: 4px solid var(--accent, #475569);
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1.5rem 0;
+}
+
+.help-tip-box h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--accent, #475569);
+    font-size: 1rem;
+}

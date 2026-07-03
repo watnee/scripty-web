@@ -33,5 +33,10 @@ public class HomeController {
         }
         return "index";
     }
+
+    @RequestMapping(value = "/help", method = RequestMethod.GET)
+    public String help() {
+        return "help";
+    }
     
 }

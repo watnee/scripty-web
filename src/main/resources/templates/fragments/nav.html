@@ -9,6 +9,7 @@
             <a th:href="@{/team/list}" th:aria-current="${currentPage == 'teams'} ? 'page'">Teams</a>
             <a sec:authorize="hasRole('ROLE_ADMIN')" th:href="@{/account/list}" th:aria-current="${currentPage == 'accounts'} ? 'page'">Accounts</a>
         </th:block>
+        <a th:href="@{/help}" th:aria-current="${currentPage == 'help'} ? 'page'">Help</a>
     </nav>
     <script th:inline="javascript">
     (function() {

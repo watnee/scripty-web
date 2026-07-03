@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111111">
+    <link rel="manifest" th:href="@{/manifest.json}">
+    <meta charset="UTF-8">
+    <title>Scripty - Help Center</title>
+    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
+    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('help')}"></div>
+    <main class="help-container">
+        <div th:replace="~{fragments/logout :: logout}"></div>
+        
+        <div class="help-header">
+            <h1>Scripty Help Center</h1>
+            <p class="muted">Find guides, keyboard shortcuts, and tips to help you write and collaborate on screenplays.</p>
+            <div class="help-search-wrapper">
+                <input type="text" id="help-search" class="help-search-input" placeholder="Search help topics..." aria-label="Search help topics">
+            </div>
+        </div>
+
+        <div class="help-tabs" id="help-tabs-container">
+            <button class="help-tab-btn active" data-tab="tab-overview">Overview</button>
+            <button class="help-tab-btn" data-tab="tab-editing">Writing &amp; Editing</button>
+            <button class="help-tab-btn" data-tab="tab-history">Shortcuts &amp; History</button>
+            <button class="help-tab-btn" data-tab="tab-collaboration">Casting &amp; Collaboration</button>
+        </div>
+
+        <!-- SEARCH RESULTS (Visible only when searching) -->
+        <div id="search-results-section" style="display: none;">
+            <h2>Search Results</h2>
+            <div class="help-card-grid" id="search-results-grid">
+                <!-- Dynamically filled by JS -->
+            </div>
+            <p id="search-no-results" class="muted" style="display: none; text-align: center; margin-top: 2rem;">No matching help topics found. Try search terms like "shortcut", "undo", "drag", or "team".</p>
+        </div>
+
+        <!-- TAB: OVERVIEW -->
+        <div class="help-content-section active" id="tab-overview">
+            <div class="help-card-grid">
+                <div class="help-card" data-keywords="introduction scripty screenplay scene block outline hierarchy">
+                    <h3>🎬 Welcome to Scripty</h3>
+                    <p>Scripty is a web-based collaborative screenwriting platform. It breaks screenplays down into semantic hierarchical units rather than page-based text, allowing for granular editing, character management, versioning, and real-time cooperation.</p>
+                </div>
+                <div class="help-card" data-keywords="project scene block hierarchy relationship structure">
+                    <h3>📐 The Scripty Hierarchy</h3>
+                    <p>Scripts in Scripty are structured using three primary entities:</p>
+                    <ul style="margin-top: 0.5rem; padding-left: 1.25rem;">
+                        <li><strong>Projects</strong>: The top-level screenplay document.</li>
+                        <li><strong>Scenes</strong>: Headings/sections within a project that group dialogue and action blocks.</li>
+                        <li><strong>Blocks</strong>: Granular paragraphs representing action description or character dialogue.</li>
+                    </ul>
+                </div>
+                <div class="help-card" data-keywords="default project home dashboard settings automatically">
+                    <h3>⭐ Default Project</h3>
+                    <p>Click the <strong>Set as Default</strong> badge at the top of any Project page. When set, that project will load automatically whenever you navigate to the main dashboard of Scripty, bypassing lists.</p>
+                </div>
+            </div>
+            
+            <div class="help-tip-box" data-keywords="tip quickstart casting workflow path">
+                <h4>💡 Quickstart Workflow Tip</h4>
+                <p>Begin by creating a new Project under <strong>Projects</strong>, add a Scene, and click inside the scene's first block to start typing. To manage characters, go to <strong>Casting</strong> first to record actors, then add corresponding Characters inside your project's settings.</p>
+            </div>
+        </div>
+
+        <!-- TAB: WRITING & EDITING -->
+        <div class="help-content-section" id="tab-editing">
+            <div class="help-card-grid">
+                <div class="help-card" data-keywords="edit edit block input inline content changes click auto-save save">
+                    <h3>✍️ Inline Editing &amp; Auto-Save</h3>
+                    <p>Simply click on the text area of any block to edit its dialogue or action description inline. Your changes are automatically saved in the background after you stop typing (500ms delay).</p>
+                </div>
+                <div class="help-card" data-keywords="add new block insert create below plus icon block controls">
+                    <h3>➕ Adding Blocks</h3>
+                    <p>To insert a block, click the plus icon (<kbd>+</kbd>) on the left side of any block. This inserts a fresh input text area directly underneath, preserving the script's chronological sequence.</p>
+                </div>
+                <div class="help-card" data-keywords="drag and drop reorder move block order dots vertical drag-handle handle">
+                    <h3>↕️ Drag &amp; Drop Reordering</h3>
+                    <p>Reorder blocks instantly by dragging the double vertical dots (<kbd>⋮⋮</kbd>) on the far-left control panel of any block row. Drag the row to the desired position in the table and drop to save the new order.</p>
+                </div>
+                <div class="help-card" data-keywords="bookmark star pin toggle highlight favorite block priority 📌">
+                    <h3>📌 Bookmarks &amp; Pinned Blocks</h3>
+                    <p>Keep track of key story beats or high-priority dialogue. Toggle the star (<kbd>☆</kbd>) to bookmark a block, or click the pushpin (<kbd>📌</kbd>) to pin a block for fast reference.</p>
+                </div>
+                <div class="help-card" data-keywords="bulk action tags delete multiple blocks checkbox check select all">
+                    <h3>📦 Bulk Tagging &amp; Deletions</h3>
+                    <p>Need to manage multiple blocks at once? Use the checkboxes on the left control panel of blocks (or the "Select All" checkbox) to perform bulk actions: type tags in the action bar to add tags in bulk, or click the trash can (<kbd>🗑️</kbd>) to delete multiple selected blocks.</p>
+                </div>
+                <div class="help-card" data-keywords="font size text zoom controls A+ A- scale larger smaller readability">
+                    <h3>🔍 Text Size Controls</h3>
+                    <p>Improve screenplay readability. Use the <kbd>A−</kbd> and <kbd>A+</kbd> buttons on the top-right of the page to scale text size down or up instantly to suit your display.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: SHORTCUTS & HISTORY -->
+        <div class="help-content-section" id="tab-history">
+            <div class="help-card-grid">
+                <div class="help-card" data-keywords="keyboard shortcuts quick hotkeys modifiers undo redo control command">
+                    <h3>⌨️ Keyboard Shortcuts</h3>
+                    <p>Use these system-wide shortcuts to undo and redo edits when focusing text elements:</p>
+                    <div style="margin-top: 0.75rem;">
+                        <div class="help-shortcut-row">
+                            <span>Undo Edit</span>
+                            <kbd id="kb-undo">Cmd + Z</kbd>
+                        </div>
+                        <div class="help-shortcut-row">
+                            <span>Redo Edit</span>
+                            <kbd id="kb-redo">Cmd + Shift + Z</kbd>
+                        </div>
+                    </div>
+                </div>
+                <div class="help-card" data-keywords="history dropdown undo redo version history project version list restore 🕒">
+                    <h3>🕒 History Dropdown Menu</h3>
+                    <p>Access the history menu by clicking the clock icon (<kbd>🕒</kbd>) next to the text controls. From here, you can click <strong>Undo</strong>, <strong>Redo</strong>, or select <strong>Version History</strong> to review previous auto-saved stages of the project.</p>
+                </div>
+                <div class="help-card" data-keywords="version history list list-versions backup revision timestamp restore auto-save">
+                    <h3>💾 Version History</h3>
+                    <p>Every structural change (reorders, deletes, inserts) triggers a version save. In the Version History page, you can review the history of edits with precise timestamps and project state backups.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CASTING & COLLABORATION -->
+        <div class="help-content-section" id="tab-collaboration">
+            <div class="help-card-grid">
+                <div class="help-card" data-keywords="casting actors list profile assign database roles">
+                    <h3>👥 Actor Casting</h3>
+                    <p>The <strong>Casting</strong> tab allows you to maintain a directory of real-world actors. You can assign actors to script Characters, making it easy to track casting configurations and contact details.</p>
+                </div>
+                <div class="help-card" data-keywords="characters list roles assign actor character-profile profile name">
+                    <h3>🎭 Characters &amp; Roles</h3>
+                    <p>Create and edit script characters. Each block of dialogue can be associated with a specific character name. Click a character name to view their profile, assigned actor, and full list of dialogue blocks.</p>
+                </div>
+                <div class="help-card" data-keywords="teams collaboration share member group list-teams collaborate project-team">
+                    <h3>🤝 Team Collaboration</h3>
+                    <p>Collaborate with others! Go to <strong>Teams</strong> to form a project group. By assigning a Project to a Team in the project settings, all team members gain shared editing access to work on the screenplay.</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+    
+    <!-- Tab & Search Interaction Script -->
+    <script th:inline="javascript">
+    (function() {
+        // Tab switching logic
+        const tabsContainer = document.getElementById('help-tabs-container');
+        const tabButtons = tabsContainer.querySelectorAll('.help-tab-btn');
+        const contentSections = document.querySelectorAll('.help-content-section');
+        const searchInput = document.getElementById('help-search');
+        const searchResultsSection = document.getElementById('search-results-section');
+        const searchResultsGrid = document.getElementById('search-results-grid');
+        const searchNoResults = document.getElementById('search-no-results');
+
+        // Dynamic keyboard shortcut detection based on OS
+        const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+        const kbUndo = document.getElementById('kb-undo');
+        const kbRedo = document.getElementById('kb-redo');
+        if (kbUndo && kbRedo) {
+            kbUndo.textContent = isMac ? '⌘ Z' : 'Ctrl + Z';
+            kbRedo.textContent = isMac ? '⌘ ⇧ Z' : 'Ctrl + Y';
+        }
+
+        function switchTab(tabId) {
+            tabButtons.forEach(btn => {
+                if (btn.getAttribute('data-tab') === tabId) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            contentSections.forEach(section => {
+                if (section.id === tabId) {
+                    section.classList.add('active');
+                } else {
+                    section.classList.remove('active');
+                }
+            });
+        }
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Clear search when switching tabs manually
+                searchInput.value = '';
+                searchResultsSection.style.display = 'none';
+                tabsContainer.style.display = 'flex';
+                switchTab(this.getAttribute('data-tab'));
+            });
+        });
+
+        // Client-side real-time search
+        // Collect all cards and their metadata keywords
+        const cards = [];
+        document.querySelectorAll('.help-card').forEach(card => {
+            cards.push({
+                element: card,
+                title: card.querySelector('h3').textContent,
+                html: card.innerHTML,
+                keywords: (card.getAttribute('data-keywords') || '').toLowerCase(),
+                text: card.textContent.toLowerCase()
+            });
+        });
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+            
+            if (query === '') {
+                // Show current active tab section
+                searchResultsSection.style.display = 'none';
+                tabsContainer.style.display = 'flex';
+                const activeBtn = tabsContainer.querySelector('.help-tab-btn.active');
+                if (activeBtn) {
+                    switchTab(activeBtn.getAttribute('data-tab'));
+                }
+                return;
+            }
+
+            // Hide normal tabs and sections
+            tabsContainer.style.display = 'none';
+            contentSections.forEach(s => s.classList.remove('active'));
+            searchResultsSection.style.display = 'block';
+            
+            // Filter cards
+            searchResultsGrid.innerHTML = '';
+            let matchCount = 0;
+
+            cards.forEach(card => {
+                const isMatch = card.title.toLowerCase().includes(query) || 
+                                card.keywords.includes(query) || 
+                                card.text.includes(query);
+                
+                if (isMatch) {
+                    matchCount++;
+                    // Clone the card and insert
+                    const cardClone = document.createElement('div');
+                    cardClone.className = 'help-card';
+                    cardClone.innerHTML = card.html;
+                    searchResultsGrid.appendChild(cardClone);
+                }
+            });
+
+            if (matchCount === 0) {
+                searchNoResults.style.display = 'block';
+            } else {
+                searchNoResults.style.display = 'none';
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

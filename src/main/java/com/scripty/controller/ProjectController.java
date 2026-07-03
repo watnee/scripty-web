@@ -147,6 +147,35 @@ public class ProjectController {
         return "redirect:/project/show?id=" + project.getId();
     }
 
+    @RequestMapping(value = "/editNameInline")
+    public String editNameInline(@RequestParam Integer id, Model model) {
+        EditProjectViewModel viewModel = projectService.getEditProjectViewModel(id);
+        model.addAttribute("viewModel", viewModel);
+        model.addAttribute("commandModel", viewModel.getEditProjectCommandModel());
+        return "project/editNameInline";
+    }
+
+    @RequestMapping(value = "/editNameInline", method = RequestMethod.POST)
+    public String saveEditNameInline(@Valid @ModelAttribute("commandModel") EditProjectCommandModel commandModel, BindingResult bindingResult, Model model) {
+        if (bindingResult.hasErrors()) {
+            EditProjectViewModel viewModel = projectService.getEditProjectViewModel(commandModel.getId());
+            model.addAttribute("viewModel", viewModel);
+            model.addAttribute("commandModel", commandModel);
+            return "project/editNameInline";
+        }
+        Project project = projectService.saveEditProjectCommandModel(commandModel);
+        projectVersionService.autoSaveVersion(project.getId());
+        model.addAttribute("project", project);
+        return "project/showNameInline";
+    }
+
+    @RequestMapping(value = "/showNameInline")
+    public String showNameInline(@RequestParam Integer id, Model model) {
+        Project project = projectService.read(id);
+        model.addAttribute("project", project);
+        return "project/showNameInline";
+    }
+
     @RequestMapping(value = "/titlePage")
     public String titlePage(@RequestParam Integer id, Model model) {
         TitlePageCommandModel commandModel = projectService.getTitlePageCommandModel(id);

@@ -1,0 +1,4 @@
+<div xmlns:th="http://www.thymeleaf.org" class="project-title-container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+    <a th:href="@{/project/show(id=${project.id})}" th:text="${project.title}"></a>
+    <button type="button" class="rename-project-btn" style="margin: 0; padding: 0.25rem 0.5rem; font-size: 0.8rem;" th:attr="hx-get=@{/project/editNameInline(id=${project.id})}" hx-target="closest .project-title-container" hx-swap="outerHTML">Rename</button>
+</div>

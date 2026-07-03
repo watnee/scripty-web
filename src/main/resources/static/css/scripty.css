@@ -149,6 +149,13 @@ main.home {
     padding-right: 0;
 }
 
+.block-left-controls-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    vertical-align: middle;
+}
+
 #table-blocks .drag-handle,
 .table-blocks-all .drag-handle {
     cursor: grab;

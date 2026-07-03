@@ -1,8 +1,10 @@
 <tr xmlns:th="http://www.thymeleaf.org" draggable="true">
     <td class="block-left-controls">
-        <input type="checkbox" class="block-select-checkbox" style="margin-right: 8px;" />
-        <a th:attr="hx-get=@{/block/createInline(sceneId=${viewModel.sceneId})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
-        <span class="drag-handle">&#8942;&#8942;</span>
+        <div class="block-left-controls-inner">
+            <input type="checkbox" class="block-select-checkbox" />
+            <a th:attr="hx-get=@{/block/createInline(sceneId=${viewModel.sceneId})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
+            <span class="drag-handle">&#8942;&#8942;</span>
+        </div>
     </td>
     <td class="block-content">
         <form th:attr="hx-post=@{/block/createBelowInline}" hx-target="closest tr" hx-swap="outerHTML" hx-trigger="keydown[key=='Enter'&amp;&amp;!event.shiftKey] from:find textarea, createNext">

@@ -1,8 +1,10 @@
 <tr xmlns:th="http://www.thymeleaf.org" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order},data-tags=${block.tags}">
     <td class="block-left-controls">
-        <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" style="margin-right: 8px;" />
-        <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" class="create-below" role="button">+</a>
-        <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
+        <div class="block-left-controls-inner">
+            <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" />
+            <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" class="create-below" role="button">+</a>
+            <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
+        </div>
     </td>
     <td class="block-content" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML">
         <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">

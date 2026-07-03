@@ -82,11 +82,76 @@
     <script th:inline="javascript">
     (function() {
         let lastFocusedEditable = null;
+        let hoveredRow = null;
 
         // Track last focused input/textarea
         document.addEventListener('focusin', function(e) {
             if (e.target.tagName === 'TEXTAREA' || (e.target.tagName === 'INPUT' && (e.target.type === 'text' || e.target.type === 'textarea'))) {
                 lastFocusedEditable = e.target;
+            }
+        });
+
+        // Track hovered block row
+        document.addEventListener('mouseover', function(e) {
+            const tr = e.target.closest('tr[data-block-id]');
+            hoveredRow = tr || null;
+        });
+
+        function executeMove(blockId, direction) {
+            sessionStorage.setItem('activeBlockId', blockId);
+            const url = '/block/' + direction + '?id=' + blockId;
+            fetch(url, {
+                method: 'GET',
+                redirect: 'manual'
+            }).then(function() {
+                window.location.reload();
+            }).catch(function() {
+                window.location.reload();
+            });
+        }
+
+        // Move blocks up/down keyboard shortcut
+        document.addEventListener('keydown', function(e) {
+            const isMoveUp = (e.altKey && e.key === 'ArrowUp') || (e.ctrlKey && e.shiftKey && e.key === 'ArrowUp');
+            const isMoveDown = (e.altKey && e.key === 'ArrowDown') || (e.ctrlKey && e.shiftKey && e.key === 'ArrowDown');
+            
+            if (!isMoveUp && !isMoveDown) return;
+            
+            // Find active or hovered block row
+            const activeEl = document.activeElement;
+            let targetRow = null;
+            if (activeEl) {
+                targetRow = activeEl.closest('tr[data-block-id]');
+            }
+            if (!targetRow) {
+                targetRow = hoveredRow;
+            }
+            
+            if (!targetRow) return;
+            
+            e.preventDefault();
+            
+            const blockId = targetRow.getAttribute('data-block-id');
+            const direction = isMoveUp ? 'moveUp' : 'moveDown';
+            
+            // Check if there is an active form to save first
+            const form = targetRow.querySelector('form');
+            if (form) {
+                const formData = new FormData(form);
+                const searchParams = new URLSearchParams(formData);
+                const actionUrl = form.getAttribute('hx-post') || form.action || '/block/editInline';
+                
+                fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: searchParams.toString()
+                }).then(function() {
+                    executeMove(blockId, direction);
+                }).catch(function() {
+                    executeMove(blockId, direction);
+                });
+            } else {
+                executeMove(blockId, direction);
             }
         });
 
@@ -383,6 +448,30 @@
             });
         }
 
+        function restoreActiveBlock() {
+            const activeBlockId = sessionStorage.getItem('activeBlockId');
+            if (activeBlockId) {
+                sessionStorage.removeItem('activeBlockId');
+                const row = document.querySelector(`tr[data-block-id="${activeBlockId}"]`);
+                if (row) {
+                    const blockContent = row.querySelector('.block-content');
+                    if (blockContent) {
+                        blockContent.click();
+                        
+                        setTimeout(function() {
+                            const textarea = row.querySelector('textarea[name="content"]');
+                            if (textarea) {
+                                textarea.focus();
+                                const val = textarea.value;
+                                textarea.value = '';
+                                textarea.value = val;
+                            }
+                        }, 100);
+                    }
+                }
+            }
+        }
+
         // Run on initial load
         function initAll() {
             initHistoryDropdown();
@@ -390,6 +479,7 @@
             document.querySelectorAll('textarea').forEach(autoGrowTextarea);
             document.querySelectorAll('input[type="text"]').forEach(autoGrowInput);
             updateLastEditedTimes();
+            restoreActiveBlock();
         }
 
         if (document.readyState === 'loading') {

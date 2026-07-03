@@ -16,6 +16,7 @@ import com.scripty.service.SceneService;
 import com.scripty.service.UserService;
 import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -45,28 +46,60 @@ public class ProjectController {
     public String list(Model model, Principal principal) {
 
         String userTeam = null;
+        Integer defaultProjectId = null;
         if (principal != null) {
             User currentUser = userService.readByUsername(principal.getName());
             if (currentUser != null) {
                 userTeam = currentUser.getTeam();
+                defaultProjectId = currentUser.getDefaultProjectId();
             }
         }
 
         ProjectListViewModel viewModel = projectService.getProjectListViewModel(userTeam);
 
         model.addAttribute("viewModel", viewModel);
+        model.addAttribute("defaultProjectId", defaultProjectId);
 
         return "project/list";
     }
 
     @RequestMapping(value = "/show")
-    public String show(@RequestParam Integer id, Model model) {
+    public String show(@RequestParam Integer id, Model model, Principal principal) {
 
         ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
 
+        boolean isDefault = false;
+        if (principal != null) {
+            User currentUser = userService.readByUsername(principal.getName());
+            if (currentUser != null && id.equals(currentUser.getDefaultProjectId())) {
+                isDefault = true;
+            }
+        }
+
         model.addAttribute("viewModel", viewModel);
+        model.addAttribute("isDefault", isDefault);
 
         return "project/show";
+    }
+
+    @RequestMapping(value = "/toggleDefault", method = RequestMethod.POST)
+    public String toggleDefault(@RequestParam Integer id, Principal principal, HttpServletRequest request) {
+        if (principal != null) {
+            User currentUser = userService.readByUsername(principal.getName());
+            if (currentUser != null) {
+                if (id.equals(currentUser.getDefaultProjectId())) {
+                    currentUser.setDefaultProjectId(null);
+                } else {
+                    currentUser.setDefaultProjectId(id);
+                }
+                userService.update(currentUser);
+            }
+        }
+        String referer = request.getHeader("Referer");
+        if (referer != null && !referer.isEmpty()) {
+            return "redirect:" + referer;
+        }
+        return "redirect:/project/list";
     }
 
     @RequestMapping(value = "/delete")

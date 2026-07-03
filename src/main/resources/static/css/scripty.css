@@ -400,3 +400,73 @@ form[hx-post*="/block/"] textarea {
 tr.filtered-out {
     display: none !important;
 }
+
+/* Star Icon Style Toggle */
+.default-project-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.25rem;
+    padding: 0.2rem 0.5rem;
+    color: var(--muted-fg, #888);
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.default-project-toggle:hover {
+    color: #f59e0b; /* Golden Yellow */
+    transform: scale(1.15);
+}
+
+.default-project-toggle .icon-filled {
+    display: none;
+}
+
+.default-project-toggle.is-default {
+    color: #f59e0b;
+}
+
+.default-project-toggle.is-default .icon-outline {
+    display: none;
+}
+
+.default-project-toggle.is-default .icon-filled {
+    display: inline;
+}
+
+/* Badge Style Toggle (for Detail Page) */
+.default-project-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.5em;
+    font-weight: 600;
+    padding: 0.2em 0.6em;
+    border-radius: 9999px;
+    border: 1px solid var(--border, #cbd5e1);
+    background-color: var(--box-bg, #ffffff);
+    color: var(--muted, #64748b);
+    cursor: pointer;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.default-project-badge::before {
+    content: "☆ ";
+    margin-right: 0.25em;
+}
+
+.default-project-badge:hover {
+    background-color: var(--accent-bg, #f1f5f9);
+    color: var(--accent, #1e293b);
+    border-color: var(--accent, #64748b);
+}
+
+.default-project-badge.is-default {
+    background-color: #f59e0b; /* Golden yellow */
+    color: #ffffff;
+    border-color: #d97706;
+}
+
+.default-project-badge.is-default::before {
+    content: "★ ";
+}

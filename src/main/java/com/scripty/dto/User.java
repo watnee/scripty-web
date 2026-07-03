@@ -34,6 +34,9 @@ public class User {
     @Column(length = 50)
     private String team;
 
+    @Column(name = "default_project_id")
+    private Integer defaultProjectId;
+
     @Transient
     private boolean admin;
 
@@ -120,5 +123,13 @@ public class User {
 
     public void setProducer(boolean producer) {
         this.producer = producer;
+    }
+
+    public Integer getDefaultProjectId() {
+        return defaultProjectId;
+    }
+
+    public void setDefaultProjectId(Integer defaultProjectId) {
+        this.defaultProjectId = defaultProjectId;
     }
 }

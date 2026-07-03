@@ -2,7 +2,7 @@
     <td colspan="2">
         <form th:attr="hx-post=@{/scene/createInline}" hx-target="#create-scene-row" hx-swap="outerHTML" hx-trigger="keyup[key=='Enter'] from:find input[name='name'], blur[target.value.trim()!=''] from:find input[name='name']">
             <input type="hidden" name="projectId" th:value="${projectId}" />
-            <input type="text" spellcheck="true" name="name" autofocus placeholder="Scene name" _="on blur if my value.trim() is '' remove #create-scene-row then show #create-scene-btn" />
+            <input type="text" spellcheck="true" name="name" autofocus placeholder="Scene name" _="on blur if my value.trim() is '' remove #create-scene-row then show #create-scene-btn on click set my.value to '' on focus set my.value to ''" />
         </form>
     </td>
 </tr>

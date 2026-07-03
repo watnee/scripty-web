@@ -20,7 +20,7 @@
             <input type="hidden" th:field="*{projectId}" />
             <label>
                 Name
-                <input type="text" spellcheck="true" th:field="*{name}" />
+                <input type="text" spellcheck="true" th:field="*{name}" _="on click set my.value to '' on focus set my.value to ''" />
                 <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
             </label>
             <p>

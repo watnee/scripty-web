@@ -1,5 +1,5 @@
 <form xmlns:th="http://www.thymeleaf.org" th:attr="hx-post=@{/scene/editNameInline}" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" hx-trigger="input delay:500ms from:find input[name='name'], change from:find input[name='name']">
     <input type="hidden" name="id" th:value="${commandModel.id}" />
     <input type="hidden" name="projectId" th:value="${commandModel.projectId}" />
-    <input type="text" name="name" th:value="${commandModel.name}" style="font-size: inherit; font-weight: inherit; min-width: 20em;" autofocus _="on keydown[key=='Enter'] halt the event then blur() me then send blur to me" />
+    <input type="text" name="name" th:value="${commandModel.name}" style="font-size: inherit; font-weight: inherit; min-width: 20em;" autofocus _="on keydown[key=='Enter'] halt the event then blur() me on click set my.value to '' on focus set my.value to '' on blur if my.value.trim() is '' trigger change" />
 </form>

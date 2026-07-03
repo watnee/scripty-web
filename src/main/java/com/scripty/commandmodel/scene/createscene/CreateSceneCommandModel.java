@@ -14,7 +14,6 @@ import jakarta.validation.constraints.NotBlank;
  */
 public class CreateSceneCommandModel {
     
-    @NotBlank(message = "You must supply a value for Name.")
     @Size(max = 255, message = "Name must be no more than 255 characters in length.")
     private String name;
     

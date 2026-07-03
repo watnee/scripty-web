@@ -5,6 +5,10 @@
  */
 package com.scripty.controller;
 
+import com.scripty.dto.User;
+import com.scripty.service.UserService;
+import java.security.Principal;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -16,8 +20,17 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Controller
 public class HomeController {
     
+    @Autowired
+    private UserService userService;
+    
     @RequestMapping(value = "/", method = RequestMethod.GET)
-    public String index() {
+    public String index(Principal principal) {
+        if (principal != null) {
+            User currentUser = userService.readByUsername(principal.getName());
+            if (currentUser != null && currentUser.getDefaultProjectId() != null) {
+                return "redirect:/project/show?id=" + currentUser.getDefaultProjectId();
+            }
+        }
         return "index";
     }
     

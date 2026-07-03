@@ -22,7 +22,19 @@
         <h1>Projects</h1>
         <table id="table-projects">
             <tr th:each="project : ${viewModel.projects}">
-                <td><a th:href="@{/project/show(id=${project.id})}" th:text="${project.title}"></a></td>
+                <td style="width: 2.5rem; padding: 0; text-align: center; vertical-align: middle;">
+                    <form th:action="@{/project/toggleDefault}" method="POST" style="margin: 0; display: inline;">
+                        <input type="hidden" name="id" th:value="${project.id}" />
+                        <button type="submit" 
+                                class="default-project-toggle" 
+                                th:classappend="${project.id == defaultProjectId} ? 'is-default' : ''"
+                                th:title="${project.id == defaultProjectId} ? 'Remove as default project' : 'Set as default project'">
+                            <span class="icon-outline">☆</span>
+                            <span class="icon-filled">★</span>
+                        </button>
+                    </form>
+                </td>
+                <td style="vertical-align: middle;"><a th:href="@{/project/show(id=${project.id})}" th:text="${project.title}"></a></td>
             </tr>
         </table>
         <p><a th:href="@{/project/create}" role="button">Create New Project</a></p>

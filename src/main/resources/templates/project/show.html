@@ -33,7 +33,19 @@
             <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
             <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
         </div>
-        <h1><span th:text="${viewModel.title}"></span> <small><a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/project/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this project?') halt">delete</a></small></h1>
+        <h1>
+            <span th:text="${viewModel.title}"></span>
+            <form th:action="@{/project/toggleDefault}" method="POST" style="display: inline-block; margin-left: 0.5rem; vertical-align: middle;">
+                <input type="hidden" name="id" th:value="${viewModel.id}" />
+                <button type="submit" 
+                        class="default-project-badge" 
+                        th:classappend="${isDefault} ? 'is-default' : ''"
+                        th:title="${isDefault} ? 'Remove as default project' : 'Set as default project'">
+                    <span class="badge-text" th:text="${isDefault} ? 'Default Project' : 'Set as Default'"></span>
+                </button>
+            </form>
+            <small><a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/project/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this project?') halt">delete</a></small>
+        </h1>
         <div class="f-row" style="gap: 2rem; align-items: start">
             <div style="flex: 3">
                 <h2>Scenes <small><a th:href="@{/scene/all(projectId=${viewModel.id})}" role="button">View All</a></small></h2>

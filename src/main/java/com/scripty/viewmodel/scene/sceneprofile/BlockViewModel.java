@@ -84,5 +84,15 @@ public class BlockViewModel {
     public void setTags(String tags) {
         this.tags = tags;
     }
+
+    private String element;
+
+    public String getElement() {
+        return element;
+    }
+
+    public void setElement(String element) {
+        this.element = element;
+    }
 }
 

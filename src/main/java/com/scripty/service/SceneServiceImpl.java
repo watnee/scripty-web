@@ -83,14 +83,18 @@ public class SceneServiceImpl implements SceneService {
             vm.setNextSceneName(nextScene.getName());
         }
 
+        FountainElement[] elements = FountainElement.classifyScene(blocks, true);
         List<BlockViewModel> blockViewModels = new ArrayList<>();
-        for (Block block : blocks) {
+        for (int i = 0; i < blocks.size(); i++) {
+            Block block = blocks.get(i);
             BlockViewModel bvm = new BlockViewModel();
             bvm.setId(block.getId());
             bvm.setOrder(block.getOrder());
             bvm.setContent(block.getContent());
             bvm.setBookmarked(block.isBookmarked());
             bvm.setPinned(block.isPinned());
+            bvm.setTags(block.getTags());
+            bvm.setElement(elements[i].getLabel());
             if (block.getPerson() != null) {
                 Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
                 if (person != null) {

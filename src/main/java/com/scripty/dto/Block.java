@@ -104,5 +104,27 @@ public class Block {
     public void setTags(String tags) {
         this.tags = tags;
     }
+
+    @Column(name = "element")
+    private String element;
+
+    public String getElement() {
+        return element;
+    }
+
+    public void setElement(String element) {
+        this.element = element;
+    }
+
+    @Column(name = "element_manual", nullable = false)
+    private boolean elementManual;
+
+    public boolean isElementManual() {
+        return elementManual;
+    }
+
+    public void setElementManual(boolean elementManual) {
+        this.elementManual = elementManual;
+    }
 }
 

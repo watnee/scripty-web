@@ -121,6 +121,7 @@ public class BlockServiceImpl implements BlockService {
         vm.setBookmarked(block.isBookmarked());
         vm.setPinned(block.isPinned());
         vm.setTags(block.getTags());
+        vm.setElement(FountainElement.labelFor(block.getElement(), block.getContent(), block.getPerson() != null));
         if (block.getPerson() != null) {
             Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
             if (person != null) {
@@ -156,10 +157,13 @@ public class BlockServiceImpl implements BlockService {
         block.setScene(scene);
         block.setBookmarked(false);
         block.setPinned(false);
+        block.setElement(FountainElement.classify(content, person != null).getLabel());
 
         int order = blockRepository.countBySceneId(scene.getId()) + 1;
         block.setOrder(order);
-        return blockRepository.save(block);
+        Block saved = blockRepository.save(block);
+        reclassifySceneBlocks(scene.getId());
+        return saved;
     }
 
     @Override
@@ -188,11 +192,14 @@ public class BlockServiceImpl implements BlockService {
         block.setScene(scene);
         block.setBookmarked(false);
         block.setPinned(false);
+        block.setElement(FountainElement.classify(content, person != null).getLabel());
 
         int newOrder = existingBlock.getOrder() + 1;
         blockRepository.incrementOrdersAbove(existingBlock.getOrder(), scene.getId());
         block.setOrder(newOrder);
-        return blockRepository.save(block);
+        Block saved = blockRepository.save(block);
+        reclassifySceneBlocks(scene.getId());
+        return saved;
     }
 
     @Override
@@ -218,10 +225,14 @@ public class BlockServiceImpl implements BlockService {
         block.setContent(content);
         block.setPerson(person);
         block.setScene(scene);
+        if (!block.isElementManual()) {
+            block.setElement(FountainElement.classify(content, person != null).getLabel());
+        }
         if (cmd.getTags() != null) {
             block.setTags(cmd.getTags());
         }
         blockRepository.save(block);
+        reclassifySceneBlocks(scene.getId());
         return block;
     }
 
@@ -231,6 +242,7 @@ public class BlockServiceImpl implements BlockService {
         Block block = blockRepository.findById(id).orElse(null);
         blockRepository.delete(block);
         blockRepository.decrementOrdersAbove(block.getOrder(), block.getScene().getId());
+        reclassifySceneBlocks(block.getScene().getId());
         return block;
     }
 
@@ -247,6 +259,7 @@ public class BlockServiceImpl implements BlockService {
             block.setOrder(tempOrder);
             blockRepository.save(blockAbove);
             blockRepository.save(block);
+            reclassifySceneBlocks(block.getScene().getId());
         }
         return block;
     }
@@ -264,6 +277,7 @@ public class BlockServiceImpl implements BlockService {
             block.setOrder(tempOrder);
             blockRepository.save(blockBelow);
             blockRepository.save(block);
+            reclassifySceneBlocks(block.getScene().getId());
         }
         return block;
     }
@@ -283,6 +297,7 @@ public class BlockServiceImpl implements BlockService {
         }
         block.setOrder(newOrder);
         blockRepository.save(block);
+        reclassifySceneBlocks(sceneId);
         return block;
     }
 
@@ -295,6 +310,42 @@ public class BlockServiceImpl implements BlockService {
         }
         block.setBookmarked(!block.isBookmarked());
         return blockRepository.save(block);
+    }
+
+    @Override
+    @Transactional
+    public Block changeElement(Integer id, String element) {
+        Block block = blockRepository.findById(id).orElse(null);
+        if (block == null) {
+            throw new IllegalArgumentException("Block not found");
+        }
+        FountainElement chosen = FountainElement.fromLabel(element);
+        if (chosen != null) {
+            block.setElement(chosen.getLabel());
+            block.setElementManual(true);
+        } else {
+            block.setElement(FountainElement.classify(block.getContent(), block.getPerson() != null).getLabel());
+            block.setElementManual(false);
+        }
+        Block saved = blockRepository.save(block);
+        reclassifySceneBlocks(block.getScene().getId());
+        return saved;
+    }
+
+    private void reclassifySceneBlocks(Integer sceneId) {
+        List<Block> blocks = blockRepository.findBySceneIdOrderByOrderAsc(sceneId);
+        FountainElement[] labels = FountainElement.classifyScene(blocks, false);
+        for (int i = 0; i < blocks.size(); i++) {
+            Block block = blocks.get(i);
+            if (block.isElementManual()) {
+                continue;
+            }
+            String label = labels[i].getLabel();
+            if (!label.equals(block.getElement())) {
+                block.setElement(label);
+                blockRepository.save(block);
+            }
+        }
     }
 
     @Override

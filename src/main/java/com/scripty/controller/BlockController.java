@@ -115,6 +115,23 @@ public class BlockController {
         return "block/showInline";
     }
 
+    @RequestMapping(value = "/changeElementInline")
+    public String changeElementInline(@RequestParam Integer id, Model model) {
+        Block block = blockService.read(id);
+        model.addAttribute("block", blockService.getBlockViewModel(id));
+        model.addAttribute("manual", block.isElementManual());
+        model.addAttribute("elements", com.scripty.service.FountainElement.values());
+        return "block/changeElementInline";
+    }
+
+    @RequestMapping(value = "/changeElementInline", method = RequestMethod.POST)
+    public String saveChangeElementInline(@RequestParam Integer id, @RequestParam(required = false) String element, Model model) {
+        Block block = blockService.changeElement(id, element);
+        BlockViewModel vm = blockService.getBlockViewModel(block.getId());
+        model.addAttribute("block", vm);
+        return "block/showInline";
+    }
+
     // Show Form
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model) {

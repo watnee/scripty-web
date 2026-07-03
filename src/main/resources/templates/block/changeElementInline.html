@@ -1,0 +1,17 @@
+<th:block xmlns:th="http://www.thymeleaf.org">
+<form th:attr="hx-post=@{/block/changeElementInline}" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="change from:find select" hx-boost="false" style="margin-bottom: 0.25rem;">
+    <input type="hidden" name="id" th:value="${block.id}" />
+    <label style="display: inline-flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 0.85em;">
+        Element:
+        <select name="element" style="margin: 0; width: auto; display: inline-block; padding: 0.15rem 1.75rem 0.15rem 0.5rem; font-size: 0.9em;">
+            <option value="" th:selected="${!manual}">Auto-detect</option>
+            <option th:each="el : ${elements}" th:value="${el.label}" th:text="${el.label}" th:selected="${manual and el.label == block.element}"></option>
+        </select>
+    </label>
+    <a th:attr="hx-get=@{/block/showInline(id=${block.id})}" hx-target="closest .block-content" hx-swap="innerHTML" hx-boost="false" role="button" style="font-size: 0.8em; margin-left: 0.5rem;">cancel</a>
+</form>
+<p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
+    <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
+</p>
+<span th:text="${block.content}"></span>
+</th:block>

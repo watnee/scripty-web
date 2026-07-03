@@ -1,4 +1,11 @@
 <th:block xmlns:th="http://www.thymeleaf.org">
+<a th:if="${not #strings.isEmpty(block.element)}"
+   class="block-element-label"
+   th:classappend="'element-' + ${#strings.replace(#strings.toLowerCase(block.element), ' ', '-')}"
+   th:attr="hx-get=@{/block/changeElementInline(id=${block.id})}"
+   hx-target="closest .block-content" hx-swap="innerHTML" hx-boost="false"
+   role="button" title="Change element label"
+   th:text="${block.element}"></a>
 <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
     <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
 </p>

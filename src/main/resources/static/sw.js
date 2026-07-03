@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v1';
+const CACHE_NAME = 'scripty-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/offline.html',
@@ -79,6 +79,17 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
+
+  // Only apply Cache-First to real static assets. Dynamic HTML fragments
+  // (HTMX endpoints like /block/*, /scene/*) must always hit the network,
+  // otherwise stale content gets served and GET endpoints with side effects
+  // (e.g. /block/toggleBookmark) never reach the server.
+  const STATIC_PREFIXES = ['/css/', '/js/', '/icons/', '/fonts/'];
+  const STATIC_PATHS = ['/favicon.ico', '/manifest.json', '/offline.html'];
+  const isStaticAsset = url.origin !== self.location.origin
+    || STATIC_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))
+    || STATIC_PATHS.includes(url.pathname);
+  if (!isStaticAsset) return;
 
   // Strategy for static assets: Cache-First, fall back to network
   event.respondWith(

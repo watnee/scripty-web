@@ -1,0 +1,2 @@
+ALTER TABLE `block`
+ADD COLUMN element VARCHAR(32) NULL;

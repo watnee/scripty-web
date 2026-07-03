@@ -280,6 +280,85 @@ form[hx-post*="/block/"] textarea {
     border: 1px solid var(--border, #cbd5e1);
 }
 
+/* Keep the label visible and full-size even though block-table buttons
+   are hidden until hover (#table-blocks a[role="button"] sets opacity: 0) */
+#table-blocks a.block-element-label[role="button"],
+.table-blocks-all a.block-element-label[role="button"] {
+    opacity: 1;
+    font-size: 0.65rem;
+}
+
+.block-element-label {
+    float: right;
+    display: inline-block;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.1rem 0.45rem;
+    margin-left: 0.5rem;
+    border-radius: 4px;
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.block-element-label.element-scene-heading {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    border-color: #93c5fd;
+}
+
+.block-element-label.element-character {
+    background-color: #ede9fe;
+    color: #6d28d9;
+    border-color: #c4b5fd;
+}
+
+.block-element-label.element-dialogue {
+    background-color: #dcfce7;
+    color: #15803d;
+    border-color: #86efac;
+}
+
+.block-element-label.element-parenthetical {
+    background-color: #fef3c7;
+    color: #b45309;
+    border-color: #fcd34d;
+}
+
+.block-element-label.element-transition {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+}
+
+.block-element-label.element-lyric {
+    background-color: #fce7f3;
+    color: #be185d;
+    border-color: #f9a8d4;
+}
+
+.block-element-label.element-centered {
+    background-color: #ccfbf1;
+    color: #0f766e;
+    border-color: #5eead4;
+}
+
+.block-element-label.element-section {
+    background-color: #e0e7ff;
+    color: #4338ca;
+    border-color: #a5b4fc;
+}
+
+.block-element-label.element-synopsis {
+    background-color: #f3e8ff;
+    color: #7e22ce;
+    border-color: #d8b4fe;
+}
+
 .tags-bulk-action {
     display: flex;
     align-items: center;

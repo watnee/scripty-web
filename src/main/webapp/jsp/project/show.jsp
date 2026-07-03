@@ -19,7 +19,7 @@
                     <li aria-current="page">${viewModel.title}</li>
                 </ol>
             </nav>
-            <h1>${viewModel.title} <small><a href="${pageContext.request.contextPath}/project/edit?id=${viewModel.id}" role="button">edit</a> <a href="${pageContext.request.contextPath}/project/delete?id=${viewModel.id}" role="button" _="on click if not confirm('Are you sure you want to delete this project?') halt">delete</a></small></h1>
+            <h1>${viewModel.title} <small><a href="${pageContext.request.contextPath}/project/edit?id=${viewModel.id}" role="button">edit</a> <a href="${pageContext.request.contextPath}/project/delete?id=${viewModel.id}" role="button" class="bad">delete</a></small></h1>
             <div class="f-row" style="gap: 2rem; align-items: start">
                 <div style="flex: 3">
                     <h2>Scenes <small><a href="${pageContext.request.contextPath}/scene/all?projectId=${viewModel.id}" role="button">View All</a></small></h2>

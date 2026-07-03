@@ -105,11 +105,16 @@ public class ProjectController {
         return "redirect:/project/list";
     }
 
-    @RequestMapping(value = "/delete")
+    @RequestMapping(value = "/delete", method = RequestMethod.GET)
+    public String deleteConfirm(@RequestParam Integer id, Model model) {
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+        model.addAttribute("viewModel", viewModel);
+        return "project/delete";
+    }
+
+    @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public String delete(@RequestParam Integer id) {
-
         projectService.deleteProject(id);
-
         return "redirect:/project/list";
     }
 

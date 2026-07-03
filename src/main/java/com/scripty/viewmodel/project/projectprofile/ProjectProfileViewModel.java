@@ -17,6 +17,9 @@ public class ProjectProfileViewModel {
     private String title;
     private String team;
     private java.time.LocalDateTime lastEdited;
+    private String screenplayTitle;
+    private String writers;
+    private String contactInfo;
     private List<SceneViewModel> scenes;
     private List<PersonViewModel> persons;
 
@@ -67,5 +70,28 @@ public class ProjectProfileViewModel {
     public void setPersons(List<PersonViewModel> persons) {
         this.persons = persons;
     }
-    
+
+    public String getScreenplayTitle() {
+        return screenplayTitle;
+    }
+
+    public void setScreenplayTitle(String screenplayTitle) {
+        this.screenplayTitle = screenplayTitle;
+    }
+
+    public String getWriters() {
+        return writers;
+    }
+
+    public void setWriters(String writers) {
+        this.writers = writers;
+    }
+
+    public String getContactInfo() {
+        return contactInfo;
+    }
+
+    public void setContactInfo(String contactInfo) {
+        this.contactInfo = contactInfo;
+    }
 }

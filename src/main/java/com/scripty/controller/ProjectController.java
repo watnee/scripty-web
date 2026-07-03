@@ -2,6 +2,7 @@ package com.scripty.controller;
 
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
+import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
 import com.scripty.dto.Project;
 import com.scripty.dto.Scene;
 import com.scripty.dto.User;
@@ -136,6 +137,32 @@ public class ProjectController {
         }
 
         Project project = projectService.saveEditProjectCommandModel(commandModel);
+        projectVersionService.autoSaveVersion(project.getId());
+
+        return "redirect:/project/show?id=" + project.getId();
+    }
+
+    @RequestMapping(value = "/titlePage")
+    public String titlePage(@RequestParam Integer id, Model model) {
+        TitlePageCommandModel commandModel = projectService.getTitlePageCommandModel(id);
+        ProjectProfileViewModel projectViewModel = projectService.getProjectProfileViewModel(id);
+
+        model.addAttribute("project", projectViewModel);
+        model.addAttribute("commandModel", commandModel);
+
+        return "project/titlePage";
+    }
+
+    @RequestMapping(value = "/titlePage", method = RequestMethod.POST)
+    public String saveTitlePage(@Valid @ModelAttribute("commandModel") TitlePageCommandModel commandModel, BindingResult bindingResult, Model model) {
+        if (bindingResult.hasErrors()) {
+            ProjectProfileViewModel projectViewModel = projectService.getProjectProfileViewModel(commandModel.getId());
+            model.addAttribute("project", projectViewModel);
+            model.addAttribute("commandModel", commandModel);
+            return "project/titlePage";
+        }
+
+        Project project = projectService.saveTitlePageCommandModel(commandModel);
         projectVersionService.autoSaveVersion(project.getId());
 
         return "redirect:/project/show?id=" + project.getId();

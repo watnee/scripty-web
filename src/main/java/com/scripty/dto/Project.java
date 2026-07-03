@@ -20,6 +20,14 @@ public class Project {
     private String title;
     private String team;
 
+    @Column(name = "screenplay_title")
+    private String screenplayTitle;
+
+    private String writers;
+
+    @Column(name = "contact_info", length = 1000)
+    private String contactInfo;
+
     @Column(name = "last_edited")
     private LocalDateTime lastEdited;
 
@@ -53,5 +61,29 @@ public class Project {
 
     public void setLastEdited(LocalDateTime lastEdited) {
         this.lastEdited = lastEdited;
+    }
+
+    public String getScreenplayTitle() {
+        return screenplayTitle;
+    }
+
+    public void setScreenplayTitle(String screenplayTitle) {
+        this.screenplayTitle = screenplayTitle;
+    }
+
+    public String getWriters() {
+        return writers;
+    }
+
+    public void setWriters(String writers) {
+        this.writers = writers;
+    }
+
+    public String getContactInfo() {
+        return contactInfo;
+    }
+
+    public void setContactInfo(String contactInfo) {
+        this.contactInfo = contactInfo;
     }
 }

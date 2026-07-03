@@ -54,7 +54,7 @@
                     <span class="badge-text" th:text="${isDefault} ? 'Default Project' : 'Set as Default'"></span>
                 </button>
             </form>
-            <small><a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/project/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this project?') halt">delete</a></small>
+            <small><a th:href="@{/project/titlePage(id=${viewModel.id})}" role="button">Title Page</a> <a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/project/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this project?') halt">delete</a></small>
         </h1>
         <div class="f-row" style="gap: 2rem; align-items: start">
             <div style="flex: 3">

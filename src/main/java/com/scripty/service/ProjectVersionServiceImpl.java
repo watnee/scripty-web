@@ -99,6 +99,9 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
 
         Map<String, Object> snapshot = new HashMap<>();
         snapshot.put("title", project.getTitle());
+        snapshot.put("screenplayTitle", project.getScreenplayTitle());
+        snapshot.put("writers", project.getWriters());
+        snapshot.put("contactInfo", project.getContactInfo());
 
         List<Map<String, Object>> personSnapshots = new ArrayList<>();
         for (Person person : persons) {
@@ -210,6 +213,9 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         personRepository.deleteAll(existingPersons);
 
         project.setTitle((String) snapshot.get("title"));
+        project.setScreenplayTitle((String) snapshot.get("screenplayTitle"));
+        project.setWriters((String) snapshot.get("writers"));
+        project.setContactInfo((String) snapshot.get("contactInfo"));
         project.setLastEdited(java.time.LocalDateTime.now());
         projectRepository.save(project);
 

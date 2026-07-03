@@ -2,6 +2,7 @@ package com.scripty.service;
 
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
+import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
@@ -111,6 +112,9 @@ public class ProjectServiceImpl implements ProjectService {
         vm.setTitle(project.getTitle());
         vm.setTeam(project.getTeam());
         vm.setLastEdited(project.getLastEdited());
+        vm.setScreenplayTitle(project.getScreenplayTitle());
+        vm.setWriters(project.getWriters());
+        vm.setContactInfo(project.getContactInfo());
 
         List<SceneViewModel> sceneViewModels = new ArrayList<>();
         for (Scene scene : scenes) {
@@ -212,6 +216,31 @@ public class ProjectServiceImpl implements ProjectService {
     public Project deleteProject(Integer id) {
         Project project = projectRepository.findById(id).orElse(null);
         projectRepository.delete(project);
+        return project;
+    }
+
+    @Override
+    public TitlePageCommandModel getTitlePageCommandModel(Integer id) {
+        Project project = projectRepository.findById(id).orElse(null);
+        if (project == null) return null;
+        TitlePageCommandModel cmd = new TitlePageCommandModel();
+        cmd.setId(project.getId());
+        cmd.setScreenplayTitle(project.getScreenplayTitle());
+        cmd.setWriters(project.getWriters());
+        cmd.setContactInfo(project.getContactInfo());
+        return cmd;
+    }
+
+    @Override
+    public Project saveTitlePageCommandModel(TitlePageCommandModel cmd) {
+        Project project = projectRepository.findById(cmd.getId()).orElse(null);
+        if (project != null) {
+            project.setScreenplayTitle(cmd.getScreenplayTitle());
+            project.setWriters(cmd.getWriters());
+            project.setContactInfo(cmd.getContactInfo());
+            project.setLastEdited(java.time.LocalDateTime.now());
+            projectRepository.save(project);
+        }
         return project;
     }
 }

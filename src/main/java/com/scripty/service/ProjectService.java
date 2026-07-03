@@ -2,6 +2,7 @@ package com.scripty.service;
 
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
+import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
 import com.scripty.dto.Project;
 import com.scripty.dto.Scene;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
@@ -23,6 +24,8 @@ public interface ProjectService {
 
     Project saveCreateProjectCommandModel(CreateProjectCommandModel createProjectCommandModel);
     Project saveEditProjectCommandModel(EditProjectCommandModel editProjectCommandModel);
+    TitlePageCommandModel getTitlePageCommandModel(Integer id);
+    Project saveTitlePageCommandModel(TitlePageCommandModel titlePageCommandModel);
 
     Project deleteProject(Integer id);
 }

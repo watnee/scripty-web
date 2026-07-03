@@ -151,7 +151,9 @@ public class PersonServiceImpl implements PersonService {
     @Override
     public Person saveCreatePersonCommandModel(CreatePersonCommandModel cmd) {
         Person person = new Person();
-        Actor actor = actorRepository.findById(cmd.getActorId()).orElse(null);
+        Actor actor = cmd.getActorId() != null
+                ? actorRepository.findById(cmd.getActorId()).orElse(null)
+                : null;
         Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
 
         person.setName(cmd.getName());
@@ -164,7 +166,9 @@ public class PersonServiceImpl implements PersonService {
     @Override
     public Person saveEditPersonCommandModel(EditPersonCommandModel cmd) {
         Person person = personRepository.findById(cmd.getId()).orElse(null);
-        Actor actor = actorRepository.findById(cmd.getActorId()).orElse(null);
+        Actor actor = cmd.getActorId() != null
+                ? actorRepository.findById(cmd.getActorId()).orElse(null)
+                : null;
         Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
 
         person.setName(cmd.getName());

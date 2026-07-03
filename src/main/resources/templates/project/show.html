@@ -49,6 +49,10 @@
         <div class="f-row" style="gap: 2rem; align-items: start">
             <div style="flex: 3">
                 <h2>Scenes <small><a th:href="@{/scene/all(projectId=${viewModel.id})}" role="button">View All</a></small></h2>
+                <div class="project-search-wrapper" style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: center;">
+                    <input type="text" id="project-search" placeholder="Search scene names, blocks, character names, or tags..." style="flex-grow: 1; max-width: 500px; margin: 0; padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid var(--border, #cbd5e1);" />
+                    <button type="button" id="project-search-clear" class="bad" style="margin: 0; display: none;">Clear</button>
+                </div>
                 <div class="tags-bulk-action" style="margin-bottom: 1.5rem;">
                     <label style="display: flex; align-items: center; margin: 0 0.5rem 0 0; cursor: pointer; user-select: none;">
                         <input type="checkbox" id="project-select-all-blocks" style="margin-right: 6px;" /> Select All
@@ -72,7 +76,7 @@
                         </small>
                     </h3>
                     <table class="table-blocks-all" th:id="'table-blocks-' + ${scene.id}">
-                        <tr th:each="block : ${scene.blocks}" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order}">
+                        <tr th:each="block : ${scene.blocks}" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order},data-tags=${block.tags}">
                             <td class="block-left-controls">
                                 <div class="block-left-controls-inner">
                                     <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" />
@@ -85,6 +89,12 @@
                                     <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
                                 </p>
                                 <span th:text="${block.content}"></span>
+                                <div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list">
+                                    <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
+                                          th:if="${not #strings.isEmpty(#strings.trim(tag))}"
+                                          th:text="${#strings.trim(tag)}"
+                                          class="block-tag clickable"></span>
+                                </div>
                             </td>
                             <td>
                                 <span class="nowrap">
@@ -318,6 +328,92 @@
                     if (!cb.checked) allChecked = false;
                 });
                 selectAllCheckbox.checked = allChecked;
+            }
+        });
+    })();
+    </script>
+    <script th:inline="javascript">
+    (function() {
+        const searchInput = document.getElementById('project-search');
+        const clearBtn = document.getElementById('project-search-clear');
+        if (!searchInput) return;
+
+        function performSearch() {
+            const query = searchInput.value.toLowerCase().trim();
+            if (clearBtn) {
+                clearBtn.style.display = query ? 'inline-block' : 'none';
+            }
+
+            const sceneHeaders = document.querySelectorAll('.scene-header');
+            sceneHeaders.forEach(header => {
+                const sceneNameDisplay = header.querySelector('.scene-name-display');
+                const sceneName = sceneNameDisplay ? sceneNameDisplay.textContent.toLowerCase() : '';
+                const sceneTable = header.nextElementSibling;
+                const isSceneNameMatch = sceneName.includes(query);
+
+                let matchedBlocksInScene = 0;
+
+                if (sceneTable && sceneTable.classList.contains('table-blocks-all')) {
+                    const rows = sceneTable.querySelectorAll('tr');
+                    rows.forEach(row => {
+                        const blockId = row.getAttribute('data-block-id');
+                        if (blockId) {
+                            const contentCell = row.querySelector('.block-content');
+                            const blockContentText = contentCell ? contentCell.textContent.toLowerCase() : '';
+                            const tagsAttr = row.getAttribute('data-tags') || '';
+                            const blockTagsText = tagsAttr.toLowerCase();
+
+                            const isBlockMatch = blockContentText.includes(query) || blockTagsText.includes(query);
+
+                            if (query === '') {
+                                row.style.display = '';
+                            } else if (isSceneNameMatch || isBlockMatch) {
+                                row.style.display = '';
+                                if (isBlockMatch) {
+                                    matchedBlocksInScene++;
+                                }
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        } else {
+                            // This is the create inline row or placeholder row
+                            row.style.display = (query === '') ? '' : 'none';
+                        }
+                    });
+                }
+
+                // Show/hide scene header and scene table
+                if (query === '') {
+                    header.style.display = '';
+                    if (sceneTable) sceneTable.style.display = '';
+                } else if (isSceneNameMatch || matchedBlocksInScene > 0) {
+                    header.style.display = '';
+                    if (sceneTable) sceneTable.style.display = '';
+                } else {
+                    header.style.display = 'none';
+                    if (sceneTable) sceneTable.style.display = 'none';
+                }
+            });
+        }
+
+        searchInput.addEventListener('input', performSearch);
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                performSearch();
+                searchInput.focus();
+            });
+        }
+
+        // Support tag clicks to filter
+        document.addEventListener('click', function(e) {
+            const tagBadge = e.target.closest('.block-tag.clickable');
+            if (tagBadge) {
+                const tagText = tagBadge.textContent.trim();
+                searchInput.value = tagText;
+                performSearch();
+                searchInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         });
     })();

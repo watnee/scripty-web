@@ -20,6 +20,10 @@
             </ol>
         </nav>
         <h1>Projects</h1>
+        <div class="project-list-search-wrapper" style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: center;">
+            <input type="text" id="project-list-search" placeholder="Search projects by title..." style="flex-grow: 1; max-width: 400px; margin: 0; padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid var(--border, #cbd5e1);" />
+            <button type="button" id="project-list-search-clear" class="bad" style="margin: 0; display: none;">Clear</button>
+        </div>
         <table id="table-projects">
             <tr th:each="project : ${viewModel.projects}">
                 <td style="width: 2.5rem; padding: 0; text-align: center; vertical-align: middle;">
@@ -41,5 +45,42 @@
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:inline="javascript">
+    (function() {
+        const searchInput = document.getElementById('project-list-search');
+        const clearBtn = document.getElementById('project-list-search-clear');
+        if (!searchInput) return;
+
+        function performSearch() {
+            const query = searchInput.value.toLowerCase().trim();
+            if (clearBtn) {
+                clearBtn.style.display = query ? 'inline-block' : 'none';
+            }
+
+            const rows = document.querySelectorAll('#table-projects tr');
+            rows.forEach(row => {
+                const titleLink = row.querySelector('a');
+                if (titleLink) {
+                    const titleText = titleLink.textContent.toLowerCase();
+                    if (titleText.includes(query)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        searchInput.addEventListener('input', performSearch);
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                performSearch();
+                searchInput.focus();
+            });
+        }
+    })();
+    </script>
 </body>
 </html>

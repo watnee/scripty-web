@@ -293,10 +293,25 @@
             applyTheme(currentTheme);
         }
 
+        function autoGrowTextarea(textarea) {
+            if (!textarea) return;
+            textarea.style.height = 'auto';
+            const style = window.getComputedStyle(textarea);
+            const isBorderBox = style.boxSizing === 'border-box';
+            let height = textarea.scrollHeight;
+            if (isBorderBox) {
+                const borderTop = parseFloat(style.borderTopWidth) || 0;
+                const borderBottom = parseFloat(style.borderBottomWidth) || 0;
+                height += borderTop + borderBottom;
+            }
+            textarea.style.height = height + 'px';
+        }
+
         // Run on initial load
         function initAll() {
             initHistoryDropdown();
             initThemeToggle();
+            document.querySelectorAll('textarea').forEach(autoGrowTextarea);
         }
 
         if (document.readyState === 'loading') {
@@ -307,6 +322,13 @@
 
         // Run on HTMX content swaps
         document.body.addEventListener('htmx:afterSwap', initAll);
+
+        // Dynamic adjustment as the user types
+        document.addEventListener('input', function(e) {
+            if (e.target && e.target.tagName === 'TEXTAREA') {
+                autoGrowTextarea(e.target);
+            }
+        });
 
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {

@@ -730,3 +730,335 @@ kbd {
     color: var(--accent, #475569);
     font-size: 1rem;
 }
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 768px) {
+    /* 1. Global layout structure stack */
+    .f-row {
+        flex-direction: column !important;
+        gap: 1.5rem !important;
+    }
+    .f-row > * {
+        width: 100% !important;
+        flex: none !important;
+    }
+
+    /* 2. Mobile Navigation Header Design */
+    header {
+        padding: 1rem !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+        position: relative !important;
+    }
+    header nav {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 0.75rem 1.25rem !important;
+        padding-right: 0 !important;
+        width: 100% !important;
+    }
+    .theme-toggle-container {
+        position: absolute !important;
+        top: 0.75rem !important;
+        right: 0.75rem !important;
+        margin: 0 !important;
+    }
+
+    /* Keep breadcrumbs wrapping nicely and readable */
+    nav[aria-label="Breadcrumb"] ol {
+        display: flex;
+        flex-wrap: wrap;
+        padding-left: 0;
+        gap: 0.25rem 0.5rem;
+    }
+
+    /* Help center specific mobile styling */
+    .help-container {
+        margin: 1rem auto !important;
+        padding: 0 1rem !important;
+    }
+    .help-tabs {
+        gap: 0.35rem !important;
+        border-bottom: none !important;
+        padding-bottom: 0 !important;
+    }
+    .help-tab-btn {
+        font-size: 0.85rem !important;
+        padding: 0.4rem 0.8rem !important;
+    }
+    .help-card-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+        gap: 1rem !important;
+    }
+
+    /* Force interactive elements/buttons that only show on hover to be permanently visible on touch devices */
+    h1 > small a[role="button"],
+    #table-scenes a[role="button"],
+    #table-blocks a[role="button"],
+    .table-blocks-all a[role="button"],
+    .scene-header a[role="button"] {
+        opacity: 1 !important;
+        font-size: 0.8em !important;
+        display: inline-flex !important;
+        align-items: center;
+        background-color: var(--accent-bg);
+        padding: 0.15rem 0.4rem !important;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        margin: 0.25rem 0.25rem 0 0 !important;
+        vertical-align: middle;
+        text-decoration: none;
+    }
+
+    /* Generic tables horizontal scroll */
+    table:not(.table-blocks-all):not(#table-blocks) {
+        display: block !important;
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+    
+    table:not(.table-blocks-all):not(#table-blocks) th,
+    table:not(.table-blocks-all):not(#table-blocks) td {
+        white-space: nowrap;
+    }
+
+    /* Version history creation form stack */
+    form[action*="/version/create"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.75rem !important;
+    }
+    form[action*="/version/create"] label {
+        width: 100%;
+    }
+    form[action*="/version/create"] input {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    form[action*="/version/create"] button {
+        width: 100%;
+        margin: 0 !important;
+    }
+}
+
+/* Card-based Block List for Small Mobiles */
+@media (max-width: 600px) {
+    .table-blocks-all, #table-blocks,
+    .table-blocks-all tbody, #table-blocks tbody,
+    .table-blocks-all tr, #table-blocks tr,
+    .table-blocks-all td, #table-blocks td {
+        display: block !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .table-blocks-all tr, #table-blocks tr {
+        background-color: var(--box-bg, #ffffff) !important;
+        border: 1px solid var(--border, #cbd5e1) !important;
+        border-radius: 8px !important;
+        margin-bottom: 1rem !important;
+        padding: 0.75rem !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03) !important;
+        position: relative !important;
+    }
+
+    .table-blocks-all tr.dragging, #table-blocks tr.dragging {
+        opacity: 0.5 !important;
+    }
+
+    .table-blocks-all tr.drag-over, #table-blocks tr.drag-over {
+        border-top: 3px solid var(--accent, #475569) !important;
+    }
+
+    /* Left controls cell styled as card header */
+    .table-blocks-all td.block-left-controls, #table-blocks td.block-left-controls {
+        padding: 0 0 0.5rem 0 !important;
+        border-bottom: 1px dashed var(--border, #cbd5e1) !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .block-left-controls-inner {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        gap: 12px !important;
+    }
+
+    /* Touch-friendly Drag Handle */
+    .table-blocks-all .drag-handle, #table-blocks .drag-handle {
+        font-size: 1.5em !important;
+        padding: 0.25rem 0.75rem !important;
+        background-color: var(--accent-bg);
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+    }
+
+    /* Checkbox layout alignment */
+    .block-select-checkbox {
+        width: 1.35rem !important;
+        height: 1.35rem !important;
+        margin: 0 !important;
+    }
+
+    /* Touch-friendly + Create Below Button */
+    .table-blocks-all td.block-left-controls a.create-below[role="button"],
+    #table-blocks td.block-left-controls a.create-below[role="button"] {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1.2rem !important;
+        padding: 0.25rem 0.75rem !important;
+        min-width: 0 !important;
+        background-color: var(--accent-bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--accent);
+        opacity: 1 !important;
+    }
+
+    /* Content Area inside Card */
+    .table-blocks-all td.block-content, #table-blocks td.block-content {
+        padding: 0.5rem 0 !important;
+        font-size: 1.05rem !important;
+        line-height: 1.5 !important;
+    }
+
+    .table-blocks-all td.block-content p, #table-blocks td.block-content p {
+        margin-top: 0 !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    /* Right controls styled as card footer toolbar */
+    .table-blocks-all td:last-child, #table-blocks td:last-child {
+        padding: 0.5rem 0 0 0 !important;
+        border-top: 1px dashed var(--border, #cbd5e1) !important;
+        margin-top: 0.5rem !important;
+        display: flex !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+    }
+
+    .table-blocks-all td:last-child .nowrap, #table-blocks td:last-child .nowrap {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+        width: 100% !important;
+        justify-content: flex-end !important;
+        flex-wrap: wrap !important;
+    }
+
+    /* Make star, bookmark, pin, edit/delete links look premium and touch-friendly */
+    .table-blocks-all td:last-child a, #table-blocks td:last-child a {
+        text-decoration: none !important;
+        font-size: 1rem !important;
+        padding: 0.35rem 0.6rem !important;
+        background-color: var(--accent-bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--text);
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 36px;
+    }
+
+    .table-blocks-all td:last-child a[role="button"], #table-blocks td:last-child a[role="button"] {
+        opacity: 1 !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+    }
+
+    .table-blocks-all td:last-child a.move-up, #table-blocks td:last-child a.move-up,
+    .table-blocks-all td:last-child a.move-down, #table-blocks td:last-child a.move-down {
+        opacity: 1 !important;
+        width: 36px !important;
+        height: 36px !important;
+        padding: 0 !important;
+    }
+
+    .table-blocks-all tr:last-child .move-up, #table-blocks tr:last-child .move-up {
+        margin-left: 0 !important;
+    }
+
+    /* Bulk Action card wrap/stack */
+    .tags-bulk-action {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.75rem !important;
+        padding: 1rem !important;
+    }
+    
+    .tags-bulk-action label {
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .tags-bulk-action input[type="text"] {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    .tags-bulk-action button {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0.6rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* Search inputs stack/wrap */
+    .project-search-wrapper, .project-list-search-wrapper {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+    }
+
+    .project-search-wrapper input, .project-list-search-wrapper input {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    .project-search-wrapper button, .project-list-search-wrapper button {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    /* Tag filters scroll horizontally to fit the screen width */
+    .tag-filter-bar {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        padding: 0.5rem 0 !important;
+        -webkit-overflow-scrolling: touch;
+        gap: 0.4rem !important;
+        width: 100% !important;
+        border-bottom: 1px dashed var(--border, #cbd5e1) !important;
+    }
+
+    .tag-filter-label {
+        white-space: nowrap !important;
+        align-self: center !important;
+    }
+
+    .tag-filter-pill {
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Ensure text inputs, textareas on all forms do not cause horizontal layout breaks */
+    input[type="text"], input[type="password"], textarea, select {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+}

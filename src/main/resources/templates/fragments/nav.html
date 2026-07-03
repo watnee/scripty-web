@@ -307,11 +307,51 @@
             textarea.style.height = height + 'px';
         }
 
+        function autoGrowInput(input) {
+            if (!input) return;
+            const isSceneName = input.closest('.scene-name-wrap') || 
+                                input.closest('#create-scene-row') || 
+                                input.closest('#create-scene-below-form');
+            const hasAutoGrowClass = input.classList.contains('auto-grow');
+            if (!isSceneName && !hasAutoGrowClass) return;
+
+            let tempSpan = document.getElementById('input-width-tester');
+            if (!tempSpan) {
+                tempSpan = document.createElement('span');
+                tempSpan.id = 'input-width-tester';
+                tempSpan.style.visibility = 'hidden';
+                tempSpan.style.position = 'absolute';
+                tempSpan.style.whiteSpace = 'pre';
+                document.body.appendChild(tempSpan);
+            }
+            
+            const style = window.getComputedStyle(input);
+            tempSpan.style.font = style.font;
+            tempSpan.style.fontFamily = style.fontFamily;
+            tempSpan.style.fontSize = style.fontSize;
+            tempSpan.style.fontWeight = style.fontWeight;
+            tempSpan.style.letterSpacing = style.letterSpacing;
+            tempSpan.style.textTransform = style.textTransform;
+            
+            tempSpan.textContent = input.value || input.placeholder || '';
+            
+            const paddingLeft = parseFloat(style.paddingLeft) || 0;
+            const paddingRight = parseFloat(style.paddingRight) || 0;
+            const borderLeft = parseFloat(style.borderLeftWidth) || 0;
+            const borderRight = parseFloat(style.borderRightWidth) || 0;
+            
+            const extra = paddingLeft + paddingRight + borderLeft + borderRight + 12;
+            const computedWidth = tempSpan.getBoundingClientRect().width + extra;
+            
+            input.style.width = computedWidth + 'px';
+        }
+
         // Run on initial load
         function initAll() {
             initHistoryDropdown();
             initThemeToggle();
             document.querySelectorAll('textarea').forEach(autoGrowTextarea);
+            document.querySelectorAll('input[type="text"]').forEach(autoGrowInput);
         }
 
         if (document.readyState === 'loading') {
@@ -325,8 +365,12 @@
 
         // Dynamic adjustment as the user types
         document.addEventListener('input', function(e) {
-            if (e.target && e.target.tagName === 'TEXTAREA') {
-                autoGrowTextarea(e.target);
+            if (e.target) {
+                if (e.target.tagName === 'TEXTAREA') {
+                    autoGrowTextarea(e.target);
+                } else if (e.target.tagName === 'INPUT' && e.target.type === 'text') {
+                    autoGrowInput(e.target);
+                }
             }
         });
 

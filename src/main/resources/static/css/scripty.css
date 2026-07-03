@@ -22,7 +22,7 @@
 }
 
 /* Global transitions for a premium dark mode toggle feel */
-body, main, header, nav, footer, table, td, th, input, textarea, button, select, .help-card, .tags-bulk-action, .block-tag, .tag-filter-pill {
+body, main, header, nav, footer, table, tr, td, th, input, textarea, button, select, .help-card, .tags-bulk-action, .block-tag, .tag-filter-pill {
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 
@@ -512,6 +512,46 @@ form[hx-post*="/block/"] textarea {
 
 tr.filtered-out {
     display: none !important;
+}
+
+/* Navigation Default Project Link */
+.nav-default-project {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.25rem;
+    text-decoration: none;
+}
+
+.nav-default-project .star-icon {
+    color: #f59e0b; /* Golden Yellow */
+    font-size: 1.15rem;
+    transition: transform 0.2s ease;
+}
+
+.nav-default-project:hover .star-icon {
+    transform: scale(1.25);
+}
+
+.nav-default-project .title-text {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Default Project Row Highlight in List */
+tr.default-project-row {
+    background-color: rgba(245, 158, 11, 0.05) !important;
+}
+
+tr.default-project-row:hover {
+    background-color: rgba(245, 158, 11, 0.09) !important;
+}
+
+tr.default-project-row td:first-child {
+    border-left: 3px solid #f59e0b;
 }
 
 /* Star Icon Style Toggle */

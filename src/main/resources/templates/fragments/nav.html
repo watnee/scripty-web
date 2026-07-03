@@ -16,6 +16,9 @@
         <a th:href="@{/}"><strong>Scripty</strong></a>
         <th:block sec:authorize="isAuthenticated()">
             <a th:href="@{/project/list}" th:aria-current="${currentPage == 'projects'} ? 'page'">Projects</a>
+            <a th:if="${globalDefaultProjectId != null}" th:href="@{/project/show(id=${globalDefaultProjectId})}" th:aria-current="(${isDefault} != null and ${isDefault}) ? 'page'" class="nav-default-project" th:title="'Default Project: ' + ${globalDefaultProjectTitle}">
+                <span class="star-icon">★</span><span class="title-text" th:text="${globalDefaultProjectTitle}"></span>
+            </a>
             <a th:href="@{/actor/list}" th:aria-current="${currentPage == 'casting'} ? 'page'">Casting</a>
             <a th:href="@{/team/list}" th:aria-current="${currentPage == 'teams'} ? 'page'">Teams</a>
             <a sec:authorize="hasRole('ROLE_ADMIN')" th:href="@{/account/list}" th:aria-current="${currentPage == 'accounts'} ? 'page'">Accounts</a>

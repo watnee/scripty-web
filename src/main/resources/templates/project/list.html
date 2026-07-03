@@ -28,7 +28,7 @@
             <button type="button" id="project-list-search-clear" class="bad" style="margin: 0; display: none;">Clear</button>
         </div>
         <table id="table-projects">
-            <tr th:each="project : ${viewModel.projects}">
+            <tr th:each="project : ${viewModel.projects}" th:classappend="${project.id == defaultProjectId} ? 'default-project-row' : ''">
                 <td style="width: 2.5rem; padding: 0; text-align: center; vertical-align: middle;">
                     <form th:action="@{/project/toggleDefault}" method="POST" style="margin: 0; display: inline;">
                         <input type="hidden" name="id" th:value="${project.id}" />

@@ -84,5 +84,37 @@ public class BlockViewModel {
     public void setTags(String tags) {
         this.tags = tags;
     }
+
+    /**
+     * Classifies the block as a standard screenplay element so templates can
+     * apply the matching formatting: scene-heading, action, dialogue,
+     * parenthetical or transition.
+     */
+    public String getElementType() {
+        String text = content == null ? "" : content.trim();
+        boolean hasPerson = personName != null && !personName.trim().isEmpty();
+        boolean parenthetical = text.startsWith("(") && text.endsWith(")");
+        if (hasPerson) {
+            return parenthetical ? "parenthetical" : "dialogue";
+        }
+        String upper = text.toUpperCase();
+        if (upper.startsWith("INT.") || upper.startsWith("EXT.")
+                || upper.startsWith("INT ") || upper.startsWith("EXT ")
+                || upper.startsWith("INT/EXT") || upper.startsWith("I/E ")
+                || upper.startsWith("EST.")) {
+            return "scene-heading";
+        }
+        boolean singleLine = !text.contains("\n");
+        if (singleLine && (upper.endsWith("TO:")
+                || upper.startsWith("FADE IN") || upper.startsWith("FADE OUT")
+                || upper.startsWith("FADE TO") || upper.startsWith("SMASH CUT")
+                || upper.startsWith("DISSOLVE"))) {
+            return "transition";
+        }
+        if (parenthetical) {
+            return "parenthetical";
+        }
+        return "action";
+    }
 }
 

@@ -7,6 +7,7 @@
     <meta charset="UTF-8">
     <title>Scripty - All Scenes</title>
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap">
     <link th:href="@{/css/scripty.css}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
@@ -27,10 +28,7 @@
             <table class="table-blocks-all">
                 <tr th:each="block : ${scene.blocks}">
                     <td class="block-content">
-                        <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
-                            <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
-                        </p>
-                        <p th:if="${not #strings.isEmpty(block.content)}" style="white-space: pre-wrap" th:text="${block.content}"></p>
+                        <th:block th:replace="~{block/showInline :: blockContent}"></th:block>
                     </td>
                 </tr>
             </table>

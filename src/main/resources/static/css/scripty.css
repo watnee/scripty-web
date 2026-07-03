@@ -396,6 +396,10 @@ form[hx-post*="/block/"] textarea {
     box-sizing: border-box;
 }
 
+.block-content > span {
+    white-space: pre-wrap;
+}
+
 .block-tags-list {
     display: flex;
     flex-wrap: wrap;

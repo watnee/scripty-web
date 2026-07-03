@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <header th:fragment="nav(currentPage)">
+    <script>
+        (function() {
+            const storedTheme = localStorage.getItem('theme');
+            if (storedTheme === 'dark') {
+                document.documentElement.classList.add('-dark-theme');
+            } else if (storedTheme === 'light') {
+                document.documentElement.classList.add('-no-dark-theme');
+            }
+        })();
+    </script>
     <nav>
         <a th:href="@{/}"><strong>Scripty</strong></a>
         <th:block sec:authorize="isAuthenticated()">
@@ -10,6 +20,25 @@
             <a sec:authorize="hasRole('ROLE_ADMIN')" th:href="@{/account/list}" th:aria-current="${currentPage == 'accounts'} ? 'page'">Accounts</a>
         </th:block>
         <a th:href="@{/help}" th:aria-current="${currentPage == 'help'} ? 'page'">Help</a>
+        <!-- Dark Mode Toggle Button -->
+        <button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <!-- Sun icon for dark mode -->
+            <svg class="sun-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <!-- Moon icon for light mode -->
+            <svg class="moon-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
     </nav>
     <script th:inline="javascript">
     (function() {
@@ -164,15 +193,50 @@
             };
         }
 
+        function initThemeToggle() {
+            const toggleBtn = document.getElementById('theme-toggle');
+            if (!toggleBtn) return;
+
+            function getResolvedTheme() {
+                const stored = localStorage.getItem('theme');
+                if (stored) return stored;
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+
+            function applyTheme(theme) {
+                const root = document.documentElement;
+                if (theme === 'dark') {
+                    root.classList.add('-dark-theme');
+                    root.classList.remove('-no-dark-theme');
+                } else {
+                    root.classList.add('-no-dark-theme');
+                    root.classList.remove('-dark-theme');
+                }
+            }
+
+            toggleBtn.onclick = function(e) {
+                e.preventDefault();
+                const current = getResolvedTheme();
+                const next = current === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('theme', next);
+                applyTheme(next);
+            };
+        }
+
         // Run on initial load
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initHistoryDropdown);
-        } else {
+        function initAll() {
             initHistoryDropdown();
+            initThemeToggle();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAll);
+        } else {
+            initAll();
         }
 
         // Run on HTMX content swaps
-        document.body.addEventListener('htmx:afterSwap', initHistoryDropdown);
+        document.body.addEventListener('htmx:afterSwap', initAll);
 
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {

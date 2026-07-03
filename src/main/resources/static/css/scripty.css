@@ -1,3 +1,96 @@
+/* Color themes and variables */
+:root {
+    --border: #cbd5e1;
+    --accent-bg: rgba(0, 0, 0, 0.05);
+    --text: var(--fg);
+    --muted: var(--muted-fg);
+    color-scheme: light;
+}
+
+:root.-dark-theme {
+    --border: #475569;
+    --accent-bg: rgba(255, 255, 255, 0.08);
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.-no-dark-theme) {
+        --border: #475569;
+        --accent-bg: rgba(255, 255, 255, 0.08);
+        color-scheme: dark;
+    }
+}
+
+/* Global transitions for a premium dark mode toggle feel */
+body, main, header, nav, footer, table, td, th, input, textarea, button, select, .help-card, .tags-bulk-action, .block-tag, .tag-filter-pill {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Theme Toggle Button Styles */
+.theme-toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    margin-left: auto; /* Push to the right end of the flex nav bar */
+}
+
+.theme-toggle-btn:hover {
+    background-color: var(--accent-bg);
+    transform: scale(1.1);
+    color: var(--accent);
+}
+
+.theme-toggle-btn:active {
+    transform: scale(0.9);
+}
+
+.theme-toggle-btn svg {
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-btn:hover svg {
+    transform: rotate(15deg);
+}
+
+/* Show/hide Sun/Moon icons based on active theme class or preference */
+html.-dark-theme #theme-toggle .sun-icon {
+    display: block;
+}
+html.-dark-theme #theme-toggle .moon-icon {
+    display: none;
+}
+html.-no-dark-theme #theme-toggle .sun-icon {
+    display: none;
+}
+html.-no-dark-theme #theme-toggle .moon-icon {
+    display: block;
+}
+
+/* Fallback icons based on system preferences when no explicit override is set */
+@media (prefers-color-scheme: dark) {
+    html:not(.-dark-theme):not(.-no-dark-theme) #theme-toggle .sun-icon {
+        display: block;
+    }
+    html:not(.-dark-theme):not(.-no-dark-theme) #theme-toggle .moon-icon {
+        display: none;
+    }
+}
+@media (prefers-color-scheme: light) {
+    html:not(.-dark-theme):not(.-no-dark-theme) #theme-toggle .sun-icon {
+        display: none;
+    }
+    html:not(.-dark-theme):not(.-no-dark-theme) #theme-toggle .moon-icon {
+        display: block;
+    }
+}
+
 header {
     border-bottom: none;
     padding: 0.75rem 1.5rem;

@@ -152,25 +152,28 @@ public class BlockServiceImpl implements BlockService {
         }
 
         block.setContent(content);
-        if (person != null) block.setPerson(person);
+        block.setPerson(person);
         block.setScene(scene);
-        block.setBookmarked(false);
-        block.setPinned(false);
-
-        int order = blockRepository.countBySceneId(scene.getId()) + 1;
+        int order = blockRepository.countBySceneId(scene != null ? scene.getId() : null) + 1;
         block.setOrder(order);
-        return blockRepository.save(block);
+        Block savedBlock = blockRepository.save(block);
+        if (scene != null) {
+            updateProjectLastEditedByScene(scene.getId());
+        }
+        return savedBlock;
     }
 
     @Override
     @Transactional
     public Block saveCreateBlockBelowCommandModel(CreateBlockBelowCommandModel cmd) {
         Block existingBlock = blockRepository.findById(cmd.getId()).orElse(null);
+        Scene scene = sceneRepository.findById(existingBlock.getScene().getId()).orElse(null);
+
+        Block block = new Block();
         Person person = null;
         if (cmd.getPersonId() != null) {
             person = personRepository.findById(cmd.getPersonId()).orElse(null);
         }
-        Scene scene = sceneRepository.findById(existingBlock.getScene().getId()).orElse(null);
         String content = cmd.getContent();
 
         if (person == null) {
@@ -182,17 +185,19 @@ public class BlockServiceImpl implements BlockService {
             }
         }
 
-        Block block = new Block();
         block.setContent(content);
-        if (person != null) block.setPerson(person);
+        block.setPerson(person);
         block.setScene(scene);
-        block.setBookmarked(false);
-        block.setPinned(false);
+        block.setOrder(existingBlock.getOrder());
 
         int newOrder = existingBlock.getOrder() + 1;
         blockRepository.incrementOrdersAbove(existingBlock.getOrder(), scene.getId());
         block.setOrder(newOrder);
-        return blockRepository.save(block);
+        Block savedBlock = blockRepository.save(block);
+        if (scene != null) {
+            updateProjectLastEditedByScene(scene.getId());
+        }
+        return savedBlock;
     }
 
     @Override
@@ -222,6 +227,9 @@ public class BlockServiceImpl implements BlockService {
             block.setTags(cmd.getTags());
         }
         blockRepository.save(block);
+        if (scene != null) {
+            updateProjectLastEditedByScene(scene.getId());
+        }
         return block;
     }
 
@@ -229,8 +237,12 @@ public class BlockServiceImpl implements BlockService {
     @Transactional
     public Block deleteBlock(Integer id) {
         Block block = blockRepository.findById(id).orElse(null);
-        blockRepository.delete(block);
-        blockRepository.decrementOrdersAbove(block.getOrder(), block.getScene().getId());
+        if (block != null) {
+            Integer sceneId = block.getScene().getId();
+            blockRepository.delete(block);
+            blockRepository.decrementOrdersAbove(block.getOrder(), sceneId);
+            updateProjectLastEditedByScene(sceneId);
+        }
         return block;
     }
 
@@ -238,15 +250,18 @@ public class BlockServiceImpl implements BlockService {
     @Transactional
     public Block moveBlockUp(Integer id) {
         Block block = blockRepository.findById(id).orElse(null);
-        Block blockAbove = blockRepository
-            .findBySceneIdAndOrder(block.getScene().getId(), block.getOrder() - 1)
-            .orElse(null);
-        if (blockAbove != null) {
-            int tempOrder = blockAbove.getOrder();
-            blockAbove.setOrder(block.getOrder());
-            block.setOrder(tempOrder);
-            blockRepository.save(blockAbove);
-            blockRepository.save(block);
+        if (block != null) {
+            Block blockAbove = blockRepository
+                .findBySceneIdAndOrder(block.getScene().getId(), block.getOrder() - 1)
+                .orElse(null);
+            if (blockAbove != null) {
+                int tempOrder = blockAbove.getOrder();
+                blockAbove.setOrder(block.getOrder());
+                block.setOrder(tempOrder);
+                blockRepository.save(blockAbove);
+                blockRepository.save(block);
+                updateProjectLastEditedByScene(block.getScene().getId());
+            }
         }
         return block;
     }
@@ -255,15 +270,18 @@ public class BlockServiceImpl implements BlockService {
     @Transactional
     public Block moveBlockDown(Integer id) {
         Block block = blockRepository.findById(id).orElse(null);
-        Block blockBelow = blockRepository
-            .findBySceneIdAndOrder(block.getScene().getId(), block.getOrder() + 1)
-            .orElse(null);
-        if (blockBelow != null) {
-            int tempOrder = blockBelow.getOrder();
-            blockBelow.setOrder(block.getOrder());
-            block.setOrder(tempOrder);
-            blockRepository.save(blockBelow);
-            blockRepository.save(block);
+        if (block != null) {
+            Block blockBelow = blockRepository
+                .findBySceneIdAndOrder(block.getScene().getId(), block.getOrder() + 1)
+                .orElse(null);
+            if (blockBelow != null) {
+                int tempOrder = blockBelow.getOrder();
+                blockBelow.setOrder(block.getOrder());
+                block.setOrder(tempOrder);
+                blockRepository.save(blockBelow);
+                blockRepository.save(block);
+                updateProjectLastEditedByScene(block.getScene().getId());
+            }
         }
         return block;
     }
@@ -272,6 +290,7 @@ public class BlockServiceImpl implements BlockService {
     @Transactional
     public Block moveBlockTo(Integer id, int newOrder) {
         Block block = blockRepository.findById(id).orElse(null);
+        if (block == null) return null;
         int currentOrder = block.getOrder();
         int sceneId = block.getScene().getId();
         if (newOrder == currentOrder) return block;
@@ -283,6 +302,7 @@ public class BlockServiceImpl implements BlockService {
         }
         block.setOrder(newOrder);
         blockRepository.save(block);
+        updateProjectLastEditedByScene(sceneId);
         return block;
     }
 
@@ -294,7 +314,9 @@ public class BlockServiceImpl implements BlockService {
             throw new IllegalArgumentException("Block not found");
         }
         block.setBookmarked(!block.isBookmarked());
-        return blockRepository.save(block);
+        Block savedBlock = blockRepository.save(block);
+        updateProjectLastEditedByScene(block.getScene().getId());
+        return savedBlock;
     }
 
     @Override
@@ -305,7 +327,9 @@ public class BlockServiceImpl implements BlockService {
             throw new IllegalArgumentException("Block not found");
         }
         block.setPinned(!block.isPinned());
-        return blockRepository.save(block);
+        Block savedBlock = blockRepository.save(block);
+        updateProjectLastEditedByScene(block.getScene().getId());
+        return savedBlock;
     }
 
     private List<CreatePersonViewModel> translateCreatePersonViewModel(List<Person> persons) {
@@ -431,6 +455,12 @@ public class BlockServiceImpl implements BlockService {
                 blockRepository.save(block);
             }
         }
+
+        if (!ids.isEmpty()) {
+            blockRepository.findById(ids.get(0)).ifPresent(block -> {
+                updateProjectLastEditedByScene(block.getScene().getId());
+            });
+        }
     }
 
     @Override
@@ -452,6 +482,20 @@ public class BlockServiceImpl implements BlockService {
             for (Block b : remainingBlocks) {
                 b.setOrder(order++);
                 blockRepository.save(b);
+            }
+        }
+
+        for (Integer sceneId : sceneIds) {
+            updateProjectLastEditedByScene(sceneId);
+        }
+    }
+
+    private void updateProjectLastEditedByScene(Integer sceneId) {
+        if (sceneId != null) {
+            Project project = projectRepository.findBySceneId(sceneId);
+            if (project != null) {
+                project.setLastEdited(java.time.LocalDateTime.now());
+                projectRepository.save(project);
             }
         }
     }

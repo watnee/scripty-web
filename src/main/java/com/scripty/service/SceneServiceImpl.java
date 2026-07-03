@@ -71,6 +71,7 @@ public class SceneServiceImpl implements SceneService {
         if (project != null) {
             vm.setProjectId(project.getId());
             vm.setProjectTitle(project.getTitle());
+            vm.setProjectLastEdited(project.getLastEdited());
         }
 
         if (previousScene != null) {
@@ -171,7 +172,11 @@ public class SceneServiceImpl implements SceneService {
         }
         int order = sceneRepository.countByProjectId(project != null ? project.getId() : null) + 1;
         scene.setOrder(order);
-        return sceneRepository.save(scene);
+        Scene savedScene = sceneRepository.save(scene);
+        if (project != null) {
+            updateProjectLastEdited(project.getId());
+        }
+        return savedScene;
     }
 
     @Override
@@ -188,7 +193,11 @@ public class SceneServiceImpl implements SceneService {
         int newOrder = existingScene.getOrder() + 1;
         sceneRepository.incrementOrdersAbove(existingScene.getOrder(), project.getId());
         scene.setOrder(newOrder);
-        return sceneRepository.save(scene);
+        Scene savedScene = sceneRepository.save(scene);
+        if (project != null) {
+            updateProjectLastEdited(project.getId());
+        }
+        return savedScene;
     }
 
     @Override
@@ -197,16 +206,23 @@ public class SceneServiceImpl implements SceneService {
         Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
         scene.setName(cmd.getName());
         scene.setProject(project);
-        sceneRepository.save(scene);
-        return scene;
+        Scene savedScene = sceneRepository.save(scene);
+        if (project != null) {
+            updateProjectLastEdited(project.getId());
+        }
+        return savedScene;
     }
 
     @Override
     @Transactional
     public Scene deleteScene(Integer id) {
         Scene scene = sceneRepository.findById(id).orElse(null);
-        sceneRepository.delete(scene);
-        sceneRepository.decrementOrdersAbove(scene.getOrder(), scene.getProject().getId());
+        if (scene != null) {
+            Integer projectId = scene.getProject() != null ? scene.getProject().getId() : null;
+            sceneRepository.delete(scene);
+            sceneRepository.decrementOrdersAbove(scene.getOrder(), projectId);
+            updateProjectLastEdited(projectId);
+        }
         return scene;
     }
 
@@ -223,6 +239,7 @@ public class SceneServiceImpl implements SceneService {
             scene.setOrder(tempOrder);
             sceneRepository.save(previousScene);
             sceneRepository.save(scene);
+            updateProjectLastEdited(scene.getProject().getId());
         }
         return scene;
     }
@@ -240,7 +257,17 @@ public class SceneServiceImpl implements SceneService {
             scene.setOrder(tempOrder);
             sceneRepository.save(nextScene);
             sceneRepository.save(scene);
+            updateProjectLastEdited(scene.getProject().getId());
         }
         return scene;
+    }
+
+    private void updateProjectLastEdited(Integer projectId) {
+        if (projectId != null) {
+            projectRepository.findById(projectId).ifPresent(project -> {
+                project.setLastEdited(java.time.LocalDateTime.now());
+                projectRepository.save(project);
+            });
+        }
     }
 }

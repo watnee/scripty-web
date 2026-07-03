@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "project")
@@ -18,6 +19,9 @@ public class Project {
     @Column(nullable = false, length = 100)
     private String title;
     private String team;
+
+    @Column(name = "last_edited")
+    private LocalDateTime lastEdited;
 
     public Integer getId() {
         return id;
@@ -41,5 +45,13 @@ public class Project {
 
     public void setTeam(String team) {
         this.team = team;
+    }
+
+    public LocalDateTime getLastEdited() {
+        return lastEdited;
+    }
+
+    public void setLastEdited(LocalDateTime lastEdited) {
+        this.lastEdited = lastEdited;
     }
 }

@@ -1,0 +1,126 @@
+header {
+    border-bottom: none;
+    padding: 0.75rem 1.5rem;
+}
+
+header nav {
+    gap: 1.5rem;
+}
+
+main.home {
+    text-align: center;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+#table-actors a,
+#table-projects a,
+#table-scenes a,
+#table-blocks a.character-name,
+.table-blocks-all a.character-name {
+    color: inherit;
+    text-decoration: none;
+}
+
+#table-actors td,
+#table-projects td,
+#table-scenes td,
+#table-blocks td,
+.table-blocks-all td {
+    border-top: none;
+}
+
+#table-scenes td:first-child,
+#table-blocks .block-content,
+.table-blocks-all .block-content {
+    width: 99%;
+}
+
+#table-blocks .block-content,
+.table-blocks-all .block-content {
+    cursor: pointer;
+}
+
+#table-blocks .block-left-controls,
+.table-blocks-all .block-left-controls {
+    vertical-align: middle;
+    white-space: nowrap !important;
+    padding-right: 0;
+}
+
+#table-blocks .drag-handle,
+.table-blocks-all .drag-handle {
+    cursor: grab;
+    user-select: none;
+    color: #ccc;
+    font-size: 1.2em;
+}
+
+#table-blocks .drag-handle:active,
+.table-blocks-all .drag-handle:active {
+    cursor: grabbing;
+}
+
+#table-blocks td.block-left-controls a.create-below[role="button"],
+.table-blocks-all td.block-left-controls a.create-below[role="button"] {
+    display: inline !important;
+    font-size: 1em;
+    opacity: 1;
+    padding: 0.1em 0.3em;
+    min-width: 0;
+}
+
+#table-blocks .block-left-controls .drag-handle,
+.table-blocks-all .block-left-controls .drag-handle {
+    display: inline;
+}
+
+#table-blocks tr.dragging,
+.table-blocks-all tr.dragging {
+    opacity: 0.4;
+}
+
+#table-blocks tr.drag-over,
+.table-blocks-all tr.drag-over {
+    border-top: 2px solid #333;
+}
+
+h1 > small a[role="button"],
+#table-scenes a[role="button"],
+#table-blocks a[role="button"],
+.table-blocks-all a[role="button"] {
+    opacity: 0;
+    font-size: 0.5em;
+}
+
+h1 > small a[role="button"]:focus,
+h1:hover > small a[role="button"],
+#table-scenes tr a[role="button"]:focus,
+#table-scenes tr:hover a[role="button"],
+#table-blocks tr a[role="button"]:focus,
+#table-blocks tr:hover a[role="button"],
+.table-blocks-all tr a[role="button"]:focus,
+.table-blocks-all tr:hover a[role="button"] {
+    opacity: 1;
+}
+
+#table-scenes tr:last-child .move-up,
+#table-blocks tr:last-child .move-up {
+    margin-left: 22px;
+}
+
+.scene-pager {
+    display: flex;
+    justify-content: space-between;
+}
+
+body.htmx-settling {
+    opacity: 1;
+}
+
+body.htmx-swapping {
+    opacity: 0;
+    transition: opacity 0.1s ease-out;
+}

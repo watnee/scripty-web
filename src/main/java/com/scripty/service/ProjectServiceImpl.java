@@ -110,6 +110,7 @@ public class ProjectServiceImpl implements ProjectService {
         vm.setId(project.getId());
         vm.setTitle(project.getTitle());
         vm.setTeam(project.getTeam());
+        vm.setLastEdited(project.getLastEdited());
 
         List<SceneViewModel> sceneViewModels = new ArrayList<>();
         for (Scene scene : scenes) {
@@ -193,6 +194,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = new Project();
         project.setTitle(cmd.getTitle());
         project.setTeam(cmd.getTeam());
+        project.setLastEdited(java.time.LocalDateTime.now());
         return projectRepository.save(project);
     }
 
@@ -201,6 +203,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(cmd.getId()).orElse(null);
         project.setTitle(cmd.getTitle());
         project.setTeam(cmd.getTeam());
+        project.setLastEdited(java.time.LocalDateTime.now());
         projectRepository.save(project);
         return project;
     }

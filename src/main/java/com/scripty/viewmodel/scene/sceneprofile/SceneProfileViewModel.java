@@ -17,6 +17,7 @@ public class SceneProfileViewModel {
     private String name;
     private int projectId;
     private String projectTitle;
+    private java.time.LocalDateTime projectLastEdited;
     private int previousSceneId;
     private String previousSceneName;
     private int nextSceneId;
@@ -53,6 +54,14 @@ public class SceneProfileViewModel {
 
     public void setProjectTitle(String projectTitle) {
         this.projectTitle = projectTitle;
+    }
+
+    public java.time.LocalDateTime getProjectLastEdited() {
+        return projectLastEdited;
+    }
+
+    public void setProjectLastEdited(java.time.LocalDateTime projectLastEdited) {
+        this.projectLastEdited = projectLastEdited;
     }
 
     public int getPreviousSceneId() {

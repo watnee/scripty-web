@@ -210,6 +210,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         personRepository.deleteAll(existingPersons);
 
         project.setTitle((String) snapshot.get("title"));
+        project.setLastEdited(java.time.LocalDateTime.now());
         projectRepository.save(project);
 
         List<Map<String, Object>> personSnapshots = (List<Map<String, Object>>) snapshot.get("persons");

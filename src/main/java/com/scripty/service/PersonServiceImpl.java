@@ -38,7 +38,11 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     public Person create(Person person) {
-        return personRepository.save(person);
+        Person saved = personRepository.save(person);
+        if (saved.getProject() != null) {
+            updateProjectLastEdited(saved.getProject().getId());
+        }
+        return saved;
     }
 
     @Override
@@ -158,7 +162,11 @@ public class PersonServiceImpl implements PersonService {
         person.setFullName(cmd.getFullName());
         if (actor != null) person.setActor(actor);
         if (project != null) person.setProject(project);
-        return personRepository.save(person);
+        Person saved = personRepository.save(person);
+        if (project != null) {
+            updateProjectLastEdited(project.getId());
+        }
+        return saved;
     }
 
     @Override
@@ -172,13 +180,29 @@ public class PersonServiceImpl implements PersonService {
         person.setActor(actor);
         person.setProject(project);
         personRepository.save(person);
+        if (project != null) {
+            updateProjectLastEdited(project.getId());
+        }
         return person;
     }
 
     @Override
     public Person deletePerson(Integer id) {
         Person person = personRepository.findById(id).orElse(null);
-        personRepository.delete(person);
+        if (person != null) {
+            Integer projectId = person.getProject() != null ? person.getProject().getId() : null;
+            personRepository.delete(person);
+            updateProjectLastEdited(projectId);
+        }
         return person;
+    }
+
+    private void updateProjectLastEdited(Integer projectId) {
+        if (projectId != null) {
+            projectRepository.findById(projectId).ifPresent(project -> {
+                project.setLastEdited(java.time.LocalDateTime.now());
+                projectRepository.save(project);
+            });
+        }
     }
 }

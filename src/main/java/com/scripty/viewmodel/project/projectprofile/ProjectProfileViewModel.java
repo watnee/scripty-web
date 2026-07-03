@@ -16,6 +16,7 @@ public class ProjectProfileViewModel {
     private int id;
     private String title;
     private String team;
+    private java.time.LocalDateTime lastEdited;
     private List<SceneViewModel> scenes;
     private List<PersonViewModel> persons;
 
@@ -41,6 +42,14 @@ public class ProjectProfileViewModel {
 
     public void setTeam(String team) {
         this.team = team;
+    }
+
+    public java.time.LocalDateTime getLastEdited() {
+        return lastEdited;
+    }
+
+    public void setLastEdited(java.time.LocalDateTime lastEdited) {
+        this.lastEdited = lastEdited;
     }
 
     public List<SceneViewModel> getScenes() {

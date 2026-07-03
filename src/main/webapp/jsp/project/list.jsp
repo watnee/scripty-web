@@ -20,7 +20,10 @@
                     <li aria-current="page">Projects</li>
                 </ol>
             </nav>
-            <h1>Projects</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h1 style="margin: 0;">Projects</h1>
+                <a href="${pageContext.request.contextPath}/project/create" role="button" style="margin: 0;">Create New Project</a>
+            </div>
             <table id="table-projects">
                 <c:forEach items="${viewModel.projects}" var="project">
                     <tr>
@@ -28,7 +31,6 @@
                     </tr>
                 </c:forEach>
             </table>
-            <p><a href="${pageContext.request.contextPath}/project/create" role="button">Create New Project</a></p>
         </main>
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <script src="${pageContext.request.contextPath}/js/_hyperscript.min.js"></script>

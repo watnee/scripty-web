@@ -19,7 +19,10 @@
                 <li aria-current="page">Projects</li>
             </ol>
         </nav>
-        <h1>Projects</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <h1 style="margin: 0;">Projects</h1>
+            <a th:href="@{/project/create}" role="button" style="margin: 0;">Create New Project</a>
+        </div>
         <div class="project-list-search-wrapper" style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: center;">
             <input type="text" id="project-list-search" placeholder="Search projects by title..." style="flex-grow: 1; max-width: 400px; margin: 0; padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid var(--border, #cbd5e1);" />
             <button type="button" id="project-list-search-clear" class="bad" style="margin: 0; display: none;">Clear</button>
@@ -41,7 +44,6 @@
                 <td style="vertical-align: middle;"><a th:href="@{/project/show(id=${project.id})}" th:text="${project.title}"></a></td>
             </tr>
         </table>
-        <p><a th:href="@{/project/create}" role="button">Create New Project</a></p>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>

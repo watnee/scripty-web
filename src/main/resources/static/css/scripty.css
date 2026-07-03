@@ -26,8 +26,15 @@ body, main, header, nav, footer, table, td, th, input, textarea, button, select,
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 
-/* Theme Toggle Button Styles */
-.theme-toggle-btn {
+/* Theme Toggle Dropdown and Button Styles */
+.theme-toggle-container {
+    position: absolute;
+    top: 0.75rem;
+    right: 1.5rem;
+    z-index: 1001;
+}
+
+.theme-toggle-container .theme-toggle-btn {
     background: none;
     border: none;
     cursor: pointer;
@@ -38,66 +45,65 @@ body, main, header, nav, footer, table, td, th, input, textarea, button, select,
     justify-content: center;
     border-radius: 50%;
     transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
-    margin-left: auto; /* Push to the right end of the flex nav bar */
+    width: 36px;
+    height: 36px;
 }
 
-.theme-toggle-btn:hover {
+.theme-toggle-container .theme-toggle-btn:hover {
     background-color: var(--accent-bg);
     transform: scale(1.1);
     color: var(--accent);
 }
 
-.theme-toggle-btn:active {
+.theme-toggle-container .theme-toggle-btn:active {
     transform: scale(0.9);
 }
 
-.theme-toggle-btn svg {
+.theme-toggle-container .theme-toggle-btn svg {
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.theme-toggle-btn:hover svg {
+.theme-toggle-container .theme-toggle-btn:hover svg {
     transform: rotate(15deg);
 }
 
-/* Show/hide Sun/Moon icons based on active theme class or preference */
-html.-dark-theme #theme-toggle .sun-icon {
+/* Hide all icons in the toggle button by default */
+#theme-dropdown .theme-toggle-btn svg {
+    display: none;
+}
+
+/* Show the correct icon on the button based on active theme setting */
+html[data-theme-setting="light"] #theme-dropdown .theme-toggle-btn .sun-icon {
     display: block;
 }
-html.-dark-theme #theme-toggle .moon-icon {
-    display: none;
+html[data-theme-setting="dark"] #theme-dropdown .theme-toggle-btn .moon-icon {
+    display: block;
 }
-html.-no-dark-theme #theme-toggle .sun-icon {
-    display: none;
-}
-html.-no-dark-theme #theme-toggle .moon-icon {
+html[data-theme-setting="system"] #theme-dropdown .theme-toggle-btn .system-icon {
     display: block;
 }
 
-/* Fallback icons based on system preferences when no explicit override is set */
-@media (prefers-color-scheme: dark) {
-    html:not(.-dark-theme):not(.-no-dark-theme) #theme-toggle .sun-icon {
-        display: block;
-    }
-    html:not(.-dark-theme):not(.-no-dark-theme) #theme-toggle .moon-icon {
-        display: none;
-    }
+/* Fallback default to system icon if no theme setting is defined on html */
+html:not([data-theme-setting]) #theme-dropdown .theme-toggle-btn .system-icon {
+    display: block;
 }
-@media (prefers-color-scheme: light) {
-    html:not(.-dark-theme):not(.-no-dark-theme) #theme-toggle .sun-icon {
-        display: none;
-    }
-    html:not(.-dark-theme):not(.-no-dark-theme) #theme-toggle .moon-icon {
-        display: block;
-    }
+
+/* Highlight active option in the theme dropdown menu */
+.theme-toggle-container .nav-dropdown-item.active {
+    background-color: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 600;
 }
 
 header {
+    position: relative; /* Set relative positioning so absolute theme toggle aligns to it */
     border-bottom: none;
     padding: 0.75rem 1.5rem;
 }
 
 header nav {
     gap: 1.5rem;
+    padding-right: 3rem; /* Leave room for the absolute-positioned theme toggle on the right */
 }
 
 main.home {

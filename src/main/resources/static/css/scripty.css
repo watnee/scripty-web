@@ -248,6 +248,11 @@ h1:hover > small a[role="button"],
     color: var(--accent);
 }
 
+.block-content.align-left { text-align: left; }
+.block-content.align-center { text-align: center; }
+.block-content.align-right { text-align: right; }
+.block-content.align-justify { text-align: justify; }
+
 .scene-pager {
     display: flex;
     justify-content: space-between;

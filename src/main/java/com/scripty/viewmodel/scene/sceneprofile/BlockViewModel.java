@@ -84,5 +84,15 @@ public class BlockViewModel {
     public void setTags(String tags) {
         this.tags = tags;
     }
+
+    private String alignment;
+
+    public String getAlignment() {
+        return alignment;
+    }
+
+    public void setAlignment(String alignment) {
+        this.alignment = alignment;
+    }
 }
 

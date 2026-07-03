@@ -104,5 +104,16 @@ public class Block {
     public void setTags(String tags) {
         this.tags = tags;
     }
+
+    @Column(name = "alignment", length = 16)
+    private String alignment;
+
+    public String getAlignment() {
+        return alignment;
+    }
+
+    public void setAlignment(String alignment) {
+        this.alignment = alignment;
+    }
 }
 

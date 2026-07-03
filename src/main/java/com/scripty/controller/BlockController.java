@@ -279,6 +279,30 @@ public class BlockController {
         return "redirect:/scene/show?id=" + sceneId;
     }
 
+    @RequestMapping(value = "/bulkAlign", method = RequestMethod.POST)
+    public String bulkAlign(@RequestParam String ids, @RequestParam String alignment, @RequestParam(required = false) Integer sceneId, @RequestParam(required = false) Integer projectId) {
+        if (ids != null && !ids.trim().isEmpty()) {
+            java.util.List<Integer> blockIds = new java.util.ArrayList<>();
+            for (String idStr : ids.split(",")) {
+                try {
+                    blockIds.add(Integer.parseInt(idStr.trim()));
+                } catch (NumberFormatException e) {
+                    // Ignore
+                }
+            }
+            blockService.alignBlocks(blockIds, alignment);
+            if (projectId != null) {
+                projectVersionService.autoSaveVersion(projectId);
+            } else if (sceneId != null) {
+                projectVersionService.autoSaveVersionForScene(sceneId);
+            }
+        }
+        if (projectId != null) {
+            return "redirect:/project/show?id=" + projectId;
+        }
+        return "redirect:/scene/show?id=" + sceneId;
+    }
+
     @RequestMapping(value = "/bulkDelete", method = RequestMethod.POST)
     public String bulkDelete(@RequestParam String ids, @RequestParam(required = false) Integer sceneId, @RequestParam(required = false) Integer projectId) {
         if (ids != null && !ids.trim().isEmpty()) {

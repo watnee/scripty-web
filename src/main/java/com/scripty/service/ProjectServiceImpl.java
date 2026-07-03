@@ -123,6 +123,7 @@ public class ProjectServiceImpl implements ProjectService {
                 bvm.setId(block.getId());
                 bvm.setOrder(block.getOrder());
                 bvm.setContent(block.getContent());
+                bvm.setAlignment(block.getAlignment());
                 if (block.getPerson() != null) {
                     Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
                     if (person != null) {

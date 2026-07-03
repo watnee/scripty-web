@@ -121,6 +121,7 @@ public class BlockServiceImpl implements BlockService {
         vm.setBookmarked(block.isBookmarked());
         vm.setPinned(block.isPinned());
         vm.setTags(block.getTags());
+        vm.setAlignment(block.getAlignment());
         if (block.getPerson() != null) {
             Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
             if (person != null) {
@@ -428,6 +429,26 @@ public class BlockServiceImpl implements BlockService {
                 }
 
                 block.setTags(String.join(", ", combinedTags));
+                blockRepository.save(block);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    public void alignBlocks(List<Integer> ids, String alignment) {
+        if (ids == null || ids.isEmpty() || alignment == null) {
+            return;
+        }
+        String normalized = alignment.trim().toLowerCase();
+        if (!normalized.equals("left") && !normalized.equals("right")
+                && !normalized.equals("center") && !normalized.equals("justify")) {
+            return;
+        }
+        for (Integer id : ids) {
+            Block block = blockRepository.findById(id).orElse(null);
+            if (block != null) {
+                block.setAlignment(normalized);
                 blockRepository.save(block);
             }
         }

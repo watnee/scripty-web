@@ -31,6 +31,15 @@
                     <button class="nav-dropdown-item" id="nav-redo" type="button">Redo</button>
                 </div>
             </div>
+            <div class="nav-dropdown" id="align-dropdown" th:attr="data-scene-id=${viewModel.id},data-action=@{/block/bulkAlign}">
+                <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false" title="Align selected blocks">≡ Align</button>
+                <div class="nav-dropdown-menu">
+                    <button class="nav-dropdown-item align-option" type="button" data-align="left">Left</button>
+                    <button class="nav-dropdown-item align-option" type="button" data-align="center">Center</button>
+                    <button class="nav-dropdown-item align-option" type="button" data-align="right">Right</button>
+                    <button class="nav-dropdown-item align-option" type="button" data-align="justify">Justify</button>
+                </div>
+            </div>
             <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
             <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
         </div>
@@ -51,7 +60,7 @@
                     <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" class="create-below" role="button">+</a>
                     <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
                 </td>
-                <td class="block-content" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML">
+                <td class="block-content" th:classappend="${not #strings.isEmpty(block.alignment)} ? |align-${block.alignment}| : ''" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML">
                     <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
                         <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
                     </p>
@@ -88,6 +97,7 @@
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:src="@{/js/text-size.js}"></script>
+    <script th:src="@{/js/text-align.js}"></script>
     <script th:inline="javascript">
     (function() {
         var table = document.getElementById('table-blocks');

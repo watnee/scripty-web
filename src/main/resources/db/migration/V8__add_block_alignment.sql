@@ -1,0 +1,2 @@
+ALTER TABLE `block`
+ADD COLUMN alignment VARCHAR(16) NULL;

@@ -29,6 +29,7 @@ public interface BlockService {
     Block toggleBookmark(Integer id);
     Block togglePinned(Integer id);
     void addTagsToBlocks(java.util.List<Integer> ids, String tags);
+    void alignBlocks(java.util.List<Integer> ids, String alignment);
     void deleteBlocks(java.util.List<Integer> ids);
 }
 

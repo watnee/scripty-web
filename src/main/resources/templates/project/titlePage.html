@@ -32,17 +32,17 @@
                     <input type="hidden" th:field="*{id}" />
                     <label>
                         Screenplay Title
-                        <input type="text" id="input-screenplay-title" th:field="*{screenplayTitle}" placeholder="e.g. MY SCREENPLAY" autocomplete="off" />
+                        <input type="text" id="input-screenplay-title" th:field="*{screenplayTitle}" placeholder="e.g. MY SCREENPLAY" autocomplete="off" spellcheck="true" />
                         <span th:if="${#fields.hasErrors('screenplayTitle')}" th:errors="*{screenplayTitle}" class="field-error"></span>
                     </label>
                     <label>
                         Writers
-                        <input type="text" id="input-writers" th:field="*{writers}" placeholder="e.g. Jane Doe" autocomplete="off" />
+                        <input type="text" id="input-writers" th:field="*{writers}" placeholder="e.g. Jane Doe" autocomplete="off" spellcheck="true" />
                         <span th:if="${#fields.hasErrors('writers')}" th:errors="*{writers}" class="field-error"></span>
                     </label>
                     <label>
                         Contact Information
-                        <textarea id="input-contact-info" th:field="*{contactInfo}" placeholder="e.g. Contact info..." rows="5" autocomplete="off"></textarea>
+                        <textarea id="input-contact-info" th:field="*{contactInfo}" placeholder="e.g. Contact info..." rows="5" autocomplete="off" spellcheck="true"></textarea>
                         <span th:if="${#fields.hasErrors('contactInfo')}" th:errors="*{contactInfo}" class="field-error"></span>
                     </label>
                     <p class="form-actions">

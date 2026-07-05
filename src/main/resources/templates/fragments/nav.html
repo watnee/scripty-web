@@ -26,8 +26,21 @@
             <a th:href="@{/team/list}" th:aria-current="${currentPage == 'teams'} ? 'page'">Teams</a>
             <a sec:authorize="hasRole('ROLE_ADMIN')" th:href="@{/account/list}" th:aria-current="${currentPage == 'accounts'} ? 'page'">Accounts</a>
         </th:block>
-        <a th:href="@{/help}" th:aria-current="${currentPage == 'help'} ? 'page'">Scripty Help</a>
-        <a th:href="@{/shortcuts}" th:aria-current="${currentPage == 'shortcuts'} ? 'page'">Shortcuts</a>
+        <div class="nav-dropdown help-dropdown" id="help-dropdown">
+            <button class="nav-dropdown-toggle help-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Help" title="Help"
+                    th:aria-current="${currentPage == 'help' or currentPage == 'shortcuts'} ? 'page'">
+                <svg class="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Help
+            </button>
+            <div class="nav-dropdown-menu">
+                <a class="nav-dropdown-item" th:href="@{/help}" th:classappend="${currentPage == 'help'} ? 'active'">Scripty Help</a>
+                <a class="nav-dropdown-item" th:href="@{/shortcuts}" th:classappend="${currentPage == 'shortcuts'} ? 'active'">Keyboard Shortcuts</a>
+            </div>
+        </div>
     </nav>
     <!-- Theme Toggle Dropdown -->
     <div class="nav-dropdown theme-toggle-container" id="theme-dropdown">
@@ -236,9 +249,6 @@
             const redoBtn = document.getElementById('nav-redo');
             if (!undoBtn || !redoBtn) return;
 
-            const dropdown = document.getElementById('history-dropdown');
-            if (!dropdown || dropdown.style.display === 'none') return;
-
             const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
             const hasCmd = e.metaKey;
             const hasCtrl = e.ctrlKey;
@@ -282,15 +292,47 @@
             const undoBtn = document.getElementById('nav-undo');
             const redoBtn = document.getElementById('nav-redo');
 
-            if (!toggleBtn || !versionHistoryLink || !undoBtn || !redoBtn) return;
+            if (!undoBtn || !redoBtn) return;
 
             // Dynamically display keyboard shortcuts based on OS
             const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
             const undoShortcut = isMac ? ' (⌘Z)' : ' (Ctrl+Z)';
             const redoShortcut = isMac ? ' (⌘⇧Z)' : ' (Ctrl+Y)';
-            
-            undoBtn.textContent = 'Undo' + undoShortcut;
-            redoBtn.textContent = 'Redo' + redoShortcut;
+
+            const undoLabel = undoBtn.classList.contains('nav-dropdown-item') ? 'Undo' + undoShortcut : '← Undo';
+            const redoLabel = redoBtn.classList.contains('nav-dropdown-item') ? 'Redo' + redoShortcut : 'Redo →';
+
+            undoBtn.textContent = undoLabel;
+            redoBtn.textContent = redoLabel;
+            undoBtn.title = 'Undo' + undoShortcut;
+            undoBtn.setAttribute('aria-label', 'Undo' + undoShortcut);
+            redoBtn.title = 'Redo' + redoShortcut;
+            redoBtn.setAttribute('aria-label', 'Redo' + redoShortcut);
+
+            function performHistoryAction(action) {
+                if (dropdown) {
+                    dropdown.classList.remove('open');
+                    const toggle = dropdown.querySelector('.nav-dropdown-toggle');
+                    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+                }
+                let el = lastFocusedEditable || document.querySelector('textarea, input[type="text"]');
+                if (el) {
+                    el.focus();
+                    document.execCommand(action);
+                }
+            }
+
+            undoBtn.onclick = function(e) {
+                e.preventDefault();
+                performHistoryAction('undo');
+            };
+
+            redoBtn.onclick = function(e) {
+                e.preventDefault();
+                performHistoryAction('redo');
+            };
+
+            if (!toggleBtn || !versionHistoryLink) return;
 
             // Toggle dropdown open/close
             toggleBtn.onclick = function(e) {
@@ -340,28 +382,32 @@
             } else {
                 dropdown.style.display = 'none';
             }
+        }
 
-            // Undo action
-            undoBtn.onclick = function(e) {
-                e.preventDefault();
-                dropdown.classList.remove('open');
-                let el = lastFocusedEditable || document.querySelector('textarea, input[type="text"]');
-                if (el) {
-                    el.focus();
-                    document.execCommand('undo');
+        function initHelpDropdown() {
+            const dropdown = document.getElementById('help-dropdown');
+            if (!dropdown) return;
+
+            const toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
+            if (!toggleBtn) return;
+
+            toggleBtn.onclick = function(e) {
+                e.stopPropagation();
+                const isOpen = dropdown.classList.contains('open');
+                document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+                document.querySelectorAll('.nav-dropdown-toggle').forEach(btn => btn.setAttribute('aria-expanded', 'false'));
+                toggleBtn.setAttribute('aria-expanded', !isOpen);
+                if (!isOpen) {
+                    dropdown.classList.add('open');
                 }
             };
 
-            // Redo action
-            redoBtn.onclick = function(e) {
-                e.preventDefault();
-                dropdown.classList.remove('open');
-                let el = lastFocusedEditable || document.querySelector('textarea, input[type="text"]');
-                if (el) {
-                    el.focus();
-                    document.execCommand('redo');
+            document.addEventListener('click', function(e) {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.classList.remove('open');
+                    toggleBtn.setAttribute('aria-expanded', 'false');
                 }
-            };
+            });
         }
 
         function initThemeToggle() {
@@ -542,6 +588,7 @@
         // Run on initial load
         function initAll() {
             initHistoryDropdown();
+            initHelpDropdown();
             initThemeToggle();
             document.querySelectorAll('textarea').forEach(autoGrowTextarea);
             document.querySelectorAll('input[type="text"]').forEach(autoGrowInput);

@@ -95,6 +95,28 @@ html:not([data-theme-setting]) #theme-dropdown .theme-toggle-btn .system-icon {
     font-weight: 600;
 }
 
+/* Help dropdown in main navigation */
+.help-dropdown {
+    display: inline-flex;
+    align-items: center;
+}
+
+.help-dropdown .help-toggle-btn {
+    font: inherit;
+    color: inherit;
+    text-decoration: none;
+}
+
+.help-dropdown .help-icon {
+    flex-shrink: 0;
+}
+
+.help-dropdown .nav-dropdown-item.active {
+    background-color: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 600;
+}
+
 
 /* Spellcheck Toggle Button Styles */
 .spellcheck-toggle-container {

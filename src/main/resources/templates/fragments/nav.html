@@ -26,7 +26,7 @@
             <a th:href="@{/team/list}" th:aria-current="${currentPage == 'teams'} ? 'page'">Teams</a>
             <a sec:authorize="hasRole('ROLE_ADMIN')" th:href="@{/account/list}" th:aria-current="${currentPage == 'accounts'} ? 'page'">Accounts</a>
         </th:block>
-        <a th:href="@{/help}" th:aria-current="${currentPage == 'help'} ? 'page'">Help</a>
+        <a th:href="@{/help}" th:aria-current="${currentPage == 'help'} ? 'page'">Scripty Help</a>
         <a th:href="@{/shortcuts}" th:aria-current="${currentPage == 'shortcuts'} ? 'page'">Shortcuts</a>
     </nav>
     <!-- Theme Toggle Dropdown -->

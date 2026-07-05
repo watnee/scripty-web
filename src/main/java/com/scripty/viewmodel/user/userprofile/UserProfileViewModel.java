@@ -1,6 +1,6 @@
-package com.scripty.viewmodel.user.accountprofile;
+package com.scripty.viewmodel.user.userprofile;
 
-public class AccountProfileViewModel {
+public class UserProfileViewModel {
 
     private int id;
     private String username;

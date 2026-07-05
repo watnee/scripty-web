@@ -3,8 +3,8 @@ package com.scripty.controller;
 import com.scripty.commandmodel.user.createuser.CreateUserCommandModel;
 import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
 import com.scripty.dto.User;
-import com.scripty.viewmodel.user.accountprofile.AccountProfileViewModel;
 import com.scripty.viewmodel.user.userlist.UserListViewModel;
+import com.scripty.viewmodel.user.userprofile.UserProfileViewModel;
 import com.scripty.service.UserService;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,8 +22,8 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping(value = "/api/account")
-public class AccountRestController {
+@RequestMapping(value = "/api/user")
+public class UserRestController {
 
     @Autowired
     UserService userService;
@@ -53,7 +53,7 @@ public class AccountRestController {
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<?> show(@PathVariable Integer id) {
-        AccountProfileViewModel viewModel = userService.getAccountProfileViewModel(id);
+        UserProfileViewModel viewModel = userService.getUserProfileViewModel(id);
         Map<String, Object> response = new HashMap<>();
         response.put("id", viewModel.getId());
         response.put("username", viewModel.getUsername());

@@ -3,10 +3,10 @@ package com.scripty.controller;
 import com.scripty.commandmodel.user.createuser.CreateUserCommandModel;
 import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
 import com.scripty.dto.User;
-import com.scripty.viewmodel.user.accountprofile.AccountProfileViewModel;
 import com.scripty.viewmodel.user.createuser.CreateUserViewModel;
 import com.scripty.viewmodel.user.edituser.EditUserViewModel;
 import com.scripty.viewmodel.user.userlist.UserListViewModel;
+import com.scripty.viewmodel.user.userprofile.UserProfileViewModel;
 import com.scripty.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
-@RequestMapping(value = "/account")
-public class AccountController {
+@RequestMapping(value = "/user")
+public class UserController {
 
     @Autowired
     UserService userService;
@@ -32,17 +32,17 @@ public class AccountController {
 
         model.addAttribute("viewModel", viewModel);
 
-        return "account/list";
+        return "user/list";
     }
 
     @RequestMapping(value = "/show")
     public String show(@RequestParam Integer id, Model model) {
 
-        AccountProfileViewModel viewModel = userService.getAccountProfileViewModel(id);
+        UserProfileViewModel viewModel = userService.getUserProfileViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
 
-        return "account/show";
+        return "user/show";
     }
 
     @RequestMapping(value = "/delete")
@@ -50,7 +50,7 @@ public class AccountController {
 
         userService.deleteUser(id);
 
-        return "redirect:/account/list";
+        return "redirect:/user/list";
     }
 
     @RequestMapping(value = "/edit")
@@ -61,7 +61,7 @@ public class AccountController {
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditUserCommandModel());
 
-        return "account/edit";
+        return "user/edit";
     }
 
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
@@ -73,12 +73,12 @@ public class AccountController {
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
 
-            return "account/edit";
+            return "user/edit";
         }
 
         userService.saveEditUserCommandModel(commandModel);
 
-        return "redirect:/account/list";
+        return "redirect:/user/list";
     }
 
     @RequestMapping(value = "/create")
@@ -89,7 +89,7 @@ public class AccountController {
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getCreateUserCommandModel());
 
-        return "account/create";
+        return "user/create";
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
@@ -101,11 +101,11 @@ public class AccountController {
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
 
-            return "account/create";
+            return "user/create";
         }
 
         userService.saveCreateUserCommandModel(commandModel);
 
-        return "redirect:/account/list";
+        return "redirect:/user/list";
     }
 }

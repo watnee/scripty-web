@@ -61,24 +61,15 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectListViewModel getProjectListViewModel() {
         ProjectListViewModel vm = new ProjectListViewModel();
-        List<Project> projects = projectRepository.findAllByOrderByTitleAsc();
-        List<ProjectViewModel> projectViewModels = new ArrayList<>();
-        for (Project project : projects) {
-            ProjectViewModel pvm = new ProjectViewModel();
-            pvm.setId(project.getId());
-            pvm.setTitle(project.getTitle());
-            pvm.setTeam(project.getTeam());
-            pvm.setLastEdited(project.getLastEdited());
-            projectViewModels.add(pvm);
-        }
-        vm.setProjects(projectViewModels);
+        List<Project> projects = new ArrayList<>(projectRepository.findAll());
+        vm.setProjects(mapProjectViewModels(projects));
         return vm;
     }
 
     @Override
     public ProjectListViewModel getProjectListViewModel(String userTeam) {
         ProjectListViewModel vm = new ProjectListViewModel();
-        List<Project> projects = projectRepository.findAllByOrderByTitleAsc();
+        List<Project> projects = new ArrayList<>(projectRepository.findAll());
 
         if (userTeam != null && !userTeam.isEmpty()) {
             List<Project> filtered = new ArrayList<>();
@@ -90,6 +81,12 @@ public class ProjectServiceImpl implements ProjectService {
             projects = filtered;
         }
 
+        vm.setProjects(mapProjectViewModels(projects));
+        return vm;
+    }
+
+    private List<ProjectViewModel> mapProjectViewModels(List<Project> projects) {
+        sortProjectsByLastEdited(projects);
         List<ProjectViewModel> projectViewModels = new ArrayList<>();
         for (Project project : projects) {
             ProjectViewModel pvm = new ProjectViewModel();
@@ -99,8 +96,28 @@ public class ProjectServiceImpl implements ProjectService {
             pvm.setLastEdited(project.getLastEdited());
             projectViewModels.add(pvm);
         }
-        vm.setProjects(projectViewModels);
-        return vm;
+        return projectViewModels;
+    }
+
+    private void sortProjectsByLastEdited(List<Project> projects) {
+        projects.sort((a, b) -> {
+            java.time.LocalDateTime aEdited = a.getLastEdited();
+            java.time.LocalDateTime bEdited = b.getLastEdited();
+            if (aEdited == null && bEdited == null) {
+                return a.getTitle().compareToIgnoreCase(b.getTitle());
+            }
+            if (aEdited == null) {
+                return 1;
+            }
+            if (bEdited == null) {
+                return -1;
+            }
+            int editedCompare = bEdited.compareTo(aEdited);
+            if (editedCompare != 0) {
+                return editedCompare;
+            }
+            return a.getTitle().compareToIgnoreCase(b.getTitle());
+        });
     }
 
     @Override

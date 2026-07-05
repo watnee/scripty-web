@@ -5,20 +5,20 @@
     <meta name="theme-color" content="#111111">
     <link rel="manifest" th:href="@{/manifest.json}">
     <meta charset="UTF-8">
-    <title>Scripty - Accounts</title>
+    <title>Scripty - Users</title>
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
     <link th:href="@{/css/scripty.css}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
-    <div th:replace="~{fragments/nav :: nav('accounts')}"></div>
+    <div th:replace="~{fragments/nav :: nav('users')}"></div>
     <main>
         <nav aria-label="Breadcrumb">
             <ol>
-                <li aria-current="page">Accounts</li>
+                <li aria-current="page">Users</li>
             </ol>
         </nav>
-        <h1>Accounts</h1>
+        <h1>Users</h1>
         <table>
             <thead>
                 <tr>
@@ -31,18 +31,18 @@
             </thead>
             <tbody>
                 <tr th:each="user : ${viewModel.users}">
-                    <td><a th:href="@{/account/show(id=${user.id})}" th:text="${user.username}"></a></td>
+                    <td><a th:href="@{/user/show(id=${user.id})}" th:text="${user.username}"></a></td>
                     <td th:text="${user.firstName} + ' ' + ${user.lastName}"></td>
                     <td th:text="${user.team}"></td>
                     <td th:text="${user.admin} ? (${user.director} ? (${user.producer} ? 'Admin, Director, Producer' : 'Admin, Director') : (${user.producer} ? 'Admin, Producer' : 'Admin')) : (${user.director} ? (${user.producer} ? 'Director, Producer' : 'Director') : (${user.producer} ? 'Producer' : 'User'))"></td>
                     <td>
-                        <a th:href="@{/account/edit(id=${user.id})}" role="button">edit</a>
-                        <a th:href="@{/account/delete(id=${user.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this account?') halt">delete</a>
+                        <a th:href="@{/user/edit(id=${user.id})}" role="button">edit</a>
+                        <a th:href="@{/user/delete(id=${user.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this user?') halt">delete</a>
                     </td>
                 </tr>
             </tbody>
         </table>
-        <p><a th:href="@{/account/create}" role="button">Create New Account</a></p>
+        <p><a th:href="@{/user/create}" role="button">Create New User</a></p>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>

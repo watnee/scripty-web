@@ -8,7 +8,7 @@ import com.scripty.repository.AuthorityRepository;
 import com.scripty.repository.UserRepository;
 import com.scripty.viewmodel.user.createuser.CreateUserViewModel;
 import com.scripty.viewmodel.user.edituser.EditUserViewModel;
-import com.scripty.viewmodel.user.accountprofile.AccountProfileViewModel;
+import com.scripty.viewmodel.user.userprofile.UserProfileViewModel;
 import com.scripty.viewmodel.user.userlist.UserListViewModel;
 import com.scripty.viewmodel.user.userlist.UserViewModel;
 import java.util.ArrayList;
@@ -209,9 +209,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AccountProfileViewModel getAccountProfileViewModel(Integer id) {
+    public UserProfileViewModel getUserProfileViewModel(Integer id) {
         User user = read(id);
-        AccountProfileViewModel vm = new AccountProfileViewModel();
+        UserProfileViewModel vm = new UserProfileViewModel();
         vm.setId(user.getId());
         vm.setUsername(user.getUsername());
         vm.setFirstName(user.getFirstName());

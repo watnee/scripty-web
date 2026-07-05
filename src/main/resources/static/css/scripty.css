@@ -57,7 +57,8 @@ body, main, header, nav, footer, table, tr, td, th, input, textarea, button, sel
     flex-shrink: 0;
 }
 
-.user-dropdown-container .theme-option.active {
+.user-dropdown-container .theme-option.active,
+.user-dropdown-container .nav-dropdown-item.active {
     background-color: var(--accent-bg);
     color: var(--accent);
     font-weight: 600;
@@ -721,9 +722,42 @@ tr.default-project-row td:first-child {
 }
 
 .project-list-create-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
     margin: 0;
+    padding: 0.65rem 1.15rem;
+    border-radius: 999px;
+    border: 1px solid var(--accent, #475569);
+    background: var(--accent, #475569);
+    color: #fff !important;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none !important;
     white-space: nowrap;
     flex-shrink: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.project-list-create-btn:hover,
+.project-list-create-btn:focus-visible {
+    filter: brightness(0.92);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    text-decoration: none !important;
+    color: #fff !important;
+}
+
+.project-list-create-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    font-size: 1.15rem;
+    line-height: 1;
+    font-weight: 700;
 }
 
 .project-list-toolbar {
@@ -734,35 +768,104 @@ tr.default-project-row td:first-child {
     flex-wrap: wrap;
 }
 
-.project-list-search-label {
-    flex: 1 1 240px;
-    margin: 0;
+.project-list-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
-.project-list-search {
-    width: 100%;
-    margin: 0;
-    padding: 0.65rem 1rem;
+.project-list-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 280px;
+    max-width: 420px;
     border-radius: 999px;
     border: 1px solid var(--border, #cbd5e1);
     background: var(--box-bg, #ffffff);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.project-list-search:focus {
-    outline: none;
+.project-list-search-wrap:focus-within {
     border-color: var(--accent, #475569);
     box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.12);
 }
 
-.project-list-search-clear {
+.project-list-search-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 0.9rem;
+    color: var(--muted-fg, #64748b);
+    pointer-events: none;
+}
+
+.project-list-search {
+    flex: 1;
+    min-width: 0;
+    width: auto;
     margin: 0;
-    padding: 0.45rem 0.85rem;
-    font-size: 0.85rem;
+    padding: 0.65rem 0.5rem 0.65rem 0.55rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    font-size: 0.95rem;
+}
+
+.project-list-search::placeholder {
+    color: var(--muted-fg, #94a3b8);
+}
+
+.project-list-search:focus {
+    outline: none;
+    border: none;
+    box-shadow: none;
+}
+
+.project-list-search-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    margin-right: 0.45rem;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted-fg, #64748b);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.project-list-search-clear:hover,
+.project-list-search-clear:focus-visible {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    color: var(--fg, inherit);
 }
 
 .project-list-search-clear[hidden] {
     display: none;
+}
+
+.project-list-no-results {
+    margin: 0;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    color: var(--muted-fg, #64748b);
+    font-size: 0.95rem;
+}
+
+.project-list-no-results strong {
+    color: var(--fg, inherit);
+    font-weight: 600;
 }
 
 .project-list-panel {
@@ -1510,12 +1613,20 @@ kbd {
         text-align: center;
     }
 
+    .project-list-toolbar-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        margin-left: 0;
+    }
+
     .project-list-toolbar {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .project-list-search-clear {
+    .project-list-search-wrap {
+        max-width: none;
         width: 100%;
     }
 

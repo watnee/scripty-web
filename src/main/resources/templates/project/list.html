@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <title>Scripty - Projects</title>
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
-    <link th:href="@{/css/scripty.css(v='7')}" rel="stylesheet">
+    <link th:href="@{/css/scripty.css(v='9')}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
@@ -15,12 +15,32 @@
     <main class="project-list-page">
 
         <div class="project-list-toolbar">
-            <a th:href="@{/project/create}" role="button" class="project-list-create-btn">+ New Project</a>
-            <label class="project-list-search-label">
-                <span class="visually-hidden">Search projects</span>
-                <input type="search" id="project-list-search" class="project-list-search" placeholder="Search by title..." autocomplete="off" />
-            </label>
-            <button type="button" id="project-list-search-clear" class="project-list-search-clear bad">Clear</button>
+            <div class="project-list-search-wrap" id="project-list-search-wrap">
+                <label class="visually-hidden" for="project-list-search">Search projects</label>
+                <span class="project-list-search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
+                    </svg>
+                </span>
+                <input type="search"
+                       id="project-list-search"
+                       class="project-list-search"
+                       placeholder="Search projects..."
+                       autocomplete="off"
+                       enterkeyhint="search" />
+                <button type="button"
+                        id="project-list-search-clear"
+                        class="project-list-search-clear"
+                        aria-label="Clear search"
+                        hidden>&times;</button>
+            </div>
+            <div class="project-list-toolbar-actions">
+                <a th:href="@{/project/create}" role="button" class="project-list-create-btn">
+                    <span class="project-list-create-icon" aria-hidden="true">+</span>
+                    New Project
+                </a>
+            </div>
         </div>
 
         <div class="project-list-panel" th:if="${!#lists.isEmpty(viewModel.projects)}">
@@ -69,7 +89,9 @@
                     </tr>
                 </tbody>
             </table>
-            <p class="project-list-no-results muted" id="project-list-no-results" hidden>No projects match your search.</p>
+            <p class="project-list-no-results" id="project-list-no-results" hidden>
+                No projects match <strong id="project-list-search-query"></strong>.
+            </p>
         </div>
 
         <div class="project-list-empty" th:if="${#lists.isEmpty(viewModel.projects)}">
@@ -84,13 +106,20 @@
     (function() {
         const searchInput = document.getElementById('project-list-search');
         const clearBtn = document.getElementById('project-list-search-clear');
+        const searchWrap = document.getElementById('project-list-search-wrap');
         const noResultsEl = document.getElementById('project-list-no-results');
+        const noResultsQueryEl = document.getElementById('project-list-search-query');
         if (!searchInput) return;
 
         function performSearch() {
-            const query = searchInput.value.toLowerCase().trim();
+            const query = searchInput.value.trim();
+            const normalizedQuery = query.toLowerCase();
+
             if (clearBtn) {
                 clearBtn.hidden = !query;
+            }
+            if (searchWrap) {
+                searchWrap.classList.toggle('has-value', !!query);
             }
 
             const rows = document.querySelectorAll('#table-projects .project-list-row');
@@ -101,7 +130,7 @@
                 if (!titleLink) return;
 
                 const titleText = titleLink.textContent.toLowerCase();
-                const matches = !query || titleText.includes(query);
+                const matches = !normalizedQuery || titleText.includes(normalizedQuery);
                 row.hidden = !matches;
                 if (matches) visibleCount++;
             });
@@ -109,9 +138,20 @@
             if (noResultsEl) {
                 noResultsEl.hidden = visibleCount > 0 || !query;
             }
+            if (noResultsQueryEl) {
+                noResultsQueryEl.textContent = query ? '"' + query + '"' : '';
+            }
         }
 
         searchInput.addEventListener('input', performSearch);
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                searchInput.value = '';
+                performSearch();
+                searchInput.focus();
+            }
+        });
 
         if (clearBtn) {
             clearBtn.addEventListener('click', function() {

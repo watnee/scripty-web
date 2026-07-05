@@ -2,7 +2,6 @@
     <small class="save-timestamp" style="color: #999; font-size: 0.75em;">Saved <span class="save-time"></span></small>
     <script>document.currentScript.previousElementSibling.querySelector('.save-time').textContent = new Date().toLocaleTimeString();</script>
     <input type="hidden" name="id" th:value="${commandModel.id}" />
-    <input type="hidden" name="sceneId" th:value="${commandModel.sceneId}" />
 
     <textarea spellcheck="true" rows="1" style="width: 100%; height: 1.5em; min-height: 1.5em; padding: 0.25em;" name="content" th:text="${commandModel.content}"></textarea>
     <input type="hidden" name="personId" th:value="${commandModel.personId}" />

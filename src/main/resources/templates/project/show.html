@@ -48,7 +48,7 @@
         </h1>
         <div class="f-row" style="gap: 2rem; align-items: start">
             <div style="flex: 3">
-                <h2>Scenes <small><a th:href="@{/scene/all(projectId=${viewModel.id})}" role="button">View All</a></small></h2>
+                <h2>Scenes</h2>
                 <div class="tags-bulk-action" style="margin-bottom: 1.5rem;">
                     <label style="display: flex; align-items: center; margin: 0 0.5rem 0 0; cursor: pointer; user-select: none;">
                         <input type="checkbox" id="project-select-all-blocks" style="margin-right: 6px;" /> Select All
@@ -58,9 +58,9 @@
                     <button type="button" id="project-bulk-delete-btn" class="bad" style="margin: 0;" title="Delete selected blocks">🗑️</button>
                 </div>
                 <th:block th:each="scene : ${viewModel.scenes}">
-                    <h3 class="scene-header" style="margin-bottom: 0.25em">
+                    <h3 class="scene-header" th:if="${scene.id != null}" style="margin-bottom: 0.25em">
                         <span class="scene-name-wrap">
-                            <span class="scene-name-display" th:attr="hx-get=@{/scene/editNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; min-width: 10em; display: inline-block">
+                            <span class="scene-name-display" th:attr="hx-get=@{/block/editSceneNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; min-width: 10em; display: inline-block">
                                 <th:block th:if="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}">
                                     <span style="color: #ccc; font-style: italic">click to name scene</span>
                                 </th:block>
@@ -68,7 +68,7 @@
                             </span>
                         </span>
                         <small>
-                            <a th:href="@{/scene/show(id=${scene.id})}" role="button">view</a>
+                            <a th:href="@{/block/delete(id=${scene.id})}" role="button" _="on click if not confirm('Delete this scene heading? Its blocks will merge into the scene above.') halt">delete</a>
                         </small>
                     </h3>
                     <table class="table-blocks-all" th:id="'table-blocks-' + ${scene.id}">
@@ -91,10 +91,10 @@
                                 </span>
                             </td>
                         </tr>
-                        <tr th:attr="hx-get=@{/block/createInline(sceneId=${scene.id})}" hx-trigger="load" hx-swap="outerHTML"></tr>
+                        <tr th:if="${scene.lastBlockId != null}" th:attr="hx-get=@{/block/createBelowInline(id=${scene.lastBlockId})}" hx-trigger="load" hx-swap="outerHTML"></tr>
                     </table>
                 </th:block>
-                <form th:action="@{/scene/createAndReturn}" method="POST" hx-boost="false" style="display:inline">
+                <form th:action="@{/block/createSceneAndReturn}" method="POST" hx-boost="false" style="display:inline">
                     <input type="hidden" name="projectId" th:value="${viewModel.id}" />
                     <button type="submit" role="button">Create New Scene</button>
                 </form>
@@ -209,21 +209,7 @@
                 projectIdInput.name = 'projectId';
                 projectIdInput.value = /*[[${viewModel.id}]]*/ '';
                 form.appendChild(projectIdInput);
-                
-                var sceneIdInput = document.createElement('input');
-                sceneIdInput.type = 'hidden';
-                sceneIdInput.name = 'sceneId';
-                var firstTr = checkboxes[0].closest('tr');
-                var sceneId = '';
-                if (firstTr) {
-                    var table = firstTr.closest('table');
-                    if (table) {
-                        sceneId = table.id.replace('table-blocks-', '');
-                    }
-                }
-                sceneIdInput.value = sceneId;
-                form.appendChild(sceneIdInput);
-                
+
                 document.body.appendChild(form);
                 form.submit();
             });
@@ -263,21 +249,7 @@
                 projectIdInput.name = 'projectId';
                 projectIdInput.value = /*[[${viewModel.id}]]*/ '';
                 form.appendChild(projectIdInput);
-                
-                var sceneIdInput = document.createElement('input');
-                sceneIdInput.type = 'hidden';
-                sceneIdInput.name = 'sceneId';
-                var firstTr = checkboxes[0].closest('tr');
-                var sceneId = '';
-                if (firstTr) {
-                    var table = firstTr.closest('table');
-                    if (table) {
-                        sceneId = table.id.replace('table-blocks-', '');
-                    }
-                }
-                sceneIdInput.value = sceneId;
-                form.appendChild(sceneIdInput);
-                
+
                 document.body.appendChild(form);
                 form.submit();
             });

@@ -6,17 +6,15 @@ import com.scripty.commandmodel.block.editblock.EditBlockCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
-import com.scripty.dto.Scene;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
-import com.scripty.repository.SceneRepository;
+import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.block.createblock.CreateBlockViewModel;
 import com.scripty.viewmodel.block.createblock.CreatePersonViewModel;
 import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 import com.scripty.viewmodel.block.editblock.EditPersonViewModel;
-import com.scripty.viewmodel.scene.sceneprofile.BlockViewModel;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,17 +26,14 @@ public class BlockServiceImpl implements BlockService {
 
     private final BlockRepository blockRepository;
     private final PersonRepository personRepository;
-    private final SceneRepository sceneRepository;
     private final ProjectRepository projectRepository;
 
     @Autowired
     public BlockServiceImpl(BlockRepository blockRepository,
                             PersonRepository personRepository,
-                            SceneRepository sceneRepository,
                             ProjectRepository projectRepository) {
         this.blockRepository = blockRepository;
         this.personRepository = personRepository;
-        this.sceneRepository = sceneRepository;
         this.projectRepository = projectRepository;
     }
 
@@ -48,17 +43,16 @@ public class BlockServiceImpl implements BlockService {
     }
 
     @Override
-    public CreateBlockViewModel getCreateBlockViewModel(Integer sceneId) {
+    public CreateBlockViewModel getCreateBlockViewModel(Integer projectId) {
         CreateBlockViewModel vm = new CreateBlockViewModel();
-        Scene scene = sceneRepository.findById(sceneId).orElse(null);
-        Project project = projectRepository.findBySceneId(scene.getId());
+        Project project = projectRepository.findById(projectId).orElse(null);
 
         CreateBlockCommandModel commandModel = new CreateBlockCommandModel();
-        commandModel.setSceneId(scene.getId());
+        commandModel.setProjectId(project.getId());
         vm.setCreateBlockCommandModel(commandModel);
 
         List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(project.getId());
-        vm.setSceneId(scene.getId());
+        vm.setProjectId(project.getId());
         vm.setPersons(translateCreatePersonViewModel(persons));
         return vm;
     }
@@ -67,16 +61,14 @@ public class BlockServiceImpl implements BlockService {
     public CreateBlockBelowViewModel getCreateBlockBelowViewModel(Integer id) {
         CreateBlockBelowViewModel vm = new CreateBlockBelowViewModel();
         Block existingBlock = blockRepository.findById(id).orElse(null);
-        Scene scene = sceneRepository.findById(existingBlock.getScene().getId()).orElse(null);
-        Project project = projectRepository.findBySceneId(scene.getId());
+        Project project = existingBlock.getProject();
 
         CreateBlockBelowCommandModel commandModel = new CreateBlockBelowCommandModel();
         commandModel.setId(existingBlock.getId());
-        commandModel.setSceneId(scene.getId());
         vm.setCreateBlockBelowCommandModel(commandModel);
 
         List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(project.getId());
-        vm.setSceneId(scene.getId());
+        vm.setProjectId(project.getId());
         vm.setPersons(translateCreatePersonViewModel(persons));
         return vm;
     }
@@ -85,11 +77,11 @@ public class BlockServiceImpl implements BlockService {
     public EditBlockViewModel getEditBlockViewModel(Integer id) {
         EditBlockViewModel vm = new EditBlockViewModel();
         Block existingBlock = blockRepository.findById(id).orElse(null);
+        Project project = existingBlock.getProject();
+
+        vm.setProjectId(project.getId());
+
         List<Person> allPersons = personRepository.findAll();
-        Scene scene = sceneRepository.findById(existingBlock.getScene().getId()).orElse(null);
-
-        vm.setSceneId(scene.getId());
-
         List<EditPersonViewModel> editPersonViewModels = new ArrayList<>();
         for (Person person : allPersons) {
             EditPersonViewModel epvm = new EditPersonViewModel();
@@ -105,7 +97,6 @@ public class BlockServiceImpl implements BlockService {
         if (existingBlock.getPerson() != null) {
             commandModel.setPersonId(existingBlock.getPerson().getId());
         }
-        commandModel.setSceneId(scene.getId());
         commandModel.setTags(existingBlock.getTags());
         vm.setEditBlockCommandModel(commandModel);
         return vm;
@@ -120,6 +111,7 @@ public class BlockServiceImpl implements BlockService {
         vm.setContent(block.getContent());
         vm.setBookmarked(block.isBookmarked());
         vm.setPinned(block.isPinned());
+        vm.setScene(block.isScene());
         vm.setTags(block.getTags());
         if (block.getPerson() != null) {
             Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
@@ -139,13 +131,12 @@ public class BlockServiceImpl implements BlockService {
         if (cmd.getPersonId() != null) {
             person = personRepository.findById(cmd.getPersonId()).orElse(null);
         }
-        Scene scene = sceneRepository.findById(cmd.getSceneId()).orElse(null);
+        Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
         String content = cmd.getContent();
 
         if (person == null) {
             String characterName = extractCharacterName(content);
             if (characterName != null) {
-                Project project = projectRepository.findBySceneId(scene.getId());
                 person = findOrCreatePerson(characterName, project);
                 content = stripCharacterName(content);
             }
@@ -153,11 +144,11 @@ public class BlockServiceImpl implements BlockService {
 
         block.setContent(content);
         if (person != null) block.setPerson(person);
-        block.setScene(scene);
+        block.setProject(project);
         block.setBookmarked(false);
         block.setPinned(false);
 
-        int order = blockRepository.countBySceneId(scene.getId()) + 1;
+        int order = blockRepository.countByProjectId(project.getId()) + 1;
         block.setOrder(order);
         return blockRepository.save(block);
     }
@@ -170,13 +161,12 @@ public class BlockServiceImpl implements BlockService {
         if (cmd.getPersonId() != null) {
             person = personRepository.findById(cmd.getPersonId()).orElse(null);
         }
-        Scene scene = sceneRepository.findById(existingBlock.getScene().getId()).orElse(null);
+        Project project = existingBlock.getProject();
         String content = cmd.getContent();
 
         if (person == null) {
             String characterName = extractCharacterName(content);
             if (characterName != null) {
-                Project project = projectRepository.findBySceneId(scene.getId());
                 person = findOrCreatePerson(characterName, project);
                 content = stripCharacterName(content);
             }
@@ -185,12 +175,12 @@ public class BlockServiceImpl implements BlockService {
         Block block = new Block();
         block.setContent(content);
         if (person != null) block.setPerson(person);
-        block.setScene(scene);
+        block.setProject(project);
         block.setBookmarked(false);
         block.setPinned(false);
 
         int newOrder = existingBlock.getOrder() + 1;
-        blockRepository.incrementOrdersAbove(existingBlock.getOrder(), scene.getId());
+        blockRepository.incrementOrdersAbove(existingBlock.getOrder(), project.getId());
         block.setOrder(newOrder);
         return blockRepository.save(block);
     }
@@ -203,21 +193,18 @@ public class BlockServiceImpl implements BlockService {
         if (cmd.getPersonId() != null) {
             person = personRepository.findById(cmd.getPersonId()).orElse(null);
         }
-        Scene scene = sceneRepository.findById(cmd.getSceneId()).orElse(null);
         String content = cmd.getContent();
 
-        if (person == null) {
+        if (person == null && !block.isScene()) {
             String characterName = extractCharacterName(content);
             if (characterName != null) {
-                Project project = projectRepository.findBySceneId(scene.getId());
-                person = findOrCreatePerson(characterName, project);
+                person = findOrCreatePerson(characterName, block.getProject());
                 content = stripCharacterName(content);
             }
         }
 
         block.setContent(content);
         block.setPerson(person);
-        block.setScene(scene);
         if (cmd.getTags() != null) {
             block.setTags(cmd.getTags());
         }
@@ -227,10 +214,34 @@ public class BlockServiceImpl implements BlockService {
 
     @Override
     @Transactional
+    public Block createSceneBlock(Integer projectId, String name) {
+        Project project = projectRepository.findById(projectId).orElse(null);
+        Block block = new Block();
+        block.setContent(name);
+        block.setType(Block.TYPE_SCENE);
+        block.setProject(project);
+        block.setBookmarked(false);
+        block.setPinned(false);
+
+        int order = blockRepository.countByProjectId(project.getId()) + 1;
+        block.setOrder(order);
+        return blockRepository.save(block);
+    }
+
+    @Override
+    @Transactional
+    public Block updateSceneName(Integer id, String name) {
+        Block block = blockRepository.findById(id).orElse(null);
+        block.setContent(name);
+        return blockRepository.save(block);
+    }
+
+    @Override
+    @Transactional
     public Block deleteBlock(Integer id) {
         Block block = blockRepository.findById(id).orElse(null);
         blockRepository.delete(block);
-        blockRepository.decrementOrdersAbove(block.getOrder(), block.getScene().getId());
+        blockRepository.decrementOrdersAbove(block.getOrder(), block.getProject().getId());
         return block;
     }
 
@@ -239,7 +250,7 @@ public class BlockServiceImpl implements BlockService {
     public Block moveBlockUp(Integer id) {
         Block block = blockRepository.findById(id).orElse(null);
         Block blockAbove = blockRepository
-            .findBySceneIdAndOrder(block.getScene().getId(), block.getOrder() - 1)
+            .findByProjectIdAndOrder(block.getProject().getId(), block.getOrder() - 1)
             .orElse(null);
         if (blockAbove != null) {
             int tempOrder = blockAbove.getOrder();
@@ -256,7 +267,7 @@ public class BlockServiceImpl implements BlockService {
     public Block moveBlockDown(Integer id) {
         Block block = blockRepository.findById(id).orElse(null);
         Block blockBelow = blockRepository
-            .findBySceneIdAndOrder(block.getScene().getId(), block.getOrder() + 1)
+            .findByProjectIdAndOrder(block.getProject().getId(), block.getOrder() + 1)
             .orElse(null);
         if (blockBelow != null) {
             int tempOrder = blockBelow.getOrder();
@@ -273,13 +284,13 @@ public class BlockServiceImpl implements BlockService {
     public Block moveBlockTo(Integer id, int newOrder) {
         Block block = blockRepository.findById(id).orElse(null);
         int currentOrder = block.getOrder();
-        int sceneId = block.getScene().getId();
+        int projectId = block.getProject().getId();
         if (newOrder == currentOrder) return block;
 
         if (newOrder < currentOrder) {
-            blockRepository.incrementOrdersInRange(newOrder, currentOrder, sceneId);
+            blockRepository.incrementOrdersInRange(newOrder, currentOrder, projectId);
         } else {
-            blockRepository.decrementOrdersInRange(currentOrder, newOrder, sceneId);
+            blockRepository.decrementOrdersInRange(currentOrder, newOrder, projectId);
         }
         block.setOrder(newOrder);
         blockRepository.save(block);
@@ -439,15 +450,15 @@ public class BlockServiceImpl implements BlockService {
         if (ids == null || ids.isEmpty()) {
             return;
         }
-        java.util.Set<Integer> sceneIds = new java.util.HashSet<>();
+        java.util.Set<Integer> projectIds = new java.util.HashSet<>();
         for (Integer id : ids) {
             blockRepository.findById(id).ifPresent(block -> {
-                sceneIds.add(block.getScene().getId());
+                projectIds.add(block.getProject().getId());
             });
         }
         blockRepository.deleteAllById(ids);
-        for (Integer sceneId : sceneIds) {
-            List<Block> remainingBlocks = blockRepository.findBySceneIdOrderByOrderAsc(sceneId);
+        for (Integer projectId : projectIds) {
+            List<Block> remainingBlocks = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
             int order = 1;
             for (Block b : remainingBlocks) {
                 b.setOrder(order++);

@@ -9,25 +9,25 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface BlockRepository extends JpaRepository<Block, Integer> {
 
-    List<Block> findBySceneIdOrderByOrderAsc(Integer sceneId);
+    List<Block> findByProjectIdOrderByOrderAsc(Integer projectId);
 
-    int countBySceneId(Integer sceneId);
+    int countByProjectId(Integer projectId);
 
-    Optional<Block> findBySceneIdAndOrder(Integer sceneId, Integer order);
-
-    @Modifying
-    @Query("UPDATE Block b SET b.order = b.order + 1 WHERE b.order > :order AND b.scene.id = :sceneId")
-    void incrementOrdersAbove(Integer order, Integer sceneId);
+    Optional<Block> findByProjectIdAndOrder(Integer projectId, Integer order);
 
     @Modifying
-    @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :order AND b.scene.id = :sceneId")
-    void decrementOrdersAbove(Integer order, Integer sceneId);
+    @Query("UPDATE Block b SET b.order = b.order + 1 WHERE b.order > :order AND b.project.id = :projectId")
+    void incrementOrdersAbove(Integer order, Integer projectId);
 
     @Modifying
-    @Query("UPDATE Block b SET b.order = b.order + 1 WHERE b.order >= :newOrder AND b.order < :currentOrder AND b.scene.id = :sceneId")
-    void incrementOrdersInRange(Integer newOrder, Integer currentOrder, Integer sceneId);
+    @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :order AND b.project.id = :projectId")
+    void decrementOrdersAbove(Integer order, Integer projectId);
 
     @Modifying
-    @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :currentOrder AND b.order <= :newOrder AND b.scene.id = :sceneId")
-    void decrementOrdersInRange(Integer currentOrder, Integer newOrder, Integer sceneId);
+    @Query("UPDATE Block b SET b.order = b.order + 1 WHERE b.order >= :newOrder AND b.order < :currentOrder AND b.project.id = :projectId")
+    void incrementOrdersInRange(Integer newOrder, Integer currentOrder, Integer projectId);
+
+    @Modifying
+    @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :currentOrder AND b.order <= :newOrder AND b.project.id = :projectId")
+    void decrementOrdersInRange(Integer currentOrder, Integer newOrder, Integer projectId);
 }

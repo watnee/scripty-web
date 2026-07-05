@@ -5,13 +5,12 @@ import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
-import com.scripty.dto.Scene;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
-import com.scripty.repository.SceneRepository;
 import com.scripty.repository.TeamRepository;
 import com.scripty.dto.Team;
+import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
@@ -19,7 +18,6 @@ import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.PersonViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.viewmodel.project.projectprofile.SceneViewModel;
-import com.scripty.viewmodel.scene.sceneprofile.BlockViewModel;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,19 +27,16 @@ import org.springframework.stereotype.Service;
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final SceneRepository sceneRepository;
     private final PersonRepository personRepository;
     private final BlockRepository blockRepository;
     private final TeamRepository teamRepository;
 
     @Autowired
     public ProjectServiceImpl(ProjectRepository projectRepository,
-                              SceneRepository sceneRepository,
                               PersonRepository personRepository,
                               BlockRepository blockRepository,
                               TeamRepository teamRepository) {
         this.projectRepository = projectRepository;
-        this.sceneRepository = sceneRepository;
         this.personRepository = personRepository;
         this.blockRepository = blockRepository;
         this.teamRepository = teamRepository;
@@ -50,11 +45,6 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public Project read(Integer id) {
         return projectRepository.findById(id).orElse(null);
-    }
-
-    @Override
-    public Project getProjectByScene(Scene scene) {
-        return projectRepository.findBySceneId(scene.getId());
     }
 
     @Override
@@ -104,36 +94,48 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectProfileViewModel getProjectProfileViewModel(Integer id) {
         ProjectProfileViewModel vm = new ProjectProfileViewModel();
         Project project = projectRepository.findById(id).orElse(null);
-        List<Scene> scenes = sceneRepository.findByProjectIdOrderByOrderAsc(project.getId());
+        List<Block> blocks = blockRepository.findByProjectIdOrderByOrderAsc(project.getId());
         List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(project.getId());
 
         vm.setId(project.getId());
         vm.setTitle(project.getTitle());
         vm.setTeam(project.getTeam());
 
+        // Group the flat block list into scenes: each scene-type block starts a
+        // new group; text blocks before the first scene block form a headerless group.
         List<SceneViewModel> sceneViewModels = new ArrayList<>();
-        for (Scene scene : scenes) {
-            SceneViewModel svm = new SceneViewModel();
-            svm.setId(scene.getId());
-            svm.setName(scene.getName());
-            List<Block> blocks = blockRepository.findBySceneIdOrderByOrderAsc(scene.getId());
-            List<BlockViewModel> blockViewModels = new ArrayList<>();
-            for (Block block : blocks) {
-                BlockViewModel bvm = new BlockViewModel();
-                bvm.setId(block.getId());
-                bvm.setOrder(block.getOrder());
-                bvm.setContent(block.getContent());
-                if (block.getPerson() != null) {
-                    Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
-                    if (person != null) {
-                        bvm.setPersonId(person.getId());
-                        bvm.setPersonName(person.getName());
-                    }
-                }
-                blockViewModels.add(bvm);
+        SceneViewModel currentScene = null;
+        for (Block block : blocks) {
+            if (block.isScene()) {
+                currentScene = new SceneViewModel();
+                currentScene.setId(block.getId());
+                currentScene.setName(block.getContent());
+                currentScene.setLastBlockId(block.getId());
+                currentScene.setBlocks(new ArrayList<>());
+                sceneViewModels.add(currentScene);
+                continue;
             }
-            svm.setBlocks(blockViewModels);
-            sceneViewModels.add(svm);
+            if (currentScene == null) {
+                currentScene = new SceneViewModel();
+                currentScene.setBlocks(new ArrayList<>());
+                sceneViewModels.add(currentScene);
+            }
+            BlockViewModel bvm = new BlockViewModel();
+            bvm.setId(block.getId());
+            bvm.setOrder(block.getOrder());
+            bvm.setContent(block.getContent());
+            bvm.setBookmarked(block.isBookmarked());
+            bvm.setPinned(block.isPinned());
+            bvm.setTags(block.getTags());
+            if (block.getPerson() != null) {
+                Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
+                if (person != null) {
+                    bvm.setPersonId(person.getId());
+                    bvm.setPersonName(person.getName());
+                }
+            }
+            currentScene.getBlocks().add(bvm);
+            currentScene.setLastBlockId(block.getId());
         }
         vm.setScenes(sceneViewModels);
 
@@ -153,14 +155,14 @@ public class ProjectServiceImpl implements ProjectService {
     public CreateProjectViewModel getCreateProjectViewModel() {
         CreateProjectViewModel vm = new CreateProjectViewModel();
         vm.setCreateProjectCommandModel(new CreateProjectCommandModel());
-        
+
         List<Team> teams = teamRepository.findAllByOrderByNameAsc();
         List<String> teamNames = new ArrayList<>();
         for (Team t : teams) {
             teamNames.add(t.getName());
         }
         vm.setTeams(teamNames);
-        
+
         return vm;
     }
 
@@ -174,14 +176,14 @@ public class ProjectServiceImpl implements ProjectService {
         commandModel.setTitle(project.getTitle());
         commandModel.setTeam(project.getTeam());
         vm.setEditProjectCommandModel(commandModel);
-        
+
         List<Team> teams = teamRepository.findAllByOrderByNameAsc();
         List<String> teamNames = new ArrayList<>();
         for (Team t : teams) {
             teamNames.add(t.getName());
         }
         vm.setTeams(teamNames);
-        
+
         return vm;
     }
 

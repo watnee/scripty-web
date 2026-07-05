@@ -1,16 +1,7 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-package com.scripty.viewmodel.scene.sceneprofile;
+package com.scripty.viewmodel.block;
 
-/**
- *
- * @author chris
- */
 public class BlockViewModel {
-    
+
     private int id;
     private int order;
     private String content;
@@ -18,6 +9,7 @@ public class BlockViewModel {
     private String personName;
     private boolean bookmarked;
     private boolean pinned;
+    private boolean scene;
 
     public int getId() {
         return id;
@@ -75,6 +67,14 @@ public class BlockViewModel {
         this.pinned = pinned;
     }
 
+    public boolean isScene() {
+        return scene;
+    }
+
+    public void setScene(boolean scene) {
+        this.scene = scene;
+    }
+
     private String tags;
 
     public String getTags() {
@@ -85,4 +85,3 @@ public class BlockViewModel {
         this.tags = tags;
     }
 }
-

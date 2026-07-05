@@ -1,7 +1,7 @@
 <tr xmlns:th="http://www.thymeleaf.org" draggable="true">
     <td class="block-left-controls">
         <input type="checkbox" class="block-select-checkbox" style="margin-right: 8px;" />
-        <a th:attr="hx-get=@{/block/createInline(sceneId=${viewModel.sceneId})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
+        <a th:attr="hx-get=@{/block/createBelowInline(id=${blockId})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
         <span class="drag-handle">&#8942;&#8942;</span>
     </td>
     <td class="block-content">

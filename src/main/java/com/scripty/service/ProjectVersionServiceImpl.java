@@ -6,12 +6,10 @@ import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
 import com.scripty.dto.ProjectVersion;
-import com.scripty.dto.Scene;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.ProjectVersionRepository;
-import com.scripty.repository.SceneRepository;
 import com.scripty.viewmodel.project.versionhistory.VersionHistoryViewModel;
 import com.scripty.viewmodel.project.versionhistory.VersionViewModel;
 import java.time.LocalDateTime;
@@ -29,7 +27,6 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
 
     private final ProjectRepository projectRepository;
     private final ProjectVersionRepository projectVersionRepository;
-    private final SceneRepository sceneRepository;
     private final BlockRepository blockRepository;
     private final PersonRepository personRepository;
     private final ObjectMapper objectMapper;
@@ -37,13 +34,11 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Autowired
     public ProjectVersionServiceImpl(ProjectRepository projectRepository,
                                      ProjectVersionRepository projectVersionRepository,
-                                     SceneRepository sceneRepository,
                                      BlockRepository blockRepository,
                                      PersonRepository personRepository,
                                      ObjectMapper objectMapper) {
         this.projectRepository = projectRepository;
         this.projectVersionRepository = projectVersionRepository;
-        this.sceneRepository = sceneRepository;
         this.blockRepository = blockRepository;
         this.personRepository = personRepository;
         this.objectMapper = objectMapper;
@@ -66,19 +61,38 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             vvm.setCreatedAt(version.getCreatedAt());
             try {
                 Map<String, Object> snapshot = objectMapper.readValue(version.getSnapshotJson(), Map.class);
-                List<?> scenes = (List<?>) snapshot.get("scenes");
                 List<?> persons = (List<?>) snapshot.get("persons");
-                vvm.setSceneCount(scenes != null ? scenes.size() : 0);
                 vvm.setCharacterCount(persons != null ? persons.size() : 0);
-                int blockCount = 0;
-                if (scenes != null) {
-                    for (Object s : scenes) {
-                        Map<?, ?> sceneMap = (Map<?, ?>) s;
-                        List<?> blocks = (List<?>) sceneMap.get("blocks");
-                        if (blocks != null) blockCount += blocks.size();
+
+                List<?> blocks = (List<?>) snapshot.get("blocks");
+                if (blocks != null) {
+                    // Current format: one flat list; scene-type blocks are the scene headings.
+                    int sceneCount = 0;
+                    int blockCount = 0;
+                    for (Object b : blocks) {
+                        Map<?, ?> blockMap = (Map<?, ?>) b;
+                        if (Block.TYPE_SCENE.equals(blockMap.get("type"))) {
+                            sceneCount++;
+                        } else {
+                            blockCount++;
+                        }
                     }
+                    vvm.setSceneCount(sceneCount);
+                    vvm.setBlockCount(blockCount);
+                } else {
+                    // Legacy format: nested scenes, each with its own block list.
+                    List<?> scenes = (List<?>) snapshot.get("scenes");
+                    vvm.setSceneCount(scenes != null ? scenes.size() : 0);
+                    int blockCount = 0;
+                    if (scenes != null) {
+                        for (Object s : scenes) {
+                            Map<?, ?> sceneMap = (Map<?, ?>) s;
+                            List<?> sceneBlocks = (List<?>) sceneMap.get("blocks");
+                            if (sceneBlocks != null) blockCount += sceneBlocks.size();
+                        }
+                    }
+                    vvm.setBlockCount(blockCount);
                 }
-                vvm.setBlockCount(blockCount);
             } catch (JsonProcessingException e) {
                 vvm.setSceneCount(0);
                 vvm.setBlockCount(0);
@@ -94,7 +108,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Transactional
     public ProjectVersion createVersion(Integer projectId, String label) {
         Project project = projectRepository.findById(projectId).orElse(null);
-        List<Scene> scenes = sceneRepository.findByProjectIdOrderByOrderAsc(projectId);
+        List<Block> blocks = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
         List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(projectId);
 
         Map<String, Object> snapshot = new HashMap<>();
@@ -111,25 +125,16 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         }
         snapshot.put("persons", personSnapshots);
 
-        List<Map<String, Object>> sceneSnapshots = new ArrayList<>();
-        for (Scene scene : scenes) {
-            Map<String, Object> s = new HashMap<>();
-            s.put("order", scene.getOrder());
-            s.put("name", scene.getName());
-
-            List<Block> blocks = blockRepository.findBySceneIdOrderByOrderAsc(scene.getId());
-            List<Map<String, Object>> blockSnapshots = new ArrayList<>();
-            for (Block block : blocks) {
-                Map<String, Object> b = new HashMap<>();
-                b.put("order", block.getOrder());
-                b.put("content", block.getContent());
-                b.put("personOriginalId", block.getPerson() != null ? block.getPerson().getId() : null);
-                blockSnapshots.add(b);
-            }
-            s.put("blocks", blockSnapshots);
-            sceneSnapshots.add(s);
+        List<Map<String, Object>> blockSnapshots = new ArrayList<>();
+        for (Block block : blocks) {
+            Map<String, Object> b = new HashMap<>();
+            b.put("order", block.getOrder());
+            b.put("content", block.getContent());
+            b.put("type", block.getType());
+            b.put("personOriginalId", block.getPerson() != null ? block.getPerson().getId() : null);
+            blockSnapshots.add(b);
         }
-        snapshot.put("scenes", sceneSnapshots);
+        snapshot.put("blocks", blockSnapshots);
 
         ProjectVersion version = new ProjectVersion();
         version.setProject(project);
@@ -159,19 +164,10 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
 
     @Override
     @Transactional
-    public void autoSaveVersionForScene(Integer sceneId) {
-        Scene scene = sceneRepository.findById(sceneId).orElse(null);
-        if (scene != null) {
-            autoSaveVersion(scene.getProject().getId());
-        }
-    }
-
-    @Override
-    @Transactional
     public void autoSaveVersionForBlock(Integer blockId) {
         Block block = blockRepository.findById(blockId).orElse(null);
         if (block != null) {
-            autoSaveVersion(block.getScene().getProject().getId());
+            autoSaveVersion(block.getProject().getId());
         }
     }
 
@@ -199,12 +195,8 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             throw new RuntimeException("Failed to deserialize project snapshot", e);
         }
 
-        List<Scene> existingScenes = sceneRepository.findByProjectIdOrderByOrderAsc(projectId);
-        for (Scene scene : existingScenes) {
-            List<Block> blocks = blockRepository.findBySceneIdOrderByOrderAsc(scene.getId());
-            blockRepository.deleteAll(blocks);
-        }
-        sceneRepository.deleteAll(existingScenes);
+        List<Block> existingBlocks = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+        blockRepository.deleteAll(existingBlocks);
 
         List<Person> existingPersons = personRepository.findByProjectIdOrderByNameAsc(projectId);
         personRepository.deleteAll(existingPersons);
@@ -228,34 +220,46 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             }
         }
 
-        List<Map<String, Object>> sceneSnapshots = (List<Map<String, Object>>) snapshot.get("scenes");
-        if (sceneSnapshots != null) {
-            for (Map<String, Object> ss : sceneSnapshots) {
-                Scene scene = new Scene();
-                scene.setOrder((Integer) ss.get("order"));
-                scene.setName((String) ss.get("name"));
-                scene.setProject(project);
-                scene = sceneRepository.save(scene);
-
-                List<Map<String, Object>> blockSnapshots = (List<Map<String, Object>>) ss.get("blocks");
-                if (blockSnapshots != null) {
-                    for (Map<String, Object> bs : blockSnapshots) {
-                        Block block = new Block();
-                        block.setOrder((Integer) bs.get("order"));
-                        block.setContent((String) bs.get("content"));
-                        block.setScene(scene);
-                        Integer personOriginalId = (Integer) bs.get("personOriginalId");
-                        if (personOriginalId != null) {
-                            Person restoredPerson = originalIdToNewPerson.get(personOriginalId);
-                            if (restoredPerson != null) {
-                                block.setPerson(restoredPerson);
-                            }
+        List<Map<String, Object>> blockSnapshots = (List<Map<String, Object>>) snapshot.get("blocks");
+        if (blockSnapshots != null) {
+            for (Map<String, Object> bs : blockSnapshots) {
+                restoreBlock(project, (Integer) bs.get("order"), (String) bs.get("content"),
+                        (String) bs.get("type"), (Integer) bs.get("personOriginalId"), originalIdToNewPerson);
+            }
+        } else {
+            // Legacy format: nested scenes are flattened into scene-type blocks
+            // followed by their text blocks.
+            List<Map<String, Object>> sceneSnapshots = (List<Map<String, Object>>) snapshot.get("scenes");
+            if (sceneSnapshots != null) {
+                int order = 1;
+                for (Map<String, Object> ss : sceneSnapshots) {
+                    restoreBlock(project, order++, (String) ss.get("name"), Block.TYPE_SCENE, null, originalIdToNewPerson);
+                    List<Map<String, Object>> sceneBlocks = (List<Map<String, Object>>) ss.get("blocks");
+                    if (sceneBlocks != null) {
+                        for (Map<String, Object> bs : sceneBlocks) {
+                            restoreBlock(project, order++, (String) bs.get("content"), Block.TYPE_TEXT,
+                                    (Integer) bs.get("personOriginalId"), originalIdToNewPerson);
                         }
-                        blockRepository.save(block);
                     }
                 }
             }
         }
+    }
+
+    private void restoreBlock(Project project, Integer order, String content, String type,
+                              Integer personOriginalId, Map<Integer, Person> originalIdToNewPerson) {
+        Block block = new Block();
+        block.setOrder(order);
+        block.setContent(content != null ? content : "");
+        block.setType(type != null ? type : Block.TYPE_TEXT);
+        block.setProject(project);
+        if (personOriginalId != null) {
+            Person restoredPerson = originalIdToNewPerson.get(personOriginalId);
+            if (restoredPerson != null) {
+                block.setPerson(restoredPerson);
+            }
+        }
+        blockRepository.save(block);
     }
 
     @Override

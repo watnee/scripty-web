@@ -9,10 +9,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "`block`")
 public class Block {
+
+    public static final String TYPE_TEXT = "TEXT";
+    public static final String TYPE_SCENE = "SCENE";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,13 +34,16 @@ public class Block {
     @Column(nullable = false)
     private boolean pinned;
 
+    @Column(name = "`type`", nullable = false)
+    private String type = TYPE_TEXT;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id")
     private Person person;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "scene_id")
-    private Scene scene;
+    @JoinColumn(name = "project_id")
+    private Project project;
 
     public Integer getId() {
         return id;
@@ -62,6 +69,19 @@ public class Block {
         this.content = content;
     }
 
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    @Transient
+    public boolean isScene() {
+        return TYPE_SCENE.equals(type);
+    }
+
     public Person getPerson() {
         return person;
     }
@@ -70,12 +90,12 @@ public class Block {
         this.person = person;
     }
 
-    public Scene getScene() {
-        return scene;
+    public Project getProject() {
+        return project;
     }
 
-    public void setScene(Scene scene) {
-        this.scene = scene;
+    public void setProject(Project project) {
+        this.project = project;
     }
 
     public boolean isBookmarked() {
@@ -105,4 +125,3 @@ public class Block {
         this.tags = tags;
     }
 }
-

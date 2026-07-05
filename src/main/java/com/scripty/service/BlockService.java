@@ -4,16 +4,16 @@ import com.scripty.commandmodel.block.createblock.CreateBlockCommandModel;
 import com.scripty.commandmodel.block.createblockbelow.CreateBlockBelowCommandModel;
 import com.scripty.commandmodel.block.editblock.EditBlockCommandModel;
 import com.scripty.dto.Block;
+import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.block.createblock.CreateBlockViewModel;
 import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
-import com.scripty.viewmodel.scene.sceneprofile.BlockViewModel;
 
 public interface BlockService {
 
     Block read(Integer id);
 
-    CreateBlockViewModel getCreateBlockViewModel(Integer sceneId);
+    CreateBlockViewModel getCreateBlockViewModel(Integer projectId);
     CreateBlockBelowViewModel getCreateBlockBelowViewModel(Integer id);
     EditBlockViewModel getEditBlockViewModel(Integer id);
     BlockViewModel getBlockViewModel(Integer id);
@@ -21,6 +21,9 @@ public interface BlockService {
     Block saveCreateBlockCommandModel(CreateBlockCommandModel createBlockCommandModel);
     Block saveCreateBlockBelowCommandModel(CreateBlockBelowCommandModel createBlockBelowCommandModel);
     Block saveEditBlockCommandModel(EditBlockCommandModel editBlockCommandModel);
+
+    Block createSceneBlock(Integer projectId, String name);
+    Block updateSceneName(Integer id, String name);
 
     Block deleteBlock(Integer id);
     Block moveBlockUp(Integer id);
@@ -31,4 +34,3 @@ public interface BlockService {
     void addTagsToBlocks(java.util.List<Integer> ids, String tags);
     void deleteBlocks(java.util.List<Integer> ids);
 }
-

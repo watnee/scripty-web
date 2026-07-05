@@ -11,8 +11,6 @@ public interface ProjectVersionService {
 
     void autoSaveVersion(Integer projectId);
 
-    void autoSaveVersionForScene(Integer sceneId);
-
     void autoSaveVersionForBlock(Integer blockId);
 
     void autoSaveVersionForPerson(Integer personId);

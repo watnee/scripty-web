@@ -95,6 +95,57 @@ html:not([data-theme-setting]) #theme-dropdown .theme-toggle-btn .system-icon {
     font-weight: 600;
 }
 
+
+/* Spellcheck Toggle Button Styles */
+.spellcheck-toggle-container {
+    position: absolute;
+    top: 0.75rem;
+    right: 4.25rem;
+    z-index: 1001;
+}
+
+.spellcheck-toggle-container .spellcheck-toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+    width: 36px;
+    height: 36px;
+}
+
+.spellcheck-toggle-container .spellcheck-toggle-btn:hover {
+    background-color: var(--accent-bg);
+    transform: scale(1.1);
+    color: var(--accent);
+}
+
+.spellcheck-toggle-container .spellcheck-toggle-btn:active {
+    transform: scale(0.9);
+}
+
+/* Spellcheck Icon States */
+html[data-spellcheck="false"] .spellcheck-toggle-btn .spellcheck-slash {
+    display: block;
+}
+html[data-spellcheck="false"] .spellcheck-toggle-btn .spellcheck-check {
+    opacity: 0.3;
+}
+html[data-spellcheck="false"] .spellcheck-toggle-btn {
+    opacity: 0.5;
+}
+html[data-spellcheck="true"] .spellcheck-toggle-btn .spellcheck-slash {
+    display: none;
+}
+html[data-spellcheck="true"] .spellcheck-toggle-btn .spellcheck-check {
+    stroke: var(--good-fg-color, #22c55e);
+}
+
 header {
     position: relative; /* Set relative positioning so absolute theme toggle aligns to it */
     border-bottom: none;
@@ -817,6 +868,12 @@ kbd {
         position: absolute !important;
         top: 0.75rem !important;
         right: 0.75rem !important;
+        margin: 0 !important;
+    }
+    .spellcheck-toggle-container {
+        position: absolute !important;
+        top: 0.75rem !important;
+        right: 3.5rem !important;
         margin: 0 !important;
     }
 

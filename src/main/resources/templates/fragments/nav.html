@@ -10,6 +10,9 @@
             } else if (storedTheme === 'light') {
                 document.documentElement.classList.add('-no-dark-theme');
             }
+            
+            const spellcheckEnabled = localStorage.getItem('spellcheck') !== 'false';
+            document.documentElement.setAttribute('data-spellcheck', spellcheckEnabled ? 'true' : 'false');
         })();
     </script>
     <nav>
@@ -79,10 +82,73 @@
             </button>
         </div>
     </div>
+    <!-- Spellcheck Toggle Button -->
+    <div class="spellcheck-toggle-container">
+        <button class="spellcheck-toggle-btn" type="button" onclick="window.toggleSpellcheck()" aria-label="Toggle spellcheck" title="Toggle spellcheck">
+            <svg class="spellcheck-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m6 16 6-12 6 12"></path>
+                <path d="M8 12h8"></path>
+                <path d="m16 20 2 2 4-4" class="spellcheck-check"></path>
+                <line x1="3" y1="3" x2="21" y2="21" class="spellcheck-slash" stroke="var(--bad-fg-color, #e11d48)" stroke-width="2"></line>
+            </svg>
+        </button>
+    </div>
     <script th:inline="javascript">
     (function() {
         let lastFocusedEditable = null;
         let hoveredRow = null;
+
+        // Spellcheck state management
+        function applySpellcheckToElement(el, state) {
+            if (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text')) {
+                el.setAttribute('spellcheck', state ? 'true' : 'false');
+            }
+        }
+
+        function updateAllSpellcheckElements() {
+            const state = localStorage.getItem('spellcheck') !== 'false';
+            document.querySelectorAll('textarea, input[type="text"]').forEach(el => {
+                applySpellcheckToElement(el, state);
+            });
+        }
+
+        window.toggleSpellcheck = function() {
+            const currentState = localStorage.getItem('spellcheck') !== 'false';
+            const newState = !currentState;
+            localStorage.setItem('spellcheck', newState ? 'true' : 'false');
+            document.documentElement.setAttribute('data-spellcheck', newState ? 'true' : 'false');
+            updateAllSpellcheckElements();
+            
+            const btn = document.querySelector('.spellcheck-toggle-btn');
+            if (btn) {
+                const title = newState ? 'Spellcheck: Enabled (click to disable)' : 'Spellcheck: Disabled (click to enable)';
+                btn.title = title;
+                btn.setAttribute('aria-label', title);
+            }
+        };
+
+        // Initialize spellcheck on load
+        function initSpellcheck() {
+            const state = localStorage.getItem('spellcheck') !== 'false';
+            updateAllSpellcheckElements();
+            const btn = document.querySelector('.spellcheck-toggle-btn');
+            if (btn) {
+                const title = state ? 'Spellcheck: Enabled (click to disable)' : 'Spellcheck: Disabled (click to enable)';
+                btn.title = title;
+                btn.setAttribute('aria-label', title);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSpellcheck);
+        } else {
+            initSpellcheck();
+        }
+
+        // Apply on HTMX content swaps
+        document.body.addEventListener('htmx:afterOnLoad', function() {
+            updateAllSpellcheckElements();
+        });
 
         // Track last focused input/textarea
         document.addEventListener('focusin', function(e) {

@@ -21,6 +21,7 @@
             </ol>
         </nav>
         <div class="text-size-control">
+            <div th:replace="~{fragments/textstyle :: textStyleDropdown}"></div>
             <div class="nav-dropdown" id="history-dropdown" style="display: none;">
                 <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false" title="History">🕒</button>
                 <div class="nav-dropdown-menu">
@@ -108,6 +109,7 @@
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:src="@{/js/text-size.js}"></script>
+    <script th:src="@{/js/text-style.js}"></script>
     <script th:inline="javascript">
     document.querySelectorAll('.table-blocks-all').forEach(function(table) {
         var dragRow = null;

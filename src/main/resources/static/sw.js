@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v1';
+const CACHE_NAME = 'scripty-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/offline.html',
@@ -52,6 +52,16 @@ self.addEventListener('fetch', (event) => {
 
   // Skip caching for H2 console or API endpoints that shouldn't be cached
   if (url.pathname.startsWith('/h2-console') || url.pathname.startsWith('/api/')) {
+    return;
+  }
+
+  // Dynamic HTML fragments (htmx endpoints) must always come from the
+  // network — serving them cache-first hands the user a stale edit form
+  // whose autosave then overwrites newer content
+  if (url.pathname.startsWith('/block/') || url.pathname.startsWith('/scene/') ||
+      url.pathname.startsWith('/project/') || url.pathname.startsWith('/character/') ||
+      url.pathname.startsWith('/actor/') || url.pathname.startsWith('/team/') ||
+      url.pathname.startsWith('/account/')) {
     return;
   }
 

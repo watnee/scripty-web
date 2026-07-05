@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<div th:fragment="textStyleDropdown" class="nav-dropdown" id="text-style-dropdown">
+    <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false" title="Text style">Aa ▾</button>
+    <div class="nav-dropdown-menu">
+        <button class="nav-dropdown-item" type="button" data-text-style="bold"><strong>Bold</strong></button>
+        <button class="nav-dropdown-item" type="button" data-text-style="italic"><em>Italic</em></button>
+        <button class="nav-dropdown-item" type="button" data-text-style="underline"><u>Underline</u></button>
+        <button class="nav-dropdown-item" type="button" data-text-style="strikethrough"><s>Strikethrough</s></button>
+        <hr class="nav-dropdown-divider">
+        <button class="nav-dropdown-item" type="button" data-text-style="uppercase">UPPERCASE</button>
+        <button class="nav-dropdown-item" type="button" data-text-style="lowercase">lowercase</button>
+        <hr class="nav-dropdown-divider">
+        <button class="nav-dropdown-item" type="button" data-text-style="superscript">Superscript ˣ²</button>
+        <button class="nav-dropdown-item" type="button" data-text-style="subscript">Subscript ₓ₂</button>
+    </div>
+</div>
+</html>

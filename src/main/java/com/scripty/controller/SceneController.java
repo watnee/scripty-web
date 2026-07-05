@@ -42,6 +42,10 @@ public class SceneController {
     
     @RequestMapping(value = "/show")
     public String show(@RequestParam Integer id, Model model) {
+        Scene scene = sceneService.read(id);
+        if (scene == null) {
+            return "redirect:/project/list";
+        }
 
         SceneProfileViewModel viewModel = sceneService.getSceneProfileViewModel(id);
 

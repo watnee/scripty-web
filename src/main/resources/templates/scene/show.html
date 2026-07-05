@@ -31,13 +31,12 @@
                     <span>Last edited </span>
                     <span class="last-edited-time" th:attr="data-timestamp=${viewModel.projectLastEdited}"></span>
                 </span>
-                <div class="nav-dropdown" id="history-dropdown" style="display: none;">
+                <button id="nav-undo" type="button" class="history-action-btn" aria-label="Undo">← Undo</button>
+                <button id="nav-redo" type="button" class="history-action-btn" aria-label="Redo">Redo →</button>
+                <div class="nav-dropdown" id="history-dropdown" style="display: inline-block;">
                     <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false" title="History">🕒</button>
                     <div class="nav-dropdown-menu">
-                        <a class="nav-dropdown-item" id="nav-version-history" href="#">Version History</a>
-                        <hr class="nav-dropdown-divider">
-                        <button class="nav-dropdown-item" id="nav-undo" type="button">Undo</button>
-                        <button class="nav-dropdown-item" id="nav-redo" type="button">Redo</button>
+                        <a class="nav-dropdown-item" id="nav-version-history" th:href="@{/project/version/list(projectId=${viewModel.projectId})}" hx-boost="false">Version History</a>
                     </div>
                 </div>
                 <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
@@ -137,15 +136,29 @@
             var targetRow = e.target.closest('tr');
             if (!targetRow || !table.contains(targetRow) || !dragRow || targetRow === dragRow) return;
             var blockId = dragRow.getAttribute('data-block-id');
-            var targetOrder = targetRow.getAttribute('data-block-order');
-            if (blockId && targetOrder) {
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = /*[[@{/block/moveTo}]]*/ '/block/moveTo';
-                form.innerHTML = '<input type="hidden" name="id" value="' + blockId + '">' +
-                                 '<input type="hidden" name="position" value="' + targetOrder + '">';
-                document.body.appendChild(form);
-                form.submit();
+            var newOrder = window.scriptyCalcDropPosition
+                ? window.scriptyCalcDropPosition(dragRow, targetRow, e.clientY)
+                : parseInt(targetRow.getAttribute('data-block-order'), 10);
+            var dragOrder = parseInt(dragRow.getAttribute('data-block-order'), 10);
+            if (blockId && newOrder && newOrder !== dragOrder) {
+                if (window.scriptyAbortUndoStatusFetch) {
+                    window.scriptyAbortUndoStatusFetch();
+                }
+                var params = new URLSearchParams();
+                params.append('id', blockId);
+                params.append('position', String(newOrder));
+                params.append('projectId', /*[[${viewModel.projectId}]]*/ '');
+                fetch(/*[[@{/block/moveTo}]]*/ '/block/moveTo', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: params.toString()
+                }).then(function(response) {
+                    if (response.ok || response.redirected) {
+                        window.location.reload();
+                    }
+                });
             } else {
                 var rect = targetRow.getBoundingClientRect();
                 var mid = rect.top + rect.height / 2;
@@ -225,6 +238,7 @@
                 var form = document.createElement('form');
                 form.method = 'POST';
                 form.action = /*[[@{/block/bulkDelete}]]*/ '/block/bulkDelete';
+                form.setAttribute('hx-boost', 'false');
                 
                 var idsInput = document.createElement('input');
                 idsInput.type = 'hidden';

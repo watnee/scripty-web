@@ -317,6 +317,11 @@ h1:hover > small a[role="button"],
     cursor: pointer;
 }
 
+.text-size-control button.history-action-btn.is-unavailable {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .text-size-control .nav-dropdown-toggle {
     background: var(--interactive-bg);
     border: 1px solid var(--muted-fg);

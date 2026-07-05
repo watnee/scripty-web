@@ -179,9 +179,14 @@
 
         function executeMove(blockId, direction) {
             sessionStorage.setItem('activeBlockId', blockId);
+            if (window.scriptyAbortUndoStatusFetch) {
+                window.scriptyAbortUndoStatusFetch();
+            }
             const url = '/block/' + direction + '?id=' + blockId;
             fetch(url, {
                 method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store',
                 redirect: 'manual'
             }).then(function() {
                 window.location.reload();
@@ -243,6 +248,142 @@
                    el.isContentEditable;
         }
 
+        function isCreateBlockTextarea(el) {
+            if (!el || el.tagName !== 'TEXTAREA') return false;
+            const row = el.closest('tr');
+            return !!row && !row.hasAttribute('data-block-id');
+        }
+
+        function isInlineTextEdit(el) {
+            if (!isEditable(el)) return false;
+            if (!el.closest('.block-content, .scene-name-wrap')) return false;
+            // Empty create-row uses structural undo, not browser text undo
+            if (isCreateBlockTextarea(el)) return false;
+            return true;
+        }
+
+        function resolveProjectId() {
+            const params = new URLSearchParams(window.location.search);
+            if (window.location.pathname.startsWith('/project/show') && params.has('id')) {
+                return params.get('id');
+            }
+            if (params.has('projectId')) {
+                return params.get('projectId');
+            }
+            const projectLink = document.querySelector('a[href*="/project/show?id="], a[href*="/project/show/"]');
+            if (projectLink) {
+                const href = projectLink.getAttribute('href');
+                const match = href.match(/[\?&]id=(\d+)/);
+                if (match) {
+                    return match[1];
+                }
+            }
+            return null;
+        }
+
+        function abortUndoStatusFetch() {
+            if (window._undoStatusAbort) {
+                window._undoStatusAbort.abort();
+                window._undoStatusAbort = null;
+            }
+        }
+
+        function calcDropPosition(dragRow, targetRow, clientY) {
+            const dragOrder = parseInt(dragRow.getAttribute('data-block-order'), 10);
+            const targetOrder = parseInt(targetRow.getAttribute('data-block-order'), 10);
+            if (Number.isNaN(dragOrder) || Number.isNaN(targetOrder)) {
+                return null;
+            }
+            const rect = targetRow.getBoundingClientRect();
+            const insertBefore = clientY < rect.top + rect.height / 2;
+            let newOrder = insertBefore ? targetOrder : targetOrder + 1;
+            if (dragOrder < newOrder) {
+                newOrder--;
+            }
+            return newOrder;
+        }
+
+        window.scriptyAbortUndoStatusFetch = abortUndoStatusFetch;
+        window.scriptyCalcDropPosition = calcDropPosition;
+
+        function setHistoryButtonState(btn, available) {
+            btn.disabled = false;
+            btn.classList.toggle('is-unavailable', !available);
+            btn.setAttribute('aria-disabled', available ? 'false' : 'true');
+        }
+
+        function updateUndoRedoButtons(projectId) {
+            const undoBtn = document.getElementById('nav-undo');
+            const redoBtn = document.getElementById('nav-redo');
+            if (!undoBtn || !redoBtn || !projectId) return;
+
+            abortUndoStatusFetch();
+            const controller = new AbortController();
+            window._undoStatusAbort = controller;
+
+            fetch('/project/undoRedoStatus?projectId=' + projectId, {
+                cache: 'no-store',
+                credentials: 'same-origin',
+                signal: controller.signal
+            })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (window._undoStatusAbort !== controller) return;
+                    setHistoryButtonState(undoBtn, data.canUndo);
+                    setHistoryButtonState(redoBtn, data.canRedo);
+                })
+                .catch(function(err) {
+                    if (err && err.name === 'AbortError') return;
+                    setHistoryButtonState(undoBtn, false);
+                    setHistoryButtonState(redoBtn, false);
+                })
+                .finally(function() {
+                    if (window._undoStatusAbort === controller) {
+                        window._undoStatusAbort = null;
+                    }
+                });
+        }
+
+        function performHistoryAction(action) {
+            const dropdown = document.getElementById('history-dropdown');
+            if (dropdown) {
+                dropdown.classList.remove('open');
+                const toggle = dropdown.querySelector('.nav-dropdown-toggle');
+                if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            }
+
+            const activeEl = document.activeElement;
+            if (isInlineTextEdit(activeEl)) {
+                activeEl.focus();
+                document.execCommand(action);
+                return;
+            }
+
+            const projectId = resolveProjectId();
+            if (!projectId) return;
+
+            fetch('/project/' + action + '?projectId=' + projectId, {
+                method: 'POST',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+            }).then(function(response) { return response.json(); })
+              .then(function(data) {
+                  if (data.success) {
+                      if (data.moveOnly) {
+                          window.location.reload();
+                      } else {
+                          window.location.href = '/project/show?id=' + projectId;
+                      }
+                  } else {
+                      updateUndoRedoButtons(projectId);
+                  }
+              })
+              .catch(function() {
+                  updateUndoRedoButtons(projectId);
+              });
+        }
+
         // Global keyboard shortcuts for undo and redo
         document.addEventListener('keydown', function(e) {
             const undoBtn = document.getElementById('nav-undo');
@@ -259,8 +400,6 @@
                 if (e.key.toLowerCase() === 'z') {
                     action = e.shiftKey ? 'redo' : 'undo';
                 } else if (e.key.toLowerCase() === 'y') {
-                    // Only allow Y modifier if it is Control, or if it is Command on non-Mac.
-                    // Specifically exclude Command + Y on Mac to avoid conflict with Safari's History shortcut.
                     if (hasCtrl || (hasCmd && !isMac)) {
                         action = 'redo';
                     }
@@ -269,15 +408,11 @@
                 if (action) {
                     e.preventDefault();
                     const activeEl = document.activeElement;
-                    if (isEditable(activeEl)) {
+                    if (isInlineTextEdit(activeEl)) {
                         activeEl.focus();
                         document.execCommand(action);
                     } else {
-                        if (action === 'undo') {
-                            undoBtn.click();
-                        } else {
-                            redoBtn.click();
-                        }
+                        performHistoryAction(action);
                     }
                 }
             }
@@ -294,6 +429,13 @@
 
             if (!undoBtn || !redoBtn) return;
 
+            if (!undoBtn.classList.contains('history-action-btn')) {
+                undoBtn.classList.add('history-action-btn');
+            }
+            if (!redoBtn.classList.contains('history-action-btn')) {
+                redoBtn.classList.add('history-action-btn');
+            }
+
             // Dynamically display keyboard shortcuts based on OS
             const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
             const undoShortcut = isMac ? ' (⌘Z)' : ' (Ctrl+Z)';
@@ -309,19 +451,6 @@
             redoBtn.title = 'Redo' + redoShortcut;
             redoBtn.setAttribute('aria-label', 'Redo' + redoShortcut);
 
-            function performHistoryAction(action) {
-                if (dropdown) {
-                    dropdown.classList.remove('open');
-                    const toggle = dropdown.querySelector('.nav-dropdown-toggle');
-                    if (toggle) toggle.setAttribute('aria-expanded', 'false');
-                }
-                let el = lastFocusedEditable || document.querySelector('textarea, input[type="text"]');
-                if (el) {
-                    el.focus();
-                    document.execCommand(action);
-                }
-            }
-
             undoBtn.onclick = function(e) {
                 e.preventDefault();
                 performHistoryAction('undo');
@@ -332,7 +461,10 @@
                 performHistoryAction('redo');
             };
 
-            if (!toggleBtn || !versionHistoryLink) return;
+            if (!toggleBtn || !versionHistoryLink) {
+                updateUndoRedoButtons(resolveProjectId());
+                return;
+            }
 
             // Toggle dropdown open/close
             toggleBtn.onclick = function(e) {
@@ -355,31 +487,16 @@
             });
 
             // Resolve Project ID from URL or page DOM
-            let projectId = null;
-            const params = new URLSearchParams(window.location.search);
-            
-            if (window.location.pathname.startsWith('/project/show') && params.has('id')) {
-                projectId = params.get('id');
-            } else if (params.has('projectId')) {
-                projectId = params.get('projectId');
-            } else {
-                // Check breadcrumbs link to project show page
-                const projectLink = document.querySelector('a[href*="/project/show?id="], a[href*="/project/show/"]');
-                if (projectLink) {
-                    const href = projectLink.getAttribute('href');
-                    const match = href.match(/[\?&]id=(\d+)/);
-                    if (match) {
-                        projectId = match[1];
-                    }
-                }
-            }
+            const projectId = resolveProjectId();
 
             if (projectId) {
-                // Update Version History href
-                versionHistoryLink.href = /*[[@{/project/version/list}]]*/ '/project/version/list';
-                versionHistoryLink.href += '?projectId=' + projectId;
+                if (versionHistoryLink.getAttribute('href') === '#' || versionHistoryLink.getAttribute('href') === '') {
+                    versionHistoryLink.href = /*[[@{/project/version/list}]]*/ '/project/version/list';
+                    versionHistoryLink.href += '?projectId=' + projectId;
+                }
                 dropdown.style.display = 'inline-block';
-            } else {
+                updateUndoRedoButtons(projectId);
+            } else if (dropdown.style.display !== 'inline-block') {
                 dropdown.style.display = 'none';
             }
         }
@@ -604,6 +721,14 @@
 
         // Run on HTMX content swaps
         document.body.addEventListener('htmx:afterSwap', initAll);
+
+        document.body.addEventListener('htmx:afterRequest', function(e) {
+            if (!e.detail.successful) return;
+            const path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
+            if (path.indexOf('/block/') !== -1 || path.indexOf('/project/undo') !== -1 || path.indexOf('/project/redo') !== -1) {
+                updateUndoRedoButtons(resolveProjectId());
+            }
+        });
 
         // Dynamic adjustment as the user types
         document.addEventListener('input', function(e) {

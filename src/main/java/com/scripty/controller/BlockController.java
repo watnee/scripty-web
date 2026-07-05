@@ -14,6 +14,7 @@ import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 import com.scripty.viewmodel.scene.sceneprofile.BlockViewModel;
 import com.scripty.service.BlockService;
+import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
@@ -38,38 +39,70 @@ public class BlockController {
 
     @Autowired
     ProjectVersionService projectVersionService;
+
+    @Autowired
+    ProjectUndoRedoService projectUndoRedoService;
     
     @RequestMapping(value = "/delete")
-    public String delete(@RequestParam Integer id) {
-        
+    public String delete(@RequestParam Integer id, @RequestParam(required = false) Integer projectId) {
+        projectUndoRedoService.recordCheckpointForBlock(id);
         Block block = blockService.deleteBlock(id);
-        projectVersionService.autoSaveVersionForBlock(block.getId());
+        projectVersionService.autoSaveVersionForBlock(id);
 
+        if (projectId != null) {
+            return "redirect:/project/show?id=" + projectId;
+        }
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
     
     @RequestMapping(value = "/moveUp")
     public String moveUp(@RequestParam Integer id) {
-        
-        Block block = blockService.moveBlockUp(id);
-        projectVersionService.autoSaveVersionForBlock(block.getId());
-
-        return "redirect:/scene/show?id=" + block.getScene().getId();
+        Block block = blockService.read(id);
+        if (block == null) {
+            return "redirect:/project/list";
+        }
+        int fromOrder = block.getOrder();
+        Block moved = blockService.moveBlockUp(id);
+        if (moved != null && moved.getOrder() != fromOrder) {
+            projectUndoRedoService.recordMoveCheckpoint(id, fromOrder, moved.getOrder());
+            projectVersionService.autoSaveVersionForBlock(moved.getId());
+        }
+        return "redirect:/scene/show?id=" + moved.getScene().getId();
     }
-    
+
     @RequestMapping(value = "/moveDown")
     public String moveDown(@RequestParam Integer id) {
-        
-        Block block = blockService.moveBlockDown(id);
-        projectVersionService.autoSaveVersionForBlock(block.getId());
-
-        return "redirect:/scene/show?id=" + block.getScene().getId();
+        Block block = blockService.read(id);
+        if (block == null) {
+            return "redirect:/project/list";
+        }
+        int fromOrder = block.getOrder();
+        Block moved = blockService.moveBlockDown(id);
+        if (moved != null && moved.getOrder() != fromOrder) {
+            projectUndoRedoService.recordMoveCheckpoint(id, fromOrder, moved.getOrder());
+            projectVersionService.autoSaveVersionForBlock(moved.getId());
+        }
+        return "redirect:/scene/show?id=" + moved.getScene().getId();
     }
-    
+
     @RequestMapping(value = "/moveTo", method = RequestMethod.POST)
-    public String moveTo(@RequestParam Integer id, @RequestParam int position) {
-        Block block = blockService.moveBlockTo(id, position);
-        projectVersionService.autoSaveVersionForBlock(block.getId());
+    public String moveTo(@RequestParam Integer id, @RequestParam int position,
+                         @RequestParam(required = false) Integer projectId) {
+        Block block = blockService.read(id);
+        if (block == null) {
+            if (projectId != null) {
+                return "redirect:/project/show?id=" + projectId;
+            }
+            return "redirect:/project/list";
+        }
+        if (block.getOrder() != position) {
+            projectUndoRedoService.recordMoveCheckpoint(id, block.getOrder(), position);
+            block = blockService.moveBlockTo(id, position);
+            projectVersionService.autoSaveVersionForBlock(block.getId());
+        }
+        if (projectId != null) {
+            return "redirect:/project/show?id=" + projectId;
+        }
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
 
@@ -101,6 +134,7 @@ public class BlockController {
             model.addAttribute("commandModel", commandModel);
             return "block/editInline";
         }
+        projectUndoRedoService.recordCheckpointForBlock(commandModel.getId());
         Block block = blockService.saveEditBlockCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
         BlockViewModel vm = blockService.getBlockViewModel(block.getId());
@@ -140,6 +174,7 @@ public class BlockController {
             return "block/edit";
         }
 
+        projectUndoRedoService.recordCheckpointForBlock(commandModel.getId());
         Block block = blockService.saveEditBlockCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
 
@@ -171,6 +206,7 @@ public class BlockController {
             return "block/create";
         }
 
+        projectUndoRedoService.recordCheckpointForScene(commandModel.getSceneId());
         Block block = blockService.saveCreateBlockCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
 
@@ -202,6 +238,7 @@ public class BlockController {
             return "block/createBelow";
         }
 
+        projectUndoRedoService.recordCheckpointForBlock(commandModel.getId());
         Block block = blockService.saveCreateBlockBelowCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
 
@@ -217,6 +254,7 @@ public class BlockController {
 
     @RequestMapping(value = "/createInline", method = RequestMethod.POST)
     public String saveCreateInline(@RequestParam Integer sceneId, @RequestParam String content, @RequestParam(required = false) Integer personId, Model model) {
+        projectUndoRedoService.recordCheckpointForScene(sceneId);
         CreateBlockCommandModel commandModel = new CreateBlockCommandModel();
         commandModel.setSceneId(sceneId);
         commandModel.setContent(content);
@@ -241,6 +279,7 @@ public class BlockController {
 
     @RequestMapping(value = "/createBelowInline", method = RequestMethod.POST)
     public String saveCreateBelowInline(@RequestParam Integer id, @RequestParam String content, @RequestParam(required = false) Integer personId, Model model) {
+        projectUndoRedoService.recordCheckpointForBlock(id);
         CreateBlockBelowCommandModel commandModel = new CreateBlockBelowCommandModel();
         commandModel.setId(id);
         commandModel.setContent(content);
@@ -266,6 +305,11 @@ public class BlockController {
                     // Ignore
                 }
             }
+            if (projectId != null) {
+                projectUndoRedoService.recordCheckpoint(projectId);
+            } else if (sceneId != null) {
+                projectUndoRedoService.recordCheckpointForScene(sceneId);
+            }
             blockService.addTagsToBlocks(blockIds, tags);
             if (projectId != null) {
                 projectVersionService.autoSaveVersion(projectId);
@@ -289,6 +333,11 @@ public class BlockController {
                 } catch (NumberFormatException e) {
                     // Ignore
                 }
+            }
+            if (projectId != null) {
+                projectUndoRedoService.recordCheckpoint(projectId);
+            } else if (sceneId != null) {
+                projectUndoRedoService.recordCheckpointForScene(sceneId);
             }
             blockService.deleteBlocks(blockIds);
             if (projectId != null) {

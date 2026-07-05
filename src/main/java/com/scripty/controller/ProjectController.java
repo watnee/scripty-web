@@ -12,10 +12,13 @@ import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.commandmodel.scene.createscene.CreateSceneCommandModel;
 import com.scripty.service.ProjectService;
+import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.SceneService;
 import com.scripty.service.UserService;
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 @RequestMapping(value = "/project")
@@ -36,6 +40,9 @@ public class ProjectController {
 
     @Autowired
     ProjectVersionService projectVersionService;
+
+    @Autowired
+    ProjectUndoRedoService projectUndoRedoService;
 
     @Autowired
     SceneService sceneService;
@@ -67,7 +74,16 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/show")
-    public String show(@RequestParam Integer id, Model model, Principal principal) {
+    public String show(@RequestParam(required = false) Integer id, Model model, Principal principal) {
+        if (id == null) {
+            if (principal != null) {
+                User currentUser = userService.readByUsername(principal.getName());
+                if (currentUser != null && currentUser.getDefaultProjectId() != null) {
+                    return "redirect:/project/show?id=" + currentUser.getDefaultProjectId();
+                }
+            }
+            return "redirect:/project/list";
+        }
 
         ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
 
@@ -83,6 +99,39 @@ public class ProjectController {
         model.addAttribute("isDefault", isDefault);
 
         return "project/show";
+    }
+
+    @RequestMapping(value = "/undo", method = RequestMethod.POST)
+    @ResponseBody
+    public Map<String, Object> undo(@RequestParam Integer projectId) {
+        ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.undoWithDetails(projectId);
+        return buildUndoRedoResponse(result, projectId);
+    }
+
+    @RequestMapping(value = "/redo", method = RequestMethod.POST)
+    @ResponseBody
+    public Map<String, Object> redo(@RequestParam Integer projectId) {
+        ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.redoWithDetails(projectId);
+        return buildUndoRedoResponse(result, projectId);
+    }
+
+    @RequestMapping(value = "/undoRedoStatus")
+    @ResponseBody
+    public Map<String, Object> undoRedoStatus(@RequestParam Integer projectId) {
+        Map<String, Object> status = new HashMap<>();
+        status.put("canUndo", projectUndoRedoService.canUndo(projectId));
+        status.put("canRedo", projectUndoRedoService.canRedo(projectId));
+        return status;
+    }
+
+    private Map<String, Object> buildUndoRedoResponse(ProjectUndoRedoService.UndoRedoResult result,
+                                                      Integer projectId) {
+        Map<String, Object> status = new HashMap<>();
+        status.put("success", result.success());
+        status.put("moveOnly", result.moveOnly());
+        status.put("canUndo", projectUndoRedoService.canUndo(projectId));
+        status.put("canRedo", projectUndoRedoService.canRedo(projectId));
+        return status;
     }
 
     @RequestMapping(value = "/toggleDefault", method = RequestMethod.POST)

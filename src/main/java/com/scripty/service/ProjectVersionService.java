@@ -20,4 +20,8 @@ public interface ProjectVersionService {
     void restoreVersion(Integer versionId);
 
     void deleteVersion(Integer versionId);
+
+    String buildSnapshotJson(Integer projectId);
+
+    void applySnapshotJson(Integer projectId, String snapshotJson);
 }

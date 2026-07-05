@@ -14,6 +14,8 @@ import com.scripty.repository.ProjectVersionRepository;
 import com.scripty.repository.SceneRepository;
 import com.scripty.viewmodel.project.versionhistory.VersionHistoryViewModel;
 import com.scripty.viewmodel.project.versionhistory.VersionViewModel;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -33,6 +36,9 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     private final BlockRepository blockRepository;
     private final PersonRepository personRepository;
     private final ObjectMapper objectMapper;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     public ProjectVersionServiceImpl(ProjectRepository projectRepository,
@@ -94,6 +100,43 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Transactional
     public ProjectVersion createVersion(Integer projectId, String label) {
         Project project = projectRepository.findById(projectId).orElse(null);
+        String snapshotJson = buildSnapshotJson(projectId);
+
+        ProjectVersion version = new ProjectVersion();
+        version.setProject(project);
+        version.setLabel(label);
+        version.setCreatedAt(LocalDateTime.now());
+        version.setSnapshotJson(snapshotJson);
+
+        return projectVersionRepository.save(version);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public String buildSnapshotJson(Integer projectId) {
+        Map<String, Object> snapshot = buildSnapshot(projectId);
+        try {
+            return objectMapper.writeValueAsString(snapshot);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize project snapshot", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void applySnapshotJson(Integer projectId, String snapshotJson) {
+        Map<String, Object> snapshot;
+        try {
+            snapshot = objectMapper.readValue(snapshotJson, Map.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to deserialize project snapshot", e);
+        }
+        applySnapshot(projectId, snapshot);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> buildSnapshot(Integer projectId) {
+        Project project = projectRepository.findById(projectId).orElse(null);
         List<Scene> scenes = sceneRepository.findByProjectIdOrderByOrderAsc(projectId);
         List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(projectId);
 
@@ -126,6 +169,9 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
                 Map<String, Object> b = new HashMap<>();
                 b.put("order", block.getOrder());
                 b.put("content", block.getContent());
+                b.put("bookmarked", block.isBookmarked());
+                b.put("pinned", block.isPinned());
+                b.put("tags", block.getTags());
                 b.put("personOriginalId", block.getPerson() != null ? block.getPerson().getId() : null);
                 blockSnapshots.add(b);
             }
@@ -133,18 +179,99 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             sceneSnapshots.add(s);
         }
         snapshot.put("scenes", sceneSnapshots);
+        return snapshot;
+    }
 
-        ProjectVersion version = new ProjectVersion();
-        version.setProject(project);
-        version.setLabel(label);
-        version.setCreatedAt(LocalDateTime.now());
-        try {
-            version.setSnapshotJson(objectMapper.writeValueAsString(snapshot));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize project snapshot", e);
+    @SuppressWarnings("unchecked")
+    private void applySnapshot(Integer projectId, Map<String, Object> snapshot) {
+        Project project = projectRepository.findById(projectId).orElse(null);
+
+        List<Scene> existingScenes = sceneRepository.findByProjectIdOrderByOrderAsc(projectId);
+        for (Scene scene : existingScenes) {
+            List<Block> blocks = blockRepository.findBySceneIdOrderByOrderAsc(scene.getId());
+            blockRepository.deleteAll(blocks);
+        }
+        sceneRepository.deleteAll(existingScenes);
+
+        List<Person> existingPersons = personRepository.findByProjectIdOrderByNameAsc(projectId);
+        personRepository.deleteAll(existingPersons);
+
+        entityManager.flush();
+        entityManager.clear();
+        project = projectRepository.findById(projectId).orElse(null);
+        if (project == null) {
+            return;
         }
 
-        return projectVersionRepository.save(version);
+        project.setTitle((String) snapshot.get("title"));
+        project.setScreenplayTitle((String) snapshot.get("screenplayTitle"));
+        project.setWriters((String) snapshot.get("writers"));
+        project.setContactInfo((String) snapshot.get("contactInfo"));
+        project.setLastEdited(LocalDateTime.now());
+        projectRepository.save(project);
+
+        List<Map<String, Object>> personSnapshots = (List<Map<String, Object>>) snapshot.get("persons");
+        Map<Integer, Person> originalIdToNewPerson = new HashMap<>();
+        if (personSnapshots != null) {
+            for (Map<String, Object> ps : personSnapshots) {
+                Person person = new Person();
+                person.setName((String) ps.get("name"));
+                person.setFullName((String) ps.get("fullName"));
+                person.setProject(project);
+                person = personRepository.save(person);
+                Integer originalId = toInteger(ps.get("originalId"));
+                if (originalId != null) {
+                    originalIdToNewPerson.put(originalId, person);
+                }
+            }
+        }
+
+        List<Map<String, Object>> sceneSnapshots = (List<Map<String, Object>>) snapshot.get("scenes");
+        if (sceneSnapshots != null) {
+            for (Map<String, Object> ss : sceneSnapshots) {
+                Scene scene = new Scene();
+                scene.setOrder(toInteger(ss.get("order")));
+                scene.setName((String) ss.get("name"));
+                scene.setProject(project);
+                scene = sceneRepository.save(scene);
+
+                List<Map<String, Object>> blockSnapshots = (List<Map<String, Object>>) ss.get("blocks");
+                if (blockSnapshots != null) {
+                    for (Map<String, Object> bs : blockSnapshots) {
+                        Block block = new Block();
+                        block.setOrder(toInteger(bs.get("order")));
+                        String content = (String) bs.get("content");
+                        block.setContent(content != null ? content : "");
+                        block.setScene(scene);
+                        block.setBookmarked(toBoolean(bs.get("bookmarked")));
+                        block.setPinned(toBoolean(bs.get("pinned")));
+                        block.setTags((String) bs.get("tags"));
+                        Integer personOriginalId = toInteger(bs.get("personOriginalId"));
+                        if (personOriginalId != null) {
+                            Person restoredPerson = originalIdToNewPerson.get(personOriginalId);
+                            if (restoredPerson != null) {
+                                block.setPerson(restoredPerson);
+                            }
+                        }
+                        blockRepository.save(block);
+                    }
+                }
+            }
+        }
+    }
+
+    private static Integer toInteger(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return null;
+    }
+
+    private static boolean toBoolean(Object value) {
+        return value instanceof Boolean bool && bool;
     }
 
     private static final int AUTO_SAVE_INTERVAL_MINUTES = 10;
@@ -202,67 +329,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             throw new RuntimeException("Failed to deserialize project snapshot", e);
         }
 
-        List<Scene> existingScenes = sceneRepository.findByProjectIdOrderByOrderAsc(projectId);
-        for (Scene scene : existingScenes) {
-            List<Block> blocks = blockRepository.findBySceneIdOrderByOrderAsc(scene.getId());
-            blockRepository.deleteAll(blocks);
-        }
-        sceneRepository.deleteAll(existingScenes);
-
-        List<Person> existingPersons = personRepository.findByProjectIdOrderByNameAsc(projectId);
-        personRepository.deleteAll(existingPersons);
-
-        project.setTitle((String) snapshot.get("title"));
-        project.setScreenplayTitle((String) snapshot.get("screenplayTitle"));
-        project.setWriters((String) snapshot.get("writers"));
-        project.setContactInfo((String) snapshot.get("contactInfo"));
-        project.setLastEdited(java.time.LocalDateTime.now());
-        projectRepository.save(project);
-
-        List<Map<String, Object>> personSnapshots = (List<Map<String, Object>>) snapshot.get("persons");
-        Map<Integer, Person> originalIdToNewPerson = new HashMap<>();
-        if (personSnapshots != null) {
-            for (Map<String, Object> ps : personSnapshots) {
-                Person person = new Person();
-                person.setName((String) ps.get("name"));
-                person.setFullName((String) ps.get("fullName"));
-                person.setProject(project);
-                person = personRepository.save(person);
-                Integer originalId = (Integer) ps.get("originalId");
-                if (originalId != null) {
-                    originalIdToNewPerson.put(originalId, person);
-                }
-            }
-        }
-
-        List<Map<String, Object>> sceneSnapshots = (List<Map<String, Object>>) snapshot.get("scenes");
-        if (sceneSnapshots != null) {
-            for (Map<String, Object> ss : sceneSnapshots) {
-                Scene scene = new Scene();
-                scene.setOrder((Integer) ss.get("order"));
-                scene.setName((String) ss.get("name"));
-                scene.setProject(project);
-                scene = sceneRepository.save(scene);
-
-                List<Map<String, Object>> blockSnapshots = (List<Map<String, Object>>) ss.get("blocks");
-                if (blockSnapshots != null) {
-                    for (Map<String, Object> bs : blockSnapshots) {
-                        Block block = new Block();
-                        block.setOrder((Integer) bs.get("order"));
-                        block.setContent((String) bs.get("content"));
-                        block.setScene(scene);
-                        Integer personOriginalId = (Integer) bs.get("personOriginalId");
-                        if (personOriginalId != null) {
-                            Person restoredPerson = originalIdToNewPerson.get(personOriginalId);
-                            if (restoredPerson != null) {
-                                block.setPerson(restoredPerson);
-                            }
-                        }
-                        blockRepository.save(block);
-                    }
-                }
-            }
-        }
+        applySnapshot(projectId, snapshot);
     }
 
     @Override

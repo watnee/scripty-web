@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v1';
+const CACHE_NAME = 'scripty-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/offline.html',
@@ -55,6 +55,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const isStaticAsset =
+    url.pathname.startsWith('/css/') ||
+    url.pathname.startsWith('/js/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname.startsWith('/fonts/') ||
+    url.pathname === '/favicon.ico' ||
+    url.pathname === '/manifest.json' ||
+    url.pathname === '/offline.html';
+
+  // Never cache dynamic app endpoints (undo status, HTMX fragments, etc.)
+  if (!isStaticAsset && event.request.mode !== 'navigate') {
+    return;
+  }
+
   // Strategy for HTML page navigations (pages): Network-First, fall back to offline.html
   if (event.request.mode === 'navigate') {
     event.respondWith(
@@ -77,6 +91,10 @@ self.addEventListener('fetch', (event) => {
             });
         })
     );
+    return;
+  }
+
+  if (!isStaticAsset) {
     return;
   }
 

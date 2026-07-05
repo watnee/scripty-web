@@ -13,6 +13,12 @@
     color-scheme: dark;
 }
 
+nav[aria-label="Breadcrumb"] ol {
+    list-style: none;
+    margin: 0;
+    padding-left: 0;
+}
+
 @media (prefers-color-scheme: dark) {
     :root:not(.-no-dark-theme) {
         --border: #475569;
@@ -26,73 +32,43 @@ body, main, header, nav, footer, table, tr, td, th, input, textarea, button, sel
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 
-/* Theme Toggle Dropdown and Button Styles */
-.theme-toggle-container {
+/* User dropdown in header */
+.user-dropdown-container {
+    position: absolute;
+    top: 0.75rem;
+    right: 4.25rem;
+    z-index: 1001;
+}
+
+.user-dropdown-container .user-toggle-btn {
+    font: inherit;
+    color: inherit;
+    text-decoration: none;
+    max-width: 10rem;
+}
+
+.user-dropdown-container .user-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-dropdown-container .user-icon {
+    flex-shrink: 0;
+}
+
+.user-dropdown-container .theme-option.active {
+    background-color: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* Spellcheck Toggle Button Styles */
+.spellcheck-toggle-container {
     position: absolute;
     top: 0.75rem;
     right: 1.5rem;
     z-index: 1001;
-}
-
-.theme-toggle-container .theme-toggle-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.5rem;
-    color: var(--fg);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
-    width: 36px;
-    height: 36px;
-}
-
-.theme-toggle-container .theme-toggle-btn:hover {
-    background-color: var(--accent-bg);
-    transform: scale(1.1);
-    color: var(--accent);
-}
-
-.theme-toggle-container .theme-toggle-btn:active {
-    transform: scale(0.9);
-}
-
-.theme-toggle-container .theme-toggle-btn svg {
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.theme-toggle-container .theme-toggle-btn:hover svg {
-    transform: rotate(15deg);
-}
-
-/* Hide all icons in the toggle button by default */
-#theme-dropdown .theme-toggle-btn svg {
-    display: none;
-}
-
-/* Show the correct icon on the button based on active theme setting */
-html[data-theme-setting="light"] #theme-dropdown .theme-toggle-btn .sun-icon {
-    display: block;
-}
-html[data-theme-setting="dark"] #theme-dropdown .theme-toggle-btn .moon-icon {
-    display: block;
-}
-html[data-theme-setting="system"] #theme-dropdown .theme-toggle-btn .system-icon {
-    display: block;
-}
-
-/* Fallback default to system icon if no theme setting is defined on html */
-html:not([data-theme-setting]) #theme-dropdown .theme-toggle-btn .system-icon {
-    display: block;
-}
-
-/* Highlight active option in the theme dropdown menu */
-.theme-toggle-container .nav-dropdown-item.active {
-    background-color: var(--accent-bg);
-    color: var(--accent);
-    font-weight: 600;
 }
 
 /* Help dropdown in main navigation */
@@ -117,14 +93,6 @@ html:not([data-theme-setting]) #theme-dropdown .theme-toggle-btn .system-icon {
     font-weight: 600;
 }
 
-
-/* Spellcheck Toggle Button Styles */
-.spellcheck-toggle-container {
-    position: absolute;
-    top: 0.75rem;
-    right: 4.25rem;
-    z-index: 1001;
-}
 
 .spellcheck-toggle-container .spellcheck-toggle-btn {
     background: none;
@@ -176,7 +144,7 @@ header {
 
 header nav {
     gap: 1.5rem;
-    padding-right: 3rem; /* Leave room for the absolute-positioned theme toggle on the right */
+    padding-right: 6rem; /* Leave room for user menu and spellcheck toggles on the right */
 }
 
 main.home {
@@ -378,6 +346,10 @@ body.htmx-swapping {
 .nav-dropdown {
     position: relative;
     display: inline-block;
+}
+
+.user-dropdown-container.nav-dropdown {
+    position: absolute;
 }
 
 /* Dropdown Toggle Button */
@@ -751,7 +723,7 @@ tr.default-project-row td:first-child {
 .project-list-create-btn {
     margin: 0;
     white-space: nowrap;
-    align-self: center;
+    flex-shrink: 0;
 }
 
 .project-list-toolbar {
@@ -781,12 +753,6 @@ tr.default-project-row td:first-child {
     outline: none;
     border-color: var(--accent, #475569);
     box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.12);
-}
-
-.project-list-count {
-    font-size: 0.85rem;
-    color: var(--muted-fg, #64748b);
-    white-space: nowrap;
 }
 
 .project-list-search-clear {
@@ -1251,16 +1217,19 @@ kbd {
         padding-right: 0 !important;
         width: 100% !important;
     }
-    .theme-toggle-container {
+    .user-dropdown-container {
         position: absolute !important;
         top: 0.75rem !important;
-        right: 0.75rem !important;
+        right: 3.5rem !important;
         margin: 0 !important;
+    }
+    .user-dropdown-container .user-name {
+        display: none;
     }
     .spellcheck-toggle-container {
         position: absolute !important;
         top: 0.75rem !important;
-        right: 3.5rem !important;
+        right: 0.75rem !important;
         margin: 0 !important;
     }
 

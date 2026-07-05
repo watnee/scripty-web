@@ -6,7 +6,7 @@
             <span class="project-list-team" th:if="${project.team != null and !#strings.isEmpty(project.team)}" th:text="${project.team}"></span>
         </div>
         <span class="project-list-last-edited" th:if="${project.lastEdited != null}" th:title="${#temporals.format(project.lastEdited, 'MMM d, yyyy, h:mm a')}">
-            Last edited <span class="last-edited-time" th:attr="data-timestamp=${project.lastEdited}"></span>
+            Last edited <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.lastEdited})}"></span>
         </span>
     </div>
     <div class="project-list-actions">

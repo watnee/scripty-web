@@ -446,6 +446,26 @@ public class BlockServiceImpl implements BlockService {
 
     @Override
     @Transactional
+    public void setBlockTypes(List<Integer> ids, String type) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        String normalized = Block.TYPE_SCENE.equalsIgnoreCase(type) ? Block.TYPE_SCENE : Block.TYPE_TEXT;
+        for (Integer id : ids) {
+            Block block = blockRepository.findById(id).orElse(null);
+            if (block != null && !normalized.equals(block.getType())) {
+                block.setType(normalized);
+                if (Block.TYPE_SCENE.equals(normalized)) {
+                    // Scene headings carry only a name, never a character.
+                    block.setPerson(null);
+                }
+                blockRepository.save(block);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
     public void deleteBlocks(List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
             return;

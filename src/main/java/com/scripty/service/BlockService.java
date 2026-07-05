@@ -33,4 +33,5 @@ public interface BlockService {
     Block togglePinned(Integer id);
     void addTagsToBlocks(java.util.List<Integer> ids, String tags);
     void deleteBlocks(java.util.List<Integer> ids);
+    void setBlockTypes(java.util.List<Integer> ids, String type);
 }

@@ -268,6 +268,23 @@ public class BlockController {
         return "redirect:/project/show?id=" + projectId;
     }
 
+    @RequestMapping(value = "/bulkSetType", method = RequestMethod.POST)
+    public String bulkSetType(@RequestParam String ids, @RequestParam String type, @RequestParam Integer projectId) {
+        if (ids != null && !ids.trim().isEmpty()) {
+            java.util.List<Integer> blockIds = new java.util.ArrayList<>();
+            for (String idStr : ids.split(",")) {
+                try {
+                    blockIds.add(Integer.parseInt(idStr.trim()));
+                } catch (NumberFormatException e) {
+                    // Ignore
+                }
+            }
+            blockService.setBlockTypes(blockIds, type);
+            projectVersionService.autoSaveVersion(projectId);
+        }
+        return "redirect:/project/show?id=" + projectId;
+    }
+
     @RequestMapping(value = "/bulkDelete", method = RequestMethod.POST)
     public String bulkDelete(@RequestParam String ids, @RequestParam Integer projectId) {
         if (ids != null && !ids.trim().isEmpty()) {

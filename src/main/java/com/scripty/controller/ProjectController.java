@@ -154,14 +154,7 @@ public class ProjectController {
         return "redirect:/project/list";
     }
 
-    @RequestMapping(value = "/delete", method = RequestMethod.GET)
-    public String deleteConfirm(@RequestParam Integer id, Model model) {
-        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
-        model.addAttribute("viewModel", viewModel);
-        return "project/delete";
-    }
-
-    @RequestMapping(value = "/delete", method = RequestMethod.POST)
+    @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {
         projectService.deleteProject(id);
         return "redirect:/project/list";
@@ -205,7 +198,7 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/editNameInline", method = RequestMethod.POST)
-    public String saveEditNameInline(@Valid @ModelAttribute("commandModel") EditProjectCommandModel commandModel, BindingResult bindingResult, Model model) {
+    public String saveEditNameInline(@Valid @ModelAttribute("commandModel") EditProjectCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
         if (bindingResult.hasErrors()) {
             EditProjectViewModel viewModel = projectService.getEditProjectViewModel(commandModel.getId());
             model.addAttribute("viewModel", viewModel);
@@ -215,14 +208,27 @@ public class ProjectController {
         Project project = projectService.saveEditProjectCommandModel(commandModel);
         projectVersionService.autoSaveVersion(project.getId());
         model.addAttribute("project", project);
+        addDefaultProjectId(model, principal);
         return "project/showNameInline";
     }
 
     @RequestMapping(value = "/showNameInline")
-    public String showNameInline(@RequestParam Integer id, Model model) {
+    public String showNameInline(@RequestParam Integer id, Model model, Principal principal) {
         Project project = projectService.read(id);
         model.addAttribute("project", project);
+        addDefaultProjectId(model, principal);
         return "project/showNameInline";
+    }
+
+    private void addDefaultProjectId(Model model, Principal principal) {
+        Integer defaultProjectId = null;
+        if (principal != null) {
+            User currentUser = userService.readByUsername(principal.getName());
+            if (currentUser != null) {
+                defaultProjectId = currentUser.getDefaultProjectId();
+            }
+        }
+        model.addAttribute("defaultProjectId", defaultProjectId);
     }
 
     @RequestMapping(value = "/titlePage")

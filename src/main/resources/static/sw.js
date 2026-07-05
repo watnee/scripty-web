@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v2';
+const CACHE_NAME = 'scripty-cache-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/offline.html',
@@ -98,7 +98,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy for static assets: Cache-First, fall back to network
+  // CSS/JS: network-first so local style and script updates apply during development
+  if (url.pathname.startsWith('/css/') || url.pathname.startsWith('/js/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200 && url.origin === self.location.origin) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Strategy for other static assets: Cache-First, fall back to network
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {

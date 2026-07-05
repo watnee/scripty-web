@@ -1,10 +1,10 @@
-<form xmlns:th="http://www.thymeleaf.org" th:action="@{/project/editNameInline}" th:object="${commandModel}" th:attr="hx-post=@{/project/editNameInline}" hx-target="closest .project-title-container" hx-swap="outerHTML" style="width: 100%; margin: 0;">
+<form xmlns:th="http://www.thymeleaf.org" th:action="@{/project/editNameInline}" th:object="${commandModel}" th:attr="hx-post=@{/project/editNameInline}" hx-target="closest .project-title-container" hx-swap="outerHTML" class="project-title-container project-list-rename-form">
     <input type="hidden" th:field="*{id}" />
     <input type="hidden" th:field="*{team}" />
-    <div class="controls-wrapper" style="display: inline-flex; align-items: center; gap: 8px; vertical-align: middle; width: 100%;">
-        <input type="text" th:field="*{title}" style="margin: 0; font-size: inherit; font-weight: inherit; flex-grow: 1;" autofocus required maxlength="100" _="on keydown[key=='Escape'] click closest <form/>'s .bad" />
-        <button type="submit" class="ok" style="margin: 0; padding: 0.25rem 0.5rem;">Save</button>
-        <button type="button" class="bad" style="margin: 0; padding: 0.25rem 0.5rem;" th:attr="hx-get=@{/project/showNameInline(id=*{id})}" hx-target="closest form" hx-swap="outerHTML">Cancel</button>
+    <div class="project-list-rename-controls">
+        <input type="text" th:field="*{title}" class="project-list-rename-input" autofocus required maxlength="100" _="on keydown[key=='Escape'] click closest <form/>'s .bad" />
+        <button type="submit" class="project-list-action-btn ok">Save</button>
+        <button type="button" class="project-list-action-btn bad" th:attr="hx-get=@{/project/showNameInline(id=*{id})}" hx-target="closest form" hx-swap="outerHTML">Cancel</button>
     </div>
-    <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}" style="color: var(--bad-fg-color, #e11d48); font-size: 0.85rem; display: block; margin-top: 0.25rem;"></span>
+    <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="project-list-rename-error"></span>
 </form>

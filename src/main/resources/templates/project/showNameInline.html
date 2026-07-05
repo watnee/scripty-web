@@ -1,4 +1,22 @@
-<div xmlns:th="http://www.thymeleaf.org" class="project-title-container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-    <a th:href="@{/project/show(id=${project.id})}" th:text="${project.title}"></a>
-    <button type="button" class="rename-project-btn" style="margin: 0; padding: 0.25rem 0.5rem; font-size: 0.8rem;" th:attr="hx-get=@{/project/editNameInline(id=${project.id})}" hx-target="closest .project-title-container" hx-swap="outerHTML">Rename</button>
+<div xmlns:th="http://www.thymeleaf.org" class="project-title-container">
+    <div class="project-list-title-wrap">
+        <div class="project-list-title-row">
+            <a th:href="@{/project/show(id=${project.id})}" class="project-list-title" th:text="${project.title}"></a>
+            <span class="project-list-default-label" th:if="${defaultProjectId != null and project.id == defaultProjectId}">Default</span>
+            <span class="project-list-team" th:if="${project.team != null and !#strings.isEmpty(project.team)}" th:text="${project.team}"></span>
+        </div>
+        <span class="project-list-last-edited" th:if="${project.lastEdited != null}" th:title="${#temporals.format(project.lastEdited, 'MMM d, yyyy, h:mm a')}">
+            Last edited <span class="last-edited-time" th:attr="data-timestamp=${project.lastEdited}"></span>
+        </span>
+    </div>
+    <div class="project-list-actions">
+        <button type="button"
+                class="project-list-action-btn rename-project-btn"
+                th:attr="hx-get=@{/project/editNameInline(id=${project.id})}"
+                hx-target="closest .project-title-container"
+                hx-swap="outerHTML">Rename</button>
+        <button type="button"
+                class="project-list-action-btn project-list-delete-btn bad"
+                th:attr="data-delete-url=@{/project/delete(id=${project.id})}">Delete</button>
+    </div>
 </div>

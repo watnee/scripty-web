@@ -68,6 +68,7 @@ public class ProjectServiceImpl implements ProjectService {
             pvm.setId(project.getId());
             pvm.setTitle(project.getTitle());
             pvm.setTeam(project.getTeam());
+            pvm.setLastEdited(project.getLastEdited());
             projectViewModels.add(pvm);
         }
         vm.setProjects(projectViewModels);
@@ -95,6 +96,7 @@ public class ProjectServiceImpl implements ProjectService {
             pvm.setId(project.getId());
             pvm.setTitle(project.getTitle());
             pvm.setTeam(project.getTeam());
+            pvm.setLastEdited(project.getLastEdited());
             projectViewModels.add(pvm);
         }
         vm.setProjects(projectViewModels);

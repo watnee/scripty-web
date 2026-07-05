@@ -44,16 +44,7 @@
         </div>
         <h1>
             <span th:text="${viewModel.title}"></span>
-            <form th:action="@{/project/toggleDefault}" method="POST" style="display: inline-block; margin-left: 0.5rem; vertical-align: middle;">
-                <input type="hidden" name="id" th:value="${viewModel.id}" />
-                <button type="submit" 
-                        class="default-project-badge" 
-                        th:classappend="${isDefault} ? 'is-default' : ''"
-                        th:title="${isDefault} ? 'Remove as default project' : 'Set as default project'">
-                    <span class="badge-text" th:text="${isDefault} ? 'Default Project' : 'Set as Default'"></span>
-                </button>
-            </form>
-            <small><a th:href="@{/project/titlePage(id=${viewModel.id})}" role="button">Title Page</a> <a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/project/delete(id=${viewModel.id})}" role="button" class="bad">delete</a></small>
+            <small><a th:href="@{/project/titlePage(id=${viewModel.id})}" role="button">Title Page</a> <a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a></small>
         </h1>
         <div class="f-row" style="gap: 2rem; align-items: start">
             <div style="flex: 3">

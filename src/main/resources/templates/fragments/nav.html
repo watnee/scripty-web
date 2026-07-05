@@ -107,6 +107,16 @@
             </svg>
         </button>
     </div>
+    <div id="project-delete-modal" class="confirm-modal" hidden aria-modal="true" role="dialog" aria-labelledby="project-delete-title">
+        <div class="confirm-modal-panel">
+            <h2 id="project-delete-title">Delete project?</h2>
+            <p>Are you sure you want to delete <strong id="project-delete-name"></strong>? This cannot be undone.</p>
+            <div class="confirm-modal-actions">
+                <button type="button" id="project-delete-cancel">Cancel</button>
+                <button type="button" id="project-delete-confirm" class="bad">Delete</button>
+            </div>
+        </div>
+    </div>
     <script th:inline="javascript">
     (function() {
         let lastFocusedEditable = null;
@@ -702,11 +712,61 @@
             }
         }
 
+        function initProjectDeleteConfirm() {
+            if (window._scriptyProjectDeleteInit) return;
+            window._scriptyProjectDeleteInit = true;
+
+            const modal = document.getElementById('project-delete-modal');
+            if (!modal) return;
+
+            const nameEl = document.getElementById('project-delete-name');
+            const cancelBtn = document.getElementById('project-delete-cancel');
+            const confirmBtn = document.getElementById('project-delete-confirm');
+            let pendingUrl = null;
+
+            function closeModal() {
+                modal.hidden = true;
+                pendingUrl = null;
+            }
+
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', function() {
+                    if (pendingUrl) window.location.href = pendingUrl;
+                    closeModal();
+                });
+            }
+
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) closeModal();
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !modal.hidden) closeModal();
+            });
+
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.project-list-delete-btn[data-delete-url], .project-delete-btn[data-delete-url]');
+                if (!btn) return;
+                e.preventDefault();
+                e.stopPropagation();
+
+                pendingUrl = btn.dataset.deleteUrl;
+                const row = btn.closest('.project-list-row, .project-title-container, h1');
+                const titleEl = row ? row.querySelector('.project-list-title, span') : null;
+                const title = titleEl && titleEl.textContent ? titleEl.textContent.trim() : 'this project';
+                if (nameEl) nameEl.textContent = title;
+                modal.hidden = false;
+                if (confirmBtn) confirmBtn.focus();
+            });
+        }
+
         // Run on initial load
         function initAll() {
             initHistoryDropdown();
             initHelpDropdown();
             initThemeToggle();
+            initProjectDeleteConfirm();
             document.querySelectorAll('textarea').forEach(autoGrowTextarea);
             document.querySelectorAll('input[type="text"]').forEach(autoGrowInput);
             updateLastEditedTimes();

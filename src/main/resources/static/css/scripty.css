@@ -821,6 +821,30 @@ kbd {
     border-bottom: none;
 }
 
+.shortcuts-context {
+    font-size: 0.9rem;
+    margin: 0 0 0.75rem 0;
+}
+
+.shortcuts-list {
+    margin-top: 0.25rem;
+}
+
+.shortcut-keys {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: flex-end;
+    text-align: right;
+}
+
+.shortcut-or {
+    font-size: 0.8rem;
+    color: var(--muted, #64748b);
+    margin: 0 0.15rem;
+}
+
 .help-tip-box {
     background: linear-gradient(135deg, rgba(71, 85, 105, 0.05), rgba(71, 85, 105, 0.01));
     border-left: 4px solid var(--accent, #475569);

@@ -99,21 +99,11 @@
 
         <!-- TAB: SHORTCUTS & HISTORY -->
         <div class="help-content-section" id="tab-history">
-            <div class="help-card-grid">
-                <div class="help-card" data-keywords="keyboard shortcuts quick hotkeys modifiers undo redo control command">
-                    <h3>⌨️ Keyboard Shortcuts</h3>
-                    <p>Use these system-wide shortcuts to undo and redo edits when focusing text elements:</p>
-                    <div style="margin-top: 0.75rem;">
-                        <div class="help-shortcut-row">
-                            <span>Undo Edit</span>
-                            <kbd id="kb-undo">Cmd + Z</kbd>
-                        </div>
-                        <div class="help-shortcut-row">
-                            <span>Redo Edit</span>
-                            <kbd id="kb-redo">Cmd + Shift + Z</kbd>
-                        </div>
-                    </div>
-                </div>
+            <p class="muted" style="text-align: center; margin-bottom: 1.5rem;">
+                <a th:href="@{/shortcuts}">View full keyboard shortcuts reference →</a>
+            </p>
+            <div th:replace="~{fragments/shortcuts :: shortcutsContent}"></div>
+            <div class="help-card-grid" style="margin-top: 1.5rem;">
                 <div class="help-card" data-keywords="history dropdown undo redo version history project version list restore 🕒">
                     <h3>🕒 History Dropdown Menu</h3>
                     <p>Access the history menu by clicking the clock icon (<kbd>🕒</kbd>) next to the text controls. From here, you can click <strong>Undo</strong>, <strong>Redo</strong>, or select <strong>Version History</strong> to review previous auto-saved stages of the project.</p>
@@ -159,15 +149,6 @@
         const searchResultsSection = document.getElementById('search-results-section');
         const searchResultsGrid = document.getElementById('search-results-grid');
         const searchNoResults = document.getElementById('search-no-results');
-
-        // Dynamic keyboard shortcut detection based on OS
-        const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
-        const kbUndo = document.getElementById('kb-undo');
-        const kbRedo = document.getElementById('kb-redo');
-        if (kbUndo && kbRedo) {
-            kbUndo.textContent = isMac ? '⌘ Z' : 'Ctrl + Z';
-            kbRedo.textContent = isMac ? '⌘ ⇧ Z' : 'Ctrl + Y';
-        }
 
         function switchTab(tabId) {
             tabButtons.forEach(btn => {
@@ -255,5 +236,6 @@
         });
     })();
     </script>
+    <script th:replace="~{fragments/shortcuts :: shortcutsScript}"></script>
 </body>
 </html>

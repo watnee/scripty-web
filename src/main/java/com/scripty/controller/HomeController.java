@@ -42,5 +42,10 @@ public class HomeController {
     public String help() {
         return "help";
     }
+
+    @RequestMapping(value = "/shortcuts", method = RequestMethod.GET)
+    public String shortcuts() {
+        return "shortcuts";
+    }
     
 }

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="shortcutsContent">
+        <div class="help-card-grid">
+            <div class="help-card" data-keywords="keyboard shortcuts undo redo history control command">
+                <h3>🕒 History &amp; Undo</h3>
+                <p class="muted shortcuts-context">Available on project and scene pages when the history menu is visible.</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Undo edit</span>
+                        <kbd class="kb-mod-z">Cmd + Z</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Redo edit</span>
+                        <kbd class="kb-mod-shift-z">Cmd + Shift + Z</kbd>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-card" data-keywords="move block reorder arrow alt shift keyboard shortcut">
+                <h3>↕️ Block Reordering</h3>
+                <p class="muted shortcuts-context">Focus a block row or hover over it, then use:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Move block up</span>
+                        <span class="shortcut-keys">
+                            <kbd>Alt</kbd> + <kbd>↑</kbd>
+                            <span class="shortcut-or">or</span>
+                            <kbd class="kb-ctrl">Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>↑</kbd>
+                        </span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Move block down</span>
+                        <span class="shortcut-keys">
+                            <kbd>Alt</kbd> + <kbd>↓</kbd>
+                            <span class="shortcut-or">or</span>
+                            <kbd class="kb-ctrl">Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>↓</kbd>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-card" data-keywords="inline editing enter escape shift submit save block scene">
+                <h3>✍️ Inline Editing</h3>
+                <p class="muted shortcuts-context">While editing blocks, scenes, or project titles inline:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Save / submit block</span>
+                        <span class="shortcut-keys"><kbd>Enter</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>New line in block</span>
+                        <span class="shortcut-keys"><kbd>Shift</kbd> + <kbd>Enter</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Save scene name</span>
+                        <span class="shortcut-keys"><kbd>Enter</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Cancel project rename</span>
+                        <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="help-tip-box">
+            <h4>💡 Tip</h4>
+            <p>Block move shortcuts save any open inline edit first, then reorder the row. Undo and redo work on text fields directly; elsewhere they trigger the history menu actions.</p>
+        </div>
+    </div>
+
+    <script th:fragment="shortcutsScript">
+    (function() {
+        const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+        const modLabel = isMac ? '⌘' : 'Ctrl';
+
+        document.querySelectorAll('.kb-mod-z').forEach(function(el) {
+            el.textContent = isMac ? '⌘ Z' : 'Ctrl + Z';
+        });
+        document.querySelectorAll('.kb-mod-shift-z').forEach(function(el) {
+            el.textContent = isMac ? '⌘ ⇧ Z' : 'Ctrl + Y';
+        });
+        document.querySelectorAll('.kb-ctrl').forEach(function(el) {
+            el.textContent = modLabel;
+        });
+    })();
+    </script>
+</body>
+</html>

@@ -4825,3 +4825,15 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
     font-size: 0.8em;
     border-top: 2px dashed #999;
 }
+
+.block-content.block-type-centered .block-input-textarea,
+.block-content.block-type-centered textarea,
+.block-content.block-type-page_break .block-input-textarea,
+.block-content.block-type-page_break textarea {
+    text-align: center;
+}
+
+.block-content.block-type-transition .block-input-textarea,
+.block-content.block-type-transition textarea {
+    text-align: right;
+}

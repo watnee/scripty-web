@@ -85,6 +85,7 @@ public class BlockController {
         EditBlockViewModel viewModel = blockService.getEditBlockViewModel(id);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditBlockCommandModel());
+        model.addAttribute("block", blockService.getBlockViewModel(id));
         return "block/editInline";
     }
 
@@ -94,6 +95,7 @@ public class BlockController {
             EditBlockViewModel viewModel = blockService.getEditBlockViewModel(commandModel.getId());
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
+            model.addAttribute("block", blockService.getBlockViewModel(commandModel.getId()));
             return "block/editInline";
         }
         Block block = blockService.saveEditBlockCommandModel(commandModel);

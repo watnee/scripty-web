@@ -1213,7 +1213,7 @@ tr.default-project-row td:first-child {
     pointer-events: none;
 }
 
-.project-list-search {
+input.project-list-search {
     flex: 1;
     min-width: 0;
     width: auto;
@@ -1226,11 +1226,12 @@ tr.default-project-row td:first-child {
     font-size: 0.95rem;
 }
 
-.project-list-search::placeholder {
+input.project-list-search::placeholder {
     color: var(--muted-fg, #94a3b8);
 }
 
-.project-list-search:focus {
+input.project-list-search:focus,
+input.project-list-search:focus-visible {
     outline: none;
     border: none;
     box-shadow: none;
@@ -3477,6 +3478,7 @@ kbd {
     }
 
     .project-list-search-wrap {
+        flex-basis: auto;
         max-width: none;
         width: 100%;
     }

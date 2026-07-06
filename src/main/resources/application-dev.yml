@@ -3,6 +3,10 @@ spring:
     restart:
       poll-interval: 1s
       quiet-period: 400ms
+      # Only template/static changes should trigger a DevTools restart. Java
+      # recompiles (e.g. SecurityConfig) can leave the restart classloader in a
+      # broken state where custom security is replaced by Spring Boot defaults.
+      include: static/**,public/**,templates/**
       exclude: static/**,public/**,templates/**,META-INF/maven/**,META-INF/resources/**
     livereload:
       enabled: true
@@ -36,7 +40,7 @@ ADMIN_USERNAME: admin
 ADMIN_PASSWORD: admin
 
 app:
-  asset-version: 79
+  asset-version: 80
   service-worker-enabled: false
   uploads-dir: ./uploads
   headshot-max-bytes: 5242880

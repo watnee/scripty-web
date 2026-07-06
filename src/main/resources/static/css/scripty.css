@@ -32,11 +32,26 @@ body, main, header, nav, footer, table, tr, td, th, input, textarea, button, sel
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 
-/* User dropdown in header */
-.user-dropdown-container {
+/* Header action buttons (help, user, spellcheck) */
+.header-actions {
     position: absolute;
     top: 0.75rem;
-    right: 4.25rem;
+    right: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+    z-index: 1001;
+}
+
+.header-actions .help-dropdown,
+.header-actions .settings-dropdown,
+.header-actions .user-dropdown-container,
+.header-actions .spellcheck-toggle-container {
+    position: static;
+}
+
+/* User dropdown in header */
+.user-dropdown-container {
     z-index: 1001;
 }
 
@@ -57,34 +72,80 @@ body, main, header, nav, footer, table, tr, td, th, input, textarea, button, sel
     flex-shrink: 0;
 }
 
-.user-dropdown-container .theme-option.active,
-.user-dropdown-container .nav-dropdown-item.active {
+.user-dropdown-container .nav-dropdown-item.active,
+.settings-dropdown .theme-option.active,
+html[data-theme-setting="light"] .settings-dropdown .theme-option[data-theme="light"],
+html[data-theme-setting="dark"] .settings-dropdown .theme-option[data-theme="dark"],
+html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="system"] {
     background-color: var(--accent-bg);
     color: var(--accent);
     font-weight: 600;
 }
 
+.settings-dropdown .theme-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-dropdown .theme-option::after {
+    content: '';
+    margin-left: auto;
+    width: 1rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+html[data-theme-setting="light"] .settings-dropdown .theme-option[data-theme="light"]::after,
+html[data-theme-setting="dark"] .settings-dropdown .theme-option[data-theme="dark"]::after,
+html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="system"]::after {
+    content: '✓';
+    color: var(--accent);
+    font-weight: 700;
+}
+
 /* Spellcheck Toggle Button Styles */
 .spellcheck-toggle-container {
-    position: absolute;
-    top: 0.75rem;
-    right: 1.5rem;
     z-index: 1001;
 }
 
-/* Help dropdown in main navigation */
-.help-dropdown {
+/* Help and settings icon dropdowns */
+.help-dropdown,
+.settings-dropdown {
     display: inline-flex;
     align-items: center;
 }
 
-.help-dropdown .help-toggle-btn {
+.help-dropdown .help-toggle-btn,
+.settings-dropdown .settings-toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    width: 36px;
+    height: 36px;
     font: inherit;
-    color: inherit;
     text-decoration: none;
 }
 
-.help-dropdown .help-icon {
+.help-dropdown .help-toggle-btn:hover,
+.help-dropdown .help-toggle-btn:focus,
+.settings-dropdown .settings-toggle-btn:hover,
+.settings-dropdown .settings-toggle-btn:focus {
+    background-color: var(--accent-bg);
+    transform: scale(1.1);
+    color: var(--accent);
+    outline: none;
+}
+
+.help-dropdown .help-icon,
+.settings-dropdown .settings-icon {
     flex-shrink: 0;
 }
 
@@ -145,7 +206,7 @@ header {
 
 header nav {
     gap: 1.5rem;
-    padding-right: 6rem; /* Leave room for user menu and spellcheck toggles on the right */
+    padding-right: 11rem; /* Leave room for header action buttons on the right */
 }
 
 main.home {
@@ -597,8 +658,8 @@ body.htmx-swapping {
     display: inline-block;
 }
 
-.user-dropdown-container.nav-dropdown {
-    position: absolute;
+.header-actions .user-dropdown-container.nav-dropdown {
+    position: static;
 }
 
 /* Dropdown Toggle Button */
@@ -3360,20 +3421,14 @@ kbd {
         padding-right: 0 !important;
         width: 100% !important;
     }
-    .user-dropdown-container {
-        position: absolute !important;
-        top: 0.75rem !important;
-        right: 3.5rem !important;
-        margin: 0 !important;
-    }
-    .user-dropdown-container .user-name {
-        display: none;
-    }
-    .spellcheck-toggle-container {
+    .header-actions {
         position: absolute !important;
         top: 0.75rem !important;
         right: 0.75rem !important;
         margin: 0 !important;
+    }
+    .user-dropdown-container .user-name {
+        display: none;
     }
 
     /* Keep breadcrumbs wrapping nicely and readable */

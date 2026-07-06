@@ -27,62 +27,72 @@
                 <span class="star-icon">★</span><span class="title-text" th:text="${globalDefaultProjectTitle}"></span>
             </a>
         </th:block>
+    </nav>
+    <div class="header-actions">
         <div class="nav-dropdown help-dropdown" id="help-dropdown">
             <button class="nav-dropdown-toggle help-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Help" title="Help"
                     th:aria-current="${currentPage == 'help' or currentPage == 'shortcuts'} ? 'page'">
-                <svg class="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <svg class="help-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="12" cy="12" r="10"></circle>
                     <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
                     <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
-                Help
             </button>
             <div class="nav-dropdown-menu">
                 <a class="nav-dropdown-item" th:href="@{/help}" th:classappend="${currentPage == 'help'} ? 'active'">Scripty Help</a>
                 <a class="nav-dropdown-item" th:href="@{/shortcuts}" th:classappend="${currentPage == 'shortcuts'} ? 'active'">Keyboard Shortcuts</a>
             </div>
         </div>
-    </nav>
-    <div class="nav-dropdown user-dropdown-container" id="user-dropdown">
-        <button class="nav-dropdown-toggle user-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="User menu" title="User menu">
-            <svg class="user-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <span class="user-name" sec:authorize="isAuthenticated()" sec:authentication="name"></span>
-        </button>
-        <div class="nav-dropdown-menu">
-            <button class="nav-dropdown-item theme-option" data-theme="light" type="button">
-                <svg class="sun-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; display: inline; vertical-align: middle;">
-                    <circle cx="12" cy="12" r="5"></circle>
-                    <line x1="12" y1="1" x2="12" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="23"></line>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                    <line x1="1" y1="12" x2="3" y2="12"></line>
-                    <line x1="21" y1="12" x2="23" y2="12"></line>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                </svg> Light
+        <div class="nav-dropdown settings-dropdown" id="settings-dropdown">
+            <button class="nav-dropdown-toggle settings-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Settings" title="Settings">
+                <svg class="settings-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
             </button>
-            <button class="nav-dropdown-item theme-option" data-theme="dark" type="button">
-                <svg class="moon-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; display: inline; vertical-align: middle;">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                </svg> Dark
-            </button>
-            <button class="nav-dropdown-item theme-option" data-theme="system" type="button">
-                <svg class="system-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; display: inline; vertical-align: middle;">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                    <line x1="8" y1="21" x2="16" y2="21"></line>
-                    <line x1="12" y1="17" x2="12" y2="21"></line>
-                </svg> System
-            </button>
-            <a class="nav-dropdown-item" th:href="@{/team/list}" th:classappend="${currentPage == 'teams'} ? 'active'" sec:authorize="isAuthenticated()">Teams</a>
-            <a class="nav-dropdown-item" th:href="@{/user/list}" th:classappend="${currentPage == 'users'} ? 'active'" sec:authorize="hasRole('ROLE_ADMIN')">Users</a>
-            <hr class="nav-dropdown-divider" sec:authorize="isAuthenticated()">
-            <a class="nav-dropdown-item" th:href="@{/logout}" hx-boost="false" sec:authorize="isAuthenticated()">Logout</a>
+            <div class="nav-dropdown-menu">
+                <button class="nav-dropdown-item theme-option" data-theme="light" type="button" role="menuitemradio" aria-checked="false">
+                    <svg class="sun-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; display: inline; vertical-align: middle;">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg> Light
+                </button>
+                <button class="nav-dropdown-item theme-option" data-theme="dark" type="button" role="menuitemradio" aria-checked="false">
+                    <svg class="moon-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; display: inline; vertical-align: middle;">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg> Dark
+                </button>
+                <button class="nav-dropdown-item theme-option" data-theme="system" type="button" role="menuitemradio" aria-checked="false">
+                    <svg class="system-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; display: inline; vertical-align: middle;">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                    </svg> System
+                </button>
+            </div>
         </div>
-    </div>
+        <div class="nav-dropdown user-dropdown-container" id="user-dropdown">
+            <button class="nav-dropdown-toggle user-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="User menu" title="User menu">
+                <svg class="user-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span class="user-name" sec:authorize="isAuthenticated()" sec:authentication="name"></span>
+            </button>
+            <div class="nav-dropdown-menu">
+                <a class="nav-dropdown-item" th:href="@{/team/list}" th:classappend="${currentPage == 'teams'} ? 'active'" sec:authorize="isAuthenticated()">Teams</a>
+                <a class="nav-dropdown-item" th:href="@{/user/list}" th:classappend="${currentPage == 'users'} ? 'active'" sec:authorize="hasRole('ROLE_ADMIN')">Users</a>
+                <hr class="nav-dropdown-divider" sec:authorize="isAuthenticated()">
+                <a class="nav-dropdown-item" th:href="@{/logout}" hx-boost="false" sec:authorize="isAuthenticated()">Logout</a>
+            </div>
+        </div>
     <!-- Spellcheck Toggle Button -->
     <div class="spellcheck-toggle-container">
         <button class="spellcheck-toggle-btn" type="button" onclick="window.toggleSpellcheck()" aria-label="Toggle spellcheck" title="Toggle spellcheck">
@@ -93,6 +103,7 @@
                 <line x1="3" y1="3" x2="21" y2="21" class="spellcheck-slash" stroke="var(--bad-fg-color, #e11d48)" stroke-width="2"></line>
             </svg>
         </button>
+    </div>
     </div>
     <div id="project-delete-modal" class="confirm-modal" hidden aria-modal="true" role="dialog" aria-labelledby="project-delete-title">
         <div class="confirm-modal-panel">
@@ -1137,8 +1148,34 @@
             });
         }
 
+        function initSettingsDropdown() {
+            const dropdown = document.getElementById('settings-dropdown');
+            if (!dropdown) return;
+
+            const toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
+            if (!toggleBtn) return;
+
+            toggleBtn.onclick = function(e) {
+                e.stopPropagation();
+                const isOpen = dropdown.classList.contains('open');
+                document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+                document.querySelectorAll('.nav-dropdown-toggle').forEach(btn => btn.setAttribute('aria-expanded', 'false'));
+                toggleBtn.setAttribute('aria-expanded', !isOpen);
+                if (!isOpen) {
+                    dropdown.classList.add('open');
+                }
+            };
+
+            document.addEventListener('click', function(e) {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.classList.remove('open');
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+
         function initThemeToggle() {
-            const dropdown = document.getElementById('user-dropdown');
+            const dropdown = document.getElementById('settings-dropdown');
             if (!dropdown) return;
 
             const items = dropdown.querySelectorAll('[data-theme]');
@@ -1160,11 +1197,9 @@
                 }
 
                 items.forEach(item => {
-                    if (item.getAttribute('data-theme') === theme) {
-                        item.classList.add('active');
-                    } else {
-                        item.classList.remove('active');
-                    }
+                    const isActive = item.getAttribute('data-theme') === theme;
+                    item.classList.toggle('active', isActive);
+                    item.setAttribute('aria-checked', isActive ? 'true' : 'false');
                 });
             }
 
@@ -1467,6 +1502,7 @@
             initHistoryDropdown();
             initUserDropdown();
             initHelpDropdown();
+            initSettingsDropdown();
             initThemeToggle();
             initProjectDeleteConfirm();
             document.querySelectorAll('textarea').forEach(autoGrowTextarea);

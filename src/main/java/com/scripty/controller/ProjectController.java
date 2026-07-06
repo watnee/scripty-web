@@ -300,6 +300,7 @@ public class ProjectController {
         model.addAttribute("teams", teams);
         model.addAttribute("assignedTeamIds", assignedTeamIds);
         model.addAttribute("teamProductions", teamProductions);
+        model.addAttribute("shareAccessUsers", projectService.getProjectShareAccessUsers(id));
         return "project/production";
     }
 

@@ -123,7 +123,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public List<ProjectShareUserViewModel> getProjectShareAccessUsers(Integer projectId) {
         Project project = projectRepository.findWithTeamsById(projectId).orElse(null);
-        if (project == null) {
+        if (project == null || project.getTeams().isEmpty()) {
             return List.of();
         }
 

@@ -23,10 +23,15 @@ public class Block {
     public static final String TYPE_TRANSITION = "TRANSITION";
     public static final String TYPE_LYRICS = "LYRICS";
     public static final String TYPE_CENTERED = "CENTERED";
+    public static final String TYPE_SECTION = "SECTION";
+    public static final String TYPE_SYNOPSIS = "SYNOPSIS";
+    public static final String TYPE_NOTE = "NOTE";
+    public static final String TYPE_PAGE_BREAK = "PAGE_BREAK";
 
     public static final java.util.Set<String> ELEMENT_TYPES = java.util.Set.of(
             TYPE_SCENE, TYPE_ACTION, TYPE_DIALOGUE, TYPE_PARENTHETICAL,
-            TYPE_TRANSITION, TYPE_LYRICS, TYPE_CENTERED);
+            TYPE_TRANSITION, TYPE_LYRICS, TYPE_CENTERED,
+            TYPE_SECTION, TYPE_SYNOPSIS, TYPE_NOTE, TYPE_PAGE_BREAK);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -66,6 +66,10 @@
                     <button type="button" class="bulk-type-btn" data-bulk-type="TRANSITION" style="margin: 0;" title="Turn selected rows into transitions">↦ Transition</button>
                     <button type="button" class="bulk-type-btn" data-bulk-type="LYRICS" style="margin: 0;" title="Turn selected rows into lyrics">♪ Lyrics</button>
                     <button type="button" class="bulk-type-btn" data-bulk-type="CENTERED" style="margin: 0;" title="Turn selected rows into centered text">≡ Centered</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="SECTION" style="margin: 0;" title="Turn selected rows into outline sections (non-printing)"># Section</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="SYNOPSIS" style="margin: 0;" title="Turn selected rows into synopses (non-printing)">= Synopsis</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="NOTE" style="margin: 0;" title="Turn selected rows into notes (non-printing)">🗒️ Note</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="PAGE_BREAK" style="margin: 0;" title="Turn selected rows into page breaks">⤓ Page Break</button>
                 </div>
                 <th:block th:each="scene : ${viewModel.scenes}">
                     <h3 class="scene-header" th:if="${scene.id != null}" style="margin-bottom: 0.25em">

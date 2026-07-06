@@ -746,3 +746,46 @@ kbd {
 .block-content.block-type-centered {
     text-align: center;
 }
+
+.block-content.block-type-section {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: var(--accent, #475569);
+}
+
+.block-content.block-type-section > span::before {
+    content: "# ";
+}
+
+.block-content.block-type-synopsis {
+    font-style: italic;
+    color: #999;
+}
+
+.block-content.block-type-synopsis > span::before {
+    content: "= ";
+}
+
+.block-content.block-type-note {
+    background: rgba(250, 204, 21, 0.18);
+    font-style: italic;
+}
+
+.block-content.block-type-note > span::before {
+    content: "[[ ";
+    opacity: 0.5;
+}
+
+.block-content.block-type-note > span::after {
+    content: " ]]";
+    opacity: 0.5;
+}
+
+.block-content.block-type-page_break {
+    text-align: center;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    font-size: 0.8em;
+    border-top: 2px dashed #999;
+}

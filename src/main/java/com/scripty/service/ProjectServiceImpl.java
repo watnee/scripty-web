@@ -239,7 +239,7 @@ public class ProjectServiceImpl implements ProjectService {
         List<SceneViewModel> sceneViewModels = new ArrayList<>();
         SceneViewModel currentScene = null;
         for (Block block : blocks) {
-            if (block.isScene()) {
+            if (block.isScene() && block.isSceneDelimiter()) {
                 currentScene = new SceneViewModel();
                 currentScene.setId(block.getId());
                 currentScene.setName(block.getContent());

@@ -90,6 +90,9 @@ public class FountainImportServiceImpl implements FountainImportService {
             block.setType(parsedBlock.type());
             block.setBookmarked(false);
             block.setPinned(false);
+            if (Block.TYPE_SCENE.equals(parsedBlock.type())) {
+                block.setSceneDelimiter(true);
+            }
 
             if (Block.TYPE_DIALOGUE.equals(parsedBlock.type()) && parsedBlock.characterName() != null) {
                 block.setPerson(findOrCreatePerson(project, parsedBlock.characterName(), characterCache));

@@ -52,6 +52,9 @@ public class Block {
     @Column(name = "`type`", nullable = false)
     private String type = TYPE_ACTION;
 
+    @Column(name = "scene_delimiter", nullable = false)
+    private boolean sceneDelimiter = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id")
     private Person person;
@@ -95,6 +98,14 @@ public class Block {
     @Transient
     public boolean isScene() {
         return TYPE_SCENE.equals(type);
+    }
+
+    public boolean isSceneDelimiter() {
+        return sceneDelimiter;
+    }
+
+    public void setSceneDelimiter(boolean sceneDelimiter) {
+        this.sceneDelimiter = sceneDelimiter;
     }
 
     public Person getPerson() {

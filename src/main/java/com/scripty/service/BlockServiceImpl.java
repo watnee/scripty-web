@@ -220,6 +220,7 @@ public class BlockServiceImpl implements BlockService {
         Block block = new Block();
         block.setContent(name);
         block.setType(Block.TYPE_SCENE);
+        block.setSceneDelimiter(true);
         block.setProject(project);
         block.setBookmarked(false);
         block.setPinned(false);
@@ -458,8 +459,10 @@ public class BlockServiceImpl implements BlockService {
             if (block != null && !normalized.equals(block.getType())) {
                 block.setType(normalized);
                 if (Block.TYPE_SCENE.equals(normalized)) {
-                    // Scene headings carry only a name, never a character.
+                    // Inline scene headings keep their row position; only created/imported
+                    // scene delimiters open a new scene section in the editor.
                     block.setPerson(null);
+                    block.setSceneDelimiter(false);
                 }
                 blockRepository.save(block);
             }

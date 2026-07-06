@@ -1,7 +1,7 @@
 <tr xmlns:th="http://www.thymeleaf.org">
     <td class="block-left-controls">
         <div class="block-left-controls-inner">
-            <input type="checkbox" class="block-select-checkbox" />
+            <span class="block-select-all-slot" aria-hidden="true"></span>
             <a th:attr="hx-get=@{/block/createBelowInline(id=${blockId})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below" title="Add block below" aria-label="Add block below">+</a>
             <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">&#8942;&#8942;</span>
         </div>

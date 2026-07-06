@@ -151,6 +151,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             b.put("order", block.getOrder());
             b.put("content", block.getContent());
             b.put("type", block.getType());
+            b.put("sceneDelimiter", block.isSceneDelimiter());
             b.put("bookmarked", block.isBookmarked());
             b.put("pinned", block.isPinned());
             b.put("tags", block.getTags());
@@ -221,20 +222,22 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             for (Map<String, Object> bs : blockSnapshots) {
                 restoreBlock(project, (Integer) bs.get("order"), (String) bs.get("content"),
                         (String) bs.get("type"), (Integer) bs.get("personOriginalId"), originalIdToNewPerson,
-                        (Boolean) bs.get("bookmarked"), (Boolean) bs.get("pinned"), (String) bs.get("tags"));
+                        (Boolean) bs.get("bookmarked"), (Boolean) bs.get("pinned"), (String) bs.get("tags"),
+                        (Boolean) bs.get("sceneDelimiter"));
             }
         } else {
             List<Map<String, Object>> sceneSnapshots = (List<Map<String, Object>>) snapshot.get("scenes");
             if (sceneSnapshots != null) {
                 int order = 1;
                 for (Map<String, Object> ss : sceneSnapshots) {
-                    restoreBlock(project, order++, (String) ss.get("name"), Block.TYPE_SCENE, null, originalIdToNewPerson, false, false, null);
+                    restoreBlock(project, order++, (String) ss.get("name"), Block.TYPE_SCENE, null, originalIdToNewPerson, false, false, null, true);
                     List<Map<String, Object>> sceneBlocks = (List<Map<String, Object>>) ss.get("blocks");
                     if (sceneBlocks != null) {
                         for (Map<String, Object> bs : sceneBlocks) {
                             restoreBlock(project, order++, (String) bs.get("content"), Block.TYPE_ACTION,
                                     (Integer) bs.get("personOriginalId"), originalIdToNewPerson,
-                                    (Boolean) bs.get("bookmarked"), (Boolean) bs.get("pinned"), (String) bs.get("tags"));
+                                    (Boolean) bs.get("bookmarked"), (Boolean) bs.get("pinned"), (String) bs.get("tags"),
+                                    false);
                         }
                     }
                 }
@@ -288,11 +291,17 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
 
     private void restoreBlock(Project project, Integer order, String content, String type,
                               Integer personOriginalId, Map<Integer, Person> originalIdToNewPerson,
-                              Boolean bookmarked, Boolean pinned, String tags) {
+                              Boolean bookmarked, Boolean pinned, String tags, Boolean sceneDelimiter) {
         Block block = new Block();
         block.setOrder(order);
         block.setContent(content != null ? content : "");
-        block.setType(type != null && Block.ELEMENT_TYPES.contains(type) ? type : Block.TYPE_ACTION);
+        String normalizedType = type != null && Block.ELEMENT_TYPES.contains(type) ? type : Block.TYPE_ACTION;
+        block.setType(normalizedType);
+        boolean delimiter = Boolean.TRUE.equals(sceneDelimiter);
+        if (sceneDelimiter == null && Block.TYPE_SCENE.equals(normalizedType)) {
+            delimiter = true;
+        }
+        block.setSceneDelimiter(delimiter);
         block.setBookmarked(Boolean.TRUE.equals(bookmarked));
         block.setPinned(Boolean.TRUE.equals(pinned));
         block.setTags(tags);

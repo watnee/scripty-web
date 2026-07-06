@@ -43,6 +43,16 @@ public class BlockController {
         return redirectToProject(block);
     }
 
+    @RequestMapping(value = "/deleteInline", method = RequestMethod.POST)
+    @org.springframework.web.bind.annotation.ResponseBody
+    public String deleteInline(@RequestParam Integer id) {
+
+        Block block = blockService.deleteBlock(id);
+        projectVersionService.autoSaveVersion(block.getProject().getId());
+
+        return "";
+    }
+
     @RequestMapping(value = "/moveUp")
     public String moveUp(@RequestParam Integer id) {
 
@@ -266,54 +276,78 @@ public class BlockController {
         return "block/showSceneNameInline";
     }
 
-    @RequestMapping(value = "/bulkAddTags", method = RequestMethod.POST)
-    public String bulkAddTags(@RequestParam String ids, @RequestParam String tags, @RequestParam Integer projectId) {
-        if (ids != null && !ids.trim().isEmpty()) {
-            java.util.List<Integer> blockIds = new java.util.ArrayList<>();
-            for (String idStr : ids.split(",")) {
-                try {
-                    blockIds.add(Integer.parseInt(idStr.trim()));
-                } catch (NumberFormatException e) {
-                    // Ignore
-                }
-            }
-            blockService.addTagsToBlocks(blockIds, tags);
-            projectVersionService.autoSaveVersion(projectId);
+    private java.util.List<Integer> parseBlockIds(String ids) {
+        java.util.List<Integer> blockIds = new java.util.ArrayList<>();
+        if (ids == null || ids.trim().isEmpty()) {
+            return blockIds;
         }
-        return "redirect:/project/show?id=" + projectId;
+        for (String idStr : ids.split(",")) {
+            try {
+                blockIds.add(Integer.parseInt(idStr.trim()));
+            } catch (NumberFormatException e) {
+                // Ignore invalid ids (e.g. select-all checkbox value "on")
+            }
+        }
+        return blockIds;
+    }
+
+    private Integer resolveProjectId(Integer projectId, java.util.List<Integer> blockIds) {
+        if (projectId != null) {
+            return projectId;
+        }
+        if (blockIds == null || blockIds.isEmpty()) {
+            return null;
+        }
+        Block block = blockService.read(blockIds.get(0));
+        return block != null ? block.getProject().getId() : null;
+    }
+
+    private String redirectAfterBulkAction(Integer projectId, java.util.List<Integer> blockIds) {
+        Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId == null) {
+            return "redirect:/project/list";
+        }
+        return "redirect:/project/show?id=" + resolvedProjectId;
+    }
+
+    @RequestMapping(value = "/bulkAddTags", method = RequestMethod.POST)
+    public String bulkAddTags(@RequestParam String ids, @RequestParam String tags,
+                              @RequestParam(required = false) Integer projectId) {
+        java.util.List<Integer> blockIds = parseBlockIds(ids);
+        if (!blockIds.isEmpty()) {
+            blockService.addTagsToBlocks(blockIds, tags);
+            Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+            if (resolvedProjectId != null) {
+                projectVersionService.autoSaveVersion(resolvedProjectId);
+            }
+        }
+        return redirectAfterBulkAction(projectId, blockIds);
     }
 
     @RequestMapping(value = "/bulkSetType", method = RequestMethod.POST)
-    public String bulkSetType(@RequestParam String ids, @RequestParam String type, @RequestParam Integer projectId) {
-        if (ids != null && !ids.trim().isEmpty()) {
-            java.util.List<Integer> blockIds = new java.util.ArrayList<>();
-            for (String idStr : ids.split(",")) {
-                try {
-                    blockIds.add(Integer.parseInt(idStr.trim()));
-                } catch (NumberFormatException e) {
-                    // Ignore
-                }
-            }
+    public String bulkSetType(@RequestParam String ids, @RequestParam String type,
+                              @RequestParam(required = false) Integer projectId) {
+        java.util.List<Integer> blockIds = parseBlockIds(ids);
+        if (!blockIds.isEmpty()) {
             blockService.setBlockTypes(blockIds, type);
-            projectVersionService.autoSaveVersion(projectId);
+            Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+            if (resolvedProjectId != null) {
+                projectVersionService.autoSaveVersion(resolvedProjectId);
+            }
         }
-        return "redirect:/project/show?id=" + projectId;
+        return redirectAfterBulkAction(projectId, blockIds);
     }
 
     @RequestMapping(value = "/bulkDelete", method = RequestMethod.POST)
-    public String bulkDelete(@RequestParam String ids, @RequestParam Integer projectId) {
-        if (ids != null && !ids.trim().isEmpty()) {
-            java.util.List<Integer> blockIds = new java.util.ArrayList<>();
-            for (String idStr : ids.split(",")) {
-                try {
-                    blockIds.add(Integer.parseInt(idStr.trim()));
-                } catch (NumberFormatException e) {
-                    // Ignore
-                }
-            }
+    public String bulkDelete(@RequestParam String ids, @RequestParam(required = false) Integer projectId) {
+        java.util.List<Integer> blockIds = parseBlockIds(ids);
+        if (!blockIds.isEmpty()) {
             blockService.deleteBlocks(blockIds);
-            projectVersionService.autoSaveVersion(projectId);
+            Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+            if (resolvedProjectId != null) {
+                projectVersionService.autoSaveVersion(resolvedProjectId);
+            }
         }
-        return "redirect:/project/show?id=" + projectId;
+        return redirectAfterBulkAction(projectId, blockIds);
     }
 }

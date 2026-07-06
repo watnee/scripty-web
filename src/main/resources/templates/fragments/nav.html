@@ -272,6 +272,30 @@
             });
         }
 
+        function flushOpenBlockEdits(done) {
+            var forms = Array.from(document.querySelectorAll(
+                '.block-content form[hx-post*="/block/editInline"]'
+            ));
+            if (forms.length === 0) {
+                if (done) done();
+                return;
+            }
+            var remaining = forms.length;
+            function finishOne() {
+                remaining--;
+                if (remaining <= 0 && done) done();
+            }
+            forms.forEach(function(form) {
+                var textarea = form.querySelector('textarea[name="content"]');
+                if (!textarea || textarea.value.trim() === '') {
+                    revertEmptySavedBlockEdit(form);
+                    finishOne();
+                    return;
+                }
+                closeBlockEdit(form, finishOne);
+            });
+        }
+
         function handleEmptyBlockBackspace(ta) {
             // Keep the row and stay in the field; only block default browser/history behavior.
             ta.focus({ preventScroll: true });
@@ -830,6 +854,259 @@
             applyBlockEditLock();
         };
 
+        window.scriptyGetSelectedBlockIds = function() {
+            var ids = [];
+            var selectAll = document.getElementById('project-select-all-blocks');
+            if (selectAll && selectAll.checked && !selectAll.indeterminate) {
+                document.querySelectorAll('.block-row[data-block-id], tr[data-block-id]').forEach(function(row) {
+                    if (row.classList.contains('filtered-out') || row.style.display === 'none') return;
+                    var id = row.getAttribute('data-block-id');
+                    if (id && /^\d+$/.test(id) && ids.indexOf(id) === -1) {
+                        ids.push(id);
+                    }
+                });
+                return ids;
+            }
+            document.querySelectorAll(
+                '.block-row[data-block-id] .block-select-checkbox:checked, tr[data-block-id] .block-select-checkbox:checked'
+            ).forEach(function(cb) {
+                if (cb.classList.contains('block-select-all-checkbox')) return;
+                var row = cb.closest('[data-block-id]');
+                if (!row) return;
+                var id = row.getAttribute('data-block-id');
+                if (id && /^\d+$/.test(id) && ids.indexOf(id) === -1) {
+                    ids.push(id);
+                }
+            });
+            return ids;
+        };
+
+        window.scriptyBulkSelectionAlert = function() {
+            if (document.documentElement.classList.contains('scripty-hide-block-select')) {
+                alert('Turn on block checkboxes first using the select icon in the toolbar.');
+                return;
+            }
+            var orphanChecked = document.querySelectorAll(
+                '.block-select-checkbox:checked:not(.block-select-all-checkbox)'
+            ).length > 0 && window.scriptyGetSelectedBlockIds().length === 0;
+            if (orphanChecked) {
+                alert('That row is not saved yet. Use the checkboxes beside saved blocks.');
+                return;
+            }
+            alert('Please select at least one block.');
+        };
+
+        window.scriptyInitProjectBulkActions = function() {
+            if (window._scriptyProjectBulkDelegation) return;
+            window._scriptyProjectBulkDelegation = true;
+
+            function resolveBulkProjectId() {
+                return resolveProjectId() || '';
+            }
+
+            function submitBulkPostForm(action, fields) {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = action;
+                form.setAttribute('hx-boost', 'false');
+                Object.keys(fields).forEach(function(name) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = name;
+                    input.value = fields[name];
+                    form.appendChild(input);
+                });
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            function runBulkAction(fieldsByAction) {
+                flushOpenBlockEdits(function() {
+                    submitBulkPostForm(fieldsByAction.action, fieldsByAction.fields);
+                });
+            }
+
+            function getBlockRowCopyText(row) {
+                if (!row) return '';
+
+                if (row.classList.contains('scene-header-row')) {
+                    var sceneName = row.querySelector('.scene-name-display');
+                    if (sceneName && !sceneName.querySelector('.scene-name-placeholder')) {
+                        return sceneName.textContent.trim();
+                    }
+                    var sceneSection = row.closest('.script-scene');
+                    var readerSceneName = sceneSection ? sceneSection.querySelector('.reader-visible-scene-name') : null;
+                    return readerSceneName ? readerSceneName.textContent.trim() : '';
+                }
+
+                var content = row.querySelector('.block-content');
+                if (!content) return '';
+
+                var lines = [];
+                var character = content.querySelector('.reader-visible-character-name, .character-name');
+                if (character) {
+                    lines.push(character.textContent.trim());
+                }
+
+                var textarea = content.querySelector('textarea[name="content"]');
+                var textEl = content.querySelector('.reader-visible-text, .script-block-text:not(textarea)');
+                if (textarea && content.querySelector('form:focus-within')) {
+                    lines.push(textarea.value);
+                } else if (textEl) {
+                    lines.push(textEl.textContent);
+                } else if (textarea) {
+                    lines.push(textarea.value);
+                }
+
+                return lines.join('\n').trimEnd();
+            }
+
+            function copyTextToClipboard(text, button) {
+                if (!text) return;
+
+                function markCopied() {
+                    if (!button) return;
+                    var original = button.textContent;
+                    button.textContent = 'Copied';
+                    button.classList.add('is-copied');
+                    window.setTimeout(function() {
+                        button.textContent = original;
+                        button.classList.remove('is-copied');
+                    }, 1500);
+                }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(markCopied).catch(function() {
+                        var textarea = document.createElement('textarea');
+                        textarea.value = text;
+                        textarea.setAttribute('readonly', '');
+                        textarea.style.position = 'fixed';
+                        textarea.style.left = '-9999px';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        markCopied();
+                    });
+                } else {
+                    var fallback = document.createElement('textarea');
+                    fallback.value = text;
+                    fallback.setAttribute('readonly', '');
+                    fallback.style.position = 'fixed';
+                    fallback.style.left = '-9999px';
+                    document.body.appendChild(fallback);
+                    fallback.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(fallback);
+                    markCopied();
+                }
+            }
+
+            document.body.addEventListener('click', function(e) {
+                if (!document.querySelector('.project-script')) return;
+
+                var typeBtn = e.target.closest('.bulk-type-btn');
+                if (typeBtn) {
+                    e.preventDefault();
+                    var typeIds = window.scriptyGetSelectedBlockIds();
+                    if (typeIds.length === 0) {
+                        window.scriptyBulkSelectionAlert();
+                        return;
+                    }
+                    runBulkAction({
+                        action: '/block/bulkSetType',
+                        fields: {
+                            ids: typeIds.join(','),
+                            type: typeBtn.getAttribute('data-bulk-type'),
+                            projectId: resolveBulkProjectId()
+                        }
+                    });
+                    return;
+                }
+
+                if (e.target.closest('#project-bulk-add-tags-btn')) {
+                    e.preventDefault();
+                    var tagIds = window.scriptyGetSelectedBlockIds();
+                    if (tagIds.length === 0) {
+                        window.scriptyBulkSelectionAlert();
+                        return;
+                    }
+                    var tagsInput = document.getElementById('project-bulk-tags-input');
+                    var tags = tagsInput ? tagsInput.value.trim() : '';
+                    if (!tags) {
+                        alert('Please enter tags to add.');
+                        return;
+                    }
+                    runBulkAction({
+                        action: '/block/bulkAddTags',
+                        fields: {
+                            ids: tagIds.join(','),
+                            tags: tags,
+                            projectId: resolveBulkProjectId()
+                        }
+                    });
+                    return;
+                }
+
+                if (e.target.closest('#project-bulk-copy-btn')) {
+                    var copyCheckboxes = document.querySelectorAll(
+                        '.block-row[data-block-id] .block-select-checkbox:checked, tr[data-block-id] .block-select-checkbox:checked'
+                    );
+                    if (copyCheckboxes.length === 0) {
+                        window.scriptyBulkSelectionAlert();
+                        return;
+                    }
+                    var copyText = Array.from(copyCheckboxes).map(function(cb) {
+                        return getBlockRowCopyText(cb.closest('.block-row, tr[data-block-id]'));
+                    }).filter(function(value) {
+                        return value.length > 0;
+                    }).join('\n');
+                    if (!copyText) {
+                        alert('No text to copy in the selected blocks.');
+                        return;
+                    }
+                    copyTextToClipboard(copyText, e.target.closest('#project-bulk-copy-btn'));
+                    return;
+                }
+
+                if (e.target.closest('#project-bulk-delete-btn')) {
+                    e.preventDefault();
+                    var deleteIds = window.scriptyGetSelectedBlockIds();
+                    if (deleteIds.length === 0) {
+                        window.scriptyBulkSelectionAlert();
+                        return;
+                    }
+                    var confirmMsg = 'Are you sure you want to delete the ' + deleteIds.length +
+                        ' selected block' + (deleteIds.length > 1 ? 's' : '') + '?';
+                    if (!confirm(confirmMsg)) {
+                        return;
+                    }
+                    runBulkAction({
+                        action: '/block/bulkDelete',
+                        fields: {
+                            ids: deleteIds.join(','),
+                            projectId: resolveBulkProjectId()
+                        }
+                    });
+                }
+            });
+        };
+
+        window.scriptyInitProjectPageScripts = function() {
+            if (!document.querySelector('.project-script')) return;
+            if (window.scriptyInitProjectBulkActions) {
+                window.scriptyInitProjectBulkActions();
+            }
+            if (window.scriptyInitBlockBulkSelection) {
+                window.scriptyInitBlockBulkSelection({
+                    selectAllId: 'project-select-all-blocks',
+                    bulkBarId: 'project-bulk-bar',
+                    bulkCountId: 'project-bulk-count',
+                    resetOnScriptRefresh: true
+                });
+            }
+        };
+
         window.scriptyInitBlockBulkSelection = function(options) {
             options = options || {};
             var selectAllId = options.selectAllId;
@@ -867,10 +1144,11 @@
             }
 
             function updateBulkBar() {
-                var checkboxes = scope.querySelectorAll(
-                    '.block-row[data-block-id] .block-select-checkbox:checked, tr[data-block-id] .block-select-checkbox:checked'
-                );
-                var count = checkboxes.length;
+                var count = window.scriptyGetSelectedBlockIds
+                    ? window.scriptyGetSelectedBlockIds().length
+                    : scope.querySelectorAll(
+                        '.block-row[data-block-id] .block-select-checkbox:checked, tr[data-block-id] .block-select-checkbox:checked'
+                    ).length;
                 if (bulkBar) {
                     bulkBar.hidden = count === 0;
                 }
@@ -1917,6 +2195,7 @@
             syncBodyPageClasses();
             syncStylesheetVersion();
             updateLastEditedTimes();
+            window.scriptyInitProjectPageScripts();
             requestAnimationFrame(focusBlockTextareaFromClick);
         });
 

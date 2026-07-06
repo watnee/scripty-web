@@ -2171,6 +2171,11 @@ html.scripty-hide-block-select .scene-bulk-select {
     grid-template-columns: var(--block-select-col-plus) var(--block-select-col-drag);
 }
 
+.block-row:not([data-block-id]) .block-select-checkbox,
+tr:not([data-block-id]) .block-select-checkbox {
+    display: none !important;
+}
+
 html.scripty-block-edit-locked .project-script .block-content {
     cursor: default;
 }
@@ -5560,6 +5565,12 @@ body.focus-mode .project-script {
     align-self: start;
 }
 
+/* Script blocks carry a 1em top margin; shift side controls to line up with the first text line */
+.project-script aside.block-left-controls:has(+ .block-content.script-block),
+.project-script .block-content.script-block + aside.block-actions {
+    margin-top: calc(1em - 2px);
+}
+
 .project-script aside.block-left-controls {
     justify-self: end;
 }
@@ -5649,6 +5660,11 @@ body.focus-mode .project-script {
 }
 
 /* Fountain element type formatting */
+.block-content.block-type-scene .script-block-text {
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
 .block-content.block-type-dialogue {
     padding-left: 15%;
     padding-right: 15%;

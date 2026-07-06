@@ -169,39 +169,6 @@
             hoveredRow = findBlockRow(e.target);
         });
 
-        // Backspace/Delete at the start of an empty block textarea should move to the
-        // previous block, not remove the row or trigger browser/history navigation.
-        document.addEventListener('keydown', function(e) {
-            if (e.key !== 'Backspace' && e.key !== 'Delete') return;
-            const ta = e.target;
-            if (!isBlockContentTextarea(ta) || !isEmptyAtStart(ta)) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            const row = findAnyBlockRow(ta);
-            const prevRow = row ? findAdjacentBlockRow(row, 'moveUp') : null;
-            if (isCreateBlockTextarea(ta) && row) {
-                removeEmptyCreateRow(row);
-            }
-            focusBlockContentEnd(prevRow);
-        }, true);
-
-        // Escape cancels an empty unsaved create row.
-        document.addEventListener('keydown', function(e) {
-            if (e.key !== 'Escape') return;
-            const ta = e.target;
-            if (!isBlockContentTextarea(ta) || !isCreateBlockTextarea(ta)) return;
-            if (ta.value.trim() !== '') return;
-
-            e.preventDefault();
-            const row = findAnyBlockRow(ta);
-            const prevRow = row ? findAdjacentBlockRow(row, 'moveUp') : null;
-            if (removeEmptyCreateRow(row)) {
-                focusBlockContentEnd(prevRow);
-            }
-        });
-
         // Move blocks up/down keyboard shortcut
         document.addEventListener('keydown', function(e) {
             const isMoveUp = (e.altKey && e.key === 'ArrowUp') || (e.ctrlKey && e.shiftKey && e.key === 'ArrowUp');
@@ -260,7 +227,78 @@
         }
 
         function isEmptyAtStart(textarea) {
-            return textarea.value.trim() === '' && textarea.selectionStart === 0 && textarea.selectionEnd === 0;
+            return textarea.value.trim() === '' &&
+                   textarea.selectionStart === textarea.selectionEnd;
+        }
+
+        function closeBlockEdit(form, done) {
+            if (!form) {
+                if (done) done();
+                return;
+            }
+            if (form.dataset.committing === 'true') {
+                if (done) done();
+                return;
+            }
+            const textarea = form.querySelector('textarea[name="content"]');
+            if (!textarea) {
+                if (done) done();
+                return;
+            }
+            form.dataset.committing = 'true';
+            const formData = new FormData(form);
+            const url = form.getAttribute('hx-post') || '/block/editInline';
+            fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: new URLSearchParams(formData).toString()
+            }).then(function(response) {
+                return response.text();
+            }).then(function(html) {
+                const target = form.closest('.block-content');
+                if (target) {
+                    target.innerHTML = html;
+                }
+            }).catch(function() {
+                /* keep edit form if save fails */
+            }).finally(function() {
+                delete form.dataset.committing;
+                if (done) done();
+            });
+        }
+
+        function handleEmptyBlockBackspace(ta) {
+            // Keep the row and stay in the field; only block default browser/history behavior.
+            ta.focus({ preventScroll: true });
+        }
+
+        function revertEmptySavedBlockEdit(form) {
+            if (!form || form.dataset.reverting === 'true') return;
+            const row = form.closest('[data-block-id]');
+            const blockContent = form.closest('.block-content');
+            if (!row || !blockContent) return;
+            const textarea = form.querySelector('textarea[name="content"]');
+            if (!textarea || textarea.value.trim() !== '') return;
+
+            form.dataset.reverting = 'true';
+            const blockId = row.getAttribute('data-block-id');
+            fetch('/block/showInline?id=' + encodeURIComponent(blockId), {
+                credentials: 'same-origin',
+                cache: 'no-store'
+            }).then(function(response) {
+                return response.text();
+            }).then(function(html) {
+                if (blockContent.isConnected) {
+                    blockContent.innerHTML = html;
+                    if (typeof htmx !== 'undefined') {
+                        htmx.process(blockContent);
+                    }
+                }
+            }).catch(function() {
+                /* keep edit form if revert fails */
+            }).finally(function() {
+                delete form.dataset.reverting;
+            });
         }
 
         function focusBlockContentEnd(row) {
@@ -275,15 +313,14 @@
                 existingTa.setSelectionRange(len, len);
                 return;
             }
+            pendingBlockCaret = {
+                blockContent: blockContent,
+                offset: blockContent.querySelector('.script-block-text')?.textContent?.length || 0
+            };
             blockContent.click();
-            setTimeout(function() {
-                const ta = blockContent.querySelector('textarea[name="content"]');
-                if (!ta) return;
-                autoGrowTextarea(ta);
-                ta.focus({ preventScroll: true });
-                const len = ta.value.length;
-                ta.setSelectionRange(len, len);
-            }, 100);
+            requestAnimationFrame(function() {
+                requestAnimationFrame(focusBlockTextareaFromClick);
+            });
         }
 
         function removeEmptyCreateRow(row) {
@@ -291,9 +328,81 @@
             const container = row.closest('.scene-blocks, #table-blocks, tbody');
             if (!container) return false;
             const rowSelector = container.matches('tbody') ? 'tr' : '.block-row';
-            if (container.querySelectorAll(rowSelector).length <= 1) return false;
+            const savedBlocks = container.querySelectorAll(rowSelector + '[data-block-id]').length;
+            if (savedBlocks === 0 && container.querySelectorAll(rowSelector).length <= 1) return false;
             row.remove();
             return true;
+        }
+
+        function initBlockEmptyBackspace() {
+            if (window._scriptyBlockEmptyGuardInstalled) return;
+            window._scriptyBlockEmptyGuardInstalled = true;
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+                const ta = e.target;
+                if (!isBlockContentTextarea(ta) || !isEmptyAtStart(ta)) return;
+
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                handleEmptyBlockBackspace(ta);
+            }, true);
+
+            document.addEventListener('beforeinput', function(e) {
+                const ta = e.target;
+                if (!isBlockContentTextarea(ta)) return;
+                if (e.inputType !== 'deleteContentBackward' && e.inputType !== 'deleteContentForward') return;
+                if (ta.value.trim() !== '' || ta.selectionStart !== ta.selectionEnd) return;
+
+                e.preventDefault();
+            }, true);
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== 'Escape') return;
+                const ta = e.target;
+                if (!isBlockContentTextarea(ta) || !isCreateBlockTextarea(ta)) return;
+                if (ta.value.trim() !== '') return;
+
+                e.preventDefault();
+                const row = findAnyBlockRow(ta);
+                const prevRow = row ? findAdjacentBlockRow(row, 'moveUp') : null;
+                if (removeEmptyCreateRow(row)) {
+                    focusBlockContentEnd(prevRow);
+                }
+            });
+
+            // Prevent browser "back" navigation when backspace is pressed outside a field.
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== 'Backspace') return;
+                if (isEditable(e.target)) return;
+                e.preventDefault();
+            });
+        }
+
+        function initBlockEditGuards() {
+            if (window._scriptyBlockEditGuardsInit) return;
+            window._scriptyBlockEditGuardsInit = true;
+
+            document.body.addEventListener('htmx:beforeRequest', function(e) {
+                const elt = e.detail.elt;
+                if (!elt || elt.tagName !== 'FORM') return;
+                const path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
+                const textarea = elt.querySelector('textarea[name="content"]');
+                if (!textarea || textarea.value.trim() !== '') return;
+
+                if (path.indexOf('/block/editInline') !== -1 ||
+                    path.indexOf('/block/createInline') !== -1 ||
+                    path.indexOf('/block/createBelowInline') !== -1) {
+                    e.preventDefault();
+                }
+            });
+
+            document.addEventListener('focusin', function(e) {
+                document.querySelectorAll('.block-content form[hx-post*="/block/editInline"]').forEach(function(form) {
+                    if (form.contains(e.target)) return;
+                    revertEmptySavedBlockEdit(form);
+                });
+            });
         }
 
         function isInlineTextEdit(el) {
@@ -896,7 +1005,7 @@
                 if (document.querySelector('.project-name-wrap input[name="title"]')) return true;
                 if (document.querySelector('.scene-name-wrap input[name="name"]')) return true;
                 if (document.querySelector('.block-content textarea:focus')) return true;
-                if (document.querySelector('.block-content form.block-inline-edit-form')) return true;
+                if (document.querySelector('.block-content form')) return true;
                 if (document.querySelector('.htmx-request')) return true;
                 return false;
             }
@@ -1411,7 +1520,7 @@
             document.querySelectorAll('.block-content form.block-inline-edit-form, .block-content form[hx-post*="/block/editInline"]').forEach(function(form) {
                 if (form.dataset.committing === 'true') return;
                 const textarea = form.querySelector('textarea[name="content"]');
-                if (!textarea) return;
+                if (!textarea || textarea.value.trim() === '') return;
 
                 form.dataset.committing = 'true';
                 syncReaderVisibleText(textarea);
@@ -1596,6 +1705,11 @@
 
         // Run on initial load
         function initAll() {
+            initBlockEmptyBackspace();
+            initBlockEditGuards();
+            if (window.scriptyInstallBlockEmptyGuard) {
+                window.scriptyInstallBlockEmptyGuard();
+            }
             initHistoryDropdown();
             initUserDropdown();
             initHelpDropdown();
@@ -1720,5 +1834,6 @@
         }
     })();
     </script>
+    <script th:src="@{/js/block-empty-guard.js(v=${assetVersion})}"></script>
 </header>
 </html>

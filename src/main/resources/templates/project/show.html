@@ -193,6 +193,7 @@
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:src="@{/js/text-size.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/block-empty-guard.js(v=${assetVersion})}"></script>
     <script th:inline="javascript">
     document.querySelectorAll('.project-script .scene-blocks').forEach(function(sceneBlocks) {
         if (window.scriptyInitBlockDragDrop) {
@@ -465,6 +466,19 @@
             revision: /*[[${syncRevision}]]*/ 0
         });
     }
+    (function ensureBlockEmptyGuard() {
+        if (window.scriptyInstallBlockEmptyGuard) {
+            window.scriptyInstallBlockEmptyGuard();
+        }
+        function onScriptPageReady() {
+            if (!document.querySelector('.project-script')) return;
+            if (window.scriptyInstallBlockEmptyGuard) {
+                window.scriptyInstallBlockEmptyGuard();
+            }
+        }
+        document.body.addEventListener('htmx:afterSettle', onScriptPageReady);
+        document.body.addEventListener('htmx:afterSwap', onScriptPageReady);
+    })();
     </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-<form xmlns:th="http://www.thymeleaf.org" th:attr="hx-post=@{/block/editInline}" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="input delay:500ms from:find textarea, change from:find select">
+<form xmlns:th="http://www.thymeleaf.org" th:attr="hx-post=@{/block/editInline}" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="change from:find select, focusout from:find textarea">
     <input type="hidden" name="id" th:value="${commandModel.id}" />
 
     <textarea spellcheck="true" rows="1" style="width: 100%; height: 1.5em; min-height: 1.5em; padding: 0.25em;" name="content" th:text="${commandModel.content}"></textarea>

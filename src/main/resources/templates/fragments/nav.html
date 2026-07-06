@@ -269,7 +269,8 @@
                 return null;
             }
             const rect = targetRow.getBoundingClientRect();
-            const insertBefore = clientY < rect.top + rect.height / 2;
+            const effectiveHeight = Math.max(rect.height, 24);
+            const insertBefore = clientY < rect.top + effectiveHeight / 2;
             let newOrder = insertBefore ? targetOrder : targetOrder + 1;
             if (dragOrder < newOrder) {
                 newOrder--;
@@ -341,9 +342,11 @@
                 return row !== dragRow;
             });
             if (rows.length === 0) return null;
+            const minRowHeight = 24;
             for (let i = 0; i < rows.length; i++) {
                 const rect = rows[i].getBoundingClientRect();
-                if (clientY < rect.top + rect.height / 2) {
+                const effectiveHeight = Math.max(rect.height, minRowHeight);
+                if (clientY < rect.top + effectiveHeight / 2) {
                     return { row: rows[i], insertBefore: true };
                 }
             }
@@ -678,8 +681,16 @@
                 dragRow = row;
                 row.classList.add('dragging');
                 e.dataTransfer.effectAllowed = 'move';
+                if (e.dataTransfer.setData) {
+                    e.dataTransfer.setData('text/plain', row.getAttribute('data-block-id') || 'block');
+                }
                 if (e.dataTransfer.setDragImage) {
-                    e.dataTransfer.setDragImage(row, 24, 16);
+                    const rowRect = row.getBoundingClientRect();
+                    if (rowRect.height < 20) {
+                        e.dataTransfer.setDragImage(handle, handle.offsetWidth / 2, handle.offsetHeight / 2);
+                    } else {
+                        e.dataTransfer.setDragImage(row, 24, Math.min(16, rowRect.height / 2));
+                    }
                 }
             });
 

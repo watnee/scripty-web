@@ -3,7 +3,7 @@
         <div class="block-left-controls-inner">
             <input type="checkbox" class="block-select-checkbox" />
             <a th:attr="hx-get=@{/block/createInline(sceneId=${viewModel.sceneId},surface='project')}" hx-target="closest .block-row" hx-swap="afterend" hx-boost="false" role="button" class="create-below" title="Add block below" aria-label="Add block below">+</a>
-            <span class="drag-handle">&#8942;&#8942;</span>
+            <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">&#8942;&#8942;</span>
         </div>
     </aside>
     <div class="block-content">

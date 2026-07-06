@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @ControllerAdvice
 public class WebModelAdvice {
 
-    @Value("${app.asset-version:55}")
+    @Value("${app.asset-version:56}")
     private String assetVersion;
 
     @ModelAttribute("assetVersion")

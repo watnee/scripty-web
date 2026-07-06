@@ -2921,6 +2921,11 @@ main h3 {
 .project-script .block-content .script-block-text {
     white-space: pre-wrap;
     margin: 0;
+    min-height: 1.5em;
+}
+
+.script-block-text:empty::before {
+    content: '\00a0';
 }
 
 #table-blocks tr[data-block-id] td.block-content {
@@ -3273,6 +3278,11 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
     line-height: 1;
     user-select: none;
     touch-action: none;
+    min-width: 1.15rem;
+    min-height: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .project-script .block-row:hover .drag-handle,

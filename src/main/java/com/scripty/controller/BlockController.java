@@ -122,6 +122,7 @@ public class BlockController {
     @RequestMapping(value = "/toggleBookmark")
     public String toggleBookmark(@RequestParam Integer id, @RequestParam(required = false) Integer projectId) {
         Block block = blockService.toggleBookmark(id);
+        projectVersionService.autoSaveVersionForBlock(id);
         if (projectId != null) {
             return "redirect:/project/show?id=" + projectId;
         }
@@ -131,6 +132,7 @@ public class BlockController {
     @RequestMapping(value = "/togglePinned")
     public String togglePinned(@RequestParam Integer id, @RequestParam(required = false) Integer projectId) {
         Block block = blockService.togglePinned(id);
+        projectVersionService.autoSaveVersionForBlock(id);
         if (projectId != null) {
             return "redirect:/project/show?id=" + projectId;
         }

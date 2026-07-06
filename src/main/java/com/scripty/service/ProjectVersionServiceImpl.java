@@ -302,13 +302,17 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     public void autoSaveVersion(Integer projectId) {
         ProjectVersion latest = projectVersionRepository.findFirstByProjectIdOrderByCreatedAtDesc(projectId);
         String snapshotJson = buildSnapshotJson(projectId);
-        if (latest != null) {
-            if (latest.getCreatedAt().plusMinutes(AUTO_SAVE_INTERVAL_MINUTES).isAfter(LocalDateTime.now())) {
-                return;
-            }
-            if (snapshotJson.equals(latest.getSnapshotJson())) {
-                return;
-            }
+        if (latest != null && snapshotJson.equals(latest.getSnapshotJson())) {
+            return;
+        }
+        if (latest != null
+                && latest.getLabel() != null
+                && latest.getLabel().startsWith("Auto-save")
+                && latest.getCreatedAt().plusMinutes(AUTO_SAVE_INTERVAL_MINUTES).isAfter(LocalDateTime.now())) {
+            latest.setSnapshotJson(snapshotJson);
+            latest.setCreatedAt(LocalDateTime.now());
+            projectVersionRepository.save(latest);
+            return;
         }
         String label = "Auto-save " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM d, h:mm a"));
         createVersionFromSnapshot(projectId, label, snapshotJson);

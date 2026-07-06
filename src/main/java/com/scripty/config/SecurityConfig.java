@@ -29,7 +29,7 @@ public class SecurityConfig {
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .loginProcessingUrl("/login")
+                .loginProcessingUrl("/perform-login")
                 .defaultSuccessUrl("/", false)
                 .failureUrl("/login?login_error=1")
                 .permitAll()
@@ -53,7 +53,7 @@ public class SecurityConfig {
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .loginProcessingUrl("/login")
+                .loginProcessingUrl("/perform-login")
                 .defaultSuccessUrl("/", false)
                 .failureUrl("/login?login_error=1")
                 .permitAll()

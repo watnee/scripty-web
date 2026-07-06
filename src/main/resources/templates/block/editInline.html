@@ -1,13 +1,11 @@
 <p xmlns:th="http://www.thymeleaf.org" th:if="${block != null and not #strings.isEmpty(block.personName)}" class="script-character-name">
     <a th:href="@{/character/show(id=${block.personId})}" class="character-name" th:text="${block.personName}"></a>
 </p>
-<p xmlns:th="http://www.thymeleaf.org" class="script-block-text reader-visible-text" th:text="${commandModel.content}"></p>
 <form xmlns:th="http://www.thymeleaf.org" class="hide-in-reader-view block-inline-edit-form" th:attr="hx-post=@{/block/editInline}" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="change from:find select, focusout from:find textarea">
     <input type="hidden" name="id" th:value="${commandModel.id}" />
     <input type="hidden" name="personId" th:value="${commandModel.personId}" />
     <input type="hidden" name="tags" th:value="${commandModel.tags}" />
-
-    <textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" th:text="${commandModel.content}"></textarea>
+    <span class="reader-visible-text" th:text="${commandModel.content}"></span><textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" th:text="${commandModel.content}"></textarea>
     <div th:if="${block != null and not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu">
         <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
               th:if="${not #strings.isEmpty(#strings.trim(tag))}"

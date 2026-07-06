@@ -6,7 +6,7 @@
             <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">&#8942;&#8942;</span>
         </div>
     </aside>
-    <div class="block-content" th:classappend="${block.type != null} ? ('block-type-' + ${#strings.toLowerCase(block.type)}) : ''" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML">
+    <div class="block-content" th:classappend="${block.type != null} ? ('block-type-' + ${#strings.toLowerCase(block.type)}) : ''" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')&amp;&amp;!window.scriptySuppressBlockEditClick]" hx-swap="innerHTML">
         <p th:if="${not #strings.isEmpty(block.personName)}" class="script-character-name">
             <a th:href="@{/character/show(id=${block.personId})}" class="character-name" th:text="${block.personName}"></a>
         </p>

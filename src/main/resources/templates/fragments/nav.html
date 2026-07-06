@@ -397,12 +397,85 @@
                 }
             });
 
+            document.body.addEventListener('htmx:beforeRequest', function(e) {
+                const path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
+                if (path.indexOf('/block/editInline') === -1 || e.detail.verb !== 'get') return;
+                if (window.scriptySuppressBlockEditClick) {
+                    e.preventDefault();
+                }
+            });
+
             document.addEventListener('focusin', function(e) {
                 document.querySelectorAll('.block-content form[hx-post*="/block/editInline"]').forEach(function(form) {
                     if (form.contains(e.target)) return;
                     revertEmptySavedBlockEdit(form);
                 });
             });
+        }
+
+        function initBlockTextSelection() {
+            if (window._scriptyBlockTextSelectionInit) return;
+            window._scriptyBlockTextSelectionInit = true;
+
+            const DRAG_THRESHOLD = 4;
+            let pointerState = null;
+
+            function clearSuppressFlag() {
+                window.scriptySuppressBlockEditClick = false;
+            }
+
+            function scheduleClearSuppressFlag() {
+                window.scriptySuppressBlockEditClick = true;
+                setTimeout(clearSuppressFlag, 0);
+            }
+
+            document.body.addEventListener('mousedown', function(e) {
+                if (e.button !== 0) return;
+                if (e.target.closest('a, .drag-handle, .block-left-controls, .block-actions, .block-select-checkbox')) return;
+
+                const blockContent = e.target.closest('.block-content');
+                pointerState = blockContent ? {
+                    blockContent: blockContent,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    moved: false,
+                    selectionStart: (window.getSelection && window.getSelection().toString()) || ''
+                } : null;
+                clearSuppressFlag();
+            }, true);
+
+            document.body.addEventListener('mousemove', function(e) {
+                if (!pointerState || pointerState.moved) return;
+                const dx = Math.abs(e.clientX - pointerState.startX);
+                const dy = Math.abs(e.clientY - pointerState.startY);
+                if (dx >= DRAG_THRESHOLD || dy >= DRAG_THRESHOLD) {
+                    pointerState.moved = true;
+                    window.scriptySuppressBlockEditClick = true;
+                }
+            }, true);
+
+            document.body.addEventListener('mouseup', function() {
+                if (!pointerState) return;
+
+                const selectionText = (window.getSelection && window.getSelection().toString()) || '';
+                const selectionChanged = selectionText !== pointerState.selectionStart;
+                const wasSelecting = pointerState.moved ||
+                    (selectionChanged && selectionText.length > 0);
+                pointerState = null;
+
+                if (wasSelecting) {
+                    scheduleClearSuppressFlag();
+                    pendingBlockCaret = null;
+                    return;
+                }
+
+                if (pendingBlockCaret && pendingBlockCaret.blockContent &&
+                    pendingBlockCaret.blockContent.querySelector('form textarea[name="content"]')) {
+                    requestAnimationFrame(function() {
+                        requestAnimationFrame(focusBlockTextareaFromClick);
+                    });
+                }
+            }, true);
         }
 
         function isInlineTextEdit(el) {
@@ -1455,11 +1528,19 @@
         document.body.addEventListener('mousedown', function(e) {
             if (e.button !== 0) return;
             if (e.target.closest('a')) return;
+            if (window.scriptySuppressBlockEditClick) return;
             const blockContent = e.target.closest('.block-content');
-            if (!blockContent || blockContent.querySelector('form')) return;
+            if (!blockContent) return;
 
-            const textEl = blockContent.querySelector('.script-block-text');
-            if (!textEl) return;
+            const form = blockContent.querySelector('.block-inline-edit-form, form[hx-post*="/block/editInline"]');
+            if (form && form.contains(document.activeElement)) return;
+
+            let textEl = e.target.closest('.reader-visible-text, .script-block-text');
+            if (textEl && textEl.tagName === 'TEXTAREA') textEl = null;
+            if (!textEl) {
+                textEl = blockContent.querySelector('.reader-visible-text, .script-block-text:not(textarea)');
+            }
+            if (!textEl || textEl.tagName === 'TEXTAREA') return;
 
             let offset = null;
             if (document.caretRangeFromPoint) {
@@ -1707,6 +1788,7 @@
         function initAll() {
             initBlockEmptyBackspace();
             initBlockEditGuards();
+            initBlockTextSelection();
             if (window.scriptyInstallBlockEmptyGuard) {
                 window.scriptyInstallBlockEmptyGuard();
             }

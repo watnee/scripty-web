@@ -1,19 +1,32 @@
 <div xmlns:th="http://www.thymeleaf.org" th:fragment="scriptBody(viewModel)" id="project-script-body">
     <section th:each="scene : ${viewModel.scenes}" class="script-scene">
-        <h2 class="scene-header" th:if="${scene.id != null}">
-            <input type="checkbox" class="block-select-checkbox hide-in-reader-view sidebar menu" th:value="${scene.id}" />
-            <span class="scene-name-wrap">
-                <span class="scene-name-display" th:attr="hx-get=@{/block/editSceneNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; min-width: 10em; display: inline-block">
-                    <th:block th:if="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}">
-                        <span style="color: #ccc; font-style: italic">click to name scene</span>
-                    </th:block>
-                    <th:block th:unless="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}" th:text="${scene.name}"></th:block>
+        <div class="block-row scene-header-row" th:if="${scene.id != null}" th:attr="data-block-id=${scene.id}">
+            <aside class="block-left-controls hide-in-reader-view sidebar menu">
+                <div class="block-left-controls-inner">
+                    <input type="checkbox" class="block-select-checkbox" th:value="${scene.id}" />
+                    <a th:attr="hx-get=@{/block/createBelowInline(id=${scene.id},surface='project')}" hx-target="closest .scene-header-row" hx-swap="afterend" hx-boost="false" class="create-below" role="button" title="Add block below scene heading" aria-label="Add block below scene heading">+</a>
+                    <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">&#8942;&#8942;</span>
+                </div>
+            </aside>
+            <h2 class="scene-header block-content">
+                <span class="scene-name-wrap">
+                    <span class="scene-name-display" th:attr="hx-get=@{/block/editSceneNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; min-width: 10em; display: inline-block">
+                        <th:block th:if="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}">
+                            <span class="scene-name-placeholder">click to name scene</span>
+                        </th:block>
+                        <th:block th:unless="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}" th:text="${scene.name}"></th:block>
+                    </span>
                 </span>
-            </span>
-        </h2>
-        <p class="scene-header-links hide-in-reader-view sidebar menu" th:if="${scene.id != null}">
-            <a th:href="@{/block/delete(id=${scene.id})}" hx-boost="false" _="on click if not confirm('Delete this scene heading? Its blocks will merge into the scene above.') halt">delete</a>
-        </p>
+            </h2>
+            <aside class="block-actions hide-in-reader-view sidebar menu">
+                <span class="block-actions-controls">
+                    <a th:href="@{/block/delete(id=${scene.id})}" hx-boost="false" class="scene-header-delete" _="on click if not confirm('Delete this scene heading? Its blocks will merge into the scene above.') halt">delete</a>
+                    <span class="block-action-slot" aria-hidden="true"></span>
+                    <span class="block-action-slot" aria-hidden="true"></span>
+                    <span class="block-action-slot" aria-hidden="true"></span>
+                </span>
+            </aside>
+        </div>
         <div class="scene-blocks table-blocks-all" th:id="${scene.id != null} ? ('table-blocks-' + ${scene.id}) : 'table-blocks-orphan'">
             <th:block th:each="block, blockStat : ${scene.blocks}">
                 <div th:replace="~{block/projectBlockRow :: blockRow(block=${block}, projectId=${viewModel.id}, canMoveUp=${!blockStat.first}, canMoveDown=${!blockStat.last})}"></div>

@@ -3990,10 +3990,31 @@ main h3 {
     max-width: 100%;
 }
 
-.project-script .scene-header,
-.project-script .scene-header-links {
-    grid-column: 2;
+.project-script .scene-header-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    gap: 0 var(--screenplay-chrome-gap);
+    align-items: start;
+    margin-bottom: 0;
+}
+
+.project-script .scene-header-row .scene-header {
+    grid-column: auto;
+    margin: 0;
     text-align: center;
+}
+
+.project-script .scene-header-row .scene-header .scene-name-placeholder {
+    color: #ccc;
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.project-script .scene-header-delete {
+    font-size: 0.85rem;
+    text-transform: lowercase;
 }
 
 .project-script .scene-blocks {
@@ -4341,20 +4362,19 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
 }
 
 @media print {
-    .project-script .script-scene,
+    .project-script .scene-header-row,
     .project-script .scene-blocks .block-row {
         grid-template-columns: min(var(--screenplay-action-width, 6in), 100%);
     }
 
-    .project-script .scene-header,
-    .project-script .scene-header-links,
+    .project-script .scene-header-row,
     .project-script .scene-blocks,
     .project-script .scene-blocks .block-row {
         grid-column: 1;
         display: block;
     }
 
-    .project-script .block-content,
+    .project-script .scene-header-row .scene-header,
     #table-blocks .block-content,
     .table-blocks-all .block-content {
         width: var(--screenplay-action-width, 6in);

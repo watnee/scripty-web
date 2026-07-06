@@ -11,23 +11,5 @@
             Last edited <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.lastEdited})}"></span>
         </span>
     </div>
-    <div class="project-list-actions">
-        <a th:href="@{/project/show(id=${project.id})}"
-           role="button"
-           class="project-list-action-btn"
-           title="Open screenplay">Screenplay</a>
-        <a th:href="@{/project/production(id=${project.id})}"
-           role="button"
-           class="project-list-action-btn"
-           title="Open production hub">Production</a>
-        <button type="button"
-                class="project-list-action-btn rename-project-btn"
-                th:attr="hx-get=@{/project/editNameInline(id=${project.id})}"
-                hx-target="closest .project-title-container"
-                hx-swap="outerHTML"
-                title="Rename project">Rename</button>
-        <button type="button"
-                class="project-list-action-btn project-list-delete-btn bad"
-                th:attr="data-delete-url=@{/project/delete(id=${project.id})}">Delete</button>
-    </div>
+    <div th:replace="~{fragments/projectListActions :: actions(${project})}"></div>
 </div>

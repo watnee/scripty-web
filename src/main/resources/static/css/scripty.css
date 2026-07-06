@@ -1394,6 +1394,11 @@ html.scripty-hide-block-pins .block-action-pin {
 
 .project-list-row {
     border-bottom: 1px solid var(--border, #cbd5e1);
+    transition: background-color 0.15s ease;
+}
+
+.project-list-row:hover {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.02));
 }
 
 .project-list-row:last-child {
@@ -1558,19 +1563,93 @@ html.scripty-hide-block-pins .block-action-pin {
 .project-list-actions {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.35rem;
     flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
 .project-list-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
     margin: 0;
-    padding: 0.3rem 0.65rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--border, #cbd5e1);
+    background: var(--box-bg, #ffffff);
+    color: var(--fg, inherit);
     font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.2;
     white-space: nowrap;
+    text-decoration: none !important;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.project-list-action-btn svg {
+    flex-shrink: 0;
+    opacity: 0.9;
+}
+
+.project-list-action-btn--primary {
+    background: var(--accent, #475569);
+    border-color: var(--accent, #475569);
+    color: #fff !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.project-list-action-btn--primary:hover,
+.project-list-action-btn--primary:focus-visible {
+    filter: brightness(0.92);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+    color: #fff !important;
+    text-decoration: none !important;
+}
+
+.project-list-action-btn--secondary:hover,
+.project-list-action-btn--secondary:focus-visible {
+    border-color: var(--accent, #475569);
+    color: var(--accent, #475569) !important;
+    background: var(--accent-bg, rgba(0, 0, 0, 0.03));
+}
+
+.project-list-action-btn--ghost {
+    border-color: transparent;
+    background: transparent;
+    color: var(--muted-fg, #64748b);
+    font-weight: 500;
+}
+
+.project-list-action-btn--ghost:hover,
+.project-list-action-btn--ghost:focus-visible {
+    border-color: var(--border, #cbd5e1);
+    background: var(--accent-bg, rgba(0, 0, 0, 0.03));
+    color: var(--fg, inherit);
+}
+
+.project-list-actions-divider {
+    width: 1px;
+    height: 1.25rem;
+    background: var(--border, #cbd5e1);
+    margin: 0 0.1rem;
+    flex-shrink: 0;
 }
 
 .project-list-delete-btn {
+    border-color: transparent;
+    background: transparent;
+    color: var(--bad-fg, #d32f2f);
+    font-weight: 500;
     opacity: 1;
+}
+
+.project-list-delete-btn:hover,
+.project-list-delete-btn:focus-visible {
+    border-color: rgba(211, 47, 47, 0.35);
+    background: rgba(211, 47, 47, 0.08);
+    color: var(--bad-fg, #d32f2f) !important;
 }
 
 .project-list-rename-form {
@@ -3392,6 +3471,11 @@ kbd {
 
     .project-list-actions {
         align-self: flex-start;
+        gap: 0.4rem;
+    }
+
+    .project-list-actions-divider {
+        display: none;
     }
 
     .project-list-rename-controls {

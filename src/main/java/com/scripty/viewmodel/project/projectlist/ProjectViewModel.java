@@ -6,6 +6,7 @@
 package com.scripty.viewmodel.project.projectlist;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  *
@@ -15,7 +16,7 @@ public class ProjectViewModel {
     
     private int id;
     private String title;
-    private String team;
+    private List<String> teams;
     private LocalDateTime lastEdited;
 
     public int getId() {
@@ -34,12 +35,12 @@ public class ProjectViewModel {
         this.title = title;
     }
 
-    public String getTeam() {
-        return team;
+    public List<String> getTeams() {
+        return teams;
     }
 
-    public void setTeam(String team) {
-        this.team = team;
+    public void setTeams(List<String> teams) {
+        this.teams = teams;
     }
 
     public LocalDateTime getLastEdited() {

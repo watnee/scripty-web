@@ -2,11 +2,19 @@ package com.scripty.dto;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "project")
@@ -18,7 +26,6 @@ public class Project {
 
     @Column(nullable = false, length = 100)
     private String title;
-    private String team;
 
     @Column(name = "screenplay_title")
     private String screenplayTitle;
@@ -30,6 +37,13 @@ public class Project {
 
     @Column(name = "last_edited")
     private LocalDateTime lastEdited;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "project_team",
+            joinColumns = @JoinColumn(name = "project_id"),
+            inverseJoinColumns = @JoinColumn(name = "team_id"))
+    private List<Team> teams = new ArrayList<>();
 
     public Integer getId() {
         return id;
@@ -45,14 +59,6 @@ public class Project {
 
     public void setTitle(String title) {
         this.title = title;
-    }
-
-    public String getTeam() {
-        return team;
-    }
-
-    public void setTeam(String team) {
-        this.team = team;
     }
 
     public LocalDateTime getLastEdited() {
@@ -85,5 +91,32 @@ public class Project {
 
     public void setContactInfo(String contactInfo) {
         this.contactInfo = contactInfo;
+    }
+
+    public List<Team> getTeams() {
+        return teams;
+    }
+
+    public void setTeams(List<Team> teams) {
+        this.teams = teams != null ? teams : new ArrayList<>();
+    }
+
+    public boolean isAssignedToTeam(Team team) {
+        if (team == null) {
+            return false;
+        }
+        for (Team assignedTeam : teams) {
+            if (team.getId().equals(assignedTeam.getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public List<String> getTeamNames() {
+        return teams.stream()
+                .map(Team::getName)
+                .sorted(Comparator.naturalOrder())
+                .collect(Collectors.toList());
     }
 }

@@ -5,29 +5,31 @@
     <meta name="theme-color" content="#111111">
     <link rel="manifest" th:href="@{/manifest.json}">
     <meta charset="UTF-8">
-    <title>Scripty - Create New Project</title>
+    <title>Scripty - Create Project</title>
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
     <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
-    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <div th:replace="~{fragments/nav :: nav('projects')}"></div>
     <main>
-        <h1>Create New Project</h1>
+        <h1>Create Project</h1>
         <form th:action="@{/project/create}" method="post" th:object="${commandModel}">
             <label>
                 Title
                 <input type="text" spellcheck="true" th:field="*{title}" />
                 <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></span>
             </label>
-            <label>
-                Team
-                <select th:field="*{team}">
-                    <option value="">No team</option>
-                    <option th:each="t : ${viewModel.teams}" th:value="${t}" th:text="${t}"></option>
-                </select>
-                <span th:if="${#fields.hasErrors('team')}" th:errors="*{team}"></span>
-            </label>
+            <fieldset th:if="${!#lists.isEmpty(viewModel.availableTeams)}">
+                <legend>Teams</legend>
+                <label th:each="team : ${viewModel.availableTeams}" class="production-team-option">
+                    <input type="checkbox"
+                           name="teamIds"
+                           th:value="${team.id}"
+                           th:checked="${commandModel.teamIds != null and commandModel.teamIds.contains(team.id)}" />
+                    <span th:text="${team.name}"></span>
+                </label>
+            </fieldset>
             <p>
                 <a th:href="@{/project/list}" role="button">Cancel</a>
                 <button type="submit">Submit</button>

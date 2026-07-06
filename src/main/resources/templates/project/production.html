@@ -40,40 +40,35 @@
 
         <section class="production-team-section actor-profile-card">
             <div class="production-team-header">
-                <h2>Team</h2>
+                <h2>Teams</h2>
                 <a th:href="@{/team/list}" class="production-team-manage-link">All teams</a>
             </div>
             <p class="muted production-team-empty" th:if="${#lists.isEmpty(teams)}">
-                No teams yet. Create a team to share this project with collaborators.
+                No teams yet. Create a team to share this production with collaborators.
             </p>
-            <form th:action="@{/project/production/team}"
+            <form th:action="@{/project/production/teams}"
                   method="post"
                   class="production-team-form"
                   hx-boost="false"
                   th:if="${!#lists.isEmpty(teams)}">
                 <input type="hidden" name="id" th:value="${viewModel.id}" />
-                <label class="production-team-label">
-                    <span class="production-team-label-text">Assigned team</span>
-                    <select name="team"
-                            class="production-team-select"
-                            aria-label="Assign team to project"
-                            onchange="this.form.submit()">
-                        <option value="" th:selected="${viewModel.team == null or #strings.isEmpty(viewModel.team)}">No team</option>
-                        <option th:each="team : ${teams}"
-                                th:value="${team.name}"
-                                th:text="${team.name}"
-                                th:selected="${team.name == viewModel.team}"></option>
-                    </select>
-                </label>
+                <span class="production-team-label-text">Assigned teams</span>
+                <div class="production-team-options">
+                    <label th:each="team : ${teams}" class="production-team-option">
+                        <input type="checkbox"
+                               name="teamIds"
+                               th:value="${team.id}"
+                               th:checked="${assignedTeamIds.contains(team.id)}" />
+                        <span th:text="${team.name}"></span>
+                    </label>
+                </div>
+                <button type="submit" class="production-team-save">Save teams</button>
             </form>
             <div class="production-team-actions">
-                <a th:if="${teamId != null}"
-                   th:href="@{/team/edit(id=${teamId})}"
-                   class="production-team-action-link">Manage team productions</a>
                 <a th:href="@{/team/create}" role="button" class="production-team-create-btn">Create Team</a>
             </div>
-            <div class="production-team-productions" th:if="${viewModel.team != null and !#strings.isEmpty(viewModel.team)}">
-                <span class="production-team-productions-label">Team productions</span>
+            <div class="production-team-productions" th:if="${!#lists.isEmpty(viewModel.teams)}">
+                <span class="production-team-productions-label">Related productions</span>
                 <div class="production-team-production-links" th:if="${!#lists.isEmpty(teamProductions)}">
                     <a th:each="production : ${teamProductions}"
                        th:href="@{/project/production(id=${production.id})}"
@@ -81,7 +76,7 @@
                        th:text="${production.title}"></a>
                 </div>
                 <p class="muted production-team-productions-empty" th:if="${#lists.isEmpty(teamProductions)}">
-                    No other productions on this team yet.
+                    No other productions share a team with this project yet.
                 </p>
             </div>
         </section>

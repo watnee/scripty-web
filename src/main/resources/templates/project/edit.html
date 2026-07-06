@@ -21,14 +21,16 @@
                 <input type="text" spellcheck="true" th:field="*{title}" />
                 <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></span>
             </label>
-            <label>
-                Team
-                <select th:field="*{team}">
-                    <option value="">No team</option>
-                    <option th:each="t : ${viewModel.teams}" th:value="${t}" th:text="${t}"></option>
-                </select>
-                <span th:if="${#fields.hasErrors('team')}" th:errors="*{team}"></span>
-            </label>
+            <fieldset th:if="${!#lists.isEmpty(viewModel.availableTeams)}">
+                <legend>Teams</legend>
+                <label th:each="team : ${viewModel.availableTeams}" class="production-team-option">
+                    <input type="checkbox"
+                           name="teamIds"
+                           th:value="${team.id}"
+                           th:checked="${commandModel.teamIds != null and commandModel.teamIds.contains(team.id)}" />
+                    <span th:text="${team.name}"></span>
+                </label>
+            </fieldset>
             <p>
                 <a th:href="@{/project/show(id=${viewModel.id})}" role="button">Cancel</a>
                 <button type="submit">Submit</button>

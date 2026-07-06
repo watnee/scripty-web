@@ -7,12 +7,12 @@ import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
 import com.scripty.dto.Scene;
+import com.scripty.dto.Team;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.SceneRepository;
 import com.scripty.repository.TeamRepository;
-import com.scripty.dto.Team;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
@@ -22,9 +22,11 @@ import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.viewmodel.project.projectprofile.SceneViewModel;
 import com.scripty.viewmodel.scene.sceneprofile.BlockViewModel;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProjectServiceImpl implements ProjectService {
@@ -54,6 +56,11 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    public Project readWithTeams(Integer id) {
+        return projectRepository.findWithTeamsById(id).orElse(null);
+    }
+
+    @Override
     public Project getProjectByScene(Scene scene) {
         return projectRepository.findBySceneId(scene.getId());
     }
@@ -61,7 +68,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectListViewModel getProjectListViewModel() {
         ProjectListViewModel vm = new ProjectListViewModel();
-        List<Project> projects = new ArrayList<>(projectRepository.findAll());
+        List<Project> projects = new ArrayList<>(projectRepository.findAllWithTeams());
         vm.setProjects(mapProjectViewModels(projects));
         return vm;
     }
@@ -69,12 +76,12 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectListViewModel getProjectListViewModel(String userTeam) {
         ProjectListViewModel vm = new ProjectListViewModel();
-        List<Project> projects = new ArrayList<>(projectRepository.findAll());
+        List<Project> projects = new ArrayList<>(projectRepository.findAllWithTeams());
 
         if (userTeam != null && !userTeam.isEmpty()) {
             List<Project> filtered = new ArrayList<>();
             for (Project project : projects) {
-                if (project.getTeam() == null || project.getTeam().isEmpty() || project.getTeam().equals(userTeam)) {
+                if (canUserAccessProject(project, userTeam)) {
                     filtered.add(project);
                 }
             }
@@ -85,6 +92,18 @@ public class ProjectServiceImpl implements ProjectService {
         return vm;
     }
 
+    private boolean canUserAccessProject(Project project, String userTeam) {
+        if (project.getTeams().isEmpty()) {
+            return true;
+        }
+        for (Team team : project.getTeams()) {
+            if (userTeam.equals(team.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private List<ProjectViewModel> mapProjectViewModels(List<Project> projects) {
         sortProjectsByLastEdited(projects);
         List<ProjectViewModel> projectViewModels = new ArrayList<>();
@@ -92,7 +111,7 @@ public class ProjectServiceImpl implements ProjectService {
             ProjectViewModel pvm = new ProjectViewModel();
             pvm.setId(project.getId());
             pvm.setTitle(project.getTitle());
-            pvm.setTeam(project.getTeam());
+            pvm.setTeams(project.getTeamNames());
             pvm.setLastEdited(project.getLastEdited());
             projectViewModels.add(pvm);
         }
@@ -123,13 +142,13 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectProfileViewModel getProjectProfileViewModel(Integer id) {
         ProjectProfileViewModel vm = new ProjectProfileViewModel();
-        Project project = projectRepository.findById(id).orElse(null);
+        Project project = projectRepository.findWithTeamsById(id).orElse(null);
         List<Scene> scenes = sceneRepository.findByProjectIdOrderByOrderAsc(project.getId());
         List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(project.getId());
 
         vm.setId(project.getId());
         vm.setTitle(project.getTitle());
-        vm.setTeam(project.getTeam());
+        vm.setTeams(project.getTeamNames());
         vm.setLastEdited(project.getLastEdited());
         vm.setScreenplayTitle(project.getScreenplayTitle());
         vm.setWriters(project.getWriters());
@@ -180,35 +199,21 @@ public class ProjectServiceImpl implements ProjectService {
     public CreateProjectViewModel getCreateProjectViewModel() {
         CreateProjectViewModel vm = new CreateProjectViewModel();
         vm.setCreateProjectCommandModel(new CreateProjectCommandModel());
-        
-        List<Team> teams = teamRepository.findAllByOrderByNameAsc();
-        List<String> teamNames = new ArrayList<>();
-        for (Team t : teams) {
-            teamNames.add(t.getName());
-        }
-        vm.setTeams(teamNames);
-        
+        vm.setAvailableTeams(teamRepository.findAllByOrderByNameAsc());
         return vm;
     }
 
     @Override
     public EditProjectViewModel getEditProjectViewModel(Integer id) {
         EditProjectViewModel vm = new EditProjectViewModel();
-        Project project = projectRepository.findById(id).orElse(null);
+        Project project = projectRepository.findWithTeamsById(id).orElse(null);
         vm.setId(id);
         EditProjectCommandModel commandModel = new EditProjectCommandModel();
         commandModel.setId(project.getId());
         commandModel.setTitle(project.getTitle());
-        commandModel.setTeam(project.getTeam());
+        commandModel.setTeamIds(mapTeamIds(project.getTeams()));
         vm.setEditProjectCommandModel(commandModel);
-        
-        List<Team> teams = teamRepository.findAllByOrderByNameAsc();
-        List<String> teamNames = new ArrayList<>();
-        for (Team t : teams) {
-            teamNames.add(t.getName());
-        }
-        vm.setTeams(teamNames);
-        
+        vm.setAvailableTeams(teamRepository.findAllByOrderByNameAsc());
         return vm;
     }
 
@@ -216,19 +221,52 @@ public class ProjectServiceImpl implements ProjectService {
     public Project saveCreateProjectCommandModel(CreateProjectCommandModel cmd) {
         Project project = new Project();
         project.setTitle(cmd.getTitle());
-        project.setTeam(cmd.getTeam());
         project.setLastEdited(java.time.LocalDateTime.now());
-        return projectRepository.save(project);
+        projectRepository.save(project);
+        if (cmd.getTeamIds() != null && !cmd.getTeamIds().isEmpty()) {
+            applyTeams(project, cmd.getTeamIds());
+        }
+        return project;
     }
 
     @Override
     public Project saveEditProjectCommandModel(EditProjectCommandModel cmd) {
-        Project project = projectRepository.findById(cmd.getId()).orElse(null);
+        Project project = projectRepository.findWithTeamsById(cmd.getId()).orElse(null);
         project.setTitle(cmd.getTitle());
-        project.setTeam(cmd.getTeam());
+        if (cmd.getTeamIds() != null) {
+            applyTeams(project, cmd.getTeamIds());
+        }
         project.setLastEdited(java.time.LocalDateTime.now());
         projectRepository.save(project);
         return project;
+    }
+
+    @Override
+    @Transactional
+    public void setProjectTeams(Integer projectId, List<Integer> teamIds) {
+        Project project = projectRepository.findWithTeamsById(projectId).orElse(null);
+        if (project == null) {
+            return;
+        }
+        applyTeams(project, teamIds != null ? teamIds : List.of());
+        project.setLastEdited(java.time.LocalDateTime.now());
+        projectRepository.save(project);
+    }
+
+    private void applyTeams(Project project, List<Integer> teamIds) {
+        List<Team> selectedTeams = teamIds.isEmpty()
+                ? new ArrayList<>()
+                : new ArrayList<>(teamRepository.findAllById(teamIds));
+        selectedTeams.sort(Comparator.comparing(Team::getName));
+        project.setTeams(selectedTeams);
+    }
+
+    private List<Integer> mapTeamIds(List<Team> teams) {
+        List<Integer> teamIds = new ArrayList<>();
+        for (Team team : teams) {
+            teamIds.add(team.getId());
+        }
+        return teamIds;
     }
 
     @Override

@@ -15,7 +15,7 @@ public class ProjectProfileViewModel {
     
     private int id;
     private String title;
-    private String team;
+    private List<String> teams;
     private java.time.LocalDateTime lastEdited;
     private String screenplayTitle;
     private String writers;
@@ -39,12 +39,12 @@ public class ProjectProfileViewModel {
         this.title = title;
     }
 
-    public String getTeam() {
-        return team;
+    public List<String> getTeams() {
+        return teams;
     }
 
-    public void setTeam(String team) {
-        this.team = team;
+    public void setTeams(List<String> teams) {
+        this.teams = teams;
     }
 
     public java.time.LocalDateTime getLastEdited() {

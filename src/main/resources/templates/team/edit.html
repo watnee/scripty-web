@@ -34,7 +34,7 @@
                 <div th:each="project : ${allProjects}">
                     <label>
                         <input type="checkbox" name="projectIds" th:value="${project.id}" 
-                               th:checked="${project.team == commandModel.name}" />
+                               th:checked="${project.isAssignedToTeam(team)}" />
                         <span th:text="${project.title}">Project Title</span>
                     </label>
                 </div>

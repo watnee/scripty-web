@@ -264,7 +264,7 @@ public class ProjectController {
 
     @RequestMapping(value = "/showNameInline")
     public String showNameInline(@RequestParam Integer id, Model model, Principal principal) {
-        Project project = projectService.read(id);
+        Project project = projectService.readWithTeams(id);
         model.addAttribute("project", project);
         addDefaultProjectId(model, principal);
         return "project/showNameInline";
@@ -289,54 +289,58 @@ public class ProjectController {
 
         ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
         List<Team> teams = teamService.list();
-        Integer teamId = resolveTeamId(viewModel.getTeam(), teams);
-        List<ProjectViewModel> teamProductions = listTeamProductions(id, viewModel.getTeam());
+        List<Integer> assignedTeamIds = mapAssignedTeamIds(viewModel.getTeams(), teams);
+        List<ProjectViewModel> teamProductions = listTeamProductions(id, viewModel.getTeams());
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("teams", teams);
-        model.addAttribute("teamId", teamId);
+        model.addAttribute("assignedTeamIds", assignedTeamIds);
         model.addAttribute("teamProductions", teamProductions);
         return "project/production";
     }
 
-    @RequestMapping(value = "/production/team", method = RequestMethod.POST)
-    public String setProductionTeam(@RequestParam Integer id, @RequestParam(required = false) String team) {
-        Project project = projectService.read(id);
-        if (project == null) {
+    @RequestMapping(value = "/production/teams", method = RequestMethod.POST)
+    public String setProductionTeams(@RequestParam Integer id,
+                                     @RequestParam(value = "teamIds", required = false) List<Integer> teamIds) {
+        if (projectService.read(id) == null) {
             return "redirect:/project/list";
         }
-
-        EditProjectCommandModel commandModel = new EditProjectCommandModel();
-        commandModel.setId(id);
-        commandModel.setTitle(project.getTitle());
-        commandModel.setTeam(team == null || team.isBlank() ? null : team.trim());
-        projectService.saveEditProjectCommandModel(commandModel);
-
+        projectService.setProjectTeams(id, teamIds);
         return "redirect:/project/production?id=" + id;
     }
 
-    private Integer resolveTeamId(String teamName, List<Team> teams) {
-        if (teamName == null || teamName.isBlank()) {
-            return null;
+    private List<Integer> mapAssignedTeamIds(List<String> teamNames, List<Team> teams) {
+        List<Integer> assignedTeamIds = new ArrayList<>();
+        if (teamNames == null || teamNames.isEmpty()) {
+            return assignedTeamIds;
         }
         for (Team team : teams) {
-            if (teamName.equals(team.getName())) {
-                return team.getId();
+            if (teamNames.contains(team.getName())) {
+                assignedTeamIds.add(team.getId());
             }
         }
-        return null;
+        return assignedTeamIds;
     }
 
-    private List<ProjectViewModel> listTeamProductions(Integer projectId, String teamName) {
+    private List<ProjectViewModel> listTeamProductions(Integer projectId, List<String> teamNames) {
         List<ProjectViewModel> teamProductions = new ArrayList<>();
-        if (teamName == null || teamName.isBlank()) {
+        if (teamNames == null || teamNames.isEmpty()) {
             return teamProductions;
         }
 
         ProjectListViewModel projects = projectService.getProjectListViewModel();
         for (ProjectViewModel project : projects.getProjects()) {
-            if (teamName.equals(project.getTeam()) && project.getId() != projectId) {
-                teamProductions.add(project);
+            if (project.getId() == projectId) {
+                continue;
+            }
+            if (project.getTeams() == null) {
+                continue;
+            }
+            for (String teamName : project.getTeams()) {
+                if (teamNames.contains(teamName)) {
+                    teamProductions.add(project);
+                    break;
+                }
             }
         }
         return teamProductions;

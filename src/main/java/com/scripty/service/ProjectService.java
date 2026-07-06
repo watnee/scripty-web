@@ -13,6 +13,7 @@ import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 public interface ProjectService {
 
     Project read(Integer id);
+    Project readWithTeams(Integer id);
     Project getProjectByScene(Scene scene);
 
     ProjectListViewModel getProjectListViewModel();
@@ -28,4 +29,6 @@ public interface ProjectService {
     Project saveTitlePageCommandModel(TitlePageCommandModel titlePageCommandModel);
 
     Project deleteProject(Integer id);
+
+    void setProjectTeams(Integer projectId, java.util.List<Integer> teamIds);
 }

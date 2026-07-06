@@ -45,8 +45,7 @@
             <span th:text="${viewModel.title}"></span>
             <small><a th:href="@{/project/titlePage(id=${viewModel.id})}" role="button">Title Page</a> <a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a></small>
         </h1>
-        <div class="f-row" style="gap: 2rem; align-items: start">
-            <div style="flex: 3">
+        <div>
                 <h2>Scenes <small><a th:href="@{/scene/all(projectId=${viewModel.id})}" role="button">View All</a></small></h2>
                 <div class="project-search-wrapper" style="margin-bottom: 0.75rem; display: flex; gap: 0.5rem; align-items: center;">
                     <input type="text" id="project-search" placeholder="Search scene names, blocks, character names, or tags..." style="flex-grow: 1; max-width: 500px; margin: 0; padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid var(--border, #cbd5e1);" />
@@ -111,11 +110,6 @@
                     <input type="hidden" name="projectId" th:value="${viewModel.id}" />
                     <button type="submit" role="button">Create New Scene</button>
                 </form>
-            </div>
-            <aside style="flex: 1">
-                <p th:if="${viewModel.team != null and !viewModel.team.isEmpty()}">Team: <span th:text="${viewModel.team}"></span></p>
-                <p><a th:href="@{/character/list(projectId=${viewModel.id})}" role="button">Characters</a></p>
-            </aside>
         </div>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>

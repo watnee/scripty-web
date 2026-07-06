@@ -14,6 +14,7 @@ import java.util.List;
 public class ActorListViewModel {
     
     private List<ActorViewModel> actors;
+    private Integer characterProjectId;
 
     public List<ActorViewModel> getActors() {
         return actors;
@@ -21,6 +22,14 @@ public class ActorListViewModel {
 
     public void setActors(List<ActorViewModel> actors) {
         this.actors = actors;
+    }
+
+    public Integer getCharacterProjectId() {
+        return characterProjectId;
+    }
+
+    public void setCharacterProjectId(Integer characterProjectId) {
+        this.characterProjectId = characterProjectId;
     }
     
 }

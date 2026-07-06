@@ -8,11 +8,16 @@ package com.scripty.controller;
 import com.scripty.commandmodel.actor.createactor.CreateActorCommandModel;
 import com.scripty.commandmodel.actor.editactor.EditActorCommandModel;
 import com.scripty.dto.Actor;
+import com.scripty.dto.User;
 import com.scripty.viewmodel.actor.actorlist.ActorListViewModel;
+import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.actor.actorprofile.ActorProfileViewModel;
 import com.scripty.viewmodel.actor.createactor.CreateActorViewModel;
 import com.scripty.viewmodel.actor.editactor.EditActorViewModel;
 import com.scripty.service.ActorService;
+import com.scripty.service.ProjectService;
+import com.scripty.service.UserService;
+import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -33,15 +38,49 @@ public class ActorController {
     
     @Autowired
     ActorService actorService;
+
+    @Autowired
+    UserService userService;
+
+    @Autowired
+    ProjectService projectService;
     
     @RequestMapping(value = "/list")
-    public String list(Model model) {
+    public String list(Model model, Principal principal) {
 
         ActorListViewModel viewModel = actorService.getActorListViewModel();
+        viewModel.setCharacterProjectId(resolveCharacterProjectId(principal));
 
         model.addAttribute("viewModel", viewModel);
 
         return "actor/list";
+    }
+
+    private Integer resolveCharacterProjectId(Principal principal) {
+        if (principal == null) {
+            return null;
+        }
+
+        User currentUser = userService.readByUsername(principal.getName());
+        if (currentUser == null) {
+            return null;
+        }
+
+        if (currentUser.getDefaultProjectId() != null) {
+            return currentUser.getDefaultProjectId();
+        }
+
+        String userTeam = null;
+        if (!currentUser.isAdmin() && !currentUser.isDirector() && !currentUser.isProducer()) {
+            userTeam = currentUser.getTeam();
+        }
+
+        ProjectListViewModel projects = projectService.getProjectListViewModel(userTeam);
+        if (projects.getProjects().isEmpty()) {
+            return null;
+        }
+
+        return projects.getProjects().get(0).getId();
     }
     
     @RequestMapping(value = "/show")

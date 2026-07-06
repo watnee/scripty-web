@@ -23,7 +23,6 @@
                 <span class="star-icon">★</span><span class="title-text" th:text="${globalDefaultProjectTitle}"></span>
             </a>
             <a th:href="@{/actor/list}" th:aria-current="${currentPage == 'casting'} ? 'page'">Casting</a>
-            <a sec:authorize="hasRole('ROLE_ADMIN')" th:href="@{/user/list}" th:aria-current="${currentPage == 'users'} ? 'page'">Users</a>
         </th:block>
         <div class="nav-dropdown help-dropdown" id="help-dropdown">
             <button class="nav-dropdown-toggle help-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Help" title="Help"
@@ -76,6 +75,7 @@
                 </svg> System
             </button>
             <a class="nav-dropdown-item" th:href="@{/team/list}" th:classappend="${currentPage == 'teams'} ? 'active'" sec:authorize="isAuthenticated()">Teams</a>
+            <a class="nav-dropdown-item" th:href="@{/user/list}" th:classappend="${currentPage == 'users'} ? 'active'" sec:authorize="hasRole('ROLE_ADMIN')">Users</a>
             <hr class="nav-dropdown-divider" sec:authorize="isAuthenticated()">
             <a class="nav-dropdown-item" th:href="@{/logout}" hx-boost="false" sec:authorize="isAuthenticated()">Logout</a>
         </div>

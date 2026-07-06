@@ -1,6 +1,5 @@
 <form xmlns:th="http://www.thymeleaf.org" th:action="@{/project/editNameInline}" th:object="${commandModel}" th:attr="hx-post=@{/project/editNameInline}" hx-target="closest .project-title-container" hx-swap="outerHTML" class="project-title-container project-list-rename-form">
     <input type="hidden" th:field="*{id}" />
-    <input type="hidden" th:field="*{team}" />
     <div class="project-list-rename-controls">
         <input type="text" th:field="*{title}" class="project-list-rename-input" autofocus required maxlength="100" _="on keydown[key=='Escape'] click closest <form/>'s .bad" />
         <button type="submit" class="project-list-action-btn project-list-action-btn--primary">Save</button>

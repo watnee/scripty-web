@@ -27,12 +27,14 @@
 <body hx-boost="true" class="has-toolbar-brand">
     <div th:replace="~{fragments/nav :: nav('')}"></div>
     <aside class="top-bar project-top-bar hide-in-reader-view">
-        <nav aria-label="Breadcrumb">
-            <ol>
-                <li><a th:href="@{/project/list}">Projects</a></li>
-                <li id="project-breadcrumb-title" aria-current="page" th:text="${viewModel.title}"></li>
-            </ol>
-        </nav>
+        <div class="project-top-bar-breadcrumb">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li id="project-breadcrumb-title" aria-current="page" th:text="${viewModel.title}"></li>
+                </ol>
+            </nav>
+        </div>
         <div class="text-size-control">
             <button id="nav-bookmarks-toggle"
                     type="button"

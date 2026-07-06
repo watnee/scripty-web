@@ -1,6 +1,19 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" class="scripty-hide-block-bookmarks scripty-hide-block-pins">
 <head>
+    <script th:inline="javascript">
+    (function() {
+        var projectId = /*[[${viewModel.id}]]*/ 0;
+        if (!projectId) return;
+        var showBookmarks = localStorage.getItem('scripty-show-block-bookmarks-project-' + projectId);
+        var showPins = localStorage.getItem('scripty-show-block-pins-project-' + projectId);
+        showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
+        showPins = showPins === null ? false : showPins !== 'false';
+        var root = document.documentElement;
+        root.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);
+        root.classList.toggle('scripty-hide-block-pins', !showPins);
+    })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#111111">
     <link rel="manifest" th:href="@{/manifest.json}">
@@ -23,18 +36,18 @@
         <div class="text-size-control">
             <button id="nav-bookmarks-toggle"
                     type="button"
-                    class="nav-dropdown-toggle bookmark-filter-toggle"
-                    aria-pressed="false"
-                    aria-label="Hide bookmark buttons in blocks"
-                    title="Hide bookmark buttons in blocks">
+                    class="nav-dropdown-toggle bookmark-filter-toggle is-active"
+                    aria-pressed="true"
+                    aria-label="Show bookmark buttons in blocks"
+                    title="Show bookmark buttons in blocks">
                 <span th:replace="~{fragments/bookmarkIcon :: toolbarIcon}"></span>
             </button>
             <button id="nav-pins-toggle"
                     type="button"
-                    class="nav-dropdown-toggle pin-filter-toggle"
-                    aria-pressed="false"
-                    aria-label="Hide pin buttons in blocks"
-                    title="Hide pin buttons in blocks">
+                    class="nav-dropdown-toggle pin-filter-toggle is-active"
+                    aria-pressed="true"
+                    aria-label="Show pin buttons in blocks"
+                    title="Show pin buttons in blocks">
                 <span th:replace="~{fragments/pinIcon :: toolbarIcon}"></span>
             </button>
             <span th:replace="~{fragments/spellcheckToggle :: toolbarButton}"></span>

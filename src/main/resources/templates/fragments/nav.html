@@ -507,8 +507,8 @@
             var showBookmarks = localStorage.getItem(bookmarksKey);
             var showPins = localStorage.getItem(pinsKey);
 
-            showBookmarks = showBookmarks === null ? true : showBookmarks !== 'false';
-            showPins = showPins === null ? true : showPins !== 'false';
+            showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
+            showPins = showPins === null ? false : showPins !== 'false';
 
             function applyMarkerVisibility() {
                 document.documentElement.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);

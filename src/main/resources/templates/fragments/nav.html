@@ -29,6 +29,16 @@
         </th:block>
     </nav>
     <div class="header-actions">
+        <div class="spellcheck-toggle-container">
+            <button class="spellcheck-toggle-btn" type="button" onclick="window.toggleSpellcheck()" aria-label="Toggle spellcheck" title="Toggle spellcheck">
+                <svg class="spellcheck-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 16 6-12 6 12"></path>
+                    <path d="M8 12h8"></path>
+                    <path d="m16 20 2 2 4-4" class="spellcheck-check"></path>
+                    <line x1="3" y1="3" x2="21" y2="21" class="spellcheck-slash" stroke="var(--bad-fg-color, #e11d48)" stroke-width="2"></line>
+                </svg>
+            </button>
+        </div>
         <div class="nav-dropdown help-dropdown" id="help-dropdown">
             <button class="nav-dropdown-toggle help-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Help" title="Help"
                     th:aria-current="${currentPage == 'help' or currentPage == 'shortcuts'} ? 'page'">
@@ -93,17 +103,6 @@
                 <a class="nav-dropdown-item" th:href="@{/logout}" hx-boost="false" sec:authorize="isAuthenticated()">Logout</a>
             </div>
         </div>
-    <!-- Spellcheck Toggle Button -->
-    <div class="spellcheck-toggle-container">
-        <button class="spellcheck-toggle-btn" type="button" onclick="window.toggleSpellcheck()" aria-label="Toggle spellcheck" title="Toggle spellcheck">
-            <svg class="spellcheck-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m6 16 6-12 6 12"></path>
-                <path d="M8 12h8"></path>
-                <path d="m16 20 2 2 4-4" class="spellcheck-check"></path>
-                <line x1="3" y1="3" x2="21" y2="21" class="spellcheck-slash" stroke="var(--bad-fg-color, #e11d48)" stroke-width="2"></line>
-            </svg>
-        </button>
-    </div>
     </div>
     <div id="project-delete-modal" class="confirm-modal" hidden aria-modal="true" role="dialog" aria-labelledby="project-delete-title">
         <div class="confirm-modal-panel">

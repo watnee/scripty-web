@@ -1716,6 +1716,278 @@ html.scripty-hide-block-pins .block-action-pin {
     margin: 0 0 1rem;
 }
 
+/* Casting List Page */
+.casting-list-page {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0 1.25rem 2.5rem;
+}
+
+.casting-list-header {
+    margin-bottom: 1.5rem;
+}
+
+.casting-list-header h1 {
+    margin: 0 0 0.35rem;
+}
+
+.casting-list-header-text p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.casting-list-secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0.55rem 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--border, #cbd5e1);
+    background: var(--box-bg, #ffffff);
+    color: var(--fg, inherit) !important;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none !important;
+    white-space: nowrap;
+}
+
+.casting-list-secondary-btn:hover,
+.casting-list-secondary-btn:focus-visible {
+    border-color: var(--accent, #475569);
+    color: var(--accent, #475569) !important;
+}
+
+.casting-list-table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+}
+
+.casting-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    width: 100%;
+}
+
+.casting-list-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.casting-list-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.casting-list-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.casting-list-unassigned {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid var(--border, #cbd5e1);
+    color: var(--muted-fg, #64748b);
+    background: var(--accent-bg, rgba(0, 0, 0, 0.03));
+}
+
+.casting-list-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    font-size: 0.85rem;
+    color: var(--muted-fg, #64748b);
+}
+
+.casting-list-contact {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+}
+
+.casting-list-contact-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.casting-list-contact a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.casting-list-contact a:hover {
+    color: var(--accent, #475569);
+    text-decoration: underline;
+}
+
+.casting-list-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.15rem;
+}
+
+.casting-list-role {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--border, #cbd5e1);
+    background: rgba(71, 85, 105, 0.08);
+    color: var(--fg, inherit);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.casting-list-role:hover {
+    border-color: var(--accent, #475569);
+    color: var(--accent, #475569);
+}
+
+.casting-list-actions {
+    padding-top: 0.1rem;
+}
+
+/* Actor Profile Page */
+.actor-profile-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 1.25rem 2.5rem;
+}
+
+.actor-profile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.actor-profile-header h1 {
+    margin: 0;
+}
+
+.actor-profile-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.actor-profile-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.actor-profile-card {
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 12px;
+    background: var(--box-bg, #ffffff);
+    padding: 1.15rem 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.actor-profile-card h2 {
+    margin: 0 0 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted-fg, #64748b);
+}
+
+.actor-profile-details {
+    margin: 0;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.actor-profile-details div {
+    display: grid;
+    grid-template-columns: 5rem 1fr;
+    gap: 0.75rem;
+    align-items: baseline;
+}
+
+.actor-profile-details dt {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted-fg, #64748b);
+}
+
+.actor-profile-details dd {
+    margin: 0;
+}
+
+.actor-profile-roles {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.65rem;
+}
+
+.actor-profile-roles li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem;
+}
+
+.actor-profile-role-project {
+    font-size: 0.85rem;
+    color: var(--muted-fg, #64748b);
+}
+
+.actor-profile-empty {
+    margin: 0;
+}
+
+@media (min-width: 640px) {
+    .actor-profile-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .actor-profile-card:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 640px) {
+    .casting-list-item {
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .casting-list-actions {
+        align-self: flex-start;
+    }
+
+    .actor-profile-details div {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+    }
+}
+
 .confirm-modal {
     position: fixed;
     inset: 0;

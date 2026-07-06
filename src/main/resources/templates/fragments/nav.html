@@ -105,6 +105,9 @@
     (function() {
         let lastFocusedEditable = null;
         let hoveredRow = null;
+        if (typeof window.scriptyBlockEditLocked === 'undefined') {
+            window.scriptyBlockEditLocked = false;
+        }
 
         // Spellcheck state management
         function applySpellcheckToElement(el, state) {
@@ -361,7 +364,12 @@
 
             document.body.addEventListener('htmx:beforeRequest', function(e) {
                 const path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
-                if (path.indexOf('/block/editInline') === -1 || e.detail.verb !== 'get') return;
+                if (path.indexOf('/block/editInline') === -1) return;
+                if (window.scriptyBlockEditLocked) {
+                    e.preventDefault();
+                    return;
+                }
+                if (e.detail.verb !== 'get') return;
                 if (window.scriptySuppressBlockEditClick) {
                     e.preventDefault();
                 }
@@ -658,12 +666,15 @@
             var bookmarksToggle = document.getElementById('nav-bookmarks-toggle');
             var pinsToggle = document.getElementById('nav-pins-toggle');
             var selectToggle = document.getElementById('nav-select-toggle');
+            var lockToggle = document.getElementById('nav-lock-toggle');
             var bookmarksKey = 'scripty-show-block-bookmarks-project-' + projectId;
             var pinsKey = 'scripty-show-block-pins-project-' + projectId;
             var selectKey = 'scripty-show-block-select-project-' + projectId;
+            var blockEditLockedKey = 'scripty-block-edit-locked-project-' + projectId;
             var showBookmarks = localStorage.getItem(bookmarksKey);
             var showPins = localStorage.getItem(pinsKey);
             var showSelect = localStorage.getItem(selectKey);
+            var blockEditLocked = localStorage.getItem(blockEditLockedKey) === 'true';
 
             showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
             showPins = showPins === null ? false : showPins !== 'false';
@@ -673,6 +684,45 @@
                 document.documentElement.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);
                 document.documentElement.classList.toggle('scripty-hide-block-pins', !showPins);
                 document.documentElement.classList.toggle('scripty-hide-block-select', !showSelect);
+            }
+
+            function applyBlockEditLock() {
+                window.scriptyBlockEditLocked = blockEditLocked;
+                document.documentElement.classList.toggle('scripty-block-edit-locked', blockEditLocked);
+            }
+
+            function cleanupUnsavedCreateRows() {
+                document.querySelectorAll('.block-row:not([data-block-id]), tr:not([data-block-id])').forEach(function(row) {
+                    if (row.querySelector('textarea[name="content"]')) {
+                        row.remove();
+                    }
+                });
+            }
+
+            function closeBlockEditsForLock(done) {
+                var forms = Array.from(document.querySelectorAll('.block-content form[hx-post*="/block/editInline"]'));
+                if (forms.length === 0) {
+                    cleanupUnsavedCreateRows();
+                    if (done) done();
+                    return;
+                }
+                var pending = forms.length;
+                forms.forEach(function(form) {
+                    var textarea = form.querySelector('textarea[name="content"]');
+                    var finish = function() {
+                        pending--;
+                        if (pending === 0) {
+                            cleanupUnsavedCreateRows();
+                            if (done) done();
+                        }
+                    };
+                    if (textarea && textarea.value.trim() !== '') {
+                        closeBlockEdit(form, finish);
+                    } else {
+                        revertEmptySavedBlockEdit(form);
+                        finish();
+                    }
+                });
             }
 
             function syncBookmarkToggleUi() {
@@ -697,6 +747,14 @@
                 selectToggle.classList.toggle('is-active', !showSelect);
                 selectToggle.title = showSelect ? 'Hide select checkboxes in blocks' : 'Show select checkboxes in blocks';
                 selectToggle.setAttribute('aria-label', selectToggle.title);
+            }
+
+            function syncLockToggleUi() {
+                if (!lockToggle) return;
+                lockToggle.setAttribute('aria-pressed', blockEditLocked ? 'true' : 'false');
+                lockToggle.classList.toggle('is-active', blockEditLocked);
+                lockToggle.title = blockEditLocked ? 'Unlock block text editing' : 'Lock block text editing';
+                lockToggle.setAttribute('aria-label', lockToggle.title);
             }
 
             function clearBlockSelections() {
@@ -742,10 +800,33 @@
                 });
             }
 
+            if (lockToggle && !lockToggle.dataset.markerToggleInit) {
+                lockToggle.dataset.markerToggleInit = 'true';
+                syncLockToggleUi();
+                applyBlockEditLock();
+                lockToggle.addEventListener('click', function() {
+                    if (!blockEditLocked) {
+                        closeBlockEditsForLock(function() {
+                            blockEditLocked = true;
+                            localStorage.setItem(blockEditLockedKey, 'true');
+                            syncLockToggleUi();
+                            applyBlockEditLock();
+                        });
+                        return;
+                    }
+                    blockEditLocked = false;
+                    localStorage.setItem(blockEditLockedKey, 'false');
+                    syncLockToggleUi();
+                    applyBlockEditLock();
+                });
+            }
+
             syncBookmarkToggleUi();
             syncPinToggleUi();
             syncSelectToggleUi();
+            syncLockToggleUi();
             applyMarkerVisibility();
+            applyBlockEditLock();
         };
 
         window.scriptyInitBlockBulkSelection = function(options) {
@@ -1501,7 +1582,7 @@
         document.body.addEventListener('mousedown', function(e) {
             if (e.button !== 0) return;
             if (e.target.closest('a')) return;
-            if (window.scriptySuppressBlockEditClick) return;
+            if (window.scriptySuppressBlockEditClick || window.scriptyBlockEditLocked) return;
             const blockContent = e.target.closest('.block-content');
             if (!blockContent) return;
 

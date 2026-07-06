@@ -1660,10 +1660,19 @@ html.scripty-hide-block-select .scene-bulk-select {
     grid-template-columns: var(--block-select-col-plus) var(--block-select-col-drag);
 }
 
+html.scripty-block-edit-locked .project-script .block-content {
+    cursor: default;
+}
+
+html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/block/editInline"] textarea {
+    pointer-events: none;
+}
+
 .text-size-control .project-search-toggle.is-active,
 .text-size-control .bookmark-filter-toggle.is-active,
 .text-size-control .pin-filter-toggle.is-active,
-.text-size-control .select-filter-toggle.is-active {
+.text-size-control .select-filter-toggle.is-active,
+.text-size-control .lock-filter-toggle.is-active {
     color: var(--accent, #475569);
     border-color: var(--accent, #475569);
 }
@@ -1671,6 +1680,7 @@ html.scripty-hide-block-select .scene-bulk-select {
 .text-size-control .bookmark-filter-toggle,
 .text-size-control .pin-filter-toggle,
 .text-size-control .select-filter-toggle,
+.text-size-control .lock-filter-toggle,
 .text-size-control .spellcheck-toggle-btn {
     font-size: 1rem;
     line-height: 1;

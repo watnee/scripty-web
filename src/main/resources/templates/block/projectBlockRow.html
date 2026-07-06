@@ -8,7 +8,7 @@
     </aside>
     <div class="block-content script-block"
          th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (not #strings.isEmpty(block.personName) ? ' script-block--dialogue' : ' script-block--action')}"
-         th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')&amp;&amp;!window.scriptySuppressBlockEditClick]" hx-swap="innerHTML">
+         th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')&amp;&amp;!window.scriptySuppressBlockEditClick&amp;&amp;!window.scriptyBlockEditLocked]" hx-swap="innerHTML">
         <p th:if="${not #strings.isEmpty(block.personName)}" class="script-character-name">
             <strong class="reader-visible-character-name" th:text="${#strings.toUpperCase(block.personName)}"></strong>
             <a th:href="@{/character/show(id=${block.personId})}" class="character-name hide-in-reader-view sidebar menu" th:text="${block.personName}"></a>

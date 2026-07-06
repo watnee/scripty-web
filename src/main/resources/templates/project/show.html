@@ -8,13 +8,16 @@
         var showBookmarks = localStorage.getItem('scripty-show-block-bookmarks-project-' + projectId);
         var showPins = localStorage.getItem('scripty-show-block-pins-project-' + projectId);
         var showSelect = localStorage.getItem('scripty-show-block-select-project-' + projectId);
+        var blockEditLocked = localStorage.getItem('scripty-block-edit-locked-project-' + projectId) === 'true';
         showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
         showPins = showPins === null ? false : showPins !== 'false';
         showSelect = showSelect === null ? false : showSelect !== 'false';
+        window.scriptyBlockEditLocked = blockEditLocked;
         var root = document.documentElement;
         root.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);
         root.classList.toggle('scripty-hide-block-pins', !showPins);
         root.classList.toggle('scripty-hide-block-select', !showSelect);
+        root.classList.toggle('scripty-block-edit-locked', blockEditLocked);
     })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -62,6 +65,14 @@
                     aria-label="Show select checkboxes in blocks"
                     title="Show select checkboxes in blocks">
                 <span th:replace="~{fragments/selectIcon :: toolbarIcon}"></span>
+            </button>
+            <button id="nav-lock-toggle"
+                    type="button"
+                    class="nav-dropdown-toggle lock-filter-toggle"
+                    aria-pressed="false"
+                    aria-label="Lock block text editing"
+                    title="Lock block text editing">
+                <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
             </button>
             <span th:replace="~{fragments/spellcheckToggle :: toolbarButton}"></span>
             <div class="nav-dropdown project-search-dropdown" id="project-search-dropdown">
@@ -203,6 +214,7 @@
                     <span class="bulk-selection-count" id="project-bulk-count">0 selected</span>
                     <input type="text" id="project-bulk-tags-input" placeholder="Add tags…" aria-label="Tags to add to selected blocks" />
                     <button type="button" id="project-bulk-add-tags-btn" title="Add tags to selected blocks">Tag</button>
+                    <button type="button" id="project-bulk-copy-btn" title="Copy selected block text">Copy</button>
                     <button type="button" id="project-bulk-delete-btn" class="bad" title="Delete selected blocks">Delete</button>
                 </div>
                 <div class="element-type-actions hide-in-reader-view sidebar menu">
@@ -366,6 +378,106 @@
                 bulkSetType(btn.getAttribute('data-bulk-type'));
             });
         });
+
+        function getBlockRowCopyText(row) {
+            if (!row) return '';
+
+            if (row.classList.contains('scene-header-row')) {
+                var sceneName = row.querySelector('.scene-name-display');
+                if (sceneName && !sceneName.querySelector('.scene-name-placeholder')) {
+                    return sceneName.textContent.trim();
+                }
+                var sceneSection = row.closest('.script-scene');
+                var readerSceneName = sceneSection ? sceneSection.querySelector('.reader-visible-scene-name') : null;
+                return readerSceneName ? readerSceneName.textContent.trim() : '';
+            }
+
+            var content = row.querySelector('.block-content');
+            if (!content) return '';
+
+            var lines = [];
+            var character = content.querySelector('.reader-visible-character-name, .character-name');
+            if (character) {
+                lines.push(character.textContent.trim());
+            }
+
+            var textarea = content.querySelector('textarea[name="content"]');
+            var textEl = content.querySelector('.reader-visible-text, .script-block-text:not(textarea)');
+            if (textarea && content.querySelector('form:focus-within')) {
+                lines.push(textarea.value);
+            } else if (textEl) {
+                lines.push(textEl.textContent);
+            } else if (textarea) {
+                lines.push(textarea.value);
+            }
+
+            return lines.join('\n').trimEnd();
+        }
+
+        function copyTextToClipboard(text, button) {
+            if (!text) return;
+
+            function markCopied() {
+                if (!button) return;
+                var original = button.textContent;
+                button.textContent = 'Copied';
+                button.classList.add('is-copied');
+                window.setTimeout(function() {
+                    button.textContent = original;
+                    button.classList.remove('is-copied');
+                }, 1500);
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(markCopied).catch(function() {
+                    var textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.setAttribute('readonly', '');
+                    textarea.style.position = 'fixed';
+                    textarea.style.left = '-9999px';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    markCopied();
+                });
+            } else {
+                var fallback = document.createElement('textarea');
+                fallback.value = text;
+                fallback.setAttribute('readonly', '');
+                fallback.style.position = 'fixed';
+                fallback.style.left = '-9999px';
+                document.body.appendChild(fallback);
+                fallback.select();
+                document.execCommand('copy');
+                document.body.removeChild(fallback);
+                markCopied();
+            }
+        }
+
+        var bulkCopyBtn = document.getElementById('project-bulk-copy-btn');
+        if (bulkCopyBtn) {
+            bulkCopyBtn.addEventListener('click', function() {
+                var checkboxes = document.querySelectorAll('.block-row[data-block-id] .block-select-checkbox:checked, tr[data-block-id] .block-select-checkbox:checked, .scene-header-row .block-select-checkbox:checked');
+                if (checkboxes.length === 0) {
+                    alert('Please select at least one block.');
+                    return;
+                }
+
+                var text = Array.from(checkboxes).map(function(cb) {
+                    return getBlockRowCopyText(cb.closest('.block-row, tr[data-block-id]'));
+                }).filter(function(value) {
+                    return value.length > 0;
+                }).join('\n');
+
+                if (!text) {
+                    alert('No text to copy in the selected blocks.');
+                    return;
+                }
+
+                copyTextToClipboard(text, bulkCopyBtn);
+            });
+        }
 
         var bulkDeleteBtn = document.getElementById('project-bulk-delete-btn');
         if (bulkDeleteBtn) {

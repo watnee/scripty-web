@@ -4598,6 +4598,30 @@ main h3 {
     }
 }
 
+html:not(.safari-reader-view) .project-script h2.scene-header {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+html:not(.safari-reader-view) .block-content .reader-visible-character-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 html.safari-reader-view .hide-in-reader-view {
     display: none !important;
 }
@@ -4646,7 +4670,6 @@ html.safari-reader-view .project-script .script-scene:first-of-type .scene-heade
     margin-top: 0;
 }
 
-html.safari-reader-view .project-script .reader-visible-text,
 html.safari-reader-view .project-script .script-block-text {
     margin: 0 0 1rem;
 }
@@ -4665,34 +4688,13 @@ html.safari-reader-view .project-script .reader-visible-scene-name {
     display: inline;
 }
 
-html:not(.safari-reader-view) .block-content:not(:has(.block-inline-edit-form)) .reader-visible-text,
-html:not(.safari-reader-view) .block-content:not(:has(form[hx-post*="/block/editInline"])) .reader-visible-text {
-    display: none;
-}
-
-html:not(.safari-reader-view) .block-content .reader-visible-character-name {
-    display: none;
-}
-
-html.safari-reader-view .block-content .script-block-text {
-    display: none !important;
-}
-
-.block-content:has(.block-inline-edit-form) .reader-visible-text,
-.block-content:has(form[hx-post*="/block/editInline"]) .reader-visible-text {
-    display: none;
-}
-
-html.safari-reader-view .block-content .reader-visible-text {
-    display: block !important;
-    position: static !important;
-    width: auto !important;
-    height: auto !important;
-    margin: 0 !important;
-    overflow: visible !important;
-    clip: auto !important;
-    white-space: pre-wrap !important;
-    border: 0 !important;
+html.safari-reader-view .project-script h2.scene-header {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
 }
 
 html.safari-reader-view .block-content .block-inline-edit-form,
@@ -4701,16 +4703,8 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
 }
 
 @media print {
-    .block-content .reader-visible-text {
+    .block-content .script-block-text:not(textarea) {
         display: block !important;
-        position: static !important;
-        width: auto !important;
-        height: auto !important;
-        margin: 0 !important;
-        overflow: visible !important;
-        clip: auto !important;
-        white-space: pre-wrap !important;
-        border: 0 !important;
     }
 
     .block-content .block-inline-edit-form,

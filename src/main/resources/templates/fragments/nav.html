@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<header th:fragment="nav(currentPage)">
+<header th:fragment="nav(currentPage)" class="sidebar menu">
     <meta name="app-asset-version" th:content="${assetVersion}">
     <script>
         (function() {
@@ -1508,10 +1508,10 @@
             const form = blockContent.querySelector('.block-inline-edit-form, form[hx-post*="/block/editInline"]');
             if (form && form.contains(document.activeElement)) return;
 
-            let textEl = e.target.closest('.reader-visible-text, .script-block-text');
+            let textEl = e.target.closest('.script-block-text');
             if (textEl && textEl.tagName === 'TEXTAREA') textEl = null;
             if (!textEl) {
-                textEl = blockContent.querySelector('.reader-visible-text, .script-block-text:not(textarea)');
+                textEl = blockContent.querySelector('.script-block-text:not(textarea)');
             }
             if (!textEl || textEl.tagName === 'TEXTAREA') return;
 
@@ -1563,11 +1563,8 @@
 
         window.scriptySyncProjectNameDisplay = syncProjectNameDisplay;
 
-        function syncReaderVisibleText(textarea) {
-            const blockContent = textarea.closest('.block-content');
-            if (!blockContent) return;
-            const mirror = blockContent.querySelector('.reader-visible-text');
-            if (mirror) mirror.textContent = textarea.value;
+        function syncReaderVisibleText(_textarea) {
+            /* script-block-text is the single article paragraph; no mirror needed */
         }
 
         function commitOpenBlockEdits() {

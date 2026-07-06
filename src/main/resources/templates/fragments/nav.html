@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <header th:fragment="nav(currentPage)">
+    <meta name="app-asset-version" th:content="${assetVersion}">
     <script>
         (function() {
             const storedTheme = localStorage.getItem('theme') || 'system';
@@ -335,48 +336,9 @@
         }
 
         function initBlockEmptyBackspace() {
-            if (window._scriptyBlockEmptyGuardInstalled) return;
-            window._scriptyBlockEmptyGuardInstalled = true;
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key !== 'Backspace' && e.key !== 'Delete') return;
-                const ta = e.target;
-                if (!isBlockContentTextarea(ta) || !isEmptyAtStart(ta)) return;
-
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                handleEmptyBlockBackspace(ta);
-            }, true);
-
-            document.addEventListener('beforeinput', function(e) {
-                const ta = e.target;
-                if (!isBlockContentTextarea(ta)) return;
-                if (e.inputType !== 'deleteContentBackward' && e.inputType !== 'deleteContentForward') return;
-                if (ta.value.trim() !== '' || ta.selectionStart !== ta.selectionEnd) return;
-
-                e.preventDefault();
-            }, true);
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key !== 'Escape') return;
-                const ta = e.target;
-                if (!isBlockContentTextarea(ta) || !isCreateBlockTextarea(ta)) return;
-                if (ta.value.trim() !== '') return;
-
-                e.preventDefault();
-                const row = findAnyBlockRow(ta);
-                const prevRow = row ? findAdjacentBlockRow(row, 'moveUp') : null;
-                if (removeEmptyCreateRow(row)) {
-                    focusBlockContentEnd(prevRow);
-                }
-            });
-
-            // Prevent browser "back" navigation when backspace is pressed outside a field.
-            document.addEventListener('keydown', function(e) {
-                if (e.key !== 'Backspace') return;
-                if (isEditable(e.target)) return;
-                e.preventDefault();
-            });
+            if (window.scriptyInstallBlockEmptyGuard) {
+                window.scriptyInstallBlockEmptyGuard();
+            }
         }
 
         function initBlockEditGuards() {
@@ -410,6 +372,17 @@
                     if (form.contains(e.target)) return;
                     revertEmptySavedBlockEdit(form);
                 });
+            });
+
+            document.addEventListener('focusout', function(e) {
+                const ta = e.target;
+                if (!isBlockContentTextarea(ta)) return;
+                const form = ta.closest('form[hx-post*="/block/editInline"]');
+                if (!form || ta.value.trim() !== '') return;
+                setTimeout(function() {
+                    if (form.contains(document.activeElement)) return;
+                    revertEmptySavedBlockEdit(form);
+                }, 0);
             });
         }
 
@@ -1784,14 +1757,23 @@
             });
         }
 
+        function syncStylesheetVersion() {
+            const meta = document.querySelector('meta[name="app-asset-version"]');
+            const link = document.querySelector('link[href*="/css/scripty.css"]');
+            if (!meta || !link) return;
+            const expected = meta.getAttribute('content');
+            if (!expected) return;
+            const href = link.getAttribute('href') || '';
+            if (href.indexOf('v=' + expected) !== -1) return;
+            link.href = '/css/scripty.css?v=' + expected;
+        }
+
         // Run on initial load
         function initAll() {
+            syncStylesheetVersion();
             initBlockEmptyBackspace();
             initBlockEditGuards();
             initBlockTextSelection();
-            if (window.scriptyInstallBlockEmptyGuard) {
-                window.scriptyInstallBlockEmptyGuard();
-            }
             initHistoryDropdown();
             initUserDropdown();
             initHelpDropdown();
@@ -1824,6 +1806,7 @@
         // Run on HTMX content swaps
         document.body.addEventListener('htmx:afterSwap', initAll);
         document.body.addEventListener('htmx:afterSettle', function() {
+            syncStylesheetVersion();
             updateLastEditedTimes();
             requestAnimationFrame(focusBlockTextareaFromClick);
         });

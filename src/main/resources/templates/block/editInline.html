@@ -1,7 +1,7 @@
 <p xmlns:th="http://www.thymeleaf.org" th:if="${block != null and not #strings.isEmpty(block.personName)}" class="script-character-name">
     <a th:href="@{/character/show(id=${block.personId})}" class="character-name" th:text="${block.personName}"></a>
 </p>
-<form xmlns:th="http://www.thymeleaf.org" class="hide-in-reader-view block-inline-edit-form" th:attr="hx-post=@{/block/editInline}" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="change from:find select, focusout from:find textarea">
+<form xmlns:th="http://www.thymeleaf.org" class="hide-in-reader-view block-inline-edit-form" th:attr="hx-post=@{/block/editInline}" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="change from:find select, focusout[target.value.trim()!=''] from:find textarea">
     <input type="hidden" name="id" th:value="${commandModel.id}" />
     <input type="hidden" name="personId" th:value="${commandModel.personId}" />
     <input type="hidden" name="tags" th:value="${commandModel.tags}" />

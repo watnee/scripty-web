@@ -18,7 +18,4 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
 
     @EntityGraph(attributePaths = "teams")
     Optional<Project> findWithTeamsById(Integer id);
-
-    @Query("SELECT s.project FROM Scene s WHERE s.id = :sceneId")
-    Project findBySceneId(Integer sceneId);
 }

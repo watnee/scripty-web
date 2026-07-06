@@ -16,6 +16,7 @@ import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
+import com.scripty.viewmodel.project.projectlist.ProjectTeamViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.PersonViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
@@ -24,6 +25,7 @@ import com.scripty.viewmodel.project.projectprofile.SceneViewModel;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -176,11 +178,26 @@ public class ProjectServiceImpl implements ProjectService {
             ProjectViewModel pvm = new ProjectViewModel();
             pvm.setId(project.getId());
             pvm.setTitle(project.getTitle());
-            pvm.setTeams(project.getTeamNames());
+            pvm.setTeams(mapProjectTeams(project.getTeams()));
             pvm.setLastEdited(project.getLastEdited());
             projectViewModels.add(pvm);
         }
         return projectViewModels;
+    }
+
+    private List<ProjectTeamViewModel> mapProjectTeams(List<Team> teams) {
+        if (teams == null || teams.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return teams.stream()
+                .sorted(Comparator.comparing(Team::getName))
+                .map(team -> {
+                    ProjectTeamViewModel teamViewModel = new ProjectTeamViewModel();
+                    teamViewModel.setId(team.getId());
+                    teamViewModel.setName(team.getName());
+                    return teamViewModel;
+                })
+                .collect(Collectors.toList());
     }
 
     private void sortProjectsByLastEdited(List<Project> projects) {

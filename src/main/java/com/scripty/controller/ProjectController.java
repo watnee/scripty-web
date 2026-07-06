@@ -9,6 +9,7 @@ import com.scripty.dto.User;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
+import com.scripty.viewmodel.project.projectlist.ProjectTeamViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.service.BlockService;
@@ -341,8 +342,8 @@ public class ProjectController {
             if (project.getTeams() == null) {
                 continue;
             }
-            for (String teamName : project.getTeams()) {
-                if (teamNames.contains(teamName)) {
+            for (ProjectTeamViewModel team : project.getTeams()) {
+                if (teamNames.contains(team.getName())) {
                     teamProductions.add(project);
                     break;
                 }

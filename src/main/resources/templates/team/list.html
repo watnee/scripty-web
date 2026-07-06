@@ -25,6 +25,7 @@
             <table class="team-list-table project-list-table">
                 <tbody>
                     <tr th:each="teamItem : ${teams}"
+                        th:id="'team-' + ${teamItem.id}"
                         class="team-list-row project-list-row"
                         th:with="teamName=${teamItem.name}, assignedProjects=${productionsByTeamId.get(teamItem.id)}">
                         <td class="team-list-main-cell">

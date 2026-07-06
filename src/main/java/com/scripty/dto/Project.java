@@ -119,4 +119,10 @@ public class Project {
                 .sorted(Comparator.naturalOrder())
                 .collect(Collectors.toList());
     }
+
+    public List<Team> getSortedTeams() {
+        return teams.stream()
+                .sorted(Comparator.comparing(Team::getName))
+                .collect(Collectors.toList());
+    }
 }

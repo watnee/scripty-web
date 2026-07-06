@@ -16,7 +16,7 @@ public class ProjectViewModel {
     
     private int id;
     private String title;
-    private List<String> teams;
+    private List<ProjectTeamViewModel> teams;
     private LocalDateTime lastEdited;
 
     public int getId() {
@@ -35,11 +35,11 @@ public class ProjectViewModel {
         this.title = title;
     }
 
-    public List<String> getTeams() {
+    public List<ProjectTeamViewModel> getTeams() {
         return teams;
     }
 
-    public void setTeams(List<String> teams) {
+    public void setTeams(List<ProjectTeamViewModel> teams) {
         this.teams = teams;
     }
 

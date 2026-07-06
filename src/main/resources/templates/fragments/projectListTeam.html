@@ -1,0 +1,5 @@
+<a xmlns:th="http://www.thymeleaf.org"
+   th:fragment="link(teamId, teamName)"
+   th:href="@{/team/list} + '#team-' + ${teamId}"
+   class="project-list-team"
+   th:text="${teamName}"></a>

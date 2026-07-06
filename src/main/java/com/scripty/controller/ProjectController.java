@@ -111,6 +111,7 @@ public class ProjectController {
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("syncRevision", projectRevision(viewModel.getLastEdited()));
+        model.addAttribute("shareAccessUsers", projectService.getProjectShareAccessUsers(id));
 
         return "project/show";
     }

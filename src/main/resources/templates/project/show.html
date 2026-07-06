@@ -123,6 +123,25 @@
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
             </a>
+            <div class="nav-dropdown project-share-dropdown" id="project-share-dropdown">
+                <button class="nav-dropdown-toggle project-share-toggle share-toolbar-btn"
+                        type="button"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-label="Share project"
+                        title="Share project">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                </button>
+                <div class="nav-dropdown-menu project-share-menu">
+                    <div th:replace="~{fragments/projectSharePanel :: panel(${viewModel.id}, ${shareAccessUsers}, ${viewModel.teams})}"></div>
+                </div>
+            </div>
             <form id="project-import-form"
                   th:action="@{/project/import(id=${viewModel.id})}"
                   method="post"
@@ -518,6 +537,88 @@
         window.addEventListener('beforeprint', performSearch);
         window.addEventListener('afterprint', performSearch);
         window.addEventListener('scripty:project-script-refreshed', performSearch);
+    })();
+    </script>
+    <script th:inline="javascript">
+    (function() {
+        const shareDropdown = document.getElementById('project-share-dropdown');
+        const shareToggle = shareDropdown ? shareDropdown.querySelector('.project-share-toggle') : null;
+        const projectId = /*[[${viewModel.id}]]*/ 0;
+        if (!shareDropdown || !projectId) return;
+
+        const shareLinkInput = shareDropdown.querySelector('.project-share-link-input');
+        if (shareLinkInput && !shareLinkInput.value) {
+            shareLinkInput.value = window.location.origin + '/project/show?id=' + projectId;
+        }
+
+        function setShareOpen(isOpen) {
+            shareDropdown.classList.toggle('open', isOpen);
+            if (shareToggle) {
+                shareToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            }
+        }
+
+        if (shareToggle) {
+            shareToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isOpen = shareDropdown.classList.contains('open');
+                document.querySelectorAll('.nav-dropdown').forEach(function(d) {
+                    d.classList.remove('open');
+                    const toggle = d.querySelector('.nav-dropdown-toggle');
+                    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+                });
+                setShareOpen(!isOpen);
+            });
+        }
+
+        shareDropdown.addEventListener('click', function(e) {
+            const copyBtn = e.target.closest('.project-share-copy-btn');
+            if (!copyBtn) return;
+            e.preventDefault();
+            const targetId = copyBtn.getAttribute('data-copy-target');
+            const input = targetId ? document.getElementById(targetId) : shareLinkInput;
+            const link = input ? input.value : '';
+            if (!link) return;
+
+            function markCopied() {
+                copyBtn.textContent = 'Copied';
+                copyBtn.classList.add('is-copied');
+                window.setTimeout(function() {
+                    copyBtn.textContent = 'Copy';
+                    copyBtn.classList.remove('is-copied');
+                }, 1500);
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(link).then(markCopied).catch(function() {
+                    if (input) {
+                        input.focus();
+                        input.select();
+                        document.execCommand('copy');
+                        markCopied();
+                    }
+                });
+            } else if (input) {
+                input.focus();
+                input.select();
+                document.execCommand('copy');
+                markCopied();
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!shareDropdown.classList.contains('open')) return;
+            if (!shareDropdown.contains(e.target)) {
+                setShareOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && shareDropdown.classList.contains('open')) {
+                setShareOpen(false);
+                if (shareToggle) shareToggle.focus();
+            }
+        });
     })();
     </script>
     <script th:inline="javascript">

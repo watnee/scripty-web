@@ -9,6 +9,8 @@ import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
+import com.scripty.viewmodel.project.projectprofile.ProjectShareUserViewModel;
+import java.util.List;
 
 public interface ProjectService {
 
@@ -31,4 +33,6 @@ public interface ProjectService {
     Project deleteProject(Integer id);
 
     void setProjectTeams(Integer projectId, java.util.List<Integer> teamIds);
+
+    List<ProjectShareUserViewModel> getProjectShareAccessUsers(Integer projectId);
 }

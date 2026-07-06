@@ -7,6 +7,7 @@ import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
 import com.scripty.dto.Team;
+import com.scripty.dto.User;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
@@ -18,6 +19,7 @@ import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.PersonViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
+import com.scripty.viewmodel.project.projectprofile.ProjectShareUserViewModel;
 import com.scripty.viewmodel.project.projectprofile.SceneViewModel;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,16 +35,19 @@ public class ProjectServiceImpl implements ProjectService {
     private final PersonRepository personRepository;
     private final BlockRepository blockRepository;
     private final TeamRepository teamRepository;
+    private final UserService userService;
 
     @Autowired
     public ProjectServiceImpl(ProjectRepository projectRepository,
                               PersonRepository personRepository,
                               BlockRepository blockRepository,
-                              TeamRepository teamRepository) {
+                              TeamRepository teamRepository,
+                              UserService userService) {
         this.projectRepository = projectRepository;
         this.personRepository = personRepository;
         this.blockRepository = blockRepository;
         this.teamRepository = teamRepository;
+        this.userService = userService;
     }
 
     @Override
@@ -99,6 +104,69 @@ public class ProjectServiceImpl implements ProjectService {
             }
         }
         return false;
+    }
+
+    private boolean canUserAccessProject(Project project, User user) {
+        if (!user.isEnabled()) {
+            return false;
+        }
+        if (user.isAdmin() || user.isDirector() || user.isProducer()) {
+            return true;
+        }
+        String userTeam = user.getTeam();
+        if (userTeam == null || userTeam.isEmpty()) {
+            return project.getTeams().isEmpty();
+        }
+        return canUserAccessProject(project, userTeam);
+    }
+
+    @Override
+    public List<ProjectShareUserViewModel> getProjectShareAccessUsers(Integer projectId) {
+        Project project = projectRepository.findWithTeamsById(projectId).orElse(null);
+        if (project == null) {
+            return List.of();
+        }
+
+        List<ProjectShareUserViewModel> users = new ArrayList<>();
+        for (User user : userService.list()) {
+            if (!canUserAccessProject(project, user)) {
+                continue;
+            }
+            ProjectShareUserViewModel vm = new ProjectShareUserViewModel();
+            vm.setDisplayName(formatShareUserDisplayName(user));
+            vm.setAccessLabel(formatShareUserAccessLabel(user));
+            users.add(vm);
+        }
+
+        users.sort(Comparator.comparing(ProjectShareUserViewModel::getDisplayName, String.CASE_INSENSITIVE_ORDER));
+        return users;
+    }
+
+    private String formatShareUserDisplayName(User user) {
+        String first = user.getFirstName() != null ? user.getFirstName().trim() : "";
+        String last = user.getLastName() != null ? user.getLastName().trim() : "";
+        String fullName = (first + " " + last).trim();
+        if (!fullName.isEmpty()) {
+            return fullName;
+        }
+        return user.getUsername();
+    }
+
+    private String formatShareUserAccessLabel(User user) {
+        if (user.isAdmin()) {
+            return "Admin";
+        }
+        if (user.isDirector()) {
+            return "Director";
+        }
+        if (user.isProducer()) {
+            return "Producer";
+        }
+        String team = user.getTeam();
+        if (team == null || team.trim().isEmpty()) {
+            return "All projects";
+        }
+        return team.trim();
     }
 
     private List<ProjectViewModel> mapProjectViewModels(List<Project> projects) {

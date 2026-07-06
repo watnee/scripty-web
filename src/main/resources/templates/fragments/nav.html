@@ -27,7 +27,6 @@
             <a th:if="${globalDefaultProjectId != null}" th:href="@{/project/show(id=${globalDefaultProjectId})}" th:aria-current="(${isDefault} != null and ${isDefault}) ? 'page'" class="nav-default-project" th:title="'Default Project: ' + ${globalDefaultProjectTitle}">
                 <span class="star-icon">★</span><span class="title-text" th:text="${globalDefaultProjectTitle}"></span>
             </a>
-            <a th:href="@{/actor/list}" th:aria-current="${currentPage == 'casting'} ? 'page'">Casting</a>
         </th:block>
         <div class="nav-dropdown help-dropdown" id="help-dropdown">
             <button class="nav-dropdown-toggle help-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Help" title="Help"

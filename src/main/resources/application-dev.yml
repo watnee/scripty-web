@@ -1,6 +1,4 @@
 spring:
-  main:
-    lazy-initialization: true
   devtools:
     restart:
       poll-interval: 1s

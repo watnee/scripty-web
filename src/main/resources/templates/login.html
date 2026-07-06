@@ -15,7 +15,7 @@
     <main class="home">
         <h1>Scripty</h1>
         <p th:if="${param.login_error}" >Incorrect Username or Password.</p>
-        <form method="POST" th:action="@{/perform-login}" hx-boost="false">
+        <form method="POST" th:action="@{/login}" hx-boost="false">
             <label>
                 Username
                 <input type="text" name="username" placeholder="Username" />

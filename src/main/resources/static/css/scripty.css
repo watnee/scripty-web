@@ -5534,6 +5534,12 @@ body.focus-mode .project-script {
     align-self: start;
 }
 
+/* Script blocks carry a 1em top margin; shift side controls to line up with the first text line */
+.project-script aside.block-left-controls:has(+ .block-content.script-block),
+.project-script .block-content.script-block + aside.block-actions {
+    margin-top: calc(1em - 2px);
+}
+
 .project-script aside.block-left-controls {
     justify-self: end;
 }

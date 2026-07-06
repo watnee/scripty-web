@@ -1723,15 +1723,20 @@ html.scripty-hide-block-pins .block-action-pin {
     max-width: 1100px;
     margin: 0 auto;
     padding: 0 1.25rem 2.5rem;
+    line-height: 1.5;
+}
+
+.casting-list-page .casting-list-toolbar {
+    margin-bottom: 1.25rem;
 }
 
 .casting-page-grid {
     display: grid;
-    gap: 1.5rem;
+    gap: 0.85rem;
 }
 
-.casting-section {
-    min-width: 0;
+.casting-page-grid--split {
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .casting-section-header {
@@ -1739,13 +1744,23 @@ html.scripty-hide-block-pins .block-action-pin {
     justify-content: space-between;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 0.75rem;
+    min-height: 2.5rem;
+    flex-shrink: 0;
+}
+
+.casting-section-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
 }
 
 .casting-section-header h2 {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: 0.02em;
 }
 
 .casting-section-action-btn {
@@ -1754,6 +1769,7 @@ html.scripty-hide-block-pins .block-action-pin {
     justify-content: center;
     margin: 0;
     padding: 0.45rem 0.85rem;
+    min-width: 8.5rem;
     border-radius: 999px;
     border: 1px solid var(--border, #cbd5e1);
     background: var(--box-bg, #ffffff);
@@ -1776,6 +1792,12 @@ html.scripty-hide-block-pins .block-action-pin {
     border: 1px dashed var(--border, #cbd5e1);
     border-radius: 12px;
     background: var(--accent-bg, rgba(0, 0, 0, 0.02));
+    flex: 1;
+}
+
+.casting-list-page .casting-list-panel {
+    flex: 1;
+    height: 100%;
 }
 
 .casting-section-empty .project-list-empty-title {
@@ -1787,23 +1809,66 @@ html.scripty-hide-block-pins .block-action-pin {
 }
 
 @media (min-width: 960px) {
-    .casting-page-grid:has(> .casting-section + .casting-section) {
+    .casting-page-grid--split {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-areas:
+            "characters-header actors-header"
+            "characters-body actors-body";
+        column-gap: 1.75rem;
+        row-gap: 0.85rem;
         align-items: start;
+    }
+
+    .casting-section-header--characters {
+        grid-area: characters-header;
+    }
+
+    .casting-section-header--actors {
+        grid-area: actors-header;
+    }
+
+    .casting-section-body--characters {
+        grid-area: characters-body;
+        align-self: stretch;
+    }
+
+    .casting-section-body--actors {
+        grid-area: actors-body;
+        align-self: stretch;
+    }
+}
+
+@media (max-width: 959px) {
+    .casting-page-grid--split .casting-section-header--characters {
+        order: 1;
+    }
+
+    .casting-page-grid--split .casting-section-body--characters {
+        order: 2;
+    }
+
+    .casting-page-grid--split .casting-section-header--actors {
+        order: 3;
+    }
+
+    .casting-page-grid--split .casting-section-body--actors {
+        order: 4;
     }
 }
 
 .casting-list-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
 }
 
 .casting-list-header h1 {
-    margin: 0 0 0.35rem;
+    margin: 0 0 0.5rem;
+    line-height: 1.2;
 }
 
 .casting-list-header-text p {
     margin: 0;
     font-size: 0.95rem;
+    line-height: 1.55;
 }
 
 .casting-project-select-label {
@@ -1853,18 +1918,23 @@ html.scripty-hide-block-pins .block-action-pin {
     border-collapse: collapse;
 }
 
+.casting-list-page .casting-list-main-cell {
+    padding: 1rem 1.15rem;
+    vertical-align: middle;
+}
+
 .casting-list-item {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
+    align-items: center;
+    gap: 1.25rem;
     width: 100%;
 }
 
 .casting-list-info {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.45rem;
     min-width: 0;
     flex: 1;
 }
@@ -1872,52 +1942,73 @@ html.scripty-hide-block-pins .block-action-pin {
 .casting-list-name-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.65rem;
+    row-gap: 0.4rem;
     flex-wrap: wrap;
+    min-height: 1.75rem;
+}
+
+.casting-list-secondary {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 1.4rem;
 }
 
 .casting-list-name {
     font-size: 1.05rem;
     font-weight: 600;
+    line-height: 1.35;
 }
 
 .casting-list-unassigned {
     flex-shrink: 0;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    padding: 0.15rem 0.45rem;
+    padding: 0.2rem 0.5rem;
     border-radius: 999px;
     border: 1px solid var(--border, #cbd5e1);
     color: var(--muted-fg, #64748b);
     background: var(--accent-bg, rgba(0, 0, 0, 0.03));
+    line-height: 1.2;
 }
 
 .casting-list-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem 1.25rem;
-    font-size: 0.85rem;
+    gap: 0.45rem 1.5rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
     color: var(--muted-fg, #64748b);
 }
 
 .casting-list-contact {
     display: inline-flex;
     align-items: baseline;
-    gap: 0.35rem;
+    gap: 0.5rem;
 }
 
 .casting-list-contact-label {
-    font-size: 0.75rem;
+    flex-shrink: 0;
+    font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.05em;
+    line-height: 1.3;
+}
+
+.casting-list-contact-label::after {
+    content: ":";
+    margin-left: 0.05em;
 }
 
 .casting-list-contact a {
     color: inherit;
     text-decoration: none;
+    line-height: 1.45;
 }
 
 .casting-list-contact a:hover {
@@ -1928,20 +2019,22 @@ html.scripty-hide-block-pins .block-action-pin {
 .casting-list-roles {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
-    margin-top: 0.15rem;
+    gap: 0.45rem;
+    margin-top: 0;
+    line-height: 1.4;
 }
 
 .casting-list-role {
     display: inline-flex;
     align-items: center;
-    padding: 0.15rem 0.55rem;
+    padding: 0.22rem 0.65rem;
     border-radius: 999px;
     border: 1px solid var(--border, #cbd5e1);
     background: rgba(71, 85, 105, 0.08);
     color: var(--fg, inherit);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 600;
+    line-height: 1.3;
     text-decoration: none;
 }
 
@@ -1951,7 +2044,26 @@ html.scripty-hide-block-pins .block-action-pin {
 }
 
 .casting-list-actions {
-    padding-top: 0.1rem;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.casting-list-page .casting-list-row,
+.casting-list-page .casting-character-row {
+    vertical-align: middle;
+}
+
+.casting-list-page .project-list-no-results {
+    line-height: 1.5;
+    padding: 1.5rem 1.25rem;
+}
+
+.casting-section-empty {
+    line-height: 1.55;
+}
+
+.casting-section-empty .project-list-empty-title {
+    line-height: 1.3;
 }
 
 /* Actor Profile Page */
@@ -1959,6 +2071,7 @@ html.scripty-hide-block-pins .block-action-pin {
     max-width: 760px;
     margin: 0 auto;
     padding: 0 1.25rem 2.5rem;
+    line-height: 1.5;
 }
 
 .actor-profile-header {
@@ -1967,11 +2080,12 @@ html.scripty-hide-block-pins .block-action-pin {
     align-items: flex-start;
     gap: 1rem;
     flex-wrap: wrap;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
 }
 
 .actor-profile-header h1 {
     margin: 0;
+    line-height: 1.25;
 }
 
 .actor-profile-actions {
@@ -2012,7 +2126,7 @@ html.scripty-hide-block-pins .block-action-pin {
 .actor-profile-details div {
     display: grid;
     grid-template-columns: 5rem 1fr;
-    gap: 0.75rem;
+    gap: 0.85rem 1rem;
     align-items: baseline;
 }
 
@@ -2021,10 +2135,12 @@ html.scripty-hide-block-pins .block-action-pin {
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--muted-fg, #64748b);
+    line-height: 1.35;
 }
 
 .actor-profile-details dd {
     margin: 0;
+    line-height: 1.5;
 }
 
 .actor-profile-roles {
@@ -2039,7 +2155,8 @@ html.scripty-hide-block-pins .block-action-pin {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0.35rem;
+    gap: 0.4rem 0.5rem;
+    line-height: 1.5;
 }
 
 .actor-profile-role-project {

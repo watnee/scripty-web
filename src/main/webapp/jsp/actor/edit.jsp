@@ -41,6 +41,12 @@
                     <button type="submit">Submit</button>
                 </p>
             </sf:form>
+            <p>
+                <a href="${pageContext.request.contextPath}/actor/delete?id=${viewModel.id}"
+                   role="button"
+                   class="bad"
+                   onclick="return confirm('Are you sure you want to delete this actor?')">Delete</a>
+            </p>
         </main>
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <script src="${pageContext.request.contextPath}/js/_hyperscript.min.js"></script>

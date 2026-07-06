@@ -34,5 +34,5 @@ ADMIN_USERNAME: admin
 ADMIN_PASSWORD: admin
 
 app:
-  asset-version: 57
+  asset-version: 60
 

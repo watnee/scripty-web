@@ -41,6 +41,13 @@
                 <button type="submit">Submit</button>
             </p>
         </form>
+        <p>
+            <a th:href="@{/actor/delete(id=${viewModel.id})}"
+               role="button"
+               class="bad"
+               hx-boost="false"
+               onclick="return confirm('Are you sure you want to delete this actor?')">Delete</a>
+        </p>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>

@@ -71,14 +71,23 @@
             </div>
         </div>
 
-        <div class="casting-page-grid">
-            <section class="casting-section" th:if="${viewModel.characterProjectId != null}">
-                <div class="casting-section-header">
-                    <h2>Characters</h2>
-                    <a th:href="@{/character/create(projectId=${viewModel.characterProjectId})}"
-                       role="button"
-                       class="casting-section-action-btn">New Character</a>
-                </div>
+        <div class="casting-page-grid"
+             th:classappend="${viewModel.characterProjectId != null} ? ' casting-page-grid--split' : ''">
+            <div class="casting-section-header casting-section-header--characters"
+                 th:if="${viewModel.characterProjectId != null}">
+                <h2>Characters</h2>
+                <a th:href="@{/character/create(projectId=${viewModel.characterProjectId})}"
+                   role="button"
+                   class="casting-section-action-btn">New Character</a>
+            </div>
+
+            <div class="casting-section-header casting-section-header--actors">
+                <h2>Actors</h2>
+                <a th:href="@{/actor/create}" role="button" class="casting-section-action-btn">New Actor</a>
+            </div>
+
+            <div class="casting-section-body casting-section-body--characters"
+                 th:if="${viewModel.characterProjectId != null}">
 
                 <div class="casting-list-panel project-list-panel" th:if="${!#lists.isEmpty(viewModel.characters)}">
                     <table id="table-characters" class="casting-list-table">
@@ -86,7 +95,7 @@
                             <tr th:each="character : ${viewModel.characters}"
                                 class="casting-character-row project-list-row"
                                 th:attr="data-sort-name=${#strings.toLowerCase(character.name)}">
-                                <td class="casting-list-main-cell project-list-main-cell">
+                                <td class="casting-list-main-cell">
                                     <div class="casting-list-item">
                                         <div class="casting-list-info">
                                             <div class="casting-list-name-row">
@@ -98,12 +107,14 @@
                                                     Unassigned
                                                 </span>
                                             </div>
-                                            <div class="casting-list-meta" th:if="${character.actorName != null}">
-                                                <span class="casting-list-contact">
-                                                    <span class="casting-list-contact-label">Actor</span>
-                                                    <a th:href="@{/actor/show(id=${character.actorId})}"
-                                                       th:text="${character.actorName}"></a>
-                                                </span>
+                                            <div class="casting-list-secondary">
+                                                <div class="casting-list-meta" th:if="${character.actorName != null}">
+                                                    <span class="casting-list-contact">
+                                                        <span class="casting-list-contact-label">Actor</span>
+                                                        <a th:href="@{/actor/show(id=${character.actorId})}"
+                                                           th:text="${character.actorName}"></a>
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="casting-list-actions project-list-actions">
@@ -126,70 +137,68 @@
                     <p class="muted">Create characters for this project to start casting roles.</p>
                     <a th:href="@{/character/create(projectId=${viewModel.characterProjectId})}" role="button">Create New Character</a>
                 </div>
-            </section>
+            </div>
 
-            <section class="casting-section">
-                <div class="casting-section-header">
-                    <h2>Actors</h2>
-                    <a th:href="@{/actor/create}" role="button" class="casting-section-action-btn">New Actor</a>
+            <div class="casting-section-body casting-section-body--actors">
+
+                <div class="casting-list-panel project-list-panel" th:if="${!#lists.isEmpty(viewModel.actors)}">
+                    <table id="table-actors" class="casting-list-table">
+                        <tbody>
+                            <tr th:each="actor : ${viewModel.actors}"
+                                class="casting-list-row project-list-row"
+                                th:attr="data-sort-name=${#strings.toLowerCase(actor.first + ' ' + actor.last)}">
+                                <td class="casting-list-main-cell">
+                                    <div class="casting-list-item">
+                                        <div class="casting-list-info">
+                                            <div class="casting-list-name-row">
+                                                <a th:href="@{/actor/show(id=${actor.id})}"
+                                                   class="casting-list-name project-list-title"
+                                                   th:text="${actor.first + (actor.last != null && !#strings.isEmpty(actor.last) ? ' ' + actor.last : '')}"></a>
+                                                <span class="casting-list-unassigned"
+                                                      th:if="${viewModel.characterProjectId != null and #lists.isEmpty(actor.assignedCharacters)}">
+                                                    Unassigned
+                                                </span>
+                                            </div>
+                                            <div class="casting-list-secondary">
+                                                <div class="casting-list-meta" th:if="${actor.phone != null or actor.email != null}">
+                                                    <span class="casting-list-contact" th:if="${actor.phone != null}">
+                                                        <span class="casting-list-contact-label">Phone</span>
+                                                        <a th:href="'tel:' + ${actor.phone}" th:text="${actor.phone}"></a>
+                                                    </span>
+                                                    <span class="casting-list-contact" th:if="${actor.email != null}">
+                                                        <span class="casting-list-contact-label">Email</span>
+                                                        <a th:href="'mailto:' + ${actor.email}" th:text="${actor.email}"></a>
+                                                    </span>
+                                                </div>
+                                                <div class="casting-list-roles" th:if="${!#lists.isEmpty(actor.assignedCharacters)}">
+                                                    <a th:each="character : ${actor.assignedCharacters}"
+                                                       th:href="@{/character/show(id=${character.id})}"
+                                                       class="casting-list-role"
+                                                       th:text="${character.name}"></a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="casting-list-actions project-list-actions">
+                                            <a th:href="@{/actor/edit(id=${actor.id})}"
+                                               role="button"
+                                               class="project-list-action-btn">Edit</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="project-list-no-results" id="casting-list-no-results" hidden>
+                        No actors match <strong id="casting-list-search-query"></strong>.
+                    </p>
                 </div>
 
-        <div class="casting-list-panel project-list-panel" th:if="${!#lists.isEmpty(viewModel.actors)}">
-            <table id="table-actors" class="casting-list-table">
-                <tbody>
-                    <tr th:each="actor : ${viewModel.actors}"
-                        class="casting-list-row project-list-row"
-                        th:attr="data-sort-name=${#strings.toLowerCase(actor.first + ' ' + actor.last)}">
-                        <td class="casting-list-main-cell project-list-main-cell">
-                            <div class="casting-list-item">
-                                <div class="casting-list-info">
-                                    <div class="casting-list-name-row">
-                                        <a th:href="@{/actor/show(id=${actor.id})}"
-                                           class="casting-list-name project-list-title"
-                                           th:text="${actor.first} + ' ' + ${actor.last}"></a>
-                                        <span class="casting-list-unassigned"
-                                              th:if="${viewModel.characterProjectId != null and #lists.isEmpty(actor.assignedCharacters)}">
-                                            Unassigned
-                                        </span>
-                                    </div>
-                                    <div class="casting-list-meta" th:if="${actor.phone != null or actor.email != null}">
-                                        <span class="casting-list-contact" th:if="${actor.phone != null}">
-                                            <span class="casting-list-contact-label">Phone</span>
-                                            <a th:href="'tel:' + ${actor.phone}" th:text="${actor.phone}"></a>
-                                        </span>
-                                        <span class="casting-list-contact" th:if="${actor.email != null}">
-                                            <span class="casting-list-contact-label">Email</span>
-                                            <a th:href="'mailto:' + ${actor.email}" th:text="${actor.email}"></a>
-                                        </span>
-                                    </div>
-                                    <div class="casting-list-roles" th:if="${!#lists.isEmpty(actor.assignedCharacters)}">
-                                        <a th:each="character : ${actor.assignedCharacters}"
-                                           th:href="@{/character/show(id=${character.id})}"
-                                           class="casting-list-role"
-                                           th:text="${character.name}"></a>
-                                    </div>
-                                </div>
-                                <div class="casting-list-actions project-list-actions">
-                                    <a th:href="@{/actor/edit(id=${actor.id})}"
-                                       role="button"
-                                       class="project-list-action-btn">Edit</a>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <p class="project-list-no-results" id="casting-list-no-results" hidden>
-                No actors match <strong id="casting-list-search-query"></strong>.
-            </p>
-        </div>
-
-        <div class="casting-section-empty" th:if="${#lists.isEmpty(viewModel.actors)}">
-            <p class="project-list-empty-title">No actors yet</p>
-            <p class="muted">Add your first actor to start building your casting directory.</p>
-            <a th:href="@{/actor/create}" role="button">Create New Actor</a>
-        </div>
-            </section>
+                <div class="casting-section-empty" th:if="${#lists.isEmpty(viewModel.actors)}">
+                    <p class="project-list-empty-title">No actors yet</p>
+                    <p class="muted">Add your first actor to start building your casting directory.</p>
+                    <a th:href="@{/actor/create}" role="button">Create New Actor</a>
+                </div>
+            </div>
         </div>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>

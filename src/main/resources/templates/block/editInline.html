@@ -4,7 +4,10 @@
     <input type="hidden" name="id" th:value="${commandModel.id}" />
     <input type="hidden" name="sceneId" th:value="${commandModel.sceneId}" />
 
-    <textarea spellcheck="true" rows="1" style="width: 100%; height: 1.5em; min-height: 1.5em; padding: 0.25em;" name="content" th:text="${commandModel.content}"></textarea>
+    <textarea spellcheck="true" rows="1" style="width: 100%; height: 1.5em; min-height: 1.5em; padding: 0.25em;" name="content" th:text="${commandModel.content}"
+              th:attr="hx-post=@{/block/deleteInline(id=${commandModel.id})}"
+              hx-trigger="keydown[(key=='Backspace'||key=='Delete')&amp;&amp;target.value=='']"
+              hx-target="closest tr" hx-swap="delete"></textarea>
     <input type="hidden" name="personId" th:value="${commandModel.personId}" />
     <input type="hidden" name="tags" th:value="${commandModel.tags}" />
 </form>

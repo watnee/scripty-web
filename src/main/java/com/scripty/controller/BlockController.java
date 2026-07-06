@@ -48,6 +48,16 @@ public class BlockController {
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
     
+    @RequestMapping(value = "/deleteInline", method = RequestMethod.POST)
+    @org.springframework.web.bind.annotation.ResponseBody
+    public String deleteInline(@RequestParam Integer id) {
+
+        Block block = blockService.deleteBlock(id);
+        projectVersionService.autoSaveVersionForBlock(block.getId());
+
+        return "";
+    }
+
     @RequestMapping(value = "/moveUp")
     public String moveUp(@RequestParam Integer id) {
         

@@ -5147,8 +5147,21 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
     color: var(--accent, #475569);
 }
 
+.lock-filter-toggle .lock-icon--locked {
+    display: none;
+}
+
+html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--locked {
+    display: block;
+}
+
+html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
+    display: none;
+}
+
 .text-size-control .bookmark-filter-toggle svg,
 .text-size-control .pin-filter-toggle svg,
+.text-size-control .lock-filter-toggle svg,
 .text-size-control .spellcheck-toggle-btn svg,
 .text-size-control .version-history-toolbar-btn svg,
 .text-size-control .title-page-toolbar-btn svg,

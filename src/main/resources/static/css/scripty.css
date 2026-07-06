@@ -5446,8 +5446,43 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
 .text-size-control .import-toolbar-btn svg,
 .text-size-control .export-toolbar-btn svg,
 .text-size-control .share-toolbar-btn svg,
-.text-size-control .focus-toolbar-btn svg {
+.text-size-control .focus-toolbar-btn svg,
+.text-size-control .toolbar-visibility-toggle svg {
     display: block;
+}
+
+.text-size-control .toolbar-visibility-icon--hidden {
+    display: none;
+}
+
+html.scripty-toolbar-hidden .toolbar-visibility-icon--shown {
+    display: none;
+}
+
+html.scripty-toolbar-hidden .toolbar-visibility-icon--hidden {
+    display: block;
+}
+
+html.scripty-toolbar-hidden .text-size-control > :not(#nav-toolbar-toggle),
+html.scripty-toolbar-hidden .project-script-toolbar,
+html.scripty-toolbar-hidden .project-script-select-toolbar {
+    display: none !important;
+}
+
+html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
+    padding-right: var(--toolbar-brand-side-space, 0.5rem);
+}
+
+@media (min-width: 960px) {
+    html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
+        grid-template-columns: minmax(0, max-content) auto;
+    }
+}
+
+.text-size-control #nav-toolbar-toggle[aria-pressed="true"] {
+    box-shadow: 0 2px 4px -1px var(--fg) inset;
+    background: var(--pressed-interactive-bg);
+    color: var(--accent);
 }
 
 /* Focus mode: hide distractions while writing on the project page */
@@ -5459,7 +5494,7 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
 
 body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb,
-body.focus-mode .text-size-control > :not(#focus-toggle):not(#text-size-decrease):not(#text-size-increase),
+body.focus-mode .text-size-control > :not(#focus-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle),
 body.focus-mode .project-script-toolbar,
 body.focus-mode .project-script-select-toolbar,
 body.focus-mode .project-header-row,

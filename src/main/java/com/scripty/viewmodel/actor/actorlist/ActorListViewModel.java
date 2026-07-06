@@ -15,6 +15,7 @@ public class ActorListViewModel {
     
     private List<ActorViewModel> actors;
     private Integer characterProjectId;
+    private String characterProjectTitle;
 
     public List<ActorViewModel> getActors() {
         return actors;
@@ -31,5 +32,13 @@ public class ActorListViewModel {
     public void setCharacterProjectId(Integer characterProjectId) {
         this.characterProjectId = characterProjectId;
     }
-    
+
+    public String getCharacterProjectTitle() {
+        return characterProjectTitle;
+    }
+
+    public void setCharacterProjectTitle(String characterProjectTitle) {
+        this.characterProjectTitle = characterProjectTitle;
+    }
+
 }

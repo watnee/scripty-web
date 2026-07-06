@@ -5,6 +5,10 @@
  */
 package com.scripty.viewmodel.actor.actorlist;
 
+import com.scripty.viewmodel.person.personlist.CharacterViewModel;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  * @author chris
@@ -16,6 +20,7 @@ public class ActorViewModel {
     private String last;
     private String phone;
     private String email;
+    private List<CharacterViewModel> assignedCharacters = new ArrayList<>();
 
     public int getId() {
         return id;
@@ -56,5 +61,13 @@ public class ActorViewModel {
     public void setEmail(String email) {
         this.email = email;
     }
-    
+
+    public List<CharacterViewModel> getAssignedCharacters() {
+        return assignedCharacters;
+    }
+
+    public void setAssignedCharacters(List<CharacterViewModel> assignedCharacters) {
+        this.assignedCharacters = assignedCharacters;
+    }
+
 }

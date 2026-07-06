@@ -5,6 +5,9 @@
  */
 package com.scripty.viewmodel.actor.actorprofile;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  * @author chris
@@ -16,6 +19,7 @@ public class ActorProfileViewModel {
     private String last;
     private String phone;
     private String email;
+    private List<AssignedRoleViewModel> assignedRoles = new ArrayList<>();
 
     public int getId() {
         return id;
@@ -56,5 +60,13 @@ public class ActorProfileViewModel {
     public void setEmail(String email) {
         this.email = email;
     }
-    
+
+    public List<AssignedRoleViewModel> getAssignedRoles() {
+        return assignedRoles;
+    }
+
+    public void setAssignedRoles(List<AssignedRoleViewModel> assignedRoles) {
+        this.assignedRoles = assignedRoles;
+    }
+
 }

@@ -48,8 +48,9 @@ public class ActorController {
     @RequestMapping(value = "/list")
     public String list(Model model, Principal principal) {
 
-        ActorListViewModel viewModel = actorService.getActorListViewModel();
-        viewModel.setCharacterProjectId(resolveCharacterProjectId(principal));
+        Integer characterProjectId = resolveCharacterProjectId(principal);
+        ActorListViewModel viewModel = actorService.getActorListViewModel(characterProjectId);
+        viewModel.setCharacterProjectId(characterProjectId);
 
         model.addAttribute("viewModel", viewModel);
 

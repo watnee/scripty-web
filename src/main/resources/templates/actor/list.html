@@ -12,24 +12,203 @@
 </head>
 <body hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('casting')}"></div>
-    <main>
-        <nav aria-label="Breadcrumb">
-            <ol>
-                <li aria-current="page">Casting</li>
-            </ol>
-        </nav>
-        <h1>Casting</h1>
-        <table id="table-actors">
-            <tr th:each="actor : ${viewModel.actors}">
-                <td><a th:href="@{/actor/show(id=${actor.id})}" th:text="${actor.first} + ' ' + ${actor.last}"></a></td>
-            </tr>
-        </table>
-        <p>
-            <a th:if="${viewModel.characterProjectId != null}" th:href="@{/character/list(projectId=${viewModel.characterProjectId})}" role="button">Characters</a>
+    <main class="casting-list-page">
+
+        <div class="casting-list-header">
+            <div class="casting-list-header-text">
+                <h1>Casting</h1>
+                <p class="muted" th:if="${viewModel.characterProjectTitle != null}">
+                    Showing role assignments for
+                    <a th:href="@{/project/show(id=${viewModel.characterProjectId})}" th:text="${viewModel.characterProjectTitle}"></a>
+                </p>
+                <p class="muted" th:if="${viewModel.characterProjectTitle == null}">
+                    Manage your actor directory and contact details.
+                </p>
+            </div>
+        </div>
+
+        <div class="casting-list-toolbar project-list-toolbar">
+            <div class="project-list-search-wrap" id="casting-list-search-wrap">
+                <label class="visually-hidden" for="casting-list-search">Search actors</label>
+                <span class="project-list-search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
+                    </svg>
+                </span>
+                <input type="search"
+                       id="casting-list-search"
+                       class="project-list-search"
+                       placeholder="Search actors..."
+                       autocomplete="off"
+                       enterkeyhint="search" />
+                <button type="button"
+                        id="casting-list-search-clear"
+                        class="project-list-search-clear"
+                        aria-label="Clear search"
+                        hidden>&times;</button>
+            </div>
+            <div class="project-list-toolbar-actions">
+                <label class="project-list-sort-label" for="casting-list-sort">
+                    <span class="visually-hidden">Sort actors</span>
+                    <select id="casting-list-sort" class="project-list-sort" aria-label="Sort actors">
+                        <option value="name-asc" selected>Name A–Z</option>
+                        <option value="name-desc">Name Z–A</option>
+                    </select>
+                </label>
+                <a th:if="${viewModel.characterProjectId != null}"
+                   th:href="@{/character/list(projectId=${viewModel.characterProjectId})}"
+                   role="button"
+                   class="casting-list-secondary-btn">Characters</a>
+                <a th:href="@{/actor/create}" role="button" class="project-list-create-btn">
+                    <span class="project-list-create-icon" aria-hidden="true">+</span>
+                    New Actor
+                </a>
+            </div>
+        </div>
+
+        <div class="casting-list-panel project-list-panel" th:if="${!#lists.isEmpty(viewModel.actors)}">
+            <table id="table-actors" class="casting-list-table">
+                <tbody>
+                    <tr th:each="actor : ${viewModel.actors}"
+                        class="casting-list-row project-list-row"
+                        th:attr="data-sort-name=${#strings.toLowerCase(actor.first + ' ' + actor.last)}">
+                        <td class="casting-list-main-cell project-list-main-cell">
+                            <div class="casting-list-item">
+                                <div class="casting-list-info">
+                                    <div class="casting-list-name-row">
+                                        <a th:href="@{/actor/show(id=${actor.id})}"
+                                           class="casting-list-name project-list-title"
+                                           th:text="${actor.first} + ' ' + ${actor.last}"></a>
+                                        <span class="casting-list-unassigned"
+                                              th:if="${viewModel.characterProjectId != null and #lists.isEmpty(actor.assignedCharacters)}">
+                                            Unassigned
+                                        </span>
+                                    </div>
+                                    <div class="casting-list-meta" th:if="${actor.phone != null or actor.email != null}">
+                                        <span class="casting-list-contact" th:if="${actor.phone != null}">
+                                            <span class="casting-list-contact-label">Phone</span>
+                                            <a th:href="'tel:' + ${actor.phone}" th:text="${actor.phone}"></a>
+                                        </span>
+                                        <span class="casting-list-contact" th:if="${actor.email != null}">
+                                            <span class="casting-list-contact-label">Email</span>
+                                            <a th:href="'mailto:' + ${actor.email}" th:text="${actor.email}"></a>
+                                        </span>
+                                    </div>
+                                    <div class="casting-list-roles" th:if="${!#lists.isEmpty(actor.assignedCharacters)}">
+                                        <a th:each="character : ${actor.assignedCharacters}"
+                                           th:href="@{/character/show(id=${character.id})}"
+                                           class="casting-list-role"
+                                           th:text="${character.name}"></a>
+                                    </div>
+                                </div>
+                                <div class="casting-list-actions project-list-actions">
+                                    <a th:href="@{/actor/edit(id=${actor.id})}"
+                                       role="button"
+                                       class="project-list-action-btn">Edit</a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="project-list-no-results" id="casting-list-no-results" hidden>
+                No actors match <strong id="casting-list-search-query"></strong>.
+            </p>
+        </div>
+
+        <div class="project-list-empty" th:if="${#lists.isEmpty(viewModel.actors)}">
+            <p class="project-list-empty-title">No actors yet</p>
+            <p class="muted">Add your first actor to start building your casting directory.</p>
             <a th:href="@{/actor/create}" role="button">Create New Actor</a>
-        </p>
+        </div>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:inline="javascript">
+    (function() {
+        const searchInput = document.getElementById('casting-list-search');
+        const clearBtn = document.getElementById('casting-list-search-clear');
+        const searchWrap = document.getElementById('casting-list-search-wrap');
+        const noResultsEl = document.getElementById('casting-list-no-results');
+        const noResultsQueryEl = document.getElementById('casting-list-search-query');
+        const sortSelect = document.getElementById('casting-list-sort');
+        const tbody = document.querySelector('#table-actors tbody');
+        if (!searchInput) return;
+
+        function sortActors() {
+            if (!tbody || !sortSelect) return;
+            const descending = sortSelect.value === 'name-desc';
+            const rows = Array.from(tbody.querySelectorAll('.casting-list-row'));
+            rows.sort(function(a, b) {
+                const comparison = (a.getAttribute('data-sort-name') || '')
+                    .localeCompare(b.getAttribute('data-sort-name') || '');
+                return descending ? -comparison : comparison;
+            });
+            rows.forEach(function(row) {
+                tbody.appendChild(row);
+            });
+        }
+
+        function performSearch() {
+            const query = searchInput.value.trim();
+            const normalizedQuery = query.toLowerCase();
+
+            if (clearBtn) {
+                clearBtn.hidden = !query;
+            }
+            if (searchWrap) {
+                searchWrap.classList.toggle('has-value', !!query);
+            }
+
+            const rows = document.querySelectorAll('#table-actors .casting-list-row');
+            let visibleCount = 0;
+
+            rows.forEach(function(row) {
+                const searchText = row.textContent.toLowerCase();
+                const matches = !normalizedQuery || searchText.includes(normalizedQuery);
+                row.hidden = !matches;
+                if (matches) visibleCount++;
+            });
+
+            if (noResultsEl) {
+                noResultsEl.hidden = visibleCount > 0 || !query;
+            }
+            if (noResultsQueryEl) {
+                noResultsQueryEl.textContent = query ? '"' + query + '"' : '';
+            }
+        }
+
+        searchInput.addEventListener('input', performSearch);
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                searchInput.value = '';
+                performSearch();
+                searchInput.focus();
+            }
+        });
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                performSearch();
+                searchInput.focus();
+            });
+        }
+
+        if (sortSelect) {
+            const savedSort = sessionStorage.getItem('castingListSort');
+            if (savedSort && sortSelect.querySelector('option[value="' + savedSort + '"]')) {
+                sortSelect.value = savedSort;
+            }
+            sortSelect.addEventListener('change', function() {
+                sessionStorage.setItem('castingListSort', sortSelect.value);
+                sortActors();
+            });
+            sortActors();
+        }
+    })();
+    </script>
 </body>
 </html>

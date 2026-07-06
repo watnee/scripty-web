@@ -1,8 +1,10 @@
 <th:block xmlns:th="http://www.thymeleaf.org">
 <p th:if="${not #strings.isEmpty(block.personName)}" class="script-character-name">
-    <a th:href="@{/character/show(id=${block.personId})}" class="character-name" th:text="${block.personName}"></a>
+    <strong class="reader-visible-character-name" th:text="${#strings.toUpperCase(block.personName)}"></strong>
+    <a th:href="@{/character/show(id=${block.personId})}" class="character-name hide-in-reader-view sidebar menu" th:text="${block.personName}"></a>
 </p>
-<p class="script-block-text" th:text="${block.content}"></p>
+<p th:if="${not #strings.isEmpty(block.content)}" class="reader-visible-text" th:text="${block.content}"></p>
+<p class="hide-in-reader-view script-block-text" th:text="${block.content}"></p>
 <div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu">
     <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
           th:if="${not #strings.isEmpty(#strings.trim(tag))}"

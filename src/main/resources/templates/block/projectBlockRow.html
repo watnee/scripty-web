@@ -6,11 +6,15 @@
             <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">&#8942;&#8942;</span>
         </div>
     </aside>
-    <div class="block-content" th:classappend="${block.type != null} ? ('block-type-' + ${#strings.toLowerCase(block.type)}) : ''" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')&amp;&amp;!window.scriptySuppressBlockEditClick]" hx-swap="innerHTML">
+    <div class="block-content script-block"
+         th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (not #strings.isEmpty(block.personName) ? ' script-block--dialogue' : ' script-block--action')}"
+         th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')&amp;&amp;!window.scriptySuppressBlockEditClick]" hx-swap="innerHTML">
         <p th:if="${not #strings.isEmpty(block.personName)}" class="script-character-name">
-            <a th:href="@{/character/show(id=${block.personId})}" class="character-name" th:text="${block.personName}"></a>
+            <strong class="reader-visible-character-name" th:text="${#strings.toUpperCase(block.personName)}"></strong>
+            <a th:href="@{/character/show(id=${block.personId})}" class="character-name hide-in-reader-view sidebar menu" th:text="${block.personName}"></a>
         </p>
-        <p class="script-block-text" th:text="${block.content}"></p>
+        <p th:if="${not #strings.isEmpty(block.content)}" class="reader-visible-text" th:text="${block.content}"></p>
+        <p class="hide-in-reader-view script-block-text" th:text="${block.content}"></p>
         <div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu">
             <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
                   th:if="${not #strings.isEmpty(#strings.trim(tag))}"

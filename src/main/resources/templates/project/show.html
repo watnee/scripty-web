@@ -203,9 +203,18 @@
             <div class="project-toolbar-right" aria-hidden="true"></div>
         </div>
     </aside>
-    <main>
-        <article class="entry-content script-content project-script">
-            <div class="project-script-header">
+    <main role="main">
+        <aside class="project-script-select-toolbar hide-in-reader-view sidebar menu">
+            <div class="project-toolbar-row project-toolbar-select-row">
+                <aside class="project-toolbar-left block-left-controls">
+                    <div class="block-left-controls-inner" th:insert="~{fragments/blockSelectAllControl :: controls('project-select-all-blocks')}"></div>
+                </aside>
+                <div class="project-toolbar-main" aria-hidden="true"></div>
+                <div class="project-toolbar-right" aria-hidden="true"></div>
+            </div>
+        </aside>
+        <article class="entry-content script-content project-script" role="article">
+            <header class="project-script-header">
                 <h1 class="project-header-title entry-title">
                     <span class="reader-visible-project-title"
                           id="reader-visible-project-title"
@@ -233,16 +242,7 @@
                         </span>
                     </span>
                 </p>
-            </div>
-            <aside class="project-script-select-toolbar hide-in-reader-view sidebar menu">
-                <div class="project-toolbar-row project-toolbar-select-row">
-                    <aside class="project-toolbar-left block-left-controls">
-                        <div class="block-left-controls-inner" th:insert="~{fragments/blockSelectAllControl :: controls('project-select-all-blocks')}"></div>
-                    </aside>
-                    <div class="project-toolbar-main" aria-hidden="true"></div>
-                    <div class="project-toolbar-right" aria-hidden="true"></div>
-                </div>
-            </aside>
+            </header>
             <div th:replace="~{project/showScriptBody :: scriptBody(${viewModel})}"></div>
         </article>
         <p class="hide-in-reader-view sidebar menu project-create-scene">
@@ -476,11 +476,13 @@
                 searchToggle.classList.toggle('is-active', !!query);
             }
 
-            const sceneHeaders = document.querySelectorAll('.project-script .scene-header');
-            sceneHeaders.forEach(header => {
-                const sceneNameDisplay = header.querySelector('.scene-name-display');
-                const sceneName = sceneNameDisplay ? sceneNameDisplay.textContent.toLowerCase() : '';
-                const sceneBlocks = header.parentElement.querySelector('.scene-blocks');
+            const sceneSections = document.querySelectorAll('.project-script .script-scene');
+            sceneSections.forEach(section => {
+                const readerSceneName = section.querySelector('.reader-visible-scene-name');
+                const sceneNameDisplay = section.querySelector('.scene-name-display');
+                const sceneNameSource = readerSceneName || sceneNameDisplay;
+                const sceneName = sceneNameSource ? sceneNameSource.textContent.toLowerCase() : '';
+                const sceneBlocks = section.querySelector('.scene-blocks');
                 const isSceneNameMatch = sceneName.includes(query);
 
                 let visibleBlocksInScene = 0;
@@ -497,13 +499,8 @@
                     });
                 }
 
-                const sceneSection = header.closest('.script-scene');
-                const sceneLinks = sceneSection ? sceneSection.querySelector('.scene-header-links') : null;
                 const showScene = query === '' || isSceneNameMatch || visibleBlocksInScene > 0;
-
-                header.style.display = showScene ? '' : 'none';
-                if (sceneLinks) sceneLinks.style.display = showScene ? '' : 'none';
-                if (sceneBlocks) sceneBlocks.style.display = showScene ? '' : 'none';
+                section.style.display = showScene ? '' : 'none';
             });
         }
 

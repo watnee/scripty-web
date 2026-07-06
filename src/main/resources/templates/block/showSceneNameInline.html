@@ -1,1 +1,7 @@
-<span xmlns:th="http://www.thymeleaf.org" class="scene-name-display" th:attr="hx-get=@{/block/editSceneNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; min-width: 10em; display: inline-block"><th:block th:if="${#strings.isEmpty(scene.content) || #strings.isEmpty(scene.content.trim())}"><span style="color: #ccc; font-style: italic">click to name scene</span></th:block><th:block th:unless="${#strings.isEmpty(scene.content) || #strings.isEmpty(scene.content.trim())}" th:text="${scene.content}"></th:block></span>
+<th:block xmlns:th="http://www.thymeleaf.org">
+    <span class="scene-name-display" th:attr="hx-get=@{/block/editSceneNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; min-width: 10em; display: inline-block"><th:block th:if="${#strings.isEmpty(scene.content) || #strings.isEmpty(scene.content.trim())}"><span class="scene-name-placeholder">click to name scene</span></th:block><th:block th:unless="${#strings.isEmpty(scene.content) || #strings.isEmpty(scene.content.trim())}" th:text="${scene.content}"></th:block></span>
+    <span th:id="'reader-visible-scene-name-' + ${scene.id}"
+          class="reader-visible-scene-name"
+          th:text="${#strings.isEmpty(scene.content) || #strings.isEmpty(scene.content.trim()) ? 'Untitled Scene' : scene.content}"
+          hx-swap-oob="true"></span>
+</th:block>

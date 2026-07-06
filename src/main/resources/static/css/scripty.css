@@ -4348,13 +4348,19 @@ main h3 {
     margin-bottom: 0;
 }
 
-.project-script .scene-header-row .scene-header {
+.project-script .scene-header {
+    grid-column: 1 / -1;
+    margin: 0;
+    text-align: center;
+}
+
+.project-script .scene-header-row .scene-header-edit {
     grid-column: auto;
     margin: 0;
     text-align: center;
 }
 
-.project-script .scene-header-row .scene-header .scene-name-placeholder {
+.project-script .scene-header-edit .scene-name-placeholder {
     color: #ccc;
     font-style: italic;
     text-transform: none;
@@ -4472,10 +4478,80 @@ html.safari-reader-view .hide-in-reader-view {
     display: none !important;
 }
 
+html.safari-reader-view body > header,
+html.safari-reader-view .project-top-bar,
+html.safari-reader-view .project-script-toolbar,
+html.safari-reader-view .project-script-select-toolbar {
+    display: none !important;
+}
+
+html.safari-reader-view main {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 3rem;
+    font-family: Georgia, "Times New Roman", serif;
+    line-height: 1.65;
+}
+
+html.safari-reader-view .project-script .script-scene,
+html.safari-reader-view .project-script .scene-blocks,
+html.safari-reader-view .project-script .block-row {
+    display: block;
+}
+
+html.safari-reader-view .project-script .block-content {
+    width: auto;
+    max-width: none;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+html.safari-reader-view .project-script .scene-header {
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 2rem 0 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border, #ddd);
+}
+
+html.safari-reader-view .project-script .script-scene:first-of-type .scene-header {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+}
+
+html.safari-reader-view .project-script .reader-visible-text,
+html.safari-reader-view .project-script .script-block-text {
+    margin: 0 0 1rem;
+}
+
+html.safari-reader-view .project-script .script-block {
+    margin-top: 0;
+}
+
 html.safari-reader-view .project-header-title .reader-visible-project-title {
     font-size: 1.75rem;
     line-height: 1.25;
     margin-bottom: 1rem;
+}
+
+html.safari-reader-view .project-script .reader-visible-scene-name {
+    display: inline;
+}
+
+html:not(.safari-reader-view) .block-content:not(:has(.block-inline-edit-form)) .reader-visible-text,
+html:not(.safari-reader-view) .block-content:not(:has(form[hx-post*="/block/editInline"])) .reader-visible-text {
+    display: none;
+}
+
+html:not(.safari-reader-view) .block-content .reader-visible-character-name {
+    display: none;
+}
+
+html.safari-reader-view .block-content .script-block-text {
+    display: none !important;
 }
 
 .block-content:has(.block-inline-edit-form) .reader-visible-text,
@@ -4678,6 +4754,7 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
 .text-size-control .print-toolbar-btn svg,
 .text-size-control .import-toolbar-btn svg,
 .text-size-control .export-toolbar-btn svg,
+.text-size-control .share-toolbar-btn svg,
 .text-size-control .focus-toolbar-btn svg {
     display: block;
 }

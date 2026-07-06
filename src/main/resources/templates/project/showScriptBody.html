@@ -1,14 +1,19 @@
 <div xmlns:th="http://www.thymeleaf.org" th:fragment="scriptBody(viewModel)" id="project-script-body">
     <section th:each="scene : ${viewModel.scenes}" class="script-scene">
-        <div class="block-row scene-header-row" th:if="${scene.id != null}" th:attr="data-block-id=${scene.id}">
-            <aside class="block-left-controls hide-in-reader-view sidebar menu">
+        <h2 class="scene-header">
+            <span class="reader-visible-scene-name"
+                  th:id="${scene.id != null} ? ('reader-visible-scene-name-' + ${scene.id}) : null"
+                  th:text="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim()) ? 'Untitled Scene' : scene.name}">Scene</span>
+        </h2>
+        <div class="block-row scene-header-row hide-in-reader-view sidebar menu" th:if="${scene.id != null}" th:attr="data-block-id=${scene.id}">
+            <aside class="block-left-controls sidebar menu">
                 <div class="block-left-controls-inner">
                     <input type="checkbox" class="block-select-checkbox" th:value="${scene.id}" />
                     <a th:attr="hx-get=@{/block/createBelowInline(id=${scene.id},surface='project')}" hx-target="closest .scene-header-row" hx-swap="afterend" hx-boost="false" class="create-below" role="button" title="Add block below scene heading" aria-label="Add block below scene heading">+</a>
                     <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">&#8942;&#8942;</span>
                 </div>
             </aside>
-            <h2 class="scene-header block-content">
+            <div class="scene-header-edit block-content">
                 <span class="scene-name-wrap">
                     <span class="scene-name-display" th:attr="hx-get=@{/block/editSceneNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; min-width: 10em; display: inline-block">
                         <th:block th:if="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}">
@@ -17,7 +22,7 @@
                         <th:block th:unless="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}" th:text="${scene.name}"></th:block>
                     </span>
                 </span>
-            </h2>
+            </div>
         </div>
         <div class="scene-blocks table-blocks-all" th:id="${scene.id != null} ? ('table-blocks-' + ${scene.id}) : 'table-blocks-orphan'">
             <th:block th:each="block, blockStat : ${scene.blocks}">

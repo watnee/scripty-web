@@ -3929,6 +3929,14 @@ kbd {
     margin-bottom: 0.5rem;
 }
 
+.project-top-bar,
+.project-script-toolbar,
+.project-script-select-toolbar {
+    border: none;
+    padding-block: 0;
+    margin-block: 0;
+}
+
 .top-bar nav[aria-label="Breadcrumb"] {
     margin: 0 !important;
 }
@@ -4011,6 +4019,7 @@ body.has-toolbar-brand {
 .has-toolbar-brand .project-top-bar .text-size-control {
     margin-bottom: 0;
     justify-content: flex-start;
+    flex-wrap: wrap;
     width: 100%;
 }
 
@@ -4597,7 +4606,8 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
 .text-size-control .pin-filter-toggle svg,
 .text-size-control .spellcheck-toggle-btn svg,
 .text-size-control .version-history-toolbar-btn svg,
-.text-size-control .title-page-toolbar-btn svg {
+.text-size-control .title-page-toolbar-btn svg,
+.text-size-control .print-toolbar-btn svg {
     display: block;
 }
 

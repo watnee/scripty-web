@@ -2272,15 +2272,31 @@ html.scripty-hide-block-pins .block-action-pin {
 }
 
 .production-team-label-text {
+    display: block;
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--muted-fg, #64748b);
     text-transform: uppercase;
     letter-spacing: 0.03em;
+    margin-bottom: 0.35rem;
 }
 
-.production-team-select {
-    max-width: 20rem;
+.production-team-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin: 0.5rem 0 0.75rem;
+}
+
+.production-team-option {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.production-team-save {
     margin: 0;
 }
 
@@ -2289,10 +2305,6 @@ html.scripty-hide-block-pins .block-action-pin {
     flex-wrap: wrap;
     align-items: center;
     gap: 0.65rem;
-}
-
-.production-team-action-link {
-    font-size: 0.9rem;
 }
 
 .production-team-create-btn {

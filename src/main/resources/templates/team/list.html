@@ -62,11 +62,12 @@
                                                     <input type="checkbox"
                                                            name="projectIds"
                                                            th:value="${project.id}"
-                                                           th:checked="${project.team == teamName}" />
+                                                           th:checked="${project.isAssignedToTeam(teamItem)}" />
                                                     <span th:text="${project.title}"></span>
                                                     <span class="team-production-assign-other muted"
-                                                          th:if="${project.team != null and project.team != teamName}"
-                                                          th:text="'(' + ${project.team} + ')'"></span>
+                                                          th:each="otherTeam : ${project.teams}"
+                                                          th:if="${otherTeam.id != teamItem.id}"
+                                                          th:text="'(' + ${otherTeam.name} + ')'"></span>
                                                 </label>
                                             </div>
                                             <button type="submit" class="team-production-assign-save">Save productions</button>

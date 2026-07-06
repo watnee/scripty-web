@@ -112,6 +112,7 @@ public class TeamController {
                            Model model) {
         if (bindingResult.hasErrors()) {
             List<Project> allProjects = projectRepository.findAllByOrderByTitleAsc();
+            model.addAttribute("team", teamService.read(commandModel.getId()));
             model.addAttribute("allProjects", allProjects);
             return "team/edit";
         }
@@ -123,6 +124,7 @@ public class TeamController {
         } catch (IllegalArgumentException e) {
             bindingResult.rejectValue("name", "error.team", e.getMessage());
             List<Project> allProjects = projectRepository.findAllByOrderByTitleAsc();
+            model.addAttribute("team", teamService.read(commandModel.getId()));
             model.addAttribute("allProjects", allProjects);
             return "team/edit";
         }

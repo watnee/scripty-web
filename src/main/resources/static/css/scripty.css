@@ -3954,7 +3954,7 @@ kbd {
 }
 
 body.has-toolbar-brand {
-    --toolbar-brand-top-space: 0.5rem;
+    --toolbar-brand-top-space: 1rem;
     --toolbar-brand-bottom-space: 1rem;
     padding-top: var(--toolbar-brand-top-space);
 }

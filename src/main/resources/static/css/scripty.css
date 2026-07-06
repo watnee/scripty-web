@@ -4436,3 +4436,105 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
 .table-blocks-all .drag-handle:active {
     cursor: grabbing;
 }
+
+.element-type-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.element-type-label {
+    margin-right: 0.25rem;
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+.element-type-actions .bulk-type-btn {
+    margin: 0;
+    font-size: 0.85rem;
+    padding: 0.2rem 0.55rem;
+}
+
+/* Fountain element type formatting */
+.block-content.block-type-dialogue {
+    padding-left: 15%;
+    padding-right: 15%;
+}
+
+.block-content.block-type-parenthetical {
+    padding-left: 22%;
+    padding-right: 22%;
+    font-style: italic;
+}
+
+.block-content.block-type-parenthetical > .script-block-text::before,
+.block-content.block-type-parenthetical > span::before {
+    content: "(";
+}
+
+.block-content.block-type-parenthetical > .script-block-text::after,
+.block-content.block-type-parenthetical > span::after {
+    content: ")";
+}
+
+.block-content.block-type-transition {
+    text-align: right;
+    text-transform: uppercase;
+}
+
+.block-content.block-type-lyrics {
+    font-style: italic;
+}
+
+.block-content.block-type-centered {
+    text-align: center;
+}
+
+.block-content.block-type-section {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: var(--accent, #475569);
+}
+
+.block-content.block-type-section > .script-block-text::before,
+.block-content.block-type-section > span::before {
+    content: "# ";
+}
+
+.block-content.block-type-synopsis {
+    font-style: italic;
+    color: #999;
+}
+
+.block-content.block-type-synopsis > .script-block-text::before,
+.block-content.block-type-synopsis > span::before {
+    content: "= ";
+}
+
+.block-content.block-type-note {
+    background: rgba(250, 204, 21, 0.18);
+    font-style: italic;
+}
+
+.block-content.block-type-note > .script-block-text::before,
+.block-content.block-type-note > span::before {
+    content: "[[ ";
+    opacity: 0.5;
+}
+
+.block-content.block-type-note > .script-block-text::after,
+.block-content.block-type-note > span::after {
+    content: " ]]";
+    opacity: 0.5;
+}
+
+.block-content.block-type-page_break {
+    text-align: center;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    font-size: 0.8em;
+    border-top: 2px dashed #999;
+}

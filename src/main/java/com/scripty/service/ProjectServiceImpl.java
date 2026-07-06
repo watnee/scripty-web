@@ -6,13 +6,12 @@ import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
-import com.scripty.dto.Scene;
 import com.scripty.dto.Team;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
-import com.scripty.repository.SceneRepository;
 import com.scripty.repository.TeamRepository;
+import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
@@ -20,7 +19,6 @@ import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.PersonViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.viewmodel.project.projectprofile.SceneViewModel;
-import com.scripty.viewmodel.scene.sceneprofile.BlockViewModel;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -32,19 +30,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final SceneRepository sceneRepository;
     private final PersonRepository personRepository;
     private final BlockRepository blockRepository;
     private final TeamRepository teamRepository;
 
     @Autowired
     public ProjectServiceImpl(ProjectRepository projectRepository,
-                              SceneRepository sceneRepository,
                               PersonRepository personRepository,
                               BlockRepository blockRepository,
                               TeamRepository teamRepository) {
         this.projectRepository = projectRepository;
-        this.sceneRepository = sceneRepository;
         this.personRepository = personRepository;
         this.blockRepository = blockRepository;
         this.teamRepository = teamRepository;
@@ -61,8 +56,10 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Project getProjectByScene(Scene scene) {
-        return projectRepository.findBySceneId(scene.getId());
+    public Project getProjectByBlock(Block block) {
+        return block != null && block.getProject() != null
+                ? projectRepository.findById(block.getProject().getId()).orElse(null)
+                : null;
     }
 
     @Override
@@ -143,7 +140,7 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectProfileViewModel getProjectProfileViewModel(Integer id) {
         ProjectProfileViewModel vm = new ProjectProfileViewModel();
         Project project = projectRepository.findWithTeamsById(id).orElse(null);
-        List<Scene> scenes = sceneRepository.findByProjectIdOrderByOrderAsc(project.getId());
+        List<Block> blocks = blockRepository.findByProjectIdOrderByOrderAsc(project.getId());
         List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(project.getId());
 
         vm.setId(project.getId());
@@ -155,31 +152,39 @@ public class ProjectServiceImpl implements ProjectService {
         vm.setContactInfo(project.getContactInfo());
 
         List<SceneViewModel> sceneViewModels = new ArrayList<>();
-        for (Scene scene : scenes) {
-            SceneViewModel svm = new SceneViewModel();
-            svm.setId(scene.getId());
-            svm.setName(scene.getName());
-            List<Block> blocks = blockRepository.findBySceneIdOrderByOrderAsc(scene.getId());
-            List<BlockViewModel> blockViewModels = new ArrayList<>();
-            for (Block block : blocks) {
-                BlockViewModel bvm = new BlockViewModel();
-                bvm.setId(block.getId());
-                bvm.setOrder(block.getOrder());
-                bvm.setContent(block.getContent());
-                bvm.setBookmarked(block.isBookmarked());
-                bvm.setPinned(block.isPinned());
-                bvm.setTags(block.getTags());
-                if (block.getPerson() != null) {
-                    Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
-                    if (person != null) {
-                        bvm.setPersonId(person.getId());
-                        bvm.setPersonName(person.getName());
-                    }
-                }
-                blockViewModels.add(bvm);
+        SceneViewModel currentScene = null;
+        for (Block block : blocks) {
+            if (block.isScene()) {
+                currentScene = new SceneViewModel();
+                currentScene.setId(block.getId());
+                currentScene.setName(block.getContent());
+                currentScene.setLastBlockId(block.getId());
+                currentScene.setBlocks(new ArrayList<>());
+                sceneViewModels.add(currentScene);
+                continue;
             }
-            svm.setBlocks(blockViewModels);
-            sceneViewModels.add(svm);
+            if (currentScene == null) {
+                currentScene = new SceneViewModel();
+                currentScene.setBlocks(new ArrayList<>());
+                sceneViewModels.add(currentScene);
+            }
+            BlockViewModel bvm = new BlockViewModel();
+            bvm.setId(block.getId());
+            bvm.setOrder(block.getOrder());
+            bvm.setContent(block.getContent());
+            bvm.setBookmarked(block.isBookmarked());
+            bvm.setPinned(block.isPinned());
+            bvm.setType(block.getType());
+            bvm.setTags(block.getTags());
+            if (block.getPerson() != null) {
+                Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
+                if (person != null) {
+                    bvm.setPersonId(person.getId());
+                    bvm.setPersonName(person.getName());
+                }
+            }
+            currentScene.getBlocks().add(bvm);
+            currentScene.setLastBlockId(block.getId());
         }
         vm.setScenes(sceneViewModels);
 

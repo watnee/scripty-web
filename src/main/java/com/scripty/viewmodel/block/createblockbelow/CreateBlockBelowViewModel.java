@@ -1,23 +1,14 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.scripty.viewmodel.block.createblockbelow;
 
 import com.scripty.commandmodel.block.createblockbelow.CreateBlockBelowCommandModel;
 import com.scripty.viewmodel.block.createblock.CreatePersonViewModel;
 import java.util.List;
 
-/**
- *
- * @author chris
- */
 public class CreateBlockBelowViewModel {
-    
-    private int sceneId;
+
+    private int projectId;
     private List<CreatePersonViewModel> persons;
-    
+
     // Specifically to handle redisplaying when validation errors happen
     private CreateBlockBelowCommandModel createBlockBelowCommandModel;
 
@@ -29,12 +20,12 @@ public class CreateBlockBelowViewModel {
         this.createBlockBelowCommandModel = createBlockBelowCommandModel;
     }
 
-    public int getSceneId() {
-        return sceneId;
+    public int getProjectId() {
+        return projectId;
     }
 
-    public void setSceneId(int sceneId) {
-        this.sceneId = sceneId;
+    public void setProjectId(int projectId) {
+        this.projectId = projectId;
     }
 
     public List<CreatePersonViewModel> getPersons() {
@@ -44,5 +35,4 @@ public class CreateBlockBelowViewModel {
     public void setPersons(List<CreatePersonViewModel> persons) {
         this.persons = persons;
     }
-    
 }

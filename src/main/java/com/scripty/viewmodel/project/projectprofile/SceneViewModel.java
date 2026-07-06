@@ -1,28 +1,24 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.scripty.viewmodel.project.projectprofile;
 
-import com.scripty.viewmodel.scene.sceneprofile.BlockViewModel;
+import com.scripty.viewmodel.block.BlockViewModel;
 import java.util.List;
 
 /**
- *
- * @author chris
+ * A group of blocks on the project page, headed by a scene-type block.
+ * The id is the scene block's id (null when blocks precede any scene block).
  */
 public class SceneViewModel {
 
-    private int id;
+    private Integer id;
     private String name;
     private List<BlockViewModel> blocks;
+    private Integer lastBlockId;
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -42,4 +38,11 @@ public class SceneViewModel {
         this.blocks = blocks;
     }
 
+    public Integer getLastBlockId() {
+        return lastBlockId;
+    }
+
+    public void setLastBlockId(Integer lastBlockId) {
+        this.lastBlockId = lastBlockId;
+    }
 }

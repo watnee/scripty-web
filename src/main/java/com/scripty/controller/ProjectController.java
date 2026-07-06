@@ -4,7 +4,6 @@ import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
 import com.scripty.dto.Project;
-import com.scripty.dto.Scene;
 import com.scripty.dto.Team;
 import com.scripty.dto.User;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
@@ -12,11 +11,10 @@ import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
-import com.scripty.commandmodel.scene.createscene.CreateSceneCommandModel;
+import com.scripty.service.BlockService;
 import com.scripty.service.ProjectService;
 import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
-import com.scripty.service.SceneService;
 import com.scripty.service.TeamService;
 import com.scripty.service.UserService;
 import java.security.Principal;
@@ -52,7 +50,7 @@ public class ProjectController {
     ProjectUndoRedoService projectUndoRedoService;
 
     @Autowired
-    SceneService sceneService;
+    BlockService blockService;
 
     @Autowired
     UserService userService;
@@ -396,11 +394,7 @@ public class ProjectController {
         }
 
         Project project = projectService.saveCreateProjectCommandModel(commandModel);
-
-        CreateSceneCommandModel sceneCommandModel = new CreateSceneCommandModel();
-        sceneCommandModel.setProjectId(project.getId());
-        sceneCommandModel.setName(" ");
-        Scene scene = sceneService.saveCreateSceneCommandModel(sceneCommandModel);
+        blockService.createSceneBlock(project.getId(), " ");
 
         return "redirect:/project/show?id=" + project.getId();
     }

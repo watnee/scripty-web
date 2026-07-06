@@ -3,8 +3,8 @@ package com.scripty.service;
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
+import com.scripty.dto.Block;
 import com.scripty.dto.Project;
-import com.scripty.dto.Scene;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
@@ -14,7 +14,7 @@ public interface ProjectService {
 
     Project read(Integer id);
     Project readWithTeams(Integer id);
-    Project getProjectByScene(Scene scene);
+    Project getProjectByBlock(Block block);
 
     ProjectListViewModel getProjectListViewModel();
     ProjectListViewModel getProjectListViewModel(String userTeam);

@@ -67,25 +67,23 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
             return;
         }
         Block block = blockRepository.findById(blockId).orElse(null);
-        if (block == null || block.getScene() == null) {
+        if (block == null || block.getProject() == null) {
             return;
         }
-        Project project = projectRepository.findBySceneId(block.getScene().getId());
-        if (project != null) {
-            recordCheckpoint(project.getId());
-        }
+        recordCheckpoint(block.getProject().getId());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public void recordCheckpointForScene(Integer sceneId) {
-        if (sceneId == null) {
+    public void recordCheckpointForScene(Integer sceneBlockId) {
+        if (sceneBlockId == null) {
             return;
         }
-        Project project = projectRepository.findBySceneId(sceneId);
-        if (project != null) {
-            recordCheckpoint(project.getId());
+        Block block = blockRepository.findById(sceneBlockId).orElse(null);
+        if (block == null || block.getProject() == null) {
+            return;
         }
+        recordCheckpoint(block.getProject().getId());
     }
 
     @Override
@@ -94,18 +92,15 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
             return;
         }
         Block block = blockRepository.findById(blockId).orElse(null);
-        if (block == null || block.getScene() == null) {
+        if (block == null || block.getProject() == null) {
             return;
         }
-        Project project = projectRepository.findBySceneId(block.getScene().getId());
-        if (project == null) {
-            return;
-        }
-        UndoRedoState state = getState(project.getId());
+        Integer projectId = block.getProject().getId();
+        UndoRedoState state = getState(projectId);
         state.undoStack.push(encodeMoveEntry(blockId, fromOrder, toOrder));
         state.redoStack.clear();
         trimUndoStack(state);
-        saveState(project.getId(), state);
+        saveState(projectId, state);
     }
 
     @Override

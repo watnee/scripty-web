@@ -1,23 +1,14 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.scripty.commandmodel.block.createblock;
 
 import jakarta.validation.constraints.NotBlank;
 
-/**
- *
- * @author chris
- */
 public class CreateBlockCommandModel {
-    
+
     @NotBlank(message = "You must supply a value for Content.")
     private String content;
-    
+
     private Integer personId;
-    private Integer sceneId;
+    private Integer projectId;
 
     public String getContent() {
         return content;
@@ -35,12 +26,11 @@ public class CreateBlockCommandModel {
         this.personId = personId;
     }
 
-    public Integer getSceneId() {
-        return sceneId;
+    public Integer getProjectId() {
+        return projectId;
     }
 
-    public void setSceneId(Integer sceneId) {
-        this.sceneId = sceneId;
+    public void setProjectId(Integer projectId) {
+        this.projectId = projectId;
     }
-    
 }

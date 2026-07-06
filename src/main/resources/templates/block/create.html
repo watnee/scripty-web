@@ -15,7 +15,7 @@
     <main>
         <h1>Create New Block</h1>
         <form th:action="@{/block/create}" method="post" th:object="${commandModel}">
-            <input type="hidden" th:field="*{sceneId}" />
+            <input type="hidden" th:field="*{projectId}" />
             <label>
                 Content
                 <textarea spellcheck="true" rows="25" cols="80" th:field="*{content}"></textarea>
@@ -30,7 +30,7 @@
                 <span th:if="${#fields.hasErrors('personId')}" th:errors="*{personId}"></span>
             </label>
             <p>
-                <a th:href="@{/scene/show(id=${viewModel.sceneId})}" role="button">Cancel</a>
+                <a th:href="@{/project/show(id=${viewModel.projectId})}" role="button">Cancel</a>
                 <button type="submit">Submit</button>
             </p>
         </form>

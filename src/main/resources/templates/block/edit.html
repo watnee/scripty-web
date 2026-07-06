@@ -16,7 +16,6 @@
         <h1>Edit Block</h1>
         <form th:action="@{/block/edit}" method="post" th:object="${commandModel}">
             <input type="hidden" th:field="*{id}" />
-            <input type="hidden" th:field="*{sceneId}" />
 
             <label>
                 Content
@@ -37,7 +36,7 @@
                 <span th:if="${#fields.hasErrors('tags')}" th:errors="*{tags}"></span>
             </label>
             <p>
-                <a th:href="@{/scene/show(id=${viewModel.sceneId})}" role="button">Cancel</a>
+                <a th:href="@{/project/show(id=${viewModel.projectId})}" role="button">Cancel</a>
                 <button type="submit">Submit</button>
             </p>
         </form>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <span th:fragment="display(projectId, title)"
+          class="project-breadcrumb-name-display"
+          th:attr="hx-get=@{/project/editNameInline(id=${projectId},surface='breadcrumb')}"
+          hx-trigger="click"
+          hx-target="closest .project-breadcrumb-name-wrap"
+          hx-swap="innerHTML"
+          title="Click to rename project">
+        <th:block th:if="${#strings.isEmpty(title) || #strings.isEmpty(title.trim())}">
+            <span class="project-name-placeholder">Untitled</span>
+        </th:block>
+        <th:block th:unless="${#strings.isEmpty(title) || #strings.isEmpty(title.trim())}" th:text="${title}"></th:block>
+    </span>
+
+    <li th:fragment="item(projectId, title, lastEdited)"
+        id="project-breadcrumb-title"
+        aria-current="page">
+        <span class="breadcrumb-name-meta">
+            <span class="project-breadcrumb-name-wrap">
+                <span th:replace="~{:: display(${projectId}, ${title})}"></span>
+            </span>
+            <span class="project-last-edited-line" th:if="${lastEdited != null}" id="project-last-edited">
+                <span th:replace="~{fragments/lastEditedLine :: line(${lastEdited})}"></span>
+            </span>
+        </span>
+    </li>
+
+    <li th:fragment="itemOob(projectId, title, lastEdited)"
+        id="project-breadcrumb-title"
+        aria-current="page"
+        hx-swap-oob="true">
+        <span class="breadcrumb-name-meta">
+            <span class="project-breadcrumb-name-wrap">
+                <span th:replace="~{:: display(${projectId}, ${title})}"></span>
+            </span>
+            <span class="project-last-edited-line" th:if="${lastEdited != null}" id="project-last-edited">
+                <span th:replace="~{fragments/lastEditedLine :: line(${lastEdited})}"></span>
+            </span>
+        </span>
+    </li>
+</body>
+</html>

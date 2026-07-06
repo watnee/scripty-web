@@ -37,7 +37,7 @@
             <nav aria-label="Breadcrumb">
                 <ol>
                     <li><a th:href="@{/project/list}" hx-boost="false">Projects</a></li>
-                    <li id="project-breadcrumb-title" aria-current="page" th:text="${viewModel.title}"></li>
+                    <li th:replace="~{fragments/projectBreadcrumbName :: item(${viewModel.id}, ${viewModel.title}, ${viewModel.lastEdited})}"></li>
                 </ol>
             </nav>
         </div>
@@ -251,28 +251,6 @@
                           id="reader-visible-project-title"
                           th:text="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim()) ? 'Untitled Project' : viewModel.title}">Project</span>
                 </h1>
-                <p class="hide-in-reader-view sidebar menu project-header-row">
-                    <span class="project-header-title-group">
-                        <span class="project-name-wrap">
-                            <span class="project-name-display"
-                                  th:attr="hx-get=@{/project/editNameInline(id=${viewModel.id},surface='header')}"
-                                  hx-trigger="click"
-                                  hx-target="closest .project-name-wrap"
-                                  hx-swap="innerHTML"
-                                  title="Click to rename project">
-                                <th:block th:if="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}">
-                                    <span class="project-name-placeholder">Click to name project</span>
-                                </th:block>
-                                <th:block th:unless="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}" th:text="${viewModel.title}"></th:block>
-                            </span>
-                        </span>
-                        <span class="project-header-trailing">
-                            <span class="project-last-edited-line" th:if="${viewModel.lastEdited != null}" id="project-last-edited">
-                                <span th:replace="~{fragments/lastEditedLine :: line(${viewModel.lastEdited})}"></span>
-                            </span>
-                        </span>
-                    </span>
-                </p>
             </header>
             <div th:replace="~{project/showScriptBody :: scriptBody(${viewModel})}"></div>
         </article>

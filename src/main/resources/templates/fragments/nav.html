@@ -462,7 +462,7 @@
 
         function isInlineTextEdit(el) {
             if (!isEditable(el)) return false;
-            if (!el.closest('.block-content, .scene-name-wrap, .project-name-wrap')) return false;
+            if (!el.closest('.block-content, .scene-name-wrap, .project-breadcrumb-name-wrap')) return false;
             // Empty create-row uses structural undo, not browser text undo
             if (isCreateBlockTextarea(el)) return false;
             return true;
@@ -1130,7 +1130,7 @@
             }
 
             function isEditing() {
-                if (document.querySelector('.project-name-wrap input[name="title"]')) return true;
+                if (document.querySelector('.project-breadcrumb-name-wrap input[name="title"]')) return true;
                 if (document.querySelector('.scene-name-wrap input[name="name"]')) return true;
                 if (document.querySelector('.block-content textarea:focus')) return true;
                 if (document.querySelector('.block-content form')) return true;
@@ -1140,8 +1140,20 @@
 
             function applyTitle(title) {
                 if (title == null) return;
-                var breadcrumb = document.getElementById('project-breadcrumb-title');
-                if (breadcrumb) breadcrumb.textContent = title;
+                var breadcrumbDisplay = document.querySelector('.project-breadcrumb-name-display');
+                if (breadcrumbDisplay && !document.querySelector('.project-breadcrumb-name-wrap input[name="title"]')) {
+                    var breadcrumbTrimmed = (title || '').trim();
+                    if (breadcrumbTrimmed === '') {
+                        breadcrumbDisplay.innerHTML = '<span class="project-name-placeholder">Untitled</span>';
+                    } else {
+                        breadcrumbDisplay.textContent = title;
+                    }
+                } else if (!document.querySelector('.project-breadcrumb-name-wrap input[name="title"]')) {
+                    var breadcrumb = document.getElementById('project-breadcrumb-title');
+                    if (breadcrumb && !breadcrumb.querySelector('.project-breadcrumb-name-wrap')) {
+                        breadcrumb.textContent = title;
+                    }
+                }
                 var readerTitle = document.getElementById('reader-visible-project-title');
                 if (readerTitle) {
                     var readerTrimmed = (title || '').trim();
@@ -1633,13 +1645,15 @@
 
         function syncProjectNameDisplay() {
             const readerTitle = document.getElementById('reader-visible-project-title');
-            const display = document.querySelector('.project-name-display');
-            if (!readerTitle || !display || document.querySelector('.project-name-wrap input[name="title"]')) return;
+            if (!readerTitle) return;
             const title = (readerTitle.textContent || '').trim();
-            if (title === '' || title === 'Untitled Project') {
-                display.innerHTML = '<span class="project-name-placeholder">Click to name project</span>';
-            } else {
-                display.textContent = title;
+            const breadcrumbDisplay = document.querySelector('.project-breadcrumb-name-display');
+            if (breadcrumbDisplay && !document.querySelector('.project-breadcrumb-name-wrap input[name="title"]')) {
+                if (title === '' || title === 'Untitled Project') {
+                    breadcrumbDisplay.innerHTML = '<span class="project-name-placeholder">Untitled</span>';
+                } else {
+                    breadcrumbDisplay.textContent = title;
+                }
             }
         }
 
@@ -1683,7 +1697,7 @@
         function autoGrowInput(input) {
             if (!input) return;
             const isSceneName = input.closest('.scene-name-wrap') || 
-                                input.closest('.project-name-wrap') ||
+                                input.closest('.project-breadcrumb-name-wrap') ||
                                 input.closest('#create-scene-row') || 
                                 input.closest('#create-scene-below-form');
             const hasAutoGrowClass = input.classList.contains('auto-grow');

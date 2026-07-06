@@ -240,8 +240,8 @@ public class ProjectController {
         EditProjectViewModel viewModel = projectService.getEditProjectViewModel(id);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditProjectCommandModel());
-        if ("header".equals(surface)) {
-            return "project/showHeaderEditNameInline";
+        if ("breadcrumb".equals(surface)) {
+            return "project/showBreadcrumbEditNameInline";
         }
         return "project/editNameInline";
     }
@@ -252,8 +252,8 @@ public class ProjectController {
             EditProjectViewModel viewModel = projectService.getEditProjectViewModel(commandModel.getId());
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
-            if ("header".equals(surface)) {
-                return "project/showHeaderEditNameInline";
+            if ("breadcrumb".equals(surface)) {
+                return "project/showBreadcrumbEditNameInline";
             }
             return "project/editNameInline";
         }
@@ -261,8 +261,8 @@ public class ProjectController {
         projectVersionService.autoSaveVersion(project.getId());
         model.addAttribute("project", project);
         addDefaultProjectId(model, principal);
-        if ("header".equals(surface)) {
-            return "project/showHeaderNameInline";
+        if ("breadcrumb".equals(surface)) {
+            return "project/showBreadcrumbNameInline";
         }
         return "project/showNameInline";
     }

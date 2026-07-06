@@ -2323,10 +2323,28 @@ html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/bl
     align-items: baseline;
     flex-wrap: wrap;
     gap: 0.5rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.breadcrumb-name-meta .project-breadcrumb-name-wrap {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .breadcrumb-name-meta .project-last-edited-line {
     white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol > li:last-child {
+    overflow: visible;
+    white-space: normal;
+    max-width: 100%;
+}
+
+.project-top-bar-breadcrumb .breadcrumb-name-meta .project-breadcrumb-name-display {
+    max-width: min(100%, 20rem);
 }
 
 .top-bar-start {
@@ -2541,7 +2559,7 @@ a.project-list-team:hover {
 }
 
 .project-script-header {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.35rem;
     width: 100%;
 }
 
@@ -2557,84 +2575,9 @@ html:not(.safari-reader-view) .project-script-header .project-header-title {
     border: 0;
 }
 
-.project-script-header .project-header-row {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    margin: 0;
-    max-width: 100%;
-}
-
-.project-script-header .project-header-title-group {
-    position: relative;
-    display: inline-flex;
-    align-items: baseline;
-    max-width: 100%;
-}
-
-.project-script-header .project-header-trailing {
-    position: absolute;
-    left: 100%;
-    margin-left: 0.65rem;
-    white-space: nowrap;
-}
-
-.project-script-header .project-name-wrap {
-    text-align: center;
-}
-
-.project-name-display {
-    cursor: pointer;
-    display: inline-block;
-    min-width: 0;
-    border-bottom: none;
-    transition: color 0.15s ease;
-    text-align: center;
-}
-
-.project-name-display:hover,
-.project-name-display:focus-visible {
-    border-bottom: none;
-    color: var(--accent, #475569);
-}
-
-.project-name-wrap {
-    display: inline-block;
-    min-width: 0;
-    max-width: 100%;
-    text-align: center;
-}
-
 .project-name-placeholder {
     color: #ccc;
     font-style: italic;
-}
-
-.project-name-wrap input[name="title"],
-.project-header-name-input {
-    font: inherit;
-    font-weight: inherit;
-    min-width: 12em;
-    max-width: min(100%, 40rem);
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    border: none !important;
-    border-radius: 0;
-    background: transparent;
-    outline: none !important;
-    box-shadow: none !important;
-    outline-offset: 0;
-    text-align: center;
-}
-
-.project-name-wrap input[name="title"]:focus,
-.project-name-wrap input[name="title"]:focus-visible,
-.project-header-name-input:focus,
-.project-header-name-input:focus-visible {
-    outline: none !important;
-    box-shadow: none !important;
-    border: none !important;
 }
 
 .scene-name-wrap input[name="name"]:focus,
@@ -2645,9 +2588,57 @@ html:not(.safari-reader-view) .project-script-header .project-header-title {
     border-bottom: 1px solid var(--accent, #475569);
 }
 
-.project-header-name-error {
+.project-breadcrumb-name-wrap {
+    display: inline-block;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.project-breadcrumb-name-display {
+    cursor: pointer;
+    display: inline-block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.15s ease;
+}
+
+.project-breadcrumb-name-display:hover,
+.project-breadcrumb-name-display:focus-visible {
+    color: var(--accent, #475569);
+}
+
+.project-breadcrumb-name-wrap input[name="title"],
+.project-breadcrumb-name-input {
+    font: inherit;
+    font-size: inherit;
+    min-width: 8em;
+    max-width: min(100%, 24rem);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none !important;
+    border-radius: 0;
+    background: transparent;
+    outline: none !important;
+    box-shadow: none !important;
+    outline-offset: 0;
+}
+
+.project-breadcrumb-name-wrap input[name="title"]:focus,
+.project-breadcrumb-name-wrap input[name="title"]:focus-visible,
+.project-breadcrumb-name-input:focus,
+.project-breadcrumb-name-input:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+.project-breadcrumb-name-error {
     display: block;
-    margin-top: 0.35rem;
+    margin-top: 0.25rem;
     color: var(--bad-fg, #d32f2f);
     font-size: 0.85rem;
 }

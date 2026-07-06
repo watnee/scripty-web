@@ -123,6 +123,20 @@
                     <rect x="6" y="14" width="12" height="8"></rect>
                 </svg>
             </button>
+            <button id="focus-toggle"
+                    type="button"
+                    class="nav-dropdown-toggle focus-toolbar-btn"
+                    aria-pressed="false"
+                    aria-label="Focus mode"
+                    title="Hide distractions while writing">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <line x1="12" y1="2" x2="12" y2="6"></line>
+                    <line x1="12" y1="18" x2="12" y2="22"></line>
+                    <line x1="2" y1="12" x2="6" y2="12"></line>
+                    <line x1="18" y1="12" x2="22" y2="12"></line>
+                </svg>
+            </button>
             <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
             <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
         </div>
@@ -205,6 +219,7 @@
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:src="@{/js/text-size.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/focus-mode.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/block-empty-guard.js(v=${assetVersion})}"></script>
     <script th:inline="javascript">
     document.querySelectorAll('.project-script .scene-blocks').forEach(function(sceneBlocks) {

@@ -4607,8 +4607,34 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
 .text-size-control .spellcheck-toggle-btn svg,
 .text-size-control .version-history-toolbar-btn svg,
 .text-size-control .title-page-toolbar-btn svg,
-.text-size-control .print-toolbar-btn svg {
+.text-size-control .print-toolbar-btn svg,
+.text-size-control .focus-toolbar-btn svg {
     display: block;
+}
+
+/* Focus mode: hide distractions while writing on the project page */
+.text-size-control #focus-toggle[aria-pressed="true"] {
+    box-shadow: 0 2px 4px -1px var(--fg) inset;
+    background: var(--pressed-interactive-bg);
+    color: var(--accent);
+}
+
+body.focus-mode .header-actions,
+body.focus-mode .project-top-bar-breadcrumb,
+body.focus-mode .text-size-control > :not(#focus-toggle):not(#text-size-decrease):not(#text-size-increase),
+body.focus-mode .project-script-toolbar,
+body.focus-mode .project-script-select-toolbar,
+body.focus-mode .project-header-row,
+body.focus-mode .project-create-scene,
+body.focus-mode .block-left-controls,
+body.focus-mode .block-actions,
+body.focus-mode .block-tags-list {
+    display: none !important;
+}
+
+body.focus-mode .project-script {
+    max-width: 46rem;
+    margin: 0 auto;
 }
 
 .text-size-control a.nav-dropdown-toggle {

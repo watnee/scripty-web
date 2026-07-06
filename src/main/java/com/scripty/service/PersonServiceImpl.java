@@ -156,7 +156,7 @@ public class PersonServiceImpl implements PersonService {
     public Person saveCreatePersonCommandModel(CreatePersonCommandModel cmd) {
         Person person = new Person();
         Actor actor = cmd.getActorId() != null
-                ? actorRepository.findById(cmd.getActorId()).orElse(null)
+                ? actorRepository.findByIdWithProjects(cmd.getActorId()).orElse(null)
                 : null;
         Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
 
@@ -177,7 +177,7 @@ public class PersonServiceImpl implements PersonService {
     public Person saveEditPersonCommandModel(EditPersonCommandModel cmd) {
         Person person = personRepository.findById(cmd.getId()).orElse(null);
         Actor actor = cmd.getActorId() != null
-                ? actorRepository.findById(cmd.getActorId()).orElse(null)
+                ? actorRepository.findByIdWithProjects(cmd.getActorId()).orElse(null)
                 : null;
         Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
 
@@ -202,7 +202,7 @@ public class PersonServiceImpl implements PersonService {
         if (actorId == null) {
             person.setActor(null);
         } else {
-            Actor actor = actorRepository.findById(actorId).orElse(null);
+            Actor actor = actorRepository.findByIdWithProjects(actorId).orElse(null);
             person.setActor(actor != null && actorBelongsToProject(actor, project) ? actor : null);
         }
 

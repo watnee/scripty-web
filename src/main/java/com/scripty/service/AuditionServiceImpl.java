@@ -9,6 +9,7 @@ import com.scripty.repository.AuditionRepository;
 import com.scripty.repository.PersonRepository;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,21 +33,28 @@ public class AuditionServiceImpl implements AuditionService {
     @Override
     @Transactional
     public void setAuditionsForActorInProject(Integer actorId, Integer projectId, List<Integer> characterIds) {
-        Actor actor = actorRepository.findById(actorId).orElse(null);
+        Actor actor = actorRepository.findByIdWithProjects(actorId).orElse(null);
         if (actor == null || projectId == null || !actorBelongsToProject(actor, projectId)) {
             return;
         }
 
-        List<Audition> existing = auditionRepository.findByActorIdAndProjectId(actorId, projectId);
-        auditionRepository.deleteAll(existing);
+        Set<Integer> desiredCharacterIds = characterIds == null
+                ? Set.of()
+                : new HashSet<>(characterIds);
 
-        if (characterIds == null || characterIds.isEmpty()) {
-            return;
+        List<Audition> existing = auditionRepository.findByActorIdAndProjectId(actorId, projectId);
+        for (Audition audition : existing) {
+            Integer personId = audition.getPerson().getId();
+            if (desiredCharacterIds.contains(personId)) {
+                desiredCharacterIds.remove(personId);
+            } else {
+                auditionRepository.delete(audition);
+            }
         }
 
-        for (Integer characterId : new HashSet<>(characterIds)) {
-            Person person = personRepository.findById(characterId).orElse(null);
-            if (person == null || person.getProject() == null || !projectId.equals(person.getProject().getId())) {
+        for (Integer characterId : desiredCharacterIds) {
+            Person person = personRepository.findByIdAndProjectId(characterId, projectId).orElse(null);
+            if (person == null) {
                 continue;
             }
             Audition audition = new Audition();

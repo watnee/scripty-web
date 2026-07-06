@@ -28,8 +28,10 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class ActorServiceImpl implements ActorService {
 
     private final ActorRepository actorRepository;
@@ -170,7 +172,7 @@ public class ActorServiceImpl implements ActorService {
     @Override
     public ActorProfileViewModel getActorProfileViewModel(Integer id) {
         ActorProfileViewModel vm = new ActorProfileViewModel();
-        Actor actor = actorRepository.findById(id).orElse(null);
+        Actor actor = actorRepository.findByIdWithProjects(id).orElse(null);
         vm.setId(actor.getId());
         vm.setFirst(actor.getFirstName());
         vm.setLast(actor.getLastName());
@@ -240,7 +242,7 @@ public class ActorServiceImpl implements ActorService {
     @Override
     public EditActorViewModel getEditActorViewModel(Integer id) {
         EditActorViewModel vm = new EditActorViewModel();
-        Actor actor = actorRepository.findById(id).orElse(null);
+        Actor actor = actorRepository.findByIdWithProjects(id).orElse(null);
         vm.setId(id);
         vm.setHasHeadshot(actorHeadshotService.hasHeadshot(actor));
         EditActorCommandModel commandModel = new EditActorCommandModel();
@@ -293,7 +295,7 @@ public class ActorServiceImpl implements ActorService {
 
     @Override
     public Actor deleteActor(Integer id) {
-        Actor actor = actorRepository.findById(id).orElse(null);
+        Actor actor = actorRepository.findByIdWithProjects(id).orElse(null);
         actorHeadshotService.deleteHeadshot(actor);
         actorRepository.delete(actor);
         return actor;

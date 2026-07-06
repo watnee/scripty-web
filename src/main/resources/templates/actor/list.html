@@ -229,7 +229,8 @@
                                                                 <input type="checkbox"
                                                                        name="characterIds"
                                                                        th:value="${character.id}"
-                                                                       th:checked="${#lists.contains(actor.auditionCharacterIds, character.id)}" />
+                                                                       th:checked="${actor.isAuditioningFor(character.id)}"
+                                                                       onchange="this.form.submit()" />
                                                                 <span th:text="${character.name}"></span>
                                                             </label>
                                                         </div>
@@ -284,32 +285,6 @@
                 window.location.href = url.toString();
             });
         }
-
-        document.querySelectorAll('.casting-auditions-form').forEach(function(form) {
-            form.addEventListener('change', function(event) {
-                const checkbox = event.target;
-                if (!checkbox.matches('input[type="checkbox"][name="characterIds"]')) {
-                    return;
-                }
-
-                checkbox.disabled = true;
-
-                fetch(form.action, {
-                    method: 'POST',
-                    body: new FormData(form)
-                }).then(function(response) {
-                    if (response.ok) {
-                        window.location.reload();
-                        return;
-                    }
-                    throw new Error('Unable to save audition');
-                }).catch(function() {
-                    checkbox.disabled = false;
-                    checkbox.checked = !checkbox.checked;
-                    window.alert('Unable to save audition. Please try again.');
-                });
-            });
-        });
 
         function sortActors() {
             if (!actorTbody || !sortSelect) return;

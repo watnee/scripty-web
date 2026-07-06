@@ -97,4 +97,8 @@ public class ActorViewModel {
         this.auditionCharacterIds = auditionCharacterIds;
     }
 
+    public boolean isAuditioningFor(int characterId) {
+        return auditionCharacterIds.contains(characterId);
+    }
+
 }

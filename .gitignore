@@ -442,6 +442,8 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+uploads/
+
 /target/
 /nbproject/
 /db/

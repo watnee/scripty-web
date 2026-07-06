@@ -29,10 +29,16 @@ spring:
   h2:
     console:
       enabled: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
 
 ADMIN_USERNAME: admin
 ADMIN_PASSWORD: admin
 
 app:
-  asset-version: 60
+  asset-version: 64
+  uploads-dir: ./uploads
+  headshot-max-bytes: 5242880
 

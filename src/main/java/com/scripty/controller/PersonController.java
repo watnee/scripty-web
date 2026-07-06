@@ -128,4 +128,14 @@ public class PersonController {
 
         return "redirect:/character/show?id=" + person.getId();
     }
+
+    @RequestMapping(value = "/assignActor", method = RequestMethod.POST)
+    public String assignActor(@RequestParam Integer characterId,
+                              @RequestParam(required = false) Integer actorId) {
+
+        Person person = personService.assignActorToCharacter(characterId, actorId);
+        projectVersionService.autoSaveVersionForPerson(person.getId());
+
+        return "redirect:/actor/list?projectId=" + person.getProject().getId();
+    }
 }

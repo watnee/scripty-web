@@ -1,11 +1,15 @@
 package com.scripty.viewmodel.actor.actorlist;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CastingCharacterViewModel {
 
     private int id;
     private String name;
     private Integer actorId;
     private String actorName;
+    private List<AuditionActorViewModel> auditionActors = new ArrayList<>();
 
     public int getId() {
         return id;
@@ -37,5 +41,13 @@ public class CastingCharacterViewModel {
 
     public void setActorName(String actorName) {
         this.actorName = actorName;
+    }
+
+    public List<AuditionActorViewModel> getAuditionActors() {
+        return auditionActors;
+    }
+
+    public void setAuditionActors(List<AuditionActorViewModel> auditionActors) {
+        this.auditionActors = auditionActors;
     }
 }

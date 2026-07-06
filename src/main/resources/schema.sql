@@ -37,7 +37,16 @@ CREATE TABLE IF NOT EXISTS actor (
 	last_name varchar(30) NULL,
 	phone varchar(20) NULL,
 	email varchar(30) NULL,
+	headshot_path varchar(255) NULL,
 	PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS actor_project (
+	actor_id int NOT NULL,
+	project_id int NOT NULL,
+	PRIMARY KEY (actor_id, project_id),
+	FOREIGN KEY (actor_id) REFERENCES actor(id) ON DELETE CASCADE,
+	FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS person (
@@ -49,6 +58,16 @@ CREATE TABLE IF NOT EXISTS person (
 	PRIMARY KEY (id),
 	FOREIGN KEY (actor_id) REFERENCES actor(id) ON DELETE SET NULL,
 	FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS audition (
+	id int NOT NULL AUTO_INCREMENT,
+	actor_id int NOT NULL,
+	person_id int NOT NULL,
+	PRIMARY KEY (id),
+	UNIQUE (actor_id, person_id),
+	FOREIGN KEY (actor_id) REFERENCES actor(id) ON DELETE CASCADE,
+	FOREIGN KEY (person_id) REFERENCES person(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS `block` (

@@ -24,7 +24,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/favicon.ico", "/css/**", "/js/**", "/fonts/**", "/login", "/manifest.json", "/sw.js", "/offline.html", "/icons/**", "/help", "/shortcuts").permitAll()
                 .requestMatchers("/api/user/**", "/user/**").hasRole("ADMIN")
-                .requestMatchers("/project/**", "/actor/**", "/scene/**", "/block/**", "/character/**", "/team/**").hasRole("USER")
+                .requestMatchers("/project/**", "/actor/**", "/audition/**", "/scene/**", "/block/**", "/character/**", "/team/**").hasRole("USER")
                 .anyRequest().permitAll()
             )
             .formLogin(form -> form

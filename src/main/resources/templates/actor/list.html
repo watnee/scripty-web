@@ -83,7 +83,7 @@
 
             <div class="casting-section-header casting-section-header--actors">
                 <h2>Actors</h2>
-                <a th:href="@{/actor/create}" role="button" class="casting-section-action-btn">New Actor</a>
+                <a th:href="@{/actor/create(projectId=${viewModel.characterProjectId})}" role="button" class="casting-section-action-btn">New Actor</a>
             </div>
 
             <div class="casting-section-body casting-section-body--characters"
@@ -108,12 +108,34 @@
                                                 </span>
                                             </div>
                                             <div class="casting-list-secondary">
-                                                <div class="casting-list-meta" th:if="${character.actorName != null}">
-                                                    <span class="casting-list-contact">
+                                                <form th:action="@{/character/assignActor}"
+                                                      method="post"
+                                                      class="casting-assign-form"
+                                                      hx-boost="false">
+                                                    <input type="hidden" name="characterId" th:value="${character.id}" />
+                                                    <label class="casting-assign-label">
                                                         <span class="casting-list-contact-label">Actor</span>
-                                                        <a th:href="@{/actor/show(id=${character.actorId})}"
-                                                           th:text="${character.actorName}"></a>
-                                                    </span>
+                                                        <select name="actorId"
+                                                                class="casting-assign-select"
+                                                                aria-label="Assign actor to character"
+                                                                onchange="this.form.submit()">
+                                                            <option value=""
+                                                                    th:selected="${character.actorId == null}">Unassigned</option>
+                                                            <option th:each="actor : ${viewModel.actors}"
+                                                                    th:value="${actor.id}"
+                                                                    th:text="${actor.first + (actor.last != null && !#strings.isEmpty(actor.last) ? ' ' + actor.last : '')}"
+                                                                    th:selected="${character.actorId != null and character.actorId == actor.id}"></option>
+                                                        </select>
+                                                    </label>
+                                                </form>
+                                                <div class="casting-list-auditions" th:if="${!#lists.isEmpty(character.auditionActors)}">
+                                                    <span class="casting-list-contact-label">Auditioning</span>
+                                                    <div class="casting-list-roles">
+                                                        <a th:each="auditionActor : ${character.auditionActors}"
+                                                           th:href="@{/actor/show(id=${auditionActor.id})}"
+                                                           class="casting-list-role casting-list-role--audition"
+                                                           th:text="${auditionActor.name}"></a>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -149,6 +171,17 @@
                                 th:attr="data-sort-name=${#strings.toLowerCase(actor.first + ' ' + actor.last)}">
                                 <td class="casting-list-main-cell">
                                     <div class="casting-list-item">
+                                        <div class="actor-headshot-preview-wrap actor-headshot-preview-wrap--list"
+                                             th:if="${actor.hasHeadshot}">
+                                            <img th:src="@{/actor/headshot(id=${actor.id})}"
+                                                 alt=""
+                                                 class="actor-headshot-preview actor-headshot-preview--list" />
+                                        </div>
+                                        <div class="actor-headshot-placeholder actor-headshot-placeholder--list"
+                                             th:if="${!actor.hasHeadshot}"
+                                             aria-hidden="true">
+                                            <span th:text="${#strings.substring(actor.first, 0, 1)}"></span>
+                                        </div>
                                         <div class="casting-list-info">
                                             <div class="casting-list-name-row">
                                                 <a th:href="@{/actor/show(id=${actor.id})}"
@@ -176,6 +209,32 @@
                                                        class="casting-list-role"
                                                        th:text="${character.name}"></a>
                                                 </div>
+                                                <details class="casting-auditions"
+                                                         th:if="${viewModel.characterProjectId != null and !#lists.isEmpty(viewModel.characters)}">
+                                                    <summary class="casting-auditions-summary">
+                                                        Auditions
+                                                        <span class="casting-auditions-count"
+                                                              th:if="${!#lists.isEmpty(actor.auditionCharacters)}"
+                                                              th:text="'(' + ${#lists.size(actor.auditionCharacters)} + ')'"></span>
+                                                    </summary>
+                                                    <form th:action="@{/audition/set}"
+                                                          method="post"
+                                                          class="casting-auditions-form"
+                                                          hx-boost="false">
+                                                        <input type="hidden" name="actorId" th:value="${actor.id}" />
+                                                        <input type="hidden" name="projectId" th:value="${viewModel.characterProjectId}" />
+                                                        <div class="casting-audition-options">
+                                                            <label th:each="character : ${viewModel.characters}"
+                                                                   class="casting-audition-option">
+                                                                <input type="checkbox"
+                                                                       name="characterIds"
+                                                                       th:value="${character.id}"
+                                                                       th:checked="${#lists.contains(actor.auditionCharacterIds, character.id)}" />
+                                                                <span th:text="${character.name}"></span>
+                                                            </label>
+                                                        </div>
+                                                    </form>
+                                                </details>
                                             </div>
                                         </div>
                                         <div class="casting-list-actions project-list-actions">
@@ -196,7 +255,7 @@
                 <div class="casting-section-empty" th:if="${#lists.isEmpty(viewModel.actors)}">
                     <p class="project-list-empty-title">No actors yet</p>
                     <p class="muted">Add your first actor to start building your casting directory.</p>
-                    <a th:href="@{/actor/create}" role="button">Create New Actor</a>
+                    <a th:href="@{/actor/create(projectId=${viewModel.characterProjectId})}" role="button">Create New Actor</a>
                 </div>
             </div>
         </div>
@@ -225,6 +284,32 @@
                 window.location.href = url.toString();
             });
         }
+
+        document.querySelectorAll('.casting-auditions-form').forEach(function(form) {
+            form.addEventListener('change', function(event) {
+                const checkbox = event.target;
+                if (!checkbox.matches('input[type="checkbox"][name="characterIds"]')) {
+                    return;
+                }
+
+                checkbox.disabled = true;
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form)
+                }).then(function(response) {
+                    if (response.ok) {
+                        window.location.reload();
+                        return;
+                    }
+                    throw new Error('Unable to save audition');
+                }).catch(function() {
+                    checkbox.disabled = false;
+                    checkbox.checked = !checkbox.checked;
+                    window.alert('Unable to save audition. Please try again.');
+                });
+            });
+        });
 
         function sortActors() {
             if (!actorTbody || !sortSelect) return;

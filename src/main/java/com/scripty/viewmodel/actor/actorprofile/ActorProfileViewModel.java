@@ -5,6 +5,7 @@
  */
 package com.scripty.viewmodel.actor.actorprofile;
 
+import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +20,10 @@ public class ActorProfileViewModel {
     private String last;
     private String phone;
     private String email;
+    private boolean hasHeadshot;
+    private List<ProjectViewModel> projects = new ArrayList<>();
     private List<AssignedRoleViewModel> assignedRoles = new ArrayList<>();
+    private List<AssignedRoleViewModel> auditionRoles = new ArrayList<>();
 
     public int getId() {
         return id;
@@ -61,12 +65,36 @@ public class ActorProfileViewModel {
         this.email = email;
     }
 
+    public boolean isHasHeadshot() {
+        return hasHeadshot;
+    }
+
+    public void setHasHeadshot(boolean hasHeadshot) {
+        this.hasHeadshot = hasHeadshot;
+    }
+
+    public List<ProjectViewModel> getProjects() {
+        return projects;
+    }
+
+    public void setProjects(List<ProjectViewModel> projects) {
+        this.projects = projects;
+    }
+
     public List<AssignedRoleViewModel> getAssignedRoles() {
         return assignedRoles;
     }
 
     public void setAssignedRoles(List<AssignedRoleViewModel> assignedRoles) {
         this.assignedRoles = assignedRoles;
+    }
+
+    public List<AssignedRoleViewModel> getAuditionRoles() {
+        return auditionRoles;
+    }
+
+    public void setAuditionRoles(List<AssignedRoleViewModel> auditionRoles) {
+        this.auditionRoles = auditionRoles;
     }
 
 }

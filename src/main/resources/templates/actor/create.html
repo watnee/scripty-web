@@ -11,37 +11,139 @@
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
-    <div th:replace="~{fragments/nav :: nav('')}"></div>
-    <main>
-        <h1>Create New Actor</h1>
-        <form th:action="@{/actor/create}" method="post" th:object="${commandModel}">
-            <label>
-                First Name
-                <input type="text" th:field="*{first}" />
-                <span th:if="${#fields.hasErrors('first')}" th:errors="*{first}"></span>
-            </label>
-            <label>
-                Last Name
-                <input type="text" th:field="*{last}" />
-                <span th:if="${#fields.hasErrors('last')}" th:errors="*{last}"></span>
-            </label>
-            <label>
-                Phone
-                <input type="text" th:field="*{phone}" />
-                <span th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
-            </label>
-            <label>
-                Email
-                <input type="text" th:field="*{email}" />
-                <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
-            </label>
-            <p>
-                <a th:href="@{/actor/list}" role="button">Cancel</a>
-                <button type="submit">Submit</button>
-            </p>
+    <div th:replace="~{fragments/nav :: nav('casting')}"></div>
+    <main class="actor-form-page">
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li>
+                    <a th:if="${!#lists.isEmpty(commandModel.projectIds)}"
+                       th:href="@{/actor/list(projectId=${commandModel.projectIds[0]})}">Casting</a>
+                    <a th:if="${#lists.isEmpty(commandModel.projectIds)}" th:href="@{/actor/list}">Casting</a>
+                </li>
+                <li aria-current="page">New Actor</li>
+            </ol>
+        </nav>
+
+        <header class="actor-form-header">
+            <div class="actor-form-header-text">
+                <h1>Create New Actor</h1>
+                <p class="muted">Add an actor to one or more projects.</p>
+            </div>
+        </header>
+
+        <form th:action="@{/actor/create}"
+              method="post"
+              enctype="multipart/form-data"
+              hx-boost="false"
+              th:object="${commandModel}"
+              class="actor-form">
+
+            <section class="actor-form-card actor-form-headshot-card">
+                <h2>Headshot</h2>
+                <div class="actor-headshot-editor actor-headshot-editor--create">
+                    <div class="actor-headshot-preview-wrap">
+                        <div class="actor-headshot-placeholder actor-headshot-placeholder--empty" aria-hidden="true">?</div>
+                        <img id="actor-headshot-preview-create"
+                             alt=""
+                             class="actor-headshot-preview"
+                             hidden />
+                    </div>
+                    <div class="actor-headshot-controls">
+                        <label for="actor-headshot-create" class="actor-headshot-upload-label">
+                            Upload photo
+                            <input id="actor-headshot-create"
+                                   type="file"
+                                   name="headshot"
+                                   accept="image/jpeg,image/png,image/webp,image/gif"
+                                   class="actor-headshot-input" />
+                        </label>
+                        <p class="actor-form-hint">Optional. JPG, PNG, WebP, or GIF up to 5 MB.</p>
+                        <span class="actor-form-error" th:if="${#fields.hasErrors('headshot')}" th:errors="headshot"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="actor-form-card" th:if="${!#lists.isEmpty(viewModel.projects)}">
+                <h2>Projects</h2>
+                <div class="actor-form-fields">
+                    <fieldset class="actor-form-project-fieldset">
+                        <legend class="visually-hidden">Select projects for this actor</legend>
+                        <div class="actor-form-project-list">
+                            <label th:each="project : ${viewModel.projects}" class="actor-form-project-option">
+                                <input type="checkbox"
+                                       name="projectIds"
+                                       th:value="${project.id}"
+                                       th:checked="${commandModel.projectIds != null and #lists.contains(commandModel.projectIds, project.id)}" />
+                                <span th:text="${project.title}"></span>
+                            </label>
+                        </div>
+                    </fieldset>
+                    <span class="actor-form-hint">This actor appears in casting for each selected project.</span>
+                    <span class="actor-form-error" th:if="${#fields.hasErrors('projectIds')}" th:errors="*{projectIds}"></span>
+                </div>
+            </section>
+
+            <section class="actor-form-card">
+                <h2>Name</h2>
+                <div class="actor-form-fields actor-form-row">
+                    <div class="actor-form-field">
+                        <label for="actor-first">First name</label>
+                        <input id="actor-first" type="text" th:field="*{first}" autocomplete="given-name" required />
+                        <span class="actor-form-error" th:if="${#fields.hasErrors('first')}" th:errors="*{first}"></span>
+                    </div>
+                    <div class="actor-form-field">
+                        <label for="actor-last">Last name</label>
+                        <input id="actor-last" type="text" th:field="*{last}" autocomplete="family-name" />
+                        <span class="actor-form-error" th:if="${#fields.hasErrors('last')}" th:errors="*{last}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="actor-form-card">
+                <h2>Contact</h2>
+                <div class="actor-form-fields">
+                    <div class="actor-form-field">
+                        <label for="actor-phone">Phone</label>
+                        <input id="actor-phone" type="tel" th:field="*{phone}" autocomplete="tel" placeholder="Optional" />
+                        <span class="actor-form-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
+                    </div>
+                    <div class="actor-form-field">
+                        <label for="actor-email">Email</label>
+                        <input id="actor-email" type="email" th:field="*{email}" autocomplete="email" placeholder="Optional" />
+                        <span class="actor-form-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="actor-form-actions">
+                <a th:if="${!#lists.isEmpty(commandModel.projectIds)}"
+                   th:href="@{/actor/list(projectId=${commandModel.projectIds[0]})}"
+                   role="button"
+                   class="actor-form-cancel">Cancel</a>
+                <a th:if="${#lists.isEmpty(commandModel.projectIds)}"
+                   th:href="@{/actor/list}"
+                   role="button"
+                   class="actor-form-cancel">Cancel</a>
+                <button type="submit" class="actor-form-submit">Create Actor</button>
+            </div>
         </form>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script>
+    (function() {
+        const input = document.getElementById('actor-headshot-create');
+        const preview = document.getElementById('actor-headshot-preview-create');
+        const placeholder = document.querySelector('.actor-headshot-placeholder--empty');
+        if (!input || !preview) return;
+        input.addEventListener('change', function() {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            preview.src = URL.createObjectURL(file);
+            preview.hidden = false;
+            if (placeholder) placeholder.hidden = true;
+        });
+    })();
+    </script>
 </body>
 </html>

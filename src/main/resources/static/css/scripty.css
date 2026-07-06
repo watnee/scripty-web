@@ -4608,6 +4608,7 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
 .text-size-control .version-history-toolbar-btn svg,
 .text-size-control .title-page-toolbar-btn svg,
 .text-size-control .print-toolbar-btn svg,
+.text-size-control .import-toolbar-btn svg,
 .text-size-control .focus-toolbar-btn svg {
     display: block;
 }

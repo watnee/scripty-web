@@ -1,0 +1,77 @@
+package com.scripty.service;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+import org.apache.poi.hwpf.HWPFDocument;
+import org.apache.poi.hwpf.extractor.WordExtractor;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+@Component
+public class ScriptImportTextExtractor {
+
+    public String extract(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            return "";
+        }
+
+        String filename = file.getOriginalFilename();
+        String lowerName = filename != null ? filename.toLowerCase(Locale.ROOT) : "";
+        String contentType = file.getContentType() != null ? file.getContentType().toLowerCase(Locale.ROOT) : "";
+
+        if (isDocx(lowerName, contentType)) {
+            return extractDocx(file.getInputStream());
+        }
+        if (isDoc(lowerName, contentType)) {
+            return extractDoc(file.getInputStream());
+        }
+
+        return new String(file.getBytes(), StandardCharsets.UTF_8);
+    }
+
+    private static boolean isDocx(String lowerName, String contentType) {
+        return lowerName.endsWith(".docx")
+                || contentType.contains("wordprocessingml.document");
+    }
+
+    private static boolean isDoc(String lowerName, String contentType) {
+        return lowerName.endsWith(".doc")
+                || "application/msword".equals(contentType);
+    }
+
+    private static String extractDocx(InputStream inputStream) throws IOException {
+        try (XWPFDocument document = new XWPFDocument(inputStream)) {
+            StringBuilder text = new StringBuilder();
+            for (XWPFParagraph paragraph : document.getParagraphs()) {
+                appendParagraph(text, paragraph.getText());
+            }
+            return text.toString();
+        }
+    }
+
+    private static String extractDoc(InputStream inputStream) throws IOException {
+        try (HWPFDocument document = new HWPFDocument(inputStream);
+             WordExtractor extractor = new WordExtractor(document)) {
+            return normalizeLineEndings(extractor.getText());
+        }
+    }
+
+    private static void appendParagraph(StringBuilder text, String paragraphText) {
+        if (paragraphText == null) {
+            return;
+        }
+        String trimmed = paragraphText.stripTrailing();
+        if (text.length() > 0) {
+            text.append('\n');
+        }
+        text.append(trimmed);
+    }
+
+    private static String normalizeLineEndings(String text) {
+        return text.replace("\r\n", "\n").replace('\r', '\n');
+    }
+}

@@ -12,11 +12,13 @@ import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.service.BlockService;
+import com.scripty.service.FountainImportService;
 import com.scripty.service.ProjectService;
 import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.TeamService;
 import com.scripty.service.UserService;
+import java.io.IOException;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -35,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 @RequestMapping(value = "/project")
@@ -57,6 +60,9 @@ public class ProjectController {
 
     @Autowired
     TeamService teamService;
+
+    @Autowired
+    FountainImportService fountainImportService;
 
     @RequestMapping(value = "/list")
     public String list(Model model, Principal principal) {
@@ -370,6 +376,18 @@ public class ProjectController {
         model.addAttribute("commandModel", viewModel.getCreateProjectCommandModel());
 
         return "project/create";
+    }
+
+    @RequestMapping(value = "/import", method = RequestMethod.POST)
+    public String importScript(@RequestParam Integer id,
+                               @RequestParam("file") MultipartFile file) throws IOException {
+        if (projectService.read(id) == null) {
+            return "redirect:/project/list";
+        }
+        if (file != null && !file.isEmpty()) {
+            fountainImportService.importFileIntoProject(id, file);
+        }
+        return "redirect:/project/show?id=" + id;
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)

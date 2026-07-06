@@ -100,6 +100,30 @@
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
             </a>
+            <button id="nav-import"
+                    type="button"
+                    class="nav-dropdown-toggle import-toolbar-btn"
+                    aria-label="Import script"
+                    title="Import Fountain, text, or Word document">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+            </button>
+            <form id="project-import-form"
+                  th:action="@{/project/import(id=${viewModel.id})}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  hx-boost="false"
+                  hidden>
+                <input type="file"
+                       id="project-import-file"
+                       name="file"
+                       accept=".fountain,.txt,.doc,.docx,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                       aria-hidden="true"
+                       tabindex="-1" />
+            </form>
             <a class="nav-dropdown-toggle title-page-toolbar-btn"
                th:href="@{/project/titlePage(id=${viewModel.id})}"
                aria-label="Title page"
@@ -220,6 +244,7 @@
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:src="@{/js/text-size.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/focus-mode.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/import-script.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/block-empty-guard.js(v=${assetVersion})}"></script>
     <script th:inline="javascript">
     document.querySelectorAll('.project-script .scene-blocks').forEach(function(sceneBlocks) {

@@ -83,6 +83,7 @@
                 </svg>
             </button>
             <div class="nav-dropdown-menu">
+                <a class="nav-dropdown-item" th:href="@{/login}" sec:authorize="!isAuthenticated()">Sign In</a>
                 <a class="nav-dropdown-item" th:href="@{/team/list}" th:classappend="${currentPage == 'teams'} ? 'active'" sec:authorize="isAuthenticated()">Teams</a>
                 <a class="nav-dropdown-item" th:href="@{/user/list}" th:classappend="${currentPage == 'users'} ? 'active'" sec:authorize="hasRole('ROLE_ADMIN')">Users</a>
                 <hr class="nav-dropdown-divider" sec:authorize="isAuthenticated()">
@@ -1846,15 +1847,23 @@
             link.href = '/css/scripty.css?v=' + expected;
         }
 
+        function prepareBreadcrumbLinks() {
+            document.querySelectorAll('nav[aria-label="Breadcrumb"] a[href]').forEach(function(link) {
+                link.setAttribute('hx-boost', 'false');
+            });
+        }
+
         function syncBodyPageClasses() {
             var path = window.location.pathname || '';
             document.body.classList.toggle('has-toolbar-brand', path === '/project/show');
             document.body.classList.toggle('login-body', path === '/login');
+            document.body.classList.toggle('landing-body', path === '/');
         }
 
         // Run on initial load
         function initAll() {
             syncBodyPageClasses();
+            prepareBreadcrumbLinks();
             syncStylesheetVersion();
             initBlockEmptyBackspace();
             initBlockEditGuards();

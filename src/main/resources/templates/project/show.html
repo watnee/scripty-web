@@ -36,7 +36,7 @@
         <div class="project-top-bar-breadcrumb">
             <nav aria-label="Breadcrumb">
                 <ol>
-                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/list}" hx-boost="false">Projects</a></li>
                     <li id="project-breadcrumb-title" aria-current="page" th:text="${viewModel.title}"></li>
                 </ol>
             </nav>

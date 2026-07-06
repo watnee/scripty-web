@@ -2175,6 +2175,314 @@ html.scripty-hide-block-pins .block-action-pin {
     line-height: 1.3;
 }
 
+/* Production Page */
+.production-page {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0 1.25rem 2.5rem;
+    line-height: 1.5;
+}
+
+.production-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 0.75rem 0 1.75rem;
+}
+
+.production-header-text h1 {
+    margin: 0 0 0.35rem;
+}
+
+.production-subtitle {
+    margin: 0 0 0.75rem;
+}
+
+.production-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.production-meta-stat {
+    font-size: 0.85rem;
+    color: var(--muted-fg, #64748b);
+}
+
+.production-open-script-btn {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.production-card-grid {
+    margin-top: 0.25rem;
+}
+
+.production-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.production-card-link:hover {
+    color: inherit;
+}
+
+.production-card-link h3 {
+    color: var(--accent, #1e293b);
+}
+
+.production-team-section {
+    margin-bottom: 1.5rem;
+}
+
+.production-team-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.production-team-header h2 {
+    margin: 0;
+}
+
+.production-team-manage-link {
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.production-team-empty {
+    margin: 0 0 0.75rem;
+}
+
+.production-team-form {
+    margin: 0 0 0.75rem;
+}
+
+.production-team-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0;
+}
+
+.production-team-label-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted-fg, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.production-team-select {
+    max-width: 20rem;
+    margin: 0;
+}
+
+.production-team-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.production-team-action-link {
+    font-size: 0.9rem;
+}
+
+.production-team-create-btn {
+    margin: 0;
+}
+
+.production-team-productions {
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px dashed var(--border, #cbd5e1);
+}
+
+.production-team-productions-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted-fg, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.4rem;
+}
+
+.production-team-production-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.production-team-production-link {
+    display: inline-block;
+    font-size: 0.85rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--border, #cbd5e1);
+    background: var(--accent-bg, rgba(0, 0, 0, 0.03));
+    text-decoration: none;
+    color: var(--fg, inherit);
+}
+
+.production-team-production-link:hover {
+    border-color: var(--accent, #475569);
+    color: var(--accent, #475569);
+}
+
+.production-team-productions-empty {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+/* Teams List Page */
+.team-list-page {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0 1.25rem 2.5rem;
+    line-height: 1.5;
+}
+
+.team-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 0.75rem 0 1.25rem;
+}
+
+.team-list-header-text h1 {
+    margin: 0 0 0.35rem;
+}
+
+.team-list-header-text .muted {
+    margin: 0;
+}
+
+.team-list-create-btn {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.team-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.team-list-info {
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
+.team-list-name-row {
+    margin-bottom: 0.5rem;
+}
+
+.team-list-productions {
+    margin-bottom: 0.65rem;
+}
+
+.team-list-productions-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted-fg, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.35rem;
+}
+
+.team-list-production-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.team-list-production-link {
+    display: inline-block;
+    font-size: 0.85rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--border, #cbd5e1);
+    background: var(--accent-bg, rgba(0, 0, 0, 0.03));
+    text-decoration: none;
+    color: var(--fg, inherit);
+}
+
+.team-list-production-link:hover {
+    border-color: var(--accent, #475569);
+    color: var(--accent, #475569);
+}
+
+.team-list-unassigned {
+    font-size: 0.85rem;
+}
+
+.team-production-assign {
+    margin-top: 0.35rem;
+}
+
+.team-production-assign-summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--accent, #475569);
+    user-select: none;
+}
+
+.team-production-assign-form {
+    margin: 0.65rem 0 0;
+    padding-top: 0.65rem;
+    border-top: 1px dashed var(--border, #cbd5e1);
+}
+
+.team-production-assign-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.65rem;
+}
+
+.team-production-assign-option {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.team-production-assign-other {
+    font-size: 0.8rem;
+}
+
+.team-production-assign-save {
+    margin: 0;
+}
+
+.team-list-actions {
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .team-list-item {
+        flex-direction: column;
+    }
+
+    .team-list-actions {
+        width: 100%;
+    }
+}
+
 /* Actor Profile Page */
 .actor-profile-page {
     max-width: 760px;

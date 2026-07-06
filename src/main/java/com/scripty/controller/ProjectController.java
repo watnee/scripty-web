@@ -5,21 +5,26 @@ import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
 import com.scripty.dto.Project;
 import com.scripty.dto.Scene;
+import com.scripty.dto.Team;
 import com.scripty.dto.User;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
+import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.commandmodel.scene.createscene.CreateSceneCommandModel;
 import com.scripty.service.ProjectService;
 import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.SceneService;
+import com.scripty.service.TeamService;
 import com.scripty.service.UserService;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,6 +56,9 @@ public class ProjectController {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    TeamService teamService;
 
     @RequestMapping(value = "/list")
     public String list(Model model, Principal principal) {
@@ -271,6 +279,67 @@ public class ProjectController {
             }
         }
         model.addAttribute("defaultProjectId", defaultProjectId);
+    }
+
+    @RequestMapping(value = "/production")
+    public String production(@RequestParam(required = false) Integer id, Model model) {
+        if (id == null || projectService.read(id) == null) {
+            return "redirect:/project/list";
+        }
+
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+        List<Team> teams = teamService.list();
+        Integer teamId = resolveTeamId(viewModel.getTeam(), teams);
+        List<ProjectViewModel> teamProductions = listTeamProductions(id, viewModel.getTeam());
+
+        model.addAttribute("viewModel", viewModel);
+        model.addAttribute("teams", teams);
+        model.addAttribute("teamId", teamId);
+        model.addAttribute("teamProductions", teamProductions);
+        return "project/production";
+    }
+
+    @RequestMapping(value = "/production/team", method = RequestMethod.POST)
+    public String setProductionTeam(@RequestParam Integer id, @RequestParam(required = false) String team) {
+        Project project = projectService.read(id);
+        if (project == null) {
+            return "redirect:/project/list";
+        }
+
+        EditProjectCommandModel commandModel = new EditProjectCommandModel();
+        commandModel.setId(id);
+        commandModel.setTitle(project.getTitle());
+        commandModel.setTeam(team == null || team.isBlank() ? null : team.trim());
+        projectService.saveEditProjectCommandModel(commandModel);
+
+        return "redirect:/project/production?id=" + id;
+    }
+
+    private Integer resolveTeamId(String teamName, List<Team> teams) {
+        if (teamName == null || teamName.isBlank()) {
+            return null;
+        }
+        for (Team team : teams) {
+            if (teamName.equals(team.getName())) {
+                return team.getId();
+            }
+        }
+        return null;
+    }
+
+    private List<ProjectViewModel> listTeamProductions(Integer projectId, String teamName) {
+        List<ProjectViewModel> teamProductions = new ArrayList<>();
+        if (teamName == null || teamName.isBlank()) {
+            return teamProductions;
+        }
+
+        ProjectListViewModel projects = projectService.getProjectListViewModel();
+        for (ProjectViewModel project : projects.getProjects()) {
+            if (teamName.equals(project.getTeam()) && project.getId() != projectId) {
+                teamProductions.add(project);
+            }
+        }
+        return teamProductions;
     }
 
     @RequestMapping(value = "/titlePage")

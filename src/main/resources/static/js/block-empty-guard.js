@@ -1,5 +1,8 @@
 /**
- * Prevents Backspace/Delete in empty block textareas from removing block rows.
+ * Backspace/Delete in an empty block textarea deletes the block (saved blocks
+ * via /block/deleteInline, unsaved create rows are just removed) and moves
+ * focus to the previous block. Also prevents blank content from being saved
+ * and Backspace from triggering browser back-navigation.
  * Loaded on the screenplay page with a cache-busted asset version.
  */
 (function() {
@@ -77,6 +80,7 @@
         var row = form.closest('[data-block-id]');
         var blockContent = form.closest('.block-content');
         if (!row || !blockContent) return;
+        if (!row.isConnected || row.dataset.deleting === 'true') return;
         var textarea = form.querySelector('textarea[name="content"]');
         if (!textarea || textarea.value.trim() !== '') return;
 
@@ -102,7 +106,30 @@
     }
 
     function onEmptyBlockDeleteKey(ta) {
-        ta.focus({ preventScroll: true });
+        var row = findAnyBlockRow(ta);
+        if (!row) return;
+        var prevRow = findAdjacentBlockRow(row, 'moveUp');
+
+        if (!row.hasAttribute('data-block-id')) {
+            if (removeEmptyCreateRow(row)) {
+                focusBlockContentEnd(prevRow);
+            }
+            return;
+        }
+
+        if (row.dataset.deleting === 'true') return;
+        row.dataset.deleting = 'true';
+        fetch('/block/deleteInline?id=' + encodeURIComponent(row.getAttribute('data-block-id')), {
+            method: 'POST',
+            credentials: 'same-origin'
+        }).then(function(response) {
+            if (!response.ok) throw new Error('delete failed');
+            row.remove();
+            focusBlockContentEnd(prevRow);
+        }).catch(function() {
+            delete row.dataset.deleting;
+            ta.focus({ preventScroll: true });
+        });
     }
 
     function installBlockEmptyGuard() {

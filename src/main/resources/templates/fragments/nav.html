@@ -1512,7 +1512,7 @@
 
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
-            const SW_MIGRATION_KEY = 'sw-migration-v8';
+            const SW_MIGRATION_KEY = 'sw-migration-v9';
 
             async function needsServiceWorkerMigration() {
                 return !localStorage.getItem(SW_MIGRATION_KEY);

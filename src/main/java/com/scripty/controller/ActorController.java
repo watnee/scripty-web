@@ -11,6 +11,7 @@ import com.scripty.dto.Actor;
 import com.scripty.dto.User;
 import com.scripty.viewmodel.actor.actorlist.ActorListViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
+import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.actor.actorprofile.ActorProfileViewModel;
 import com.scripty.viewmodel.actor.createactor.CreateActorViewModel;
 import com.scripty.viewmodel.actor.editactor.EditActorViewModel;
@@ -46,29 +47,54 @@ public class ActorController {
     ProjectService projectService;
     
     @RequestMapping(value = "/list")
-    public String list(Model model, Principal principal) {
+    public String list(@RequestParam(required = false) Integer projectId, Model model, Principal principal) {
 
-        Integer characterProjectId = resolveCharacterProjectId(principal);
-        ActorListViewModel viewModel = actorService.getActorListViewModel(characterProjectId);
-        viewModel.setCharacterProjectId(characterProjectId);
+        UserProjectContext context = resolveUserProjectContext(principal);
+        Integer selectedProjectId = resolveSelectedProjectId(projectId, context);
+
+        ActorListViewModel viewModel = actorService.getActorListViewModel(selectedProjectId);
+        viewModel.setCharacterProjectId(selectedProjectId);
+        viewModel.setProjects(context.projects().getProjects());
 
         model.addAttribute("viewModel", viewModel);
 
         return "actor/list";
     }
 
-    private Integer resolveCharacterProjectId(Principal principal) {
-        if (principal == null) {
+    private Integer resolveSelectedProjectId(Integer requestedProjectId, UserProjectContext context) {
+        if (requestedProjectId != null && isAccessibleProject(requestedProjectId, context.projects())) {
+            return requestedProjectId;
+        }
+
+        if (context.defaultProjectId() != null
+                && isAccessibleProject(context.defaultProjectId(), context.projects())) {
+            return context.defaultProjectId();
+        }
+
+        if (context.projects().getProjects().isEmpty()) {
             return null;
+        }
+
+        return context.projects().getProjects().get(0).getId();
+    }
+
+    private boolean isAccessibleProject(Integer projectId, ProjectListViewModel projects) {
+        for (ProjectViewModel project : projects.getProjects()) {
+            if (project.getId() == projectId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private UserProjectContext resolveUserProjectContext(Principal principal) {
+        if (principal == null) {
+            return new UserProjectContext(null, projectService.getProjectListViewModel());
         }
 
         User currentUser = userService.readByUsername(principal.getName());
         if (currentUser == null) {
-            return null;
-        }
-
-        if (currentUser.getDefaultProjectId() != null) {
-            return currentUser.getDefaultProjectId();
+            return new UserProjectContext(null, projectService.getProjectListViewModel());
         }
 
         String userTeam = null;
@@ -76,12 +102,11 @@ public class ActorController {
             userTeam = currentUser.getTeam();
         }
 
-        ProjectListViewModel projects = projectService.getProjectListViewModel(userTeam);
-        if (projects.getProjects().isEmpty()) {
-            return null;
-        }
+        return new UserProjectContext(currentUser.getDefaultProjectId(),
+                projectService.getProjectListViewModel(userTeam));
+    }
 
-        return projects.getProjects().get(0).getId();
+    private record UserProjectContext(Integer defaultProjectId, ProjectListViewModel projects) {
     }
     
     @RequestMapping(value = "/show")

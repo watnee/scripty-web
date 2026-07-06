@@ -157,6 +157,7 @@ main.home {
 }
 
 #table-actors a,
+#table-characters a,
 #table-projects .project-list-title,
 #table-scenes a,
 #table-blocks a.character-name,
@@ -175,6 +176,7 @@ main.home {
 }
 
 #table-actors td,
+#table-characters td,
 #table-projects td,
 #table-scenes td,
 #table-blocks td,
@@ -1718,9 +1720,77 @@ html.scripty-hide-block-pins .block-action-pin {
 
 /* Casting List Page */
 .casting-list-page {
-    max-width: 920px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 0 1.25rem 2.5rem;
+}
+
+.casting-page-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.casting-section {
+    min-width: 0;
+}
+
+.casting-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.casting-section-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.casting-section-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0.45rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid var(--border, #cbd5e1);
+    background: var(--box-bg, #ffffff);
+    color: var(--fg, inherit) !important;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none !important;
+    white-space: nowrap;
+}
+
+.casting-section-action-btn:hover,
+.casting-section-action-btn:focus-visible {
+    border-color: var(--accent, #475569);
+    color: var(--accent, #475569) !important;
+}
+
+.casting-section-empty {
+    text-align: center;
+    padding: 2rem 1.25rem;
+    border: 1px dashed var(--border, #cbd5e1);
+    border-radius: 12px;
+    background: var(--accent-bg, rgba(0, 0, 0, 0.02));
+}
+
+.casting-section-empty .project-list-empty-title {
+    margin: 0 0 0.35rem;
+}
+
+.casting-section-empty p {
+    margin: 0 0 1rem;
+}
+
+@media (min-width: 960px) {
+    .casting-page-grid:has(> .casting-section + .casting-section) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
 }
 
 .casting-list-header {
@@ -1734,6 +1804,25 @@ html.scripty-hide-block-pins .block-action-pin {
 .casting-list-header-text p {
     margin: 0;
     font-size: 0.95rem;
+}
+
+.casting-project-select-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+}
+
+.casting-project-select-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted-fg, #64748b);
+    white-space: nowrap;
+}
+
+.casting-project-select {
+    min-width: 10rem;
+    max-width: 16rem;
 }
 
 .casting-list-secondary-btn {
@@ -2557,6 +2646,20 @@ kbd {
 
     .project-list-sort {
         width: 100%;
+    }
+
+    .casting-project-select-label {
+        width: 100%;
+    }
+
+    .casting-project-select {
+        width: 100%;
+        max-width: none;
+    }
+
+    .casting-list-secondary-btn {
+        width: 100%;
+        text-align: center;
     }
 
     .project-list-toolbar {

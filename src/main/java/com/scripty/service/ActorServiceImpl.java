@@ -10,6 +10,7 @@ import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.viewmodel.actor.actorlist.ActorListViewModel;
 import com.scripty.viewmodel.actor.actorlist.ActorViewModel;
+import com.scripty.viewmodel.actor.actorlist.CastingCharacterViewModel;
 import com.scripty.viewmodel.actor.actorprofile.ActorProfileViewModel;
 import com.scripty.viewmodel.actor.actorprofile.AssignedRoleViewModel;
 import com.scripty.viewmodel.actor.createactor.CreateActorViewModel;
@@ -42,7 +43,8 @@ public class ActorServiceImpl implements ActorService {
     public ActorListViewModel getActorListViewModel(Integer projectId) {
         ActorListViewModel vm = new ActorListViewModel();
         List<Actor> actors = actorRepository.findAllByOrderByFirstNameAsc();
-        Map<Integer, List<CharacterViewModel>> charactersByActor = buildCharactersByActor(projectId, vm);
+        Map<Integer, List<CharacterViewModel>> charactersByActor = new HashMap<>();
+        List<CastingCharacterViewModel> projectCharacters = loadProjectCharacters(projectId, vm, charactersByActor);
 
         List<ActorViewModel> actorViewModels = new ArrayList<>();
         for (Actor actor : actors) {
@@ -56,35 +58,55 @@ public class ActorServiceImpl implements ActorService {
             actorViewModels.add(avm);
         }
         vm.setActors(actorViewModels);
+        vm.setCharacters(projectCharacters);
         return vm;
     }
 
-    private Map<Integer, List<CharacterViewModel>> buildCharactersByActor(Integer projectId, ActorListViewModel vm) {
-        Map<Integer, List<CharacterViewModel>> charactersByActor = new HashMap<>();
+    private List<CastingCharacterViewModel> loadProjectCharacters(Integer projectId,
+                                                                  ActorListViewModel vm,
+                                                                  Map<Integer, List<CharacterViewModel>> charactersByActor) {
+        List<CastingCharacterViewModel> projectCharacters = new ArrayList<>();
         if (projectId == null) {
-            return charactersByActor;
+            return projectCharacters;
         }
 
         Project project = projectRepository.findById(projectId).orElse(null);
         if (project == null) {
-            return charactersByActor;
+            return projectCharacters;
         }
 
         vm.setCharacterProjectTitle(project.getTitle());
         List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(projectId);
         for (Person person : persons) {
-            if (person.getActor() == null) {
-                continue;
+            CastingCharacterViewModel castingCharacter = new CastingCharacterViewModel();
+            castingCharacter.setId(person.getId());
+            castingCharacter.setName(person.getName());
+
+            if (person.getActor() != null) {
+                Actor assignedActor = actorRepository.findById(person.getActor().getId()).orElse(null);
+                if (assignedActor != null) {
+                    castingCharacter.setActorId(assignedActor.getId());
+                    castingCharacter.setActorName(formatActorName(assignedActor));
+
+                    CharacterViewModel character = new CharacterViewModel();
+                    character.setId(person.getId());
+                    character.setName(person.getName());
+                    charactersByActor
+                            .computeIfAbsent(assignedActor.getId(), ignored -> new ArrayList<>())
+                            .add(character);
+                }
             }
 
-            CharacterViewModel character = new CharacterViewModel();
-            character.setId(person.getId());
-            character.setName(person.getName());
-            charactersByActor
-                    .computeIfAbsent(person.getActor().getId(), ignored -> new ArrayList<>())
-                    .add(character);
+            projectCharacters.add(castingCharacter);
         }
-        return charactersByActor;
+        return projectCharacters;
+    }
+
+    private String formatActorName(Actor actor) {
+        if (actor.getLastName() == null || actor.getLastName().isBlank()) {
+            return actor.getFirstName();
+        }
+        return actor.getFirstName() + " " + actor.getLastName();
     }
 
     @Override

@@ -3941,7 +3941,7 @@ kbd {
 
 .project-top-bar-breadcrumb {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     width: 100%;
 }
 
@@ -3950,7 +3950,7 @@ kbd {
 }
 
 .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol {
-    justify-content: center;
+    justify-content: flex-start;
 }
 
 body.has-toolbar-brand {

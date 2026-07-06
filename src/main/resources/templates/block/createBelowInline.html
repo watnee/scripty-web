@@ -9,7 +9,7 @@
     <td class="block-content">
         <form th:attr="hx-post=@{/block/createBelowInline}" hx-target="closest tr" hx-swap="outerHTML" hx-trigger="keydown[key=='Enter'&amp;&amp;!event.shiftKey] from:find textarea, createNext">
             <input type="hidden" name="id" th:value="${blockId}" />
-            <textarea spellcheck="true" rows="1" class="block-input-textarea" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey)event.preventDefault()" _="on blur if my value.trim() is '' and closest &lt;table/&gt;'s querySelectorAll('tr').length > 1 remove closest &lt;tr/&gt;"></textarea>
+            <textarea spellcheck="true" rows="1" class="block-input-textarea" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey)event.preventDefault()" _="on blur if my value.trim() is '' and (closest &lt;table/&gt;).querySelectorAll('tr').length is greater than 1 remove closest &lt;tr/&gt;"></textarea>
         </form>
     </td>
     <td></td>

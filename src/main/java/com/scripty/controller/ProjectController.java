@@ -12,6 +12,7 @@ import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.service.BlockService;
+import com.scripty.service.FountainExportService;
 import com.scripty.service.FountainImportService;
 import com.scripty.service.ProjectService;
 import com.scripty.service.ProjectUndoRedoService;
@@ -19,6 +20,7 @@ import com.scripty.service.ProjectVersionService;
 import com.scripty.service.TeamService;
 import com.scripty.service.UserService;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -27,6 +29,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -63,6 +68,9 @@ public class ProjectController {
 
     @Autowired
     FountainImportService fountainImportService;
+
+    @Autowired
+    FountainExportService fountainExportService;
 
     @RequestMapping(value = "/list")
     public String list(Model model, Principal principal) {
@@ -388,6 +396,25 @@ public class ProjectController {
             fountainImportService.importFileIntoProject(id, file);
         }
         return "redirect:/project/show?id=" + id;
+    }
+
+    @RequestMapping(value = "/export", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> exportScript(@RequestParam Integer id) {
+        Project project = projectService.read(id);
+        if (project == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String fountain = fountainExportService.exportProject(id);
+        String filename = "script.fountain";
+        if (project.getTitle() != null && !project.getTitle().isBlank()) {
+            filename = project.getTitle().trim().replaceAll("[^a-zA-Z0-9._-]+", "-") + ".fountain";
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/plain; charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(fountain.getBytes(StandardCharsets.UTF_8));
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)

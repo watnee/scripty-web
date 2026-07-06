@@ -7,41 +7,175 @@
     <meta charset="UTF-8">
     <title>Scripty - Edit Actor</title>
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
-    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
-    <div th:replace="~{fragments/nav :: nav('')}"></div>
-    <main>
-        <div th:replace="~{fragments/logout :: logout}"></div>
-        <h1>Edit Actor</h1>
-        <form th:action="@{/actor/edit}" method="post" th:object="${commandModel}">
+    <div th:replace="~{fragments/nav :: nav('casting')}"></div>
+    <main class="actor-form-page">
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li>
+                    <a th:if="${!#lists.isEmpty(commandModel.projectIds)}"
+                       th:href="@{/actor/list(projectId=${commandModel.projectIds[0]})}">Casting</a>
+                    <a th:if="${#lists.isEmpty(commandModel.projectIds)}" th:href="@{/actor/list}">Casting</a>
+                </li>
+                <li>
+                    <a th:href="@{/actor/show(id=${viewModel.id})}"
+                       th:text="${commandModel.first + (commandModel.last != null && !#strings.isEmpty(commandModel.last) ? ' ' + commandModel.last : '')}"></a>
+                </li>
+                <li aria-current="page">Edit</li>
+            </ol>
+        </nav>
+
+        <header class="actor-form-header">
+            <div class="actor-form-header-text">
+                <h1>Edit Actor</h1>
+                <p class="muted">Update project assignments, name, and contact details.</p>
+            </div>
+        </header>
+
+        <form th:action="@{/actor/edit}"
+              method="post"
+              enctype="multipart/form-data"
+              hx-boost="false"
+              th:object="${commandModel}"
+              class="actor-form">
             <input type="hidden" th:field="*{id}" />
-            <label>
-                First Name
-                <input type="text" th:field="*{first}" />
-                <span th:if="${#fields.hasErrors('first')}" th:errors="*{first}"></span>
-            </label>
-            <label>
-                Last Name
-                <input type="text" th:field="*{last}" />
-                <span th:if="${#fields.hasErrors('last')}" th:errors="*{last}"></span>
-            </label>
-            <label>
-                Phone
-                <input type="text" th:field="*{phone}" />
-                <span th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
-            </label>
-            <label>
-                Email
-                <input type="text" th:field="*{email}" />
-                <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
-            </label>
-            <p>
-                <a th:href="@{/actor/show(id=${viewModel.id})}" role="button">Cancel</a>
-                <button type="submit">Submit</button>
-            </p>
+
+            <section class="actor-form-card actor-form-headshot-card">
+                <h2>Headshot</h2>
+                <div class="actor-headshot-editor">
+                    <div class="actor-headshot-preview-wrap">
+                        <img th:if="${viewModel.hasHeadshot}"
+                             th:src="@{/actor/headshot(id=${viewModel.id})}"
+                             alt=""
+                             class="actor-headshot-preview" />
+                        <div th:if="${!viewModel.hasHeadshot}"
+                             class="actor-headshot-placeholder"
+                             aria-hidden="true">
+                            <span th:text="${#strings.substring(commandModel.first, 0, 1)}"></span>
+                        </div>
+                    </div>
+                    <div class="actor-headshot-controls">
+                        <label for="actor-headshot" class="actor-headshot-upload-label">
+                            Upload photo
+                            <input id="actor-headshot"
+                                   type="file"
+                                   name="headshot"
+                                   accept="image/jpeg,image/png,image/webp,image/gif"
+                                   class="actor-headshot-input" />
+                        </label>
+                        <p class="actor-form-hint">JPG, PNG, WebP, or GIF up to 5 MB.</p>
+                        <label th:if="${viewModel.hasHeadshot}" class="actor-headshot-remove-label">
+                            <input type="checkbox" name="removeHeadshot" value="true" />
+                            Remove current headshot
+                        </label>
+                        <span class="actor-form-error" th:if="${#fields.hasErrors('headshot')}" th:errors="headshot"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="actor-form-card" th:if="${!#lists.isEmpty(viewModel.projects)}">
+                <h2>Projects</h2>
+                <div class="actor-form-fields">
+                    <fieldset class="actor-form-project-fieldset">
+                        <legend class="visually-hidden">Select projects for this actor</legend>
+                        <div class="actor-form-project-list">
+                            <label th:each="project : ${viewModel.projects}" class="actor-form-project-option">
+                                <input type="checkbox"
+                                       name="projectIds"
+                                       th:value="${project.id}"
+                                       th:checked="${commandModel.projectIds != null and #lists.contains(commandModel.projectIds, project.id)}" />
+                                <span th:text="${project.title}"></span>
+                            </label>
+                        </div>
+                    </fieldset>
+                    <span class="actor-form-hint">This actor appears in casting for each selected project.</span>
+                    <span class="actor-form-error" th:if="${#fields.hasErrors('projectIds')}" th:errors="*{projectIds}"></span>
+                </div>
+            </section>
+
+            <section class="actor-form-card">
+                <h2>Name</h2>
+                <div class="actor-form-fields actor-form-row">
+                    <div class="actor-form-field">
+                        <label for="actor-first">First name</label>
+                        <input id="actor-first"
+                               type="text"
+                               th:field="*{first}"
+                               autocomplete="given-name"
+                               required />
+                        <span class="actor-form-error" th:if="${#fields.hasErrors('first')}" th:errors="*{first}"></span>
+                    </div>
+                    <div class="actor-form-field">
+                        <label for="actor-last">Last name</label>
+                        <input id="actor-last"
+                               type="text"
+                               th:field="*{last}"
+                               autocomplete="family-name" />
+                        <span class="actor-form-error" th:if="${#fields.hasErrors('last')}" th:errors="*{last}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="actor-form-card">
+                <h2>Contact</h2>
+                <div class="actor-form-fields">
+                    <div class="actor-form-field">
+                        <label for="actor-phone">Phone</label>
+                        <input id="actor-phone"
+                               type="tel"
+                               th:field="*{phone}"
+                               autocomplete="tel"
+                               placeholder="Optional" />
+                        <span class="actor-form-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
+                    </div>
+                    <div class="actor-form-field">
+                        <label for="actor-email">Email</label>
+                        <input id="actor-email"
+                               type="email"
+                               th:field="*{email}"
+                               autocomplete="email"
+                               placeholder="Optional" />
+                        <span class="actor-form-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="actor-form-card actor-form-roles-card" th:if="${!#lists.isEmpty(viewModel.assignedRoles)}">
+                <h2>Assigned Roles</h2>
+                <ul class="actor-form-roles">
+                    <li th:each="role : ${viewModel.assignedRoles}">
+                        <a th:href="@{/character/show(id=${role.characterId})}" th:text="${role.characterName}"></a>
+                    </li>
+                </ul>
+                <p class="actor-form-hint">
+                    Change role assignments from the
+                    <a th:if="${!#lists.isEmpty(commandModel.projectIds)}"
+                       th:href="@{/actor/list(projectId=${commandModel.projectIds[0]})}">Casting page</a>
+                    <a th:if="${#lists.isEmpty(commandModel.projectIds)}" th:href="@{/actor/list}">Casting page</a>.
+                </p>
+            </section>
+
+            <div class="actor-form-actions">
+                <a th:href="@{/actor/show(id=${viewModel.id})}" role="button" class="actor-form-cancel">Cancel</a>
+                <button type="submit" class="actor-form-submit">Save Changes</button>
+            </div>
         </form>
+
+        <section class="actor-form-card actor-form-danger">
+            <h2>Danger Zone</h2>
+            <p class="actor-form-danger-text">
+                Permanently remove this actor from your casting directory.
+                Character assignments will be cleared.
+            </p>
+            <a th:href="@{/actor/delete(id=${viewModel.id})}"
+               role="button"
+               class="bad actor-form-delete"
+               hx-boost="false"
+               onclick="return confirm('Are you sure you want to delete this actor?')">Delete Actor</a>
+        </section>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>

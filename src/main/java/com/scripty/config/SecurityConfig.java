@@ -3,6 +3,7 @@ package com.scripty.config;
 import javax.sql.DataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -15,6 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@Lazy(false)
 public class SecurityConfig {
 
     @Bean
@@ -22,14 +24,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/favicon.ico", "/css/**", "/js/**", "/fonts/**", "/login", "/manifest.json", "/sw.js", "/offline.html", "/icons/**", "/help").permitAll()
+                .requestMatchers("/favicon.ico", "/css/**", "/js/**", "/fonts/**", "/login", "/perform-login", "/manifest.json", "/sw.js", "/offline.html", "/icons/**", "/help").permitAll()
                 .requestMatchers("/api/account/**", "/account/**").hasRole("ADMIN")
-                .requestMatchers("/project/**", "/actor/**", "/scene/**", "/block/**", "/character/**", "/team/**").hasRole("USER")
+                .requestMatchers("/project/**", "/actor/**", "/block/**", "/character/**", "/team/**").hasRole("USER")
                 .anyRequest().permitAll()
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .loginProcessingUrl("/login")
                 .defaultSuccessUrl("/", false)
                 .failureUrl("/login?login_error=1")
                 .permitAll()
@@ -48,7 +49,17 @@ public class SecurityConfig {
         http
             .addFilterBefore(new DevAutoLoginFilter(), UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/login", "/perform-login").permitAll()
                 .anyRequest().permitAll()
+            )
+            .formLogin(form -> form
+                .loginPage("/login")
+                .defaultSuccessUrl("/", false)
+                .failureUrl("/login?login_error=1")
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .permitAll()
             )
             .csrf(csrf -> csrf.disable());
 

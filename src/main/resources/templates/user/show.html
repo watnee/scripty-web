@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111111">
+    <link rel="manifest" th:href="@{/manifest.json}">
+    <meta charset="UTF-8">
+    <title>Scripty - User Profile</title>
+    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('users')}"></div>
+    <main>
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li><a th:href="@{/user/list}">Users</a></li>
+                <li aria-current="page" th:text="${viewModel.username}"></li>
+            </ol>
+        </nav>
+        <h1><span th:text="${viewModel.username}"></span> <small><a th:href="@{/user/edit(id=${viewModel.id})}" role="button">edit</a></small></h1>
+        <table>
+            <tr>
+                <th>Username</th>
+                <td th:text="${viewModel.username}"></td>
+            </tr>
+            <tr>
+                <th>First Name</th>
+                <td th:text="${viewModel.firstName}"></td>
+            </tr>
+            <tr>
+                <th>Last Name</th>
+                <td th:text="${viewModel.lastName}"></td>
+            </tr>
+            <tr>
+                <th>Team</th>
+                <td th:text="${viewModel.team}"></td>
+            </tr>
+            <tr>
+                <th>Role</th>
+                <td th:text="${viewModel.admin} ? 'Admin' : 'User'"></td>
+            </tr>
+            <tr>
+                <th>Status</th>
+                <td th:text="${viewModel.enabled} ? 'Enabled' : 'Disabled'"></td>
+            </tr>
+        </table>
+    </main>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

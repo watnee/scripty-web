@@ -10,3 +10,11 @@ spring:
     open-in-view: false
   flyway:
     baseline-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+app:
+  uploads-dir: ./uploads
+  headshot-max-bytes: 5242880

@@ -1,0 +1,5 @@
+<form xmlns:th="http://www.thymeleaf.org" th:object="${commandModel}" th:attr="hx-post=@{/project/editNameInline(surface='header')}" hx-target="closest .project-name-wrap" hx-swap="innerHTML" hx-trigger="input delay:500ms from:find input[name='title'], change from:find input[name='title']">
+    <input type="hidden" name="id" th:field="*{id}" />
+    <input type="text" name="title" th:field="*{title}" class="project-header-name-input auto-grow" autofocus maxlength="100" required _="on keydown[key=='Enter'] halt the event then blur() me" />
+    <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="project-header-name-error"></span>
+</form>

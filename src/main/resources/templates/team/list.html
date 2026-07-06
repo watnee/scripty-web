@@ -7,45 +7,95 @@
     <meta charset="UTF-8">
     <title>Scripty - Teams</title>
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
-    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('teams')}"></div>
-    <main>
-        <div th:replace="~{fragments/logout :: logout}"></div>
-        <nav aria-label="Breadcrumb">
-            <ol>
-                <li aria-current="page">Teams</li>
-            </ol>
-        </nav>
-        <h1>Teams</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>Team Name</th>
-                    <th>Projects</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="team : ${teams}">
-                    <td th:text="${team.name}"></td>
-                    <td>
-                        <ul>
-                            <li th:each="project : ${allProjects}" th:if="${project.team == team.name}">
-                                <a th:href="@{/project/show(id=${project.id})}" th:text="${project.title}"></a>
-                            </li>
-                        </ul>
-                    </td>
-                    <td>
-                        <a th:href="@{/team/edit(id=${team.id})}" role="button">edit/assign</a>
-                        <a th:href="@{/team/delete(id=${team.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this team?') halt">delete</a>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <p><a th:href="@{/team/create}" role="button">Create New Team</a></p>
+    <main class="team-list-page">
+        <div class="team-list-header">
+            <div class="team-list-header-text">
+                <h1>Teams</h1>
+                <p class="muted">Group productions and share access with collaborators.</p>
+            </div>
+            <a th:href="@{/team/create}" role="button" class="team-list-create-btn">Create Team</a>
+        </div>
+
+        <div class="team-list-panel project-list-panel" th:if="${!#lists.isEmpty(teams)}">
+            <table class="team-list-table project-list-table">
+                <tbody>
+                    <tr th:each="teamItem : ${teams}"
+                        th:id="'team-' + ${teamItem.id}"
+                        class="team-list-row project-list-row"
+                        th:with="teamName=${teamItem.name}, assignedProjects=${productionsByTeamId.get(teamItem.id)}">
+                        <td class="team-list-main-cell">
+                            <div class="team-list-item">
+                                <div class="team-list-info">
+                                    <div class="team-list-name-row">
+                                        <span class="team-list-name project-list-title" th:text="${teamName}"></span>
+                                    </div>
+                                    <div class="team-list-productions">
+                                        <span class="team-list-productions-label">Productions</span>
+                                        <div class="team-list-production-links" th:if="${!#lists.isEmpty(allProjects)}">
+                                            <a th:each="project : ${assignedProjects}"
+                                               th:href="@{/project/production(id=${project.id})}"
+                                               class="team-list-production-link"
+                                               th:text="${project.title}"></a>
+                                            <span class="team-list-unassigned muted"
+                                                  th:if="${#lists.isEmpty(assignedProjects)}">
+                                                No productions assigned
+                                            </span>
+                                        </div>
+                                        <span class="team-list-unassigned muted" th:if="${#lists.isEmpty(allProjects)}">
+                                            No productions yet
+                                        </span>
+                                    </div>
+                                    <details class="team-production-assign">
+                                        <summary class="team-production-assign-summary">Assign productions</summary>
+                                        <form th:action="@{/team/assignProductions}"
+                                              method="post"
+                                              class="team-production-assign-form"
+                                              hx-boost="false">
+                                            <input type="hidden" name="teamId" th:value="${teamItem.id}" />
+                                            <div class="team-production-assign-options">
+                                                <label th:each="project : ${allProjects}"
+                                                       class="team-production-assign-option">
+                                                    <input type="checkbox"
+                                                           name="projectIds"
+                                                           th:value="${project.id}"
+                                                           th:checked="${project.isAssignedToTeam(teamItem)}" />
+                                                    <span th:text="${project.title}"></span>
+                                                    <span class="team-production-assign-other muted"
+                                                          th:each="otherTeam : ${project.teams}"
+                                                          th:if="${otherTeam.id != teamItem.id}"
+                                                          th:text="'(' + ${otherTeam.name} + ')'"></span>
+                                                </label>
+                                            </div>
+                                            <button type="submit" class="team-production-assign-save">Save productions</button>
+                                        </form>
+                                    </details>
+                                </div>
+                                <div class="team-list-actions project-list-actions">
+                                    <a th:href="@{/team/edit(id=${teamItem.id})}"
+                                       role="button"
+                                       class="project-list-action-btn">Edit</a>
+                                    <a th:href="@{/team/delete(id=${teamItem.id})}"
+                                       role="button"
+                                       class="project-list-action-btn bad"
+                                       _="on click if not confirm('Are you sure you want to delete this team?') halt">Delete</a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="project-list-empty" th:if="${#lists.isEmpty(teams)}">
+            <p class="project-list-empty-title">No teams yet</p>
+            <p class="muted">Create a team to assign productions and share access.</p>
+            <a th:href="@{/team/create}" role="button">Create Team</a>
+        </div>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>

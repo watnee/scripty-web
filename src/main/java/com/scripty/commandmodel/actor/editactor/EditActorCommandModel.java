@@ -5,8 +5,11 @@
  */
 package com.scripty.commandmodel.actor.editactor;
 
-import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -25,6 +28,9 @@ public class EditActorCommandModel {
     private String phone;
     @Size(max = 30, message = "Email must be no more than 30 characters in length.")
     private String email;
+
+    @NotEmpty(message = "You must select at least one project.")
+    private List<Integer> projectIds = new ArrayList<>();
 
     public Integer getId() {
         return id;
@@ -64,6 +70,14 @@ public class EditActorCommandModel {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public List<Integer> getProjectIds() {
+        return projectIds;
+    }
+
+    public void setProjectIds(List<Integer> projectIds) {
+        this.projectIds = projectIds != null ? projectIds : new ArrayList<>();
     }
     
 }

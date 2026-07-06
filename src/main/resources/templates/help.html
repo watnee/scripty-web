@@ -7,13 +7,12 @@
     <meta charset="UTF-8">
     <title>Scripty - Help Center</title>
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
-    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('help')}"></div>
     <main class="help-container">
-        <div th:replace="~{fragments/logout :: logout}"></div>
         
         <div class="help-header">
             <h1>Scripty Help Center</h1>
@@ -48,11 +47,10 @@
                 </div>
                 <div class="help-card" data-keywords="project scene block hierarchy relationship structure">
                     <h3>📐 The Scripty Hierarchy</h3>
-                    <p>Scripts in Scripty are structured using three primary entities:</p>
+                    <p>Scripts in Scripty are structured using two primary entities:</p>
                     <ul style="margin-top: 0.5rem; padding-left: 1.25rem;">
                         <li><strong>Projects</strong>: The top-level screenplay document.</li>
-                        <li><strong>Scenes</strong>: Headings/sections within a project that group dialogue and action blocks.</li>
-                        <li><strong>Blocks</strong>: Granular paragraphs representing action description or character dialogue.</li>
+                        <li><strong>Blocks</strong>: Granular paragraphs typed after the Fountain screenplay elements — Scene Heading, Action, Dialogue, Parenthetical, Transition, Lyrics, Centered text, Section, Synopsis, Note, and Page Break. A scene-heading block groups the blocks that follow it; use the Element buttons on the project page to change the type of selected rows.</li>
                     </ul>
                 </div>
                 <div class="help-card" data-keywords="default project home dashboard settings automatically">
@@ -63,7 +61,7 @@
             
             <div class="help-tip-box" data-keywords="tip quickstart casting workflow path">
                 <h4>💡 Quickstart Workflow Tip</h4>
-                <p>Begin by creating a new Project under <strong>Projects</strong>, add a Scene, and click inside the scene's first block to start typing. To manage characters, go to <strong>Casting</strong> first to record actors, then add corresponding Characters inside your project's settings.</p>
+                <p>Begin by creating a new Project under <strong>Projects</strong>, add a scene block with <strong>Create New Scene</strong>, and click inside the scene's first block to start typing. To manage characters, go to <strong>Casting</strong> first to record actors, then add corresponding Characters inside your project's settings.</p>
             </div>
         </div>
 
@@ -90,6 +88,10 @@
                     <h3>📦 Bulk Tagging &amp; Deletions</h3>
                     <p>Need to manage multiple blocks at once? Use the checkboxes on the left control panel of blocks (or the "Select All" checkbox) to perform bulk actions: type tags in the action bar to add tags in bulk, or click the trash can (<kbd>🗑️</kbd>) to delete multiple selected blocks.</p>
                 </div>
+                <div class="help-card" data-keywords="safari reader read script view all read script mobile ios distraction free">
+                    <h3>📖 Safari Reader &amp; Read Script</h3>
+                    <p>To read your screenplay in Safari Reader (or other browser reading modes), open a project and tap the Reader icon in Safari’s address bar. The project page is structured as an article — script text, scene headings, and character names are reader-visible, while editing controls are excluded. You can also use <strong>Read Script</strong> from the project page, or <strong>Read</strong> on an individual scene for a minimal read-only view.</p>
+                </div>
                 <div class="help-card" data-keywords="font size text zoom controls A+ A- scale larger smaller readability">
                     <h3>🔍 Text Size Controls</h3>
                     <p>Improve screenplay readability. Use the <kbd>A−</kbd> and <kbd>A+</kbd> buttons on the top-right of the page to scale text size down or up instantly to suit your display.</p>
@@ -99,28 +101,18 @@
 
         <!-- TAB: SHORTCUTS & HISTORY -->
         <div class="help-content-section" id="tab-history">
-            <div class="help-card-grid">
-                <div class="help-card" data-keywords="keyboard shortcuts quick hotkeys modifiers undo redo control command">
-                    <h3>⌨️ Keyboard Shortcuts</h3>
-                    <p>Use these system-wide shortcuts to undo and redo edits when focusing text elements:</p>
-                    <div style="margin-top: 0.75rem;">
-                        <div class="help-shortcut-row">
-                            <span>Undo Edit</span>
-                            <kbd id="kb-undo">Cmd + Z</kbd>
-                        </div>
-                        <div class="help-shortcut-row">
-                            <span>Redo Edit</span>
-                            <kbd id="kb-redo">Cmd + Shift + Z</kbd>
-                        </div>
-                    </div>
-                </div>
+            <p class="muted" style="text-align: center; margin-bottom: 1.5rem;">
+                <a th:href="@{/shortcuts}">View full keyboard shortcuts reference →</a>
+            </p>
+            <div th:replace="~{fragments/shortcuts :: shortcutsContent}"></div>
+            <div class="help-card-grid" style="margin-top: 1.5rem;">
                 <div class="help-card" data-keywords="history dropdown undo redo version history project version list restore 🕒">
                     <h3>🕒 History Dropdown Menu</h3>
                     <p>Access the history menu by clicking the clock icon (<kbd>🕒</kbd>) next to the text controls. From here, you can click <strong>Undo</strong>, <strong>Redo</strong>, or select <strong>Version History</strong> to review previous auto-saved stages of the project.</p>
                 </div>
-                <div class="help-card" data-keywords="version history list list-versions backup revision timestamp restore auto-save">
+                <div class="help-card" data-keywords="version history list list-versions backup revision timestamp restore auto-save block edit add delete move">
                     <h3>💾 Version History</h3>
-                    <p>Every structural change (reorders, deletes, inserts) triggers a version save. In the Version History page, you can review the history of edits with precise timestamps and project state backups.</p>
+                    <p>Block edits, adds, deletes, moves, and tag changes trigger auto-saved versions (at most every 10 minutes when content changes). In Version History, each entry shows what changed since the previous save — block edits with previews, plus scene and character changes.</p>
                 </div>
             </div>
         </div>
@@ -138,7 +130,7 @@
                 </div>
                 <div class="help-card" data-keywords="teams collaboration share member group list-teams collaborate project-team">
                     <h3>🤝 Team Collaboration</h3>
-                    <p>Collaborate with others! Go to <strong>Teams</strong> to form a project group. By assigning a Project to a Team in the project settings, all team members gain shared editing access to work on the screenplay.</p>
+                    <p>Collaborate with others! Open <strong>Teams</strong> from the user menu to form a project group. By assigning a Project to a Team in the project settings, all team members gain shared editing access to work on the screenplay.</p>
                 </div>
             </div>
         </div>
@@ -159,15 +151,6 @@
         const searchResultsSection = document.getElementById('search-results-section');
         const searchResultsGrid = document.getElementById('search-results-grid');
         const searchNoResults = document.getElementById('search-no-results');
-
-        // Dynamic keyboard shortcut detection based on OS
-        const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
-        const kbUndo = document.getElementById('kb-undo');
-        const kbRedo = document.getElementById('kb-redo');
-        if (kbUndo && kbRedo) {
-            kbUndo.textContent = isMac ? '⌘ Z' : 'Ctrl + Z';
-            kbRedo.textContent = isMac ? '⌘ ⇧ Z' : 'Ctrl + Y';
-        }
 
         function switchTab(tabId) {
             tabButtons.forEach(btn => {
@@ -255,5 +238,6 @@
         });
     })();
     </script>
+    <script th:replace="~{fragments/shortcuts :: shortcutsScript}"></script>
 </body>
 </html>

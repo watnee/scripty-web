@@ -1,11 +1,13 @@
 <th:block xmlns:th="http://www.thymeleaf.org">
-<p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
-    <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
+<p th:if="${not #strings.isEmpty(block.personName)}" class="script-character-name">
+    <strong class="reader-visible-character-name" th:text="${#strings.toUpperCase(block.personName)}"></strong>
+    <a th:href="@{/character/show(id=${block.personId})}" class="character-name hide-in-reader-view sidebar menu" th:text="${block.personName}"></a>
 </p>
-<span th:text="${block.content}"></span>
-<div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list">
+<p th:if="${not #strings.isEmpty(block.content)}" class="script-block-text" th:text="${block.content}"></p>
+<div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu">
     <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
           th:if="${not #strings.isEmpty(#strings.trim(tag))}"
+          th:attr="title=${'Search: ' + #strings.trim(tag)}"
           th:text="${#strings.trim(tag)}"
           class="block-tag clickable"></span>
 </div>

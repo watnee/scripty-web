@@ -1,0 +1,19 @@
+<th:block xmlns:th="http://www.thymeleaf.org">
+    <span class="project-name-display"
+          th:attr="hx-get=@{/project/editNameInline(id=${project.id},surface='header')}"
+          hx-trigger="click"
+          hx-target="closest .project-name-wrap"
+          hx-swap="innerHTML"
+          title="Click to rename project">
+        <th:block th:if="${#strings.isEmpty(project.title) || #strings.isEmpty(project.title.trim())}">
+            <span class="project-name-placeholder">Click to name project</span>
+        </th:block>
+        <th:block th:unless="${#strings.isEmpty(project.title) || #strings.isEmpty(project.title.trim())}" th:text="${project.title}"></th:block>
+    </span>
+    <li id="project-breadcrumb-title" aria-current="page" th:text="${project.title}" hx-swap-oob="true"></li>
+    <span id="reader-visible-project-title"
+          class="reader-visible-project-title"
+          th:text="${#strings.isEmpty(project.title) || #strings.isEmpty(project.title.trim()) ? 'Untitled Project' : project.title}"
+          hx-swap-oob="true"></span>
+    <title th:text="'Scripty - ' + (${#strings.isEmpty(project.title) || #strings.isEmpty(project.title.trim()) ? 'Project' : project.title})" hx-swap-oob="true">Scripty</title>
+</th:block>

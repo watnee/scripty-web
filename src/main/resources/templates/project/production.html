@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111111">
+    <link rel="manifest" th:href="@{/manifest.json}">
+    <meta charset="UTF-8">
+    <title th:text="'Scripty - Production - ' + ${viewModel.title}">Scripty - Production</title>
+    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('projects')}"></div>
+    <main class="production-page">
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li><a th:href="@{/project/list}">Projects</a></li>
+                <li><a th:href="@{/project/show(id=${viewModel.id})}" th:text="${viewModel.title}"></a></li>
+                <li aria-current="page">Production</li>
+            </ol>
+        </nav>
+
+        <div class="production-header">
+            <div class="production-header-text">
+                <h1 th:text="${viewModel.title}"></h1>
+                <p class="muted production-subtitle">Production hub for this project.</p>
+                <div class="production-meta">
+                    <span class="project-list-last-edited" th:if="${viewModel.lastEdited != null}">
+                        Last edited <span th:replace="~{fragments/lastEditedTime :: relativeTime(${viewModel.lastEdited})}"></span>
+                    </span>
+                    <span class="production-meta-stat" th:if="${viewModel.scenes != null}">
+                        <span th:text="${#lists.size(viewModel.scenes)}"></span>
+                        <span th:text="${#lists.size(viewModel.scenes) == 1} ? ' scene' : ' scenes'"></span>
+                    </span>
+                </div>
+            </div>
+            <a th:href="@{/project/show(id=${viewModel.id})}" role="button" class="production-open-script-btn">Open Script</a>
+        </div>
+
+        <section class="production-team-section actor-profile-card">
+            <div class="production-team-header">
+                <h2>Teams</h2>
+                <a th:href="@{/team/list}" class="production-team-manage-link">All teams</a>
+            </div>
+            <p class="muted production-team-empty" th:if="${#lists.isEmpty(teams)}">
+                No teams yet. Create a team to share this production with collaborators.
+            </p>
+            <form th:action="@{/project/production/teams}"
+                  method="post"
+                  class="production-team-form"
+                  hx-boost="false"
+                  th:if="${!#lists.isEmpty(teams)}">
+                <input type="hidden" name="id" th:value="${viewModel.id}" />
+                <span class="production-team-label-text">Assigned teams</span>
+                <div class="production-team-options">
+                    <label th:each="team : ${teams}" class="production-team-option">
+                        <input type="checkbox"
+                               name="teamIds"
+                               th:value="${team.id}"
+                               th:checked="${assignedTeamIds.contains(team.id)}" />
+                        <span th:text="${team.name}"></span>
+                    </label>
+                </div>
+                <button type="submit" class="production-team-save">Save teams</button>
+            </form>
+            <div class="production-team-actions">
+                <a th:href="@{/team/create}" role="button" class="production-team-create-btn">Create Team</a>
+            </div>
+            <div th:replace="~{fragments/projectSharePanel :: accessList(${shareAccessUsers}, ${viewModel.teams})}"></div>
+            <div class="production-team-productions" th:if="${!#lists.isEmpty(viewModel.teams)}">
+                <span class="production-team-productions-label">Related productions</span>
+                <div class="production-team-production-links" th:if="${!#lists.isEmpty(teamProductions)}">
+                    <a th:each="production : ${teamProductions}"
+                       th:href="@{/project/production(id=${production.id})}"
+                       class="production-team-production-link"
+                       th:text="${production.title}"></a>
+                </div>
+                <p class="muted production-team-productions-empty" th:if="${#lists.isEmpty(teamProductions)}">
+                    No other productions share a team with this project yet.
+                </p>
+            </div>
+        </section>
+
+        <div class="help-card-grid production-card-grid">
+            <a th:href="@{/project/show(id=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Script</h3>
+                <p>Edit scenes and blocks for this production.</p>
+            </a>
+            <a th:href="@{/actor/list(projectId=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Casting</h3>
+                <p>Manage characters, actors, and auditions for this project.</p>
+            </a>
+            <a th:href="@{/project/titlePage(id=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Title Page</h3>
+                <p>Set the screenplay title, writers, and contact information.</p>
+            </a>
+            <a th:href="@{/project/version/list(projectId=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Version History</h3>
+                <p>Review saved versions and restore earlier drafts.</p>
+            </a>
+        </div>
+    </main>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

@@ -38,7 +38,11 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     public Person create(Person person) {
-        return personRepository.save(person);
+        Person saved = personRepository.save(person);
+        if (saved.getProject() != null) {
+            updateProjectLastEdited(saved.getProject().getId());
+        }
+        return saved;
     }
 
     @Override
@@ -107,7 +111,7 @@ public class PersonServiceImpl implements PersonService {
         vm.setCreatePersonCommandModel(commandModel);
         vm.setProjectId(projectId);
 
-        List<Actor> actors = actorRepository.findAllByOrderByFirstNameAsc();
+        List<Actor> actors = actorRepository.findDistinctByProjects_IdOrderByFirstNameAsc(projectId);
         List<CreateActorViewModel> actorViewModels = new ArrayList<>();
         for (Actor actor : actors) {
             CreateActorViewModel avm = new CreateActorViewModel();
@@ -123,8 +127,8 @@ public class PersonServiceImpl implements PersonService {
     public EditPersonViewModel getEditPersonViewModel(Integer id) {
         EditPersonViewModel vm = new EditPersonViewModel();
         Person person = personRepository.findById(id).orElse(null);
-        List<Actor> allActors = actorRepository.findAllByOrderByFirstNameAsc();
         Project project = projectRepository.findById(person.getProject().getId()).orElse(null);
+        List<Actor> allActors = actorRepository.findDistinctByProjects_IdOrderByFirstNameAsc(project.getId());
 
         List<EditActorViewModel> actorViewModels = new ArrayList<>();
         for (Actor actor : allActors) {
@@ -151,34 +155,93 @@ public class PersonServiceImpl implements PersonService {
     @Override
     public Person saveCreatePersonCommandModel(CreatePersonCommandModel cmd) {
         Person person = new Person();
-        Actor actor = actorRepository.findById(cmd.getActorId()).orElse(null);
+        Actor actor = cmd.getActorId() != null
+                ? actorRepository.findByIdWithProjects(cmd.getActorId()).orElse(null)
+                : null;
         Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
 
         person.setName(cmd.getName());
         person.setFullName(cmd.getFullName());
-        if (actor != null) person.setActor(actor);
+        if (actor != null && actorBelongsToProject(actor, project)) {
+            person.setActor(actor);
+        }
         if (project != null) person.setProject(project);
-        return personRepository.save(person);
+        Person saved = personRepository.save(person);
+        if (project != null) {
+            updateProjectLastEdited(project.getId());
+        }
+        return saved;
     }
 
     @Override
     public Person saveEditPersonCommandModel(EditPersonCommandModel cmd) {
         Person person = personRepository.findById(cmd.getId()).orElse(null);
-        Actor actor = actorRepository.findById(cmd.getActorId()).orElse(null);
+        Actor actor = cmd.getActorId() != null
+                ? actorRepository.findByIdWithProjects(cmd.getActorId()).orElse(null)
+                : null;
         Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
 
         person.setName(cmd.getName());
         person.setFullName(cmd.getFullName());
-        person.setActor(actor);
+        person.setActor(actor != null && actorBelongsToProject(actor, project) ? actor : null);
         person.setProject(project);
         personRepository.save(person);
+        if (project != null) {
+            updateProjectLastEdited(project.getId());
+        }
+        return person;
+    }
+
+    @Override
+    public Person assignActorToCharacter(Integer characterId, Integer actorId) {
+        Person person = personRepository.findById(characterId).orElse(null);
+        Project project = person.getProject() != null
+                ? projectRepository.findById(person.getProject().getId()).orElse(null)
+                : null;
+
+        if (actorId == null) {
+            person.setActor(null);
+        } else {
+            Actor actor = actorRepository.findByIdWithProjects(actorId).orElse(null);
+            person.setActor(actor != null && actorBelongsToProject(actor, project) ? actor : null);
+        }
+
+        personRepository.save(person);
+        if (project != null) {
+            updateProjectLastEdited(project.getId());
+        }
         return person;
     }
 
     @Override
     public Person deletePerson(Integer id) {
         Person person = personRepository.findById(id).orElse(null);
-        personRepository.delete(person);
+        if (person != null) {
+            Integer projectId = person.getProject() != null ? person.getProject().getId() : null;
+            personRepository.delete(person);
+            updateProjectLastEdited(projectId);
+        }
         return person;
+    }
+
+    private void updateProjectLastEdited(Integer projectId) {
+        if (projectId != null) {
+            projectRepository.findById(projectId).ifPresent(project -> {
+                project.setLastEdited(java.time.LocalDateTime.now());
+                projectRepository.save(project);
+            });
+        }
+    }
+
+    private boolean actorBelongsToProject(Actor actor, Project project) {
+        if (actor == null || project == null) {
+            return false;
+        }
+        for (Project actorProject : actor.getProjects()) {
+            if (project.getId().equals(actorProject.getId())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

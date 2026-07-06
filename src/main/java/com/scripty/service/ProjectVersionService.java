@@ -11,8 +11,6 @@ public interface ProjectVersionService {
 
     void autoSaveVersion(Integer projectId);
 
-    void autoSaveVersionForScene(Integer sceneId);
-
     void autoSaveVersionForBlock(Integer blockId);
 
     void autoSaveVersionForPerson(Integer personId);
@@ -20,4 +18,8 @@ public interface ProjectVersionService {
     void restoreVersion(Integer versionId);
 
     void deleteVersion(Integer versionId);
+
+    String buildSnapshotJson(Integer projectId);
+
+    void applySnapshotJson(Integer projectId, String snapshotJson);
 }

@@ -7,27 +7,386 @@
     <meta charset="UTF-8">
     <title>Scripty - Casting</title>
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
-    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('casting')}"></div>
-    <main>
-        <div th:replace="~{fragments/logout :: logout}"></div>
-        <nav aria-label="Breadcrumb">
-            <ol>
-                <li aria-current="page">Casting</li>
-            </ol>
-        </nav>
-        <h1>Casting</h1>
-        <table id="table-actors">
-            <tr th:each="actor : ${viewModel.actors}">
-                <td><a th:href="@{/actor/show(id=${actor.id})}" th:text="${actor.first} + ' ' + ${actor.last}"></a></td>
-            </tr>
-        </table>
-        <p><a th:href="@{/actor/create}" role="button">Create New Actor</a></p>
+    <main class="casting-list-page">
+
+        <div class="casting-list-header">
+            <div class="casting-list-header-text">
+                <h1>Casting</h1>
+                <p class="muted" th:if="${!#lists.isEmpty(viewModel.projects)}">
+                    Characters and actors for the selected project.
+                </p>
+                <p class="muted" th:if="${#lists.isEmpty(viewModel.projects)}">
+                    Manage your actor directory and contact details.
+                </p>
+            </div>
+        </div>
+
+        <div class="casting-list-toolbar project-list-toolbar">
+            <div class="project-list-search-wrap" id="casting-list-search-wrap">
+                <label class="visually-hidden" for="casting-list-search">Search casting</label>
+                <span class="project-list-search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
+                    </svg>
+                </span>
+                <input type="search"
+                       id="casting-list-search"
+                       class="project-list-search"
+                       placeholder="Search characters and actors..."
+                       autocomplete="off"
+                       enterkeyhint="search" />
+                <button type="button"
+                        id="casting-list-search-clear"
+                        class="project-list-search-clear"
+                        aria-label="Clear search"
+                        hidden>&times;</button>
+            </div>
+            <div class="project-list-toolbar-actions">
+                <label th:if="${!#lists.isEmpty(viewModel.projects)}"
+                       class="casting-project-select-label"
+                       for="casting-project-select">
+                    <span class="casting-project-select-text">Project</span>
+                    <select id="casting-project-select"
+                            class="project-list-sort casting-project-select"
+                            aria-label="Select project">
+                        <option th:each="project : ${viewModel.projects}"
+                                th:value="${project.id}"
+                                th:text="${project.title}"
+                                th:selected="${project.id == viewModel.characterProjectId}"></option>
+                    </select>
+                </label>
+                <label class="project-list-sort-label" for="casting-list-sort">
+                    <span class="visually-hidden">Sort lists</span>
+                    <select id="casting-list-sort" class="project-list-sort" aria-label="Sort characters and actors">
+                        <option value="name-asc" selected>Name A–Z</option>
+                        <option value="name-desc">Name Z–A</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div class="casting-page-grid"
+             th:classappend="${viewModel.characterProjectId != null} ? ' casting-page-grid--split' : ''">
+            <div class="casting-section-header casting-section-header--characters"
+                 th:if="${viewModel.characterProjectId != null}">
+                <h2>Characters</h2>
+                <a th:href="@{/character/create(projectId=${viewModel.characterProjectId})}"
+                   role="button"
+                   class="casting-section-action-btn">New Character</a>
+            </div>
+
+            <div class="casting-section-header casting-section-header--actors">
+                <h2>Actors</h2>
+                <a th:href="@{/actor/create(projectId=${viewModel.characterProjectId})}" role="button" class="casting-section-action-btn">New Actor</a>
+            </div>
+
+            <div class="casting-section-body casting-section-body--characters"
+                 th:if="${viewModel.characterProjectId != null}">
+
+                <div class="casting-list-panel project-list-panel" th:if="${!#lists.isEmpty(viewModel.characters)}">
+                    <table id="table-characters" class="casting-list-table">
+                        <tbody>
+                            <tr th:each="character : ${viewModel.characters}"
+                                class="casting-character-row project-list-row"
+                                th:attr="data-sort-name=${#strings.toLowerCase(character.name)}">
+                                <td class="casting-list-main-cell">
+                                    <div class="casting-list-item">
+                                        <div class="casting-list-info">
+                                            <div class="casting-list-name-row">
+                                                <a th:href="@{/character/show(id=${character.id})}"
+                                                   class="casting-list-name project-list-title"
+                                                   th:text="${character.name}"></a>
+                                                <span class="casting-list-unassigned"
+                                                      th:if="${character.actorId == null}">
+                                                    Unassigned
+                                                </span>
+                                            </div>
+                                            <div class="casting-list-secondary">
+                                                <form th:action="@{/character/assignActor}"
+                                                      method="post"
+                                                      class="casting-assign-form"
+                                                      hx-boost="false">
+                                                    <input type="hidden" name="characterId" th:value="${character.id}" />
+                                                    <label class="casting-assign-label">
+                                                        <span class="casting-list-contact-label">Actor</span>
+                                                        <select name="actorId"
+                                                                class="casting-assign-select"
+                                                                aria-label="Assign actor to character"
+                                                                onchange="this.form.submit()">
+                                                            <option value=""
+                                                                    th:selected="${character.actorId == null}">Unassigned</option>
+                                                            <option th:each="actor : ${viewModel.actors}"
+                                                                    th:value="${actor.id}"
+                                                                    th:text="${actor.first + (actor.last != null && !#strings.isEmpty(actor.last) ? ' ' + actor.last : '')}"
+                                                                    th:selected="${character.actorId != null and character.actorId == actor.id}"></option>
+                                                        </select>
+                                                    </label>
+                                                </form>
+                                                <div class="casting-list-auditions" th:if="${!#lists.isEmpty(character.auditionActors)}">
+                                                    <span class="casting-list-contact-label">Auditioning</span>
+                                                    <div class="casting-list-roles">
+                                                        <a th:each="auditionActor : ${character.auditionActors}"
+                                                           th:href="@{/actor/show(id=${auditionActor.id})}"
+                                                           class="casting-list-role casting-list-role--audition"
+                                                           th:text="${auditionActor.name}"></a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="casting-list-actions project-list-actions">
+                                            <a th:href="@{/character/edit(id=${character.id})}"
+                                               role="button"
+                                               class="project-list-action-btn">Edit</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="project-list-no-results" id="casting-character-no-results" hidden>
+                        No characters match <strong id="casting-character-search-query"></strong>.
+                    </p>
+                </div>
+
+                <div class="casting-section-empty" th:if="${#lists.isEmpty(viewModel.characters)}">
+                    <p class="project-list-empty-title">No characters yet</p>
+                    <p class="muted">Create characters for this project to start casting roles.</p>
+                    <a th:href="@{/character/create(projectId=${viewModel.characterProjectId})}" role="button">Create New Character</a>
+                </div>
+            </div>
+
+            <div class="casting-section-body casting-section-body--actors">
+
+                <div class="casting-list-panel project-list-panel" th:if="${!#lists.isEmpty(viewModel.actors)}">
+                    <table id="table-actors" class="casting-list-table">
+                        <tbody>
+                            <tr th:each="actor : ${viewModel.actors}"
+                                class="casting-list-row project-list-row"
+                                th:attr="data-sort-name=${#strings.toLowerCase(actor.first + ' ' + actor.last)}">
+                                <td class="casting-list-main-cell">
+                                    <div class="casting-list-item">
+                                        <div class="actor-headshot-preview-wrap actor-headshot-preview-wrap--list"
+                                             th:if="${actor.hasHeadshot}">
+                                            <img th:src="@{/actor/headshot(id=${actor.id})}"
+                                                 alt=""
+                                                 class="actor-headshot-preview actor-headshot-preview--list" />
+                                        </div>
+                                        <div class="actor-headshot-placeholder actor-headshot-placeholder--list"
+                                             th:if="${!actor.hasHeadshot}"
+                                             aria-hidden="true">
+                                            <span th:text="${#strings.substring(actor.first, 0, 1)}"></span>
+                                        </div>
+                                        <div class="casting-list-info">
+                                            <div class="casting-list-name-row">
+                                                <a th:href="@{/actor/show(id=${actor.id})}"
+                                                   class="casting-list-name project-list-title"
+                                                   th:text="${actor.first + (actor.last != null && !#strings.isEmpty(actor.last) ? ' ' + actor.last : '')}"></a>
+                                                <span class="casting-list-unassigned"
+                                                      th:if="${viewModel.characterProjectId != null and #lists.isEmpty(actor.assignedCharacters)}">
+                                                    Unassigned
+                                                </span>
+                                            </div>
+                                            <div class="casting-list-secondary">
+                                                <div class="casting-list-meta" th:if="${actor.phone != null or actor.email != null}">
+                                                    <span class="casting-list-contact" th:if="${actor.phone != null}">
+                                                        <span class="casting-list-contact-label">Phone</span>
+                                                        <a th:href="'tel:' + ${actor.phone}" th:text="${actor.phone}"></a>
+                                                    </span>
+                                                    <span class="casting-list-contact" th:if="${actor.email != null}">
+                                                        <span class="casting-list-contact-label">Email</span>
+                                                        <a th:href="'mailto:' + ${actor.email}" th:text="${actor.email}"></a>
+                                                    </span>
+                                                </div>
+                                                <div class="casting-list-roles" th:if="${!#lists.isEmpty(actor.assignedCharacters)}">
+                                                    <a th:each="character : ${actor.assignedCharacters}"
+                                                       th:href="@{/character/show(id=${character.id})}"
+                                                       class="casting-list-role"
+                                                       th:text="${character.name}"></a>
+                                                </div>
+                                                <details class="casting-auditions"
+                                                         th:if="${viewModel.characterProjectId != null and !#lists.isEmpty(viewModel.characters)}">
+                                                    <summary class="casting-auditions-summary">
+                                                        Auditions
+                                                        <span class="casting-auditions-count"
+                                                              th:if="${!#lists.isEmpty(actor.auditionCharacters)}"
+                                                              th:text="'(' + ${#lists.size(actor.auditionCharacters)} + ')'"></span>
+                                                    </summary>
+                                                    <form th:action="@{/audition/set}"
+                                                          method="post"
+                                                          class="casting-auditions-form"
+                                                          hx-boost="false">
+                                                        <input type="hidden" name="actorId" th:value="${actor.id}" />
+                                                        <input type="hidden" name="projectId" th:value="${viewModel.characterProjectId}" />
+                                                        <div class="casting-audition-options">
+                                                            <label th:each="character : ${viewModel.characters}"
+                                                                   class="casting-audition-option">
+                                                                <input type="checkbox"
+                                                                       name="characterIds"
+                                                                       th:value="${character.id}"
+                                                                       th:checked="${actor.isAuditioningFor(character.id)}"
+                                                                       onchange="this.form.submit()" />
+                                                                <span th:text="${character.name}"></span>
+                                                            </label>
+                                                        </div>
+                                                    </form>
+                                                </details>
+                                            </div>
+                                        </div>
+                                        <div class="casting-list-actions project-list-actions">
+                                            <a th:href="@{/actor/edit(id=${actor.id})}"
+                                               role="button"
+                                               class="project-list-action-btn">Edit</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="project-list-no-results" id="casting-list-no-results" hidden>
+                        No actors match <strong id="casting-list-search-query"></strong>.
+                    </p>
+                </div>
+
+                <div class="casting-section-empty" th:if="${#lists.isEmpty(viewModel.actors)}">
+                    <p class="project-list-empty-title">No actors yet</p>
+                    <p class="muted">Add your first actor to start building your casting directory.</p>
+                    <a th:href="@{/actor/create(projectId=${viewModel.characterProjectId})}" role="button">Create New Actor</a>
+                </div>
+            </div>
+        </div>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:inline="javascript">
+    (function() {
+        const searchInput = document.getElementById('casting-list-search');
+        const clearBtn = document.getElementById('casting-list-search-clear');
+        const searchWrap = document.getElementById('casting-list-search-wrap');
+        const noResultsEl = document.getElementById('casting-list-no-results');
+        const noResultsQueryEl = document.getElementById('casting-list-search-query');
+        const characterNoResultsEl = document.getElementById('casting-character-no-results');
+        const characterNoResultsQueryEl = document.getElementById('casting-character-search-query');
+        const sortSelect = document.getElementById('casting-list-sort');
+        const projectSelect = document.getElementById('casting-project-select');
+        const actorTbody = document.querySelector('#table-actors tbody');
+        const characterTbody = document.querySelector('#table-characters tbody');
+        if (!searchInput) return;
+
+        if (projectSelect) {
+            projectSelect.addEventListener('change', function() {
+                const url = new URL(window.location.href);
+                url.searchParams.set('projectId', projectSelect.value);
+                window.location.href = url.toString();
+            });
+        }
+
+        function sortActors() {
+            if (!actorTbody || !sortSelect) return;
+            const descending = sortSelect.value === 'name-desc';
+            const rows = Array.from(actorTbody.querySelectorAll('.casting-list-row'));
+            rows.sort(function(a, b) {
+                const comparison = (a.getAttribute('data-sort-name') || '')
+                    .localeCompare(b.getAttribute('data-sort-name') || '');
+                return descending ? -comparison : comparison;
+            });
+            rows.forEach(function(row) {
+                actorTbody.appendChild(row);
+            });
+        }
+
+        function sortCharacters() {
+            if (!characterTbody || !sortSelect) return;
+            const descending = sortSelect.value === 'name-desc';
+            const rows = Array.from(characterTbody.querySelectorAll('.casting-character-row'));
+            rows.sort(function(a, b) {
+                const comparison = (a.getAttribute('data-sort-name') || '')
+                    .localeCompare(b.getAttribute('data-sort-name') || '');
+                return descending ? -comparison : comparison;
+            });
+            rows.forEach(function(row) {
+                characterTbody.appendChild(row);
+            });
+        }
+
+        function performSearch() {
+            const query = searchInput.value.trim();
+            const normalizedQuery = query.toLowerCase();
+
+            if (clearBtn) {
+                clearBtn.hidden = !query;
+            }
+            if (searchWrap) {
+                searchWrap.classList.toggle('has-value', !!query);
+            }
+
+            let actorVisibleCount = 0;
+            document.querySelectorAll('#table-actors .casting-list-row').forEach(function(row) {
+                const searchText = row.textContent.toLowerCase();
+                const matches = !normalizedQuery || searchText.includes(normalizedQuery);
+                row.hidden = !matches;
+                if (matches) actorVisibleCount++;
+            });
+
+            let characterVisibleCount = 0;
+            document.querySelectorAll('#table-characters .casting-character-row').forEach(function(row) {
+                const searchText = row.textContent.toLowerCase();
+                const matches = !normalizedQuery || searchText.includes(normalizedQuery);
+                row.hidden = !matches;
+                if (matches) characterVisibleCount++;
+            });
+
+            if (noResultsEl) {
+                noResultsEl.hidden = actorVisibleCount > 0 || !query;
+            }
+            if (noResultsQueryEl) {
+                noResultsQueryEl.textContent = query ? '"' + query + '"' : '';
+            }
+            if (characterNoResultsEl) {
+                characterNoResultsEl.hidden = characterVisibleCount > 0 || !query;
+            }
+            if (characterNoResultsQueryEl) {
+                characterNoResultsQueryEl.textContent = query ? '"' + query + '"' : '';
+            }
+        }
+
+        searchInput.addEventListener('input', performSearch);
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                searchInput.value = '';
+                performSearch();
+                searchInput.focus();
+            }
+        });
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                performSearch();
+                searchInput.focus();
+            });
+        }
+
+        if (sortSelect) {
+            const savedSort = sessionStorage.getItem('castingListSort');
+            if (savedSort && sortSelect.querySelector('option[value="' + savedSort + '"]')) {
+                sortSelect.value = savedSort;
+            }
+            sortSelect.addEventListener('change', function() {
+                sessionStorage.setItem('castingListSort', sortSelect.value);
+                sortActors();
+                sortCharacters();
+            });
+            sortActors();
+            sortCharacters();
+        }
+    })();
+    </script>
 </body>
 </html>

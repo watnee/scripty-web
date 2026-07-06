@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111111">
+    <link rel="manifest" th:href="@{/manifest.json}">
+    <meta charset="UTF-8">
+    <title>Scripty - Screenplay Title Page</title>
+    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main>
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/show(id=${project.id})}" th:text="${project.title}">Project</a></li>
+                    <li aria-current="page">Title Page</li>
+                </ol>
+            </nav>
+        </div>
+        <h1>Title Page</h1>
+        
+        <div class="title-page-editor-container">
+            <!-- Left Form Panel -->
+            <div class="title-page-form-panel">
+                <form th:action="@{/project/titlePage}" method="post" th:object="${commandModel}">
+                    <input type="hidden" th:field="*{id}" />
+                    <label>
+                        Screenplay Title
+                        <input type="text" id="input-screenplay-title" th:field="*{screenplayTitle}" placeholder="e.g. MY SCREENPLAY" autocomplete="off" spellcheck="true" />
+                        <span th:if="${#fields.hasErrors('screenplayTitle')}" th:errors="*{screenplayTitle}" class="field-error"></span>
+                    </label>
+                    <label>
+                        Writers
+                        <input type="text" id="input-writers" th:field="*{writers}" placeholder="e.g. Jane Doe" autocomplete="off" spellcheck="true" />
+                        <span th:if="${#fields.hasErrors('writers')}" th:errors="*{writers}" class="field-error"></span>
+                    </label>
+                    <label>
+                        Contact Information
+                        <textarea id="input-contact-info" th:field="*{contactInfo}" placeholder="e.g. Contact info..." rows="5" autocomplete="off" spellcheck="true"></textarea>
+                        <span th:if="${#fields.hasErrors('contactInfo')}" th:errors="*{contactInfo}" class="field-error"></span>
+                    </label>
+                    <p class="form-actions">
+                        <a th:href="@{/project/show(id=${project.id})}" role="button" class="bad title-page-cancel">Cancel</a>
+                        <button type="submit" class="good title-page-submit">Save Title Page</button>
+                    </p>
+                </form>
+            </div>
+            
+            <!-- Right Preview Panel -->
+            <div class="title-page-preview-panel">
+                <h3 class="preview-header">Live Screenplay Preview</h3>
+                <div class="screenplay-paper-wrapper">
+                    <div class="screenplay-paper">
+                        <div class="screenplay-title-wrap">
+                            <div class="screenplay-preview-title" id="preview-title">UNTITLED SCREENPLAY</div>
+                            <div class="screenplay-preview-by">written by</div>
+                            <div class="screenplay-preview-writers" id="preview-writers">ANONYMOUS</div>
+                        </div>
+                        <div class="screenplay-preview-contact" id="preview-contact"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:inline="javascript">
+        (function() {
+            const inputTitle = document.getElementById('input-screenplay-title');
+            const inputWriters = document.getElementById('input-writers');
+            const inputContact = document.getElementById('input-contact-info');
+
+            const previewTitle = document.getElementById('preview-title');
+            const previewWriters = document.getElementById('preview-writers');
+            const previewContact = document.getElementById('preview-contact');
+            const byLabel = document.querySelector('.screenplay-preview-by');
+
+            const projectTitle = /*[[${project.title}]]*/ 'UNTITLED SCREENPLAY';
+
+            function updatePreview() {
+                // Screenplay title
+                const titleVal = inputTitle.value.trim();
+                previewTitle.textContent = titleVal ? titleVal.toUpperCase() : (projectTitle ? projectTitle.toUpperCase() : 'UNTITLED SCREENPLAY');
+
+                // Writers
+                const writersVal = inputWriters.value.trim();
+                if (writersVal) {
+                    previewWriters.textContent = writersVal;
+                    byLabel.style.display = 'block';
+                    previewWriters.style.display = 'block';
+                } else {
+                    previewWriters.textContent = '';
+                    byLabel.style.display = 'none';
+                    previewWriters.style.display = 'none';
+                }
+
+                // Contact info (handling newlines)
+                const contactVal = inputContact.value.trim();
+                previewContact.innerHTML = contactVal.replace(/\n/g, '<br/>');
+            }
+
+            if (inputTitle) inputTitle.addEventListener('input', updatePreview);
+            if (inputWriters) inputWriters.addEventListener('input', updatePreview);
+            if (inputContact) inputContact.addEventListener('input', updatePreview);
+
+            // Initial call
+            updatePreview();
+        })();
+    </script>
+</body>
+</html>

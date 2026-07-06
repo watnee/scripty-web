@@ -1,0 +1,3 @@
+ALTER TABLE project ADD COLUMN screenplay_title VARCHAR(255) NULL;
+ALTER TABLE project ADD COLUMN writers VARCHAR(255) NULL;
+ALTER TABLE project ADD COLUMN contact_info VARCHAR(1000) NULL;

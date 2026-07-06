@@ -1,22 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.scripty.viewmodel.block.editblock;
 
 import com.scripty.commandmodel.block.editblock.EditBlockCommandModel;
 import java.util.List;
 
-/**
- *
- * @author chris
- */
 public class EditBlockViewModel {
-    
-    private int sceneId;
+
+    private int projectId;
     private List<EditPersonViewModel> persons;
-    
+
     // Specifically to handle redisplaying when validation errors happen
     private EditBlockCommandModel createBlockCommandModel;
 
@@ -28,12 +19,12 @@ public class EditBlockViewModel {
         this.createBlockCommandModel = createBlockCommandModel;
     }
 
-    public int getSceneId() {
-        return sceneId;
+    public int getProjectId() {
+        return projectId;
     }
 
-    public void setSceneId(int sceneId) {
-        this.sceneId = sceneId;
+    public void setProjectId(int projectId) {
+        this.projectId = projectId;
     }
 
     public List<EditPersonViewModel> getPersons() {
@@ -43,5 +34,4 @@ public class EditBlockViewModel {
     public void setPersons(List<EditPersonViewModel> persons) {
         this.persons = persons;
     }
-    
 }

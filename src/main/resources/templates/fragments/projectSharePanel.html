@@ -1,0 +1,39 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="panel(projectId, shareAccessUsers, teams)" class="project-share-panel">
+    <p class="project-share-intro muted">Share this link with people who can view the project.</p>
+    <div class="project-share-link-row">
+        <label class="visually-hidden" th:for="'project-share-link-' + ${projectId}">Project link</label>
+        <input type="text"
+               class="project-share-link-input"
+               th:id="'project-share-link-' + ${projectId}"
+               th:attr="data-project-id=${projectId}"
+               readonly />
+        <button type="button"
+                class="project-share-copy-btn"
+                th:attr="data-copy-target=${'project-share-link-' + projectId}"
+                title="Copy link">Copy</button>
+    </div>
+    <div th:replace="~{fragments/projectSharePanel :: accessList(${shareAccessUsers}, ${teams})}"></div>
+    <a th:href="@{/project/production(id=${projectId})}"
+       class="project-share-manage-link"
+       hx-boost="false">Manage teams</a>
+</div>
+
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="accessList(shareAccessUsers, teams)" class="project-share-access">
+    <h3 class="project-share-access-title">People with access</h3>
+    <p class="project-share-access-note muted" th:if="${#lists.isEmpty(teams)}">
+        This project is not restricted to a team, so all users can view it.
+    </p>
+    <p class="project-share-access-note muted" th:if="${!#lists.isEmpty(teams)}">
+        Users on assigned teams plus admins, directors, and producers can view this project.
+    </p>
+    <ul class="project-share-user-list" th:if="${!#lists.isEmpty(shareAccessUsers)}">
+        <li th:each="user : ${shareAccessUsers}" class="project-share-user">
+            <span class="project-share-user-name" th:text="${user.displayName}"></span>
+            <span class="project-share-user-access muted" th:text="${user.accessLabel}"></span>
+        </li>
+    </ul>
+    <p class="project-share-access-empty muted"
+       th:if="${!#lists.isEmpty(teams) and #lists.isEmpty(shareAccessUsers)}">
+        No users have access yet.
+    </p>
+</div>

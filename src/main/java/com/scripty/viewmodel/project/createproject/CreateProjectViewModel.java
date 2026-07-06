@@ -1,22 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.scripty.viewmodel.project.createproject;
 
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
+import com.scripty.dto.Team;
 import java.util.List;
 
-/**
- *
- * @author chris
- */
 public class CreateProjectViewModel {
     
-    // Specifically to handle redisplaying when validation errors happen
     private CreateProjectCommandModel createProjectCommandModel;
-    private List<String> teams;
+    private List<Team> availableTeams;
 
     public CreateProjectCommandModel getCreateProjectCommandModel() {
         return createProjectCommandModel;
@@ -26,11 +17,11 @@ public class CreateProjectViewModel {
         this.createProjectCommandModel = createProjectCommandModel;
     }
 
-    public List<String> getTeams() {
-        return teams;
+    public List<Team> getAvailableTeams() {
+        return availableTeams;
     }
 
-    public void setTeams(List<String> teams) {
-        this.teams = teams;
+    public void setAvailableTeams(List<Team> availableTeams) {
+        this.availableTeams = availableTeams;
     }
 }

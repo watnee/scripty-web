@@ -1,24 +1,14 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.scripty.viewmodel.project.editproject;
 
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
+import com.scripty.dto.Team;
 import java.util.List;
 
-/**
- *
- * @author chris
- */
 public class EditProjectViewModel {
     
     private int id;
-    
-    // Specifically to handle redisplaying when validation errors happen
     private EditProjectCommandModel editProjectCommandModel;
-    private List<String> teams;
+    private List<Team> availableTeams;
 
     public EditProjectCommandModel getEditProjectCommandModel() {
         return editProjectCommandModel;
@@ -36,11 +26,11 @@ public class EditProjectViewModel {
         this.id = id;
     }
 
-    public List<String> getTeams() {
-        return teams;
+    public List<Team> getAvailableTeams() {
+        return availableTeams;
     }
 
-    public void setTeams(List<String> teams) {
-        this.teams = teams;
+    public void setAvailableTeams(List<Team> availableTeams) {
+        this.availableTeams = availableTeams;
     }
 }

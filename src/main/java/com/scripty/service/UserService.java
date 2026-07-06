@@ -5,7 +5,7 @@ import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
 import com.scripty.dto.User;
 import com.scripty.viewmodel.user.createuser.CreateUserViewModel;
 import com.scripty.viewmodel.user.edituser.EditUserViewModel;
-import com.scripty.viewmodel.user.accountprofile.AccountProfileViewModel;
+import com.scripty.viewmodel.user.userprofile.UserProfileViewModel;
 import com.scripty.viewmodel.user.userlist.UserListViewModel;
 import java.util.List;
 
@@ -28,5 +28,5 @@ public interface UserService {
 
     User deleteUser(Integer id);
 
-    AccountProfileViewModel getAccountProfileViewModel(Integer id);
+    UserProfileViewModel getUserProfileViewModel(Integer id);
 }

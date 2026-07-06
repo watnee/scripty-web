@@ -1,0 +1,16 @@
+<div xmlns:th="http://www.thymeleaf.org" class="block-row">
+    <aside class="block-left-controls hide-in-reader-view sidebar menu">
+        <div class="block-left-controls-inner">
+            <input type="checkbox" class="block-select-checkbox" />
+            <a th:attr="hx-get=@{/block/createBelowInline(id=${blockId},surface='project')}" hx-target="closest .block-row" hx-swap="afterend" hx-boost="false" role="button" class="create-below" title="Add block below" aria-label="Add block below">+</a>
+            <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">&#8942;&#8942;</span>
+        </div>
+    </aside>
+    <div class="block-content">
+        <form th:attr="hx-post=@{/block/createBelowInline(surface='project')}" hx-target="closest .block-row" hx-swap="outerHTML" hx-trigger="keydown[key=='Enter'&amp;&amp;!event.shiftKey] from:find textarea, createNext">
+            <input type="hidden" name="id" th:value="${blockId}" />
+            <textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey)event.preventDefault()"></textarea>
+        </form>
+    </div>
+    <aside class="block-actions hide-in-reader-view sidebar menu"></aside>
+</div>

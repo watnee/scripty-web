@@ -1,0 +1,39 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="blockRow (block, projectId, canMoveUp, canMoveDown)" class="block-row" th:attr="data-block-id=${block.id},data-block-order=${block.order},data-tags=${block.tags},data-bookmarked=${block.bookmarked},data-pinned=${block.pinned}">
+    <aside class="block-left-controls hide-in-reader-view sidebar menu">
+        <div class="block-left-controls-inner">
+            <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" />
+            <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id},surface='project')}" hx-target="closest .block-row" hx-swap="afterend" hx-boost="false" class="create-below" role="button" title="Add block below" aria-label="Add block below">+</a>
+            <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">&#8942;&#8942;</span>
+        </div>
+    </aside>
+    <div class="block-content script-block"
+         th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (not #strings.isEmpty(block.personName) ? ' script-block--dialogue' : ' script-block--action')}"
+         th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')&amp;&amp;!window.scriptySuppressBlockEditClick&amp;&amp;!window.scriptyBlockEditLocked]" hx-swap="innerHTML">
+        <p th:if="${not #strings.isEmpty(block.personName)}" class="script-character-name">
+            <strong class="reader-visible-character-name" th:text="${#strings.toUpperCase(block.personName)}"></strong>
+            <a th:href="@{/character/show(id=${block.personId})}" class="character-name hide-in-reader-view sidebar menu" th:text="${block.personName}"></a>
+        </p>
+        <p th:if="${not #strings.isEmpty(block.content)}" class="script-block-text" th:text="${block.content}"></p>
+        <div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu">
+            <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
+                  th:if="${not #strings.isEmpty(#strings.trim(tag))}"
+                  th:attr="title=${'Search: ' + #strings.trim(tag)}"
+                  th:text="${#strings.trim(tag)}"
+                  class="block-tag clickable"></span>
+        </div>
+    </div>
+    <aside class="block-actions hide-in-reader-view sidebar menu">
+        <span class="block-actions-controls">
+            <a class="block-action-bookmark" th:href="@{/block/toggleBookmark(id=${block.id}, projectId=${projectId})}" hx-boost="false" th:title="${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:attr="aria-label=${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'">
+                <span th:replace="~{fragments/bookmarkIcon :: blockIcon(${block.bookmarked})}"></span>
+            </a>
+            <a class="block-action-pin" th:href="@{/block/togglePinned(id=${block.id}, projectId=${projectId})}" hx-boost="false" th:classappend="${block.pinned} ? ' is-pinned' : ''" th:title="${block.pinned} ? 'Unpin block' : 'Pin block'" th:attr="aria-label=${block.pinned} ? 'Unpin block' : 'Pin block'">
+                <span th:replace="~{fragments/pinIcon :: blockIcon(${block.pinned})}"></span>
+            </a>
+            <a th:if="${canMoveDown}" href="#" class="move-down block-move-down block-action-move" role="button" title="Move down" aria-label="Move block down">&#8595;</a>
+            <span th:unless="${canMoveDown}" class="block-action-slot" aria-hidden="true"></span>
+            <a th:if="${canMoveUp}" href="#" class="move-up block-move-up block-action-move" role="button" title="Move up" aria-label="Move block up">&#8593;</a>
+            <span th:unless="${canMoveUp}" class="block-action-slot" aria-hidden="true"></span>
+        </span>
+    </aside>
+</div>

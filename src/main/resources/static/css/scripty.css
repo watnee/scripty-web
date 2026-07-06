@@ -82,7 +82,7 @@ body, main, header, nav, footer, table, tr, td, th, input, textarea, button, sel
 .header-actions .help-dropdown,
 .header-actions .settings-dropdown,
 .header-actions .user-dropdown-container {
-    position: static;
+    position: relative;
 }
 
 /* User dropdown in header */
@@ -133,6 +133,12 @@ html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="s
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    width: 100%;
+}
+
+.settings-dropdown .theme-option svg {
+    flex-shrink: 0;
+    margin-right: 0 !important;
 }
 
 .settings-dropdown .theme-option::after {
@@ -435,14 +441,14 @@ main.home {
     height: 1.5rem;
     min-width: 1.5rem;
     padding: 0;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     line-height: 1;
     border-radius: 999px;
     border: 1px solid var(--border, #cbd5e1);
     background: var(--accent-bg, rgba(0, 0, 0, 0.05));
     color: var(--accent, #475569);
     opacity: 0.55;
-    transition: opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.12s ease, box-shadow 0.12s ease;
+    transition: opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.12s ease;
 }
 
 .block-select-menu-toggle:hover,
@@ -453,10 +459,16 @@ main.home {
     outline: none;
 }
 
+.block-select-menu-dropdown.open .block-select-menu-toggle {
+    background: var(--pressed-interactive-bg, var(--accent-bg));
+    transform: rotate(180deg);
+}
+
 .block-select-menu-dropdown .nav-dropdown-menu {
     left: 0;
     right: auto;
-    min-width: 11.5rem;
+    min-width: 12rem;
+    transform-origin: top left;
     z-index: 1100;
 }
 
@@ -736,17 +748,17 @@ body.htmx-swapping {
     transition: opacity 0.1s ease-out;
 }
 
-/* History Dropdown container */
+/* Dropdown container */
 .nav-dropdown {
     position: relative;
     display: inline-block;
 }
 
 .header-actions .user-dropdown-container.nav-dropdown {
-    position: static;
+    position: relative;
 }
 
-/* Dropdown Toggle Button */
+/* Dropdown toggle button */
 .nav-dropdown-toggle {
     background: none;
     border: none;
@@ -758,42 +770,73 @@ body.htmx-swapping {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    transition: color 0.2s ease, background-color 0.2s ease;
+    transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
     border-radius: 4px;
 }
 
-.nav-dropdown-toggle:hover, .nav-dropdown-toggle:focus {
+.nav-dropdown-toggle:hover,
+.nav-dropdown-toggle:focus-visible {
     background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
     outline: none;
 }
 
-/* Dropdown Menu */
+.nav-dropdown.open > .nav-dropdown-toggle,
+.help-dropdown.open .help-toggle-btn,
+.settings-dropdown.open .settings-toggle-btn,
+.user-dropdown-container.open .user-toggle-btn,
+.project-search-dropdown.open .project-search-toggle {
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    color: var(--accent, inherit);
+}
+
+.header-actions-group .help-dropdown.open .help-toggle-btn,
+.header-actions-group .settings-dropdown.open .settings-toggle-btn,
+.header-actions-group .user-dropdown-container.open .user-toggle-btn {
+    background: var(--pressed-interactive-bg, var(--accent-bg));
+    filter: none;
+}
+
+/* Dropdown panel */
 .nav-dropdown-menu {
     display: none;
     position: absolute;
-    top: 100%;
+    top: calc(100% + 0.35rem);
     right: 0;
+    min-width: 11rem;
+    padding: 0.35rem;
+    margin: 0;
     background-color: var(--box-bg, #ffffff);
-    min-width: 180px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border: 1px solid var(--border, #e0e0e0);
-    border-radius: 6px;
+    border-radius: 0.65rem;
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.06),
+        0 8px 24px rgba(15, 23, 42, 0.12);
     z-index: 1000;
-    padding: 0.5rem 0;
-    margin-top: 0.25rem;
-    animation: fadeIn 0.15s ease-out;
+    transform-origin: top right;
 }
 
-/* Show the dropdown menu */
+:root.-dark-theme .nav-dropdown-menu {
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.24),
+        0 10px 28px rgba(0, 0, 0, 0.42);
+}
+
+.header-actions .nav-dropdown-menu {
+    min-width: 10.5rem;
+}
+
 .nav-dropdown.open .nav-dropdown-menu {
     display: block;
+    animation: dropdownIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Dropdown Items */
+/* Dropdown items */
 .nav-dropdown-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     width: 100%;
-    padding: 0.5rem 1.25rem;
+    padding: 0.45rem 0.65rem;
     clear: both;
     font-weight: 400;
     color: var(--fg, #333333);
@@ -801,26 +844,50 @@ body.htmx-swapping {
     white-space: nowrap;
     background: none;
     border: none;
-    font-size: 0.95rem;
+    border-radius: 0.45rem;
+    font-size: 0.9rem;
+    line-height: 1.35;
     text-decoration: none;
     cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease;
+    transition: background-color 0.12s ease, color 0.12s ease;
     box-sizing: border-box;
 }
 
-.nav-dropdown-item:hover, .nav-dropdown-item:focus {
+.nav-dropdown-item:hover,
+.nav-dropdown-item:focus-visible {
     background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
     color: var(--accent, inherit);
     outline: none;
 }
 
-/* Divider */
+.nav-dropdown-item.active {
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    color: var(--accent, inherit);
+    font-weight: 600;
+}
+
+.nav-dropdown-item:active {
+    transform: scale(0.985);
+}
+
+/* Dropdown divider */
 .nav-dropdown-divider {
     height: 1px;
-    margin: 0.5rem 0;
+    margin: 0.3rem 0.45rem;
     overflow: hidden;
     background-color: var(--border, #e0e0e0);
     border: none;
+}
+
+@keyframes dropdownIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 @keyframes fadeIn {
@@ -1393,7 +1460,8 @@ input.project-list-search:focus-visible {
     right: 0;
     left: auto;
     min-width: min(22rem, calc(100vw - 2rem));
-    padding: 0.65rem;
+    padding: 0.5rem;
+    transform-origin: top right;
 }
 
 .project-search-dropdown.open .nav-dropdown-menu {

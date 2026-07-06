@@ -1467,15 +1467,27 @@ html.scripty-hide-block-pins .block-action-pin {
     display: none !important;
 }
 
+html.scripty-hide-block-select .block-select-checkbox,
+html.scripty-hide-block-select .project-script-select-toolbar {
+    display: none !important;
+}
+
+html.scripty-hide-block-select .block-left-controls-inner,
+html.scripty-hide-block-select .scene-bulk-select {
+    grid-template-columns: var(--block-select-col-plus) var(--block-select-col-drag);
+}
+
 .text-size-control .project-search-toggle.is-active,
 .text-size-control .bookmark-filter-toggle.is-active,
-.text-size-control .pin-filter-toggle.is-active {
+.text-size-control .pin-filter-toggle.is-active,
+.text-size-control .select-filter-toggle.is-active {
     color: var(--accent, #475569);
     border-color: var(--accent, #475569);
 }
 
 .text-size-control .bookmark-filter-toggle,
 .text-size-control .pin-filter-toggle,
+.text-size-control .select-filter-toggle,
 .text-size-control .spellcheck-toggle-btn {
     font-size: 1rem;
     line-height: 1;

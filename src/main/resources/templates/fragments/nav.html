@@ -502,17 +502,22 @@
 
             var bookmarksToggle = document.getElementById('nav-bookmarks-toggle');
             var pinsToggle = document.getElementById('nav-pins-toggle');
+            var selectToggle = document.getElementById('nav-select-toggle');
             var bookmarksKey = 'scripty-show-block-bookmarks-project-' + projectId;
             var pinsKey = 'scripty-show-block-pins-project-' + projectId;
+            var selectKey = 'scripty-show-block-select-project-' + projectId;
             var showBookmarks = localStorage.getItem(bookmarksKey);
             var showPins = localStorage.getItem(pinsKey);
+            var showSelect = localStorage.getItem(selectKey);
 
             showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
             showPins = showPins === null ? false : showPins !== 'false';
+            showSelect = showSelect === null ? false : showSelect !== 'false';
 
             function applyMarkerVisibility() {
                 document.documentElement.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);
                 document.documentElement.classList.toggle('scripty-hide-block-pins', !showPins);
+                document.documentElement.classList.toggle('scripty-hide-block-select', !showSelect);
             }
 
             function syncBookmarkToggleUi() {
@@ -529,6 +534,21 @@
                 pinsToggle.classList.toggle('is-active', !showPins);
                 pinsToggle.title = showPins ? 'Hide pin buttons in blocks' : 'Show pin buttons in blocks';
                 pinsToggle.setAttribute('aria-label', pinsToggle.title);
+            }
+
+            function syncSelectToggleUi() {
+                if (!selectToggle) return;
+                selectToggle.setAttribute('aria-pressed', showSelect ? 'false' : 'true');
+                selectToggle.classList.toggle('is-active', !showSelect);
+                selectToggle.title = showSelect ? 'Hide select checkboxes in blocks' : 'Show select checkboxes in blocks';
+                selectToggle.setAttribute('aria-label', selectToggle.title);
+            }
+
+            function clearBlockSelections() {
+                document.querySelectorAll('.block-select-checkbox:checked').forEach(function(cb) {
+                    cb.checked = false;
+                    cb.dispatchEvent(new Event('change', { bubbles: true }));
+                });
             }
 
             if (bookmarksToggle && !bookmarksToggle.dataset.markerToggleInit) {
@@ -553,8 +573,23 @@
                 });
             }
 
+            if (selectToggle && !selectToggle.dataset.markerToggleInit) {
+                selectToggle.dataset.markerToggleInit = 'true';
+                syncSelectToggleUi();
+                selectToggle.addEventListener('click', function() {
+                    showSelect = !showSelect;
+                    localStorage.setItem(selectKey, showSelect ? 'true' : 'false');
+                    if (!showSelect) {
+                        clearBlockSelections();
+                    }
+                    syncSelectToggleUi();
+                    applyMarkerVisibility();
+                });
+            }
+
             syncBookmarkToggleUi();
             syncPinToggleUi();
+            syncSelectToggleUi();
             applyMarkerVisibility();
         };
 

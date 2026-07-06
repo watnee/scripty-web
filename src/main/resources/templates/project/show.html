@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" class="scripty-hide-block-bookmarks scripty-hide-block-pins">
+<html xmlns:th="http://www.thymeleaf.org" class="scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select">
 <head>
     <script th:inline="javascript">
     (function() {
@@ -7,11 +7,14 @@
         if (!projectId) return;
         var showBookmarks = localStorage.getItem('scripty-show-block-bookmarks-project-' + projectId);
         var showPins = localStorage.getItem('scripty-show-block-pins-project-' + projectId);
+        var showSelect = localStorage.getItem('scripty-show-block-select-project-' + projectId);
         showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
         showPins = showPins === null ? false : showPins !== 'false';
+        showSelect = showSelect === null ? false : showSelect !== 'false';
         var root = document.documentElement;
         root.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);
         root.classList.toggle('scripty-hide-block-pins', !showPins);
+        root.classList.toggle('scripty-hide-block-select', !showSelect);
     })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -51,6 +54,14 @@
                     aria-label="Show pin buttons in blocks"
                     title="Show pin buttons in blocks">
                 <span th:replace="~{fragments/pinIcon :: toolbarIcon}"></span>
+            </button>
+            <button id="nav-select-toggle"
+                    type="button"
+                    class="nav-dropdown-toggle select-filter-toggle is-active"
+                    aria-pressed="true"
+                    aria-label="Show select checkboxes in blocks"
+                    title="Show select checkboxes in blocks">
+                <span th:replace="~{fragments/selectIcon :: toolbarIcon}"></span>
             </button>
             <span th:replace="~{fragments/spellcheckToggle :: toolbarButton}"></span>
             <div class="nav-dropdown project-search-dropdown" id="project-search-dropdown">

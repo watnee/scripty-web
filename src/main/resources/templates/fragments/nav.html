@@ -21,24 +21,10 @@
         })();
     </script>
     <nav>
-        <a th:href="@{/}"><strong>Scripty</strong></a>
-        <th:block sec:authorize="isAuthenticated()">
-            <a th:if="${globalDefaultProjectId != null}" th:href="@{/project/show(id=${globalDefaultProjectId})}" th:aria-current="(${isDefault} != null and ${isDefault}) ? 'page'" class="nav-default-project" th:title="'Default Project: ' + ${globalDefaultProjectTitle}">
-                <span class="star-icon">★</span><span class="title-text" th:text="${globalDefaultProjectTitle}"></span>
-            </a>
-        </th:block>
+        <a th:href="@{/}" class="nav-brand"><strong>Scripty</strong></a>
     </nav>
     <div class="header-actions">
-        <div class="spellcheck-toggle-container">
-            <button class="spellcheck-toggle-btn" type="button" onclick="window.toggleSpellcheck()" aria-label="Toggle spellcheck" title="Toggle spellcheck">
-                <svg class="spellcheck-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m6 16 6-12 6 12"></path>
-                    <path d="M8 12h8"></path>
-                    <path d="m16 20 2 2 4-4" class="spellcheck-check"></path>
-                    <line x1="3" y1="3" x2="21" y2="21" class="spellcheck-slash" stroke="var(--bad-fg-color, #e11d48)" stroke-width="2"></line>
-                </svg>
-            </button>
-        </div>
+        <div class="header-actions-group" aria-label="Account and settings">
         <div class="nav-dropdown help-dropdown" id="help-dropdown">
             <button class="nav-dropdown-toggle help-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Help" title="Help"
                     th:aria-current="${currentPage == 'help' or currentPage == 'shortcuts'} ? 'page'">
@@ -90,11 +76,10 @@
         </div>
         <div class="nav-dropdown user-dropdown-container" id="user-dropdown">
             <button class="nav-dropdown-toggle user-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="User menu" title="User menu">
-                <svg class="user-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <svg class="user-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                <span class="user-name" sec:authorize="isAuthenticated()" sec:authentication="name"></span>
             </button>
             <div class="nav-dropdown-menu">
                 <a class="nav-dropdown-item" th:href="@{/team/list}" th:classappend="${currentPage == 'teams'} ? 'active'" sec:authorize="isAuthenticated()">Teams</a>
@@ -102,6 +87,7 @@
                 <hr class="nav-dropdown-divider" sec:authorize="isAuthenticated()">
                 <a class="nav-dropdown-item" th:href="@{/logout}" hx-boost="false" sec:authorize="isAuthenticated()">Logout</a>
             </div>
+        </div>
         </div>
     </div>
     <div id="project-delete-modal" class="confirm-modal" hidden aria-modal="true" role="dialog" aria-labelledby="project-delete-title">
@@ -183,6 +169,39 @@
             hoveredRow = findBlockRow(e.target);
         });
 
+        // Backspace/Delete at the start of an empty block textarea should move to the
+        // previous block, not remove the row or trigger browser/history navigation.
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+            const ta = e.target;
+            if (!isBlockContentTextarea(ta) || !isEmptyAtStart(ta)) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const row = findAnyBlockRow(ta);
+            const prevRow = row ? findAdjacentBlockRow(row, 'moveUp') : null;
+            if (isCreateBlockTextarea(ta) && row) {
+                removeEmptyCreateRow(row);
+            }
+            focusBlockContentEnd(prevRow);
+        }, true);
+
+        // Escape cancels an empty unsaved create row.
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Escape') return;
+            const ta = e.target;
+            if (!isBlockContentTextarea(ta) || !isCreateBlockTextarea(ta)) return;
+            if (ta.value.trim() !== '') return;
+
+            e.preventDefault();
+            const row = findAnyBlockRow(ta);
+            const prevRow = row ? findAdjacentBlockRow(row, 'moveUp') : null;
+            if (removeEmptyCreateRow(row)) {
+                focusBlockContentEnd(prevRow);
+            }
+        });
+
         // Move blocks up/down keyboard shortcut
         document.addEventListener('keydown', function(e) {
             const isMoveUp = (e.altKey && e.key === 'ArrowUp') || (e.ctrlKey && e.shiftKey && e.key === 'ArrowUp');
@@ -232,8 +251,49 @@
 
         function isCreateBlockTextarea(el) {
             if (!el || el.tagName !== 'TEXTAREA') return false;
-            const row = findBlockRow(el);
+            const row = findAnyBlockRow(el);
             return !!row && !row.hasAttribute('data-block-id');
+        }
+
+        function isBlockContentTextarea(el) {
+            return !!el && el.tagName === 'TEXTAREA' && el.name === 'content' && !!el.closest('.block-content');
+        }
+
+        function isEmptyAtStart(textarea) {
+            return textarea.value.trim() === '' && textarea.selectionStart === 0 && textarea.selectionEnd === 0;
+        }
+
+        function focusBlockContentEnd(row) {
+            if (!row) return;
+            const blockContent = row.querySelector('.block-content');
+            if (!blockContent) return;
+            const existingTa = blockContent.querySelector('textarea[name="content"]');
+            if (existingTa) {
+                autoGrowTextarea(existingTa);
+                existingTa.focus({ preventScroll: true });
+                const len = existingTa.value.length;
+                existingTa.setSelectionRange(len, len);
+                return;
+            }
+            blockContent.click();
+            setTimeout(function() {
+                const ta = blockContent.querySelector('textarea[name="content"]');
+                if (!ta) return;
+                autoGrowTextarea(ta);
+                ta.focus({ preventScroll: true });
+                const len = ta.value.length;
+                ta.setSelectionRange(len, len);
+            }, 100);
+        }
+
+        function removeEmptyCreateRow(row) {
+            if (!row || row.hasAttribute('data-block-id')) return false;
+            const container = row.closest('.scene-blocks, #table-blocks, tbody');
+            if (!container) return false;
+            const rowSelector = container.matches('tbody') ? 'tr' : '.block-row';
+            if (container.querySelectorAll(rowSelector).length <= 1) return false;
+            row.remove();
+            return true;
         }
 
         function isInlineTextEdit(el) {
@@ -292,6 +352,13 @@
         function findBlockRow(el) {
             if (!el) return null;
             return el.closest('tr[data-block-id], .block-row[data-block-id]');
+        }
+
+        function findAnyBlockRow(el) {
+            if (!el) return null;
+            const savedRow = findBlockRow(el);
+            if (savedRow) return savedRow;
+            return el.closest('.scene-blocks .block-row, #table-blocks tr, tbody tr');
         }
 
         function findAdjacentBlockRow(row, direction) {
@@ -1010,10 +1077,6 @@
 
         function initHistoryDropdown() {
             const dropdown = document.getElementById('history-dropdown');
-            if (!dropdown) return;
-
-            const toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
-            const versionHistoryLink = document.getElementById('nav-version-history');
             const undoBtn = document.getElementById('nav-undo');
             const redoBtn = document.getElementById('nav-redo');
 
@@ -1055,8 +1118,15 @@
                 performHistoryAction('redo');
             };
 
-            if (!toggleBtn || !versionHistoryLink) {
-                updateUndoRedoButtons(resolveProjectId());
+            const projectId = resolveProjectId();
+            if (!dropdown) {
+                updateUndoRedoButtons(projectId);
+                return;
+            }
+
+            const toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
+            if (!toggleBtn) {
+                updateUndoRedoButtons(projectId);
                 return;
             }
 
@@ -1080,14 +1150,7 @@
                 }
             });
 
-            // Resolve Project ID from URL or page DOM
-            const projectId = resolveProjectId();
-
             if (projectId) {
-                if (versionHistoryLink.getAttribute('href') === '#' || versionHistoryLink.getAttribute('href') === '') {
-                    versionHistoryLink.href = /*[[@{/project/version/list}]]*/ '/project/version/list';
-                    versionHistoryLink.href += '?projectId=' + projectId;
-                }
                 dropdown.style.display = 'inline-block';
                 updateUndoRedoButtons(projectId);
             } else if (dropdown.style.display !== 'inline-block') {

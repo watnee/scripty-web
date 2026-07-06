@@ -17,6 +17,28 @@ nav[aria-label="Breadcrumb"] ol {
     list-style: none;
     margin: 0;
     padding-left: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+}
+
+nav[aria-label="Breadcrumb"] ol > li {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+}
+
+nav[aria-label="Breadcrumb"] ol > li + li::before {
+    content: '›';
+    margin-right: 0.5rem;
+    color: var(--muted-fg, #64748b);
+}
+
+nav[aria-label="Breadcrumb"] ol > li:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,21 +54,30 @@ body, main, header, nav, footer, table, tr, td, th, input, textarea, button, sel
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 
-/* Header action buttons (help, user, spellcheck) */
+/* Header action buttons (help, settings, user) */
 .header-actions {
     position: absolute;
-    top: 0.75rem;
-    right: 1.5rem;
+    top: 0.35rem;
+    right: 0.5rem;
     display: flex;
     align-items: center;
-    gap: 0.125rem;
     z-index: 1001;
+}
+
+.header-actions-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.1rem 0.2rem;
+    background: var(--interactive-bg);
+    border: 1px solid var(--muted-fg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 4px -2px var(--fg);
 }
 
 .header-actions .help-dropdown,
 .header-actions .settings-dropdown,
-.header-actions .user-dropdown-container,
-.header-actions .spellcheck-toggle-container {
+.header-actions .user-dropdown-container {
     position: static;
 }
 
@@ -56,16 +87,28 @@ body, main, header, nav, footer, table, tr, td, th, input, textarea, button, sel
 }
 
 .user-dropdown-container .user-toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    width: 36px;
+    height: 36px;
     font: inherit;
-    color: inherit;
     text-decoration: none;
-    max-width: 10rem;
 }
 
-.user-dropdown-container .user-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.user-dropdown-container .user-toggle-btn:hover,
+.user-dropdown-container .user-toggle-btn:focus {
+    background-color: var(--accent-bg);
+    transform: scale(1.1);
+    color: var(--accent);
+    outline: none;
 }
 
 .user-dropdown-container .user-icon {
@@ -109,9 +152,10 @@ html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="s
     z-index: 1001;
 }
 
-/* Help and settings icon dropdowns */
+/* Help, settings, and user icon dropdowns */
 .help-dropdown,
-.settings-dropdown {
+.settings-dropdown,
+.user-dropdown-container {
     display: inline-flex;
     align-items: center;
 }
@@ -153,6 +197,34 @@ html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="s
     background-color: var(--accent-bg);
     color: var(--accent);
     font-weight: 600;
+}
+
+.header-actions-group .help-toggle-btn,
+.header-actions-group .settings-toggle-btn,
+.header-actions-group .user-toggle-btn {
+    width: auto;
+    height: auto;
+    min-width: 1.75rem;
+    min-height: 1.75rem;
+    padding: 0.15em 0.35em;
+    border-radius: calc(var(--border-radius) - 2px);
+}
+
+.header-actions-group .help-toggle-btn:hover,
+.header-actions-group .help-toggle-btn:focus,
+.header-actions-group .settings-toggle-btn:hover,
+.header-actions-group .settings-toggle-btn:focus,
+.header-actions-group .user-toggle-btn:hover,
+.header-actions-group .user-toggle-btn:focus {
+    transform: none;
+    filter: brightness(1.1);
+}
+
+.header-actions-group .help-icon,
+.header-actions-group .settings-icon,
+.header-actions-group .user-icon {
+    width: 16px;
+    height: 16px;
 }
 
 
@@ -201,12 +273,13 @@ html[data-spellcheck="true"] .spellcheck-toggle-btn .spellcheck-check {
 header {
     position: relative; /* Set relative positioning so absolute theme toggle aligns to it */
     border-bottom: none;
-    padding: 0.4rem 1.5rem;
+    padding: 0.4rem 1.5rem 0.4rem 0.5rem;
 }
 
 header nav {
     gap: 1.5rem;
-    padding-right: 11rem; /* Leave room for header action buttons on the right */
+    padding-right: 9rem; /* Leave room for header action buttons on the right */
+    padding-left: 0;
 }
 
 main.home {
@@ -293,7 +366,10 @@ main.home {
     align-items: start;
 }
 
-.project-toolbar-left.block-left-controls,
+.project-toolbar-left.block-left-controls {
+    display: block;
+}
+
 .scene-bulk-select {
     display: inline-grid;
     grid-template-columns: var(--block-select-col-checkbox) var(--block-select-col-plus) var(--block-select-col-drag);
@@ -304,6 +380,10 @@ main.home {
 .project-toolbar-left {
     grid-column: 1;
     justify-self: end;
+}
+
+.project-toolbar-select-row {
+    margin-top: 0;
 }
 
 .project-toolbar-main {
@@ -1029,33 +1109,6 @@ tr.filtered-out {
     display: none !important;
 }
 
-/* Navigation Default Project Link */
-.nav-default-project {
-    display: inline-flex !important;
-    align-items: center;
-    gap: 0.25rem;
-    text-decoration: none;
-}
-
-.nav-default-project .star-icon {
-    color: #f59e0b; /* Golden Yellow */
-    font-size: 1.15rem;
-    transition: transform 0.2s ease;
-}
-
-.nav-default-project:hover .star-icon {
-    transform: scale(1.25);
-}
-
-.nav-default-project .title-text {
-    max-width: 140px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: inline-block;
-    vertical-align: middle;
-}
-
 /* Default Project Row Highlight in List */
 tr.default-project-row {
     background-color: rgba(245, 158, 11, 0.05) !important;
@@ -1422,7 +1475,8 @@ html.scripty-hide-block-pins .block-action-pin {
 }
 
 .text-size-control .bookmark-filter-toggle,
-.text-size-control .pin-filter-toggle {
+.text-size-control .pin-filter-toggle,
+.text-size-control .spellcheck-toggle-btn {
     font-size: 1rem;
     line-height: 1;
 }
@@ -1760,29 +1814,55 @@ html.scripty-hide-block-pins .block-action-pin {
 }
 
 .project-script-header {
-    position: relative;
-    text-align: center;
     margin-bottom: 0.75rem;
+    width: 100%;
+}
+
+html:not(.safari-reader-view) .project-script-header .project-header-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .project-script-header .project-header-row {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
+    display: flex;
+    justify-content: center;
+    width: 100%;
     margin: 0;
     max-width: 100%;
+}
+
+.project-script-header .project-header-title-group {
+    position: relative;
+    display: inline-flex;
+    align-items: baseline;
+    max-width: 100%;
+}
+
+.project-script-header .project-header-trailing {
+    position: absolute;
+    left: 100%;
+    margin-left: 0.65rem;
+    white-space: nowrap;
+}
+
+.project-script-header .project-name-wrap {
     text-align: center;
-    z-index: 1;
-    background: var(--bg, #fff);
 }
 
 .project-name-display {
     cursor: pointer;
     display: inline-block;
-    min-width: 10em;
+    min-width: 0;
     border-bottom: none;
     transition: color 0.15s ease;
+    text-align: center;
 }
 
 .project-name-display:hover,
@@ -1793,8 +1873,9 @@ html.scripty-hide-block-pins .block-action-pin {
 
 .project-name-wrap {
     display: inline-block;
-    min-width: 10em;
+    min-width: 0;
     max-width: 100%;
+    text-align: center;
 }
 
 .project-name-placeholder {
@@ -3406,36 +3487,38 @@ kbd {
 
     /* 2. Mobile Navigation Header Design */
     header {
-        padding: 1rem !important;
+        padding: 1rem 1rem 1rem 0.5rem !important;
         display: flex !important;
         flex-direction: column !important;
-        align-items: center !important;
+        align-items: flex-start !important;
         gap: 0.75rem !important;
         position: relative !important;
     }
     header nav {
         display: flex !important;
         flex-wrap: wrap !important;
-        justify-content: center !important;
+        justify-content: flex-start !important;
         gap: 0.75rem 1.25rem !important;
         padding-right: 0 !important;
         width: 100% !important;
     }
     .header-actions {
         position: absolute !important;
-        top: 0.75rem !important;
-        right: 0.75rem !important;
+        top: 0.35rem !important;
+        right: 0.5rem !important;
         margin: 0 !important;
     }
-    .user-dropdown-container .user-name {
-        display: none;
+
+    .has-toolbar-brand .header-actions {
+        top: var(--toolbar-brand-top-space, 0.5rem) !important;
+    }
+
+    .has-toolbar-brand .project-top-bar {
+        padding: 0 6.5rem 0 0.5rem !important;
     }
 
     /* Keep breadcrumbs wrapping nicely and readable */
     nav[aria-label="Breadcrumb"] ol {
-        display: flex;
-        flex-wrap: wrap;
-        padding-left: 0;
         gap: 0.25rem 0.5rem;
     }
 
@@ -3812,6 +3895,81 @@ kbd {
     margin: 0 !important;
 }
 
+.has-toolbar-brand header nav {
+    display: none;
+}
+
+.has-toolbar-brand header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    padding: 0;
+    margin: 0;
+    min-height: 0;
+    border-bottom: none;
+    overflow: visible;
+    z-index: 1002;
+}
+
+.has-toolbar-brand .header-actions {
+    top: var(--toolbar-brand-top-space, 0.5rem);
+    right: 0.5rem;
+}
+
+.has-toolbar-brand .project-top-bar {
+    margin: 0 0 0.15rem;
+    padding: 0 9rem 0 0.5rem;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+body.has-toolbar-brand {
+    --toolbar-brand-top-space: 0.5rem;
+    --toolbar-brand-bottom-space: 1rem;
+    padding-top: var(--toolbar-brand-top-space);
+}
+
+.has-toolbar-brand .project-script-toolbar {
+    margin: 0 0 var(--toolbar-brand-bottom-space, 0.5rem);
+    padding: 0 0.5rem;
+}
+
+.has-toolbar-brand .project-script-select-toolbar {
+    margin: 0 0 0.15rem;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+.has-toolbar-brand .project-script-header {
+    margin-bottom: 0.35rem;
+}
+
+.has-toolbar-brand .project-script-toolbar > .project-toolbar-row:first-child {
+    display: block;
+}
+
+.has-toolbar-brand .project-top-bar .text-size-control {
+    margin-bottom: 0;
+    justify-content: flex-start;
+}
+
+.has-toolbar-brand main {
+    padding-top: 0.35rem !important;
+}
+
+.top-bar .toolbar-brand-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.top-bar .toolbar-brand-link strong {
+    font-weight: 700;
+}
+
 .top-bar .text-size-control {
     margin: 0 !important;
     flex: 0 1 auto;
@@ -4069,11 +4227,6 @@ main h3 {
     letter-spacing: normal;
 }
 
-.project-script .scene-header-delete {
-    font-size: 0.85rem;
-    text-transform: lowercase;
-}
-
 .project-script .scene-blocks {
     grid-column: 1 / -1;
     display: grid;
@@ -4165,12 +4318,6 @@ main h3 {
     margin-bottom: 0.35rem;
     width: 100%;
     max-width: 100%;
-}
-
-.project-scenes-heading {
-    margin: 0 0 0.25rem;
-    font-size: 1.25rem;
-    text-align: center;
 }
 
 .project-script .scene-header-links {
@@ -4395,8 +4542,16 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
 }
 
 .text-size-control .bookmark-filter-toggle svg,
-.text-size-control .pin-filter-toggle svg {
+.text-size-control .pin-filter-toggle svg,
+.text-size-control .spellcheck-toggle-btn svg,
+.text-size-control .version-history-toolbar-btn svg,
+.text-size-control .title-page-toolbar-btn svg {
     display: block;
+}
+
+.text-size-control a.nav-dropdown-toggle {
+    text-decoration: none;
+    color: var(--fg);
 }
 
 #table-blocks tr[data-block-id] > td,
@@ -4514,18 +4669,16 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
     cursor: grabbing;
 }
 
+.project-toolbar-main .element-type-actions {
+    margin-top: 0;
+}
+
 .element-type-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
     align-items: center;
     margin-top: 0.75rem;
-}
-
-.element-type-label {
-    margin-right: 0.25rem;
-    font-size: 0.9rem;
-    opacity: 0.85;
 }
 
 .element-type-actions .bulk-type-btn {

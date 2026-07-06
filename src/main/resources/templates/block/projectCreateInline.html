@@ -9,7 +9,7 @@
     <div class="block-content">
         <form th:attr="hx-post=@{/block/createInline(surface='project')}" hx-target="closest .block-row" hx-swap="outerHTML" hx-trigger="keydown[key=='Enter'&amp;&amp;!event.shiftKey] from:find textarea, createNext">
             <input type="hidden" name="sceneId" th:value="${viewModel.sceneId}" />
-            <textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey)event.preventDefault()" _="on blur if my value.trim() is '' and closest .scene-blocks's querySelectorAll('.block-row').length > 1 remove closest .block-row"></textarea>
+            <textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey)event.preventDefault()"></textarea>
         </form>
     </div>
     <aside class="block-actions hide-in-reader-view sidebar menu"></aside>

@@ -95,16 +95,7 @@ public class ProjectController {
 
         ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
 
-        boolean isDefault = false;
-        if (principal != null) {
-            User currentUser = userService.readByUsername(principal.getName());
-            if (currentUser != null && id.equals(currentUser.getDefaultProjectId())) {
-                isDefault = true;
-            }
-        }
-
         model.addAttribute("viewModel", viewModel);
-        model.addAttribute("isDefault", isDefault);
         model.addAttribute("syncRevision", projectRevision(viewModel.getLastEdited()));
 
         return "project/show";

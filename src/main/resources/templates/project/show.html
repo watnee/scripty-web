@@ -11,69 +11,111 @@
     <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
-<body hx-boost="true">
+<body hx-boost="true" class="has-toolbar-brand">
     <div th:replace="~{fragments/nav :: nav('')}"></div>
-    <main>
-        <aside class="top-bar hide-in-reader-view">
-            <nav aria-label="Breadcrumb">
-                <ol>
-                    <li><a th:href="@{/project/list}">Projects</a></li>
-                    <li id="project-breadcrumb-title" aria-current="page" th:text="${viewModel.title}"></li>
-                </ol>
-            </nav>
-            <div class="text-size-control">
-                <button id="nav-bookmarks-toggle"
-                        type="button"
-                        class="nav-dropdown-toggle bookmark-filter-toggle"
-                        aria-pressed="false"
-                        aria-label="Hide bookmark buttons in blocks"
-                        title="Hide bookmark buttons in blocks">
-                    <span th:replace="~{fragments/bookmarkIcon :: toolbarIcon}"></span>
+    <aside class="top-bar project-top-bar hide-in-reader-view">
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li><a th:href="@{/project/list}">Projects</a></li>
+                <li id="project-breadcrumb-title" aria-current="page" th:text="${viewModel.title}"></li>
+            </ol>
+        </nav>
+        <div class="text-size-control">
+            <button id="nav-bookmarks-toggle"
+                    type="button"
+                    class="nav-dropdown-toggle bookmark-filter-toggle"
+                    aria-pressed="false"
+                    aria-label="Hide bookmark buttons in blocks"
+                    title="Hide bookmark buttons in blocks">
+                <span th:replace="~{fragments/bookmarkIcon :: toolbarIcon}"></span>
+            </button>
+            <button id="nav-pins-toggle"
+                    type="button"
+                    class="nav-dropdown-toggle pin-filter-toggle"
+                    aria-pressed="false"
+                    aria-label="Hide pin buttons in blocks"
+                    title="Hide pin buttons in blocks">
+                <span th:replace="~{fragments/pinIcon :: toolbarIcon}"></span>
+            </button>
+            <span th:replace="~{fragments/spellcheckToggle :: toolbarButton}"></span>
+            <div class="nav-dropdown project-search-dropdown" id="project-search-dropdown">
+                <button class="nav-dropdown-toggle project-search-toggle" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Search script" title="Search script">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
+                    </svg>
                 </button>
-                <button id="nav-pins-toggle"
-                        type="button"
-                        class="nav-dropdown-toggle pin-filter-toggle"
-                        aria-pressed="false"
-                        aria-label="Hide pin buttons in blocks"
-                        title="Hide pin buttons in blocks">
-                    <span th:replace="~{fragments/pinIcon :: toolbarIcon}"></span>
-                </button>
-                <div class="nav-dropdown project-search-dropdown" id="project-search-dropdown">
-                    <button class="nav-dropdown-toggle project-search-toggle" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Search script" title="Search script">
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="11" cy="11" r="7"></circle>
-                            <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
-                        </svg>
-                    </button>
-                    <div class="nav-dropdown-menu project-search-panel">
-                        <div class="project-search-wrap">
-                            <label class="visually-hidden" for="project-search">Search scene names, blocks, character names, or tags</label>
-                            <input type="search"
-                                   id="project-search"
-                                   class="project-search-input"
-                                   placeholder="Search scenes, blocks, tags..."
-                                   autocomplete="off"
-                                   enterkeyhint="search" />
-                            <button type="button"
-                                    id="project-search-clear"
-                                    class="project-search-clear"
-                                    aria-label="Clear search"
-                                    hidden>&times;</button>
-                        </div>
+                <div class="nav-dropdown-menu project-search-panel">
+                    <div class="project-search-wrap">
+                        <label class="visually-hidden" for="project-search">Search scene names, blocks, character names, or tags</label>
+                        <input type="search"
+                               id="project-search"
+                               class="project-search-input"
+                               placeholder="Search scenes, blocks, tags..."
+                               autocomplete="off"
+                               enterkeyhint="search" />
+                        <button type="button"
+                                id="project-search-clear"
+                                class="project-search-clear"
+                                aria-label="Clear search"
+                                hidden>&times;</button>
                     </div>
                 </div>
-                <span th:replace="~{fragments/historyToolbarButtons :: buttons}"></span>
-                <div class="nav-dropdown" id="history-dropdown" style="display: inline-block;">
-                    <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false" title="Project menu" aria-label="Project menu">⋯</button>
-                    <div class="nav-dropdown-menu">
-                        <a class="nav-dropdown-item" th:href="@{/project/titlePage(id=${viewModel.id})}">Title Page</a>
-                        <a class="nav-dropdown-item" id="nav-version-history" th:href="@{/project/version/list(projectId=${viewModel.id})}" hx-boost="false">Version History</a>
-                    </div>
-                </div>
-                <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
-                <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
             </div>
-        </aside>
+            <span th:replace="~{fragments/historyToolbarButtons :: buttons}"></span>
+            <a id="nav-version-history"
+               class="nav-dropdown-toggle version-history-toolbar-btn"
+               th:href="@{/project/version/list(projectId=${viewModel.id})}"
+               hx-boost="false"
+               aria-label="Version history"
+               title="Version history">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+            </a>
+            <a class="nav-dropdown-toggle title-page-toolbar-btn"
+               th:href="@{/project/titlePage(id=${viewModel.id})}"
+               aria-label="Title page"
+               title="Title page">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+            </a>
+            <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
+            <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
+        </div>
+    </aside>
+    <aside class="project-script-toolbar hide-in-reader-view sidebar menu">
+        <div class="project-toolbar-row">
+            <div class="project-toolbar-main">
+                <div class="tags-bulk-action tags-bulk-action--compact block-bulk-actions" id="project-bulk-bar" hidden>
+                    <span class="bulk-selection-count" id="project-bulk-count">0 selected</span>
+                    <input type="text" id="project-bulk-tags-input" placeholder="Add tags…" aria-label="Tags to add to selected blocks" />
+                    <button type="button" id="project-bulk-add-tags-btn" title="Add tags to selected blocks">Tag</button>
+                    <button type="button" id="project-bulk-delete-btn" class="bad" title="Delete selected blocks">Delete</button>
+                </div>
+                <div class="element-type-actions hide-in-reader-view sidebar menu">
+                    <button type="button" class="bulk-type-btn" data-bulk-type="SCENE" title="Turn selected rows into scene headings">Scene</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="ACTION" title="Turn selected rows into action">Action</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="DIALOGUE" title="Turn selected rows into dialogue">Dialogue</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="PARENTHETICAL" title="Turn selected rows into parentheticals">(Paren)</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="TRANSITION" title="Turn selected rows into transitions">Transition</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="LYRICS" title="Turn selected rows into lyrics">Lyrics</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="CENTERED" title="Turn selected rows into centered text">Centered</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="SECTION" title="Turn selected rows into outline sections (non-printing)">Section</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="SYNOPSIS" title="Turn selected rows into synopses (non-printing)">Synopsis</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="NOTE" title="Turn selected rows into notes (non-printing)">Note</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="PAGE_BREAK" title="Turn selected rows into page breaks">Page Break</button>
+                </div>
+            </div>
+            <div class="project-toolbar-right" aria-hidden="true"></div>
+        </div>
+    </aside>
+    <main>
         <article class="entry-content script-content project-script">
             <div class="project-script-header">
                 <h1 class="project-header-title entry-title">
@@ -82,50 +124,34 @@
                           th:text="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim()) ? 'Untitled Project' : viewModel.title}">Project</span>
                 </h1>
                 <p class="hide-in-reader-view sidebar menu project-header-row">
-                    <span class="project-name-wrap">
-                        <span class="project-name-display"
-                              th:attr="hx-get=@{/project/editNameInline(id=${viewModel.id},surface='header')}"
-                              hx-trigger="click"
-                              hx-target="closest .project-name-wrap"
-                              hx-swap="innerHTML"
-                              title="Click to rename project">
-                            <th:block th:if="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}">
-                                <span class="project-name-placeholder">Click to name project</span>
-                            </th:block>
-                            <th:block th:unless="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}" th:text="${viewModel.title}"></th:block>
+                    <span class="project-header-title-group">
+                        <span class="project-name-wrap">
+                            <span class="project-name-display"
+                                  th:attr="hx-get=@{/project/editNameInline(id=${viewModel.id},surface='header')}"
+                                  hx-trigger="click"
+                                  hx-target="closest .project-name-wrap"
+                                  hx-swap="innerHTML"
+                                  title="Click to rename project">
+                                <th:block th:if="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}">
+                                    <span class="project-name-placeholder">Click to name project</span>
+                                </th:block>
+                                <th:block th:unless="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}" th:text="${viewModel.title}"></th:block>
+                            </span>
                         </span>
-                    </span>
-                    <span class="project-last-edited-line" th:if="${viewModel.lastEdited != null}" id="project-last-edited">
-                        <span th:replace="~{fragments/lastEditedLine :: line(${viewModel.lastEdited})}"></span>
+                        <span class="project-header-trailing">
+                            <span class="project-last-edited-line" th:if="${viewModel.lastEdited != null}" id="project-last-edited">
+                                <span th:replace="~{fragments/lastEditedLine :: line(${viewModel.lastEdited})}"></span>
+                            </span>
+                        </span>
                     </span>
                 </p>
             </div>
-            <aside class="project-script-toolbar hide-in-reader-view sidebar menu">
-                <div class="project-toolbar-row">
-                    <div class="project-toolbar-left block-left-controls" th:insert="~{fragments/blockSelectAllControl :: controls('project-select-all-blocks')}"></div>
-                    <div class="project-toolbar-main">
-                        <h2 class="project-scenes-heading">Scenes</h2>
-                        <div class="tags-bulk-action tags-bulk-action--compact block-bulk-actions" id="project-bulk-bar" hidden>
-                            <span class="bulk-selection-count" id="project-bulk-count">0 selected</span>
-                            <input type="text" id="project-bulk-tags-input" placeholder="Add tags…" aria-label="Tags to add to selected blocks" />
-                            <button type="button" id="project-bulk-add-tags-btn" title="Add tags to selected blocks">Tag</button>
-                            <button type="button" id="project-bulk-delete-btn" class="bad" title="Delete selected blocks">Delete</button>
-                        </div>
-                        <div class="element-type-actions hide-in-reader-view sidebar menu">
-                            <span class="element-type-label">Element:</span>
-                            <button type="button" class="bulk-type-btn" data-bulk-type="SCENE" title="Turn selected rows into scene headings">Scene</button>
-                            <button type="button" class="bulk-type-btn" data-bulk-type="ACTION" title="Turn selected rows into action">Action</button>
-                            <button type="button" class="bulk-type-btn" data-bulk-type="DIALOGUE" title="Turn selected rows into dialogue">Dialogue</button>
-                            <button type="button" class="bulk-type-btn" data-bulk-type="PARENTHETICAL" title="Turn selected rows into parentheticals">(Paren)</button>
-                            <button type="button" class="bulk-type-btn" data-bulk-type="TRANSITION" title="Turn selected rows into transitions">Transition</button>
-                            <button type="button" class="bulk-type-btn" data-bulk-type="LYRICS" title="Turn selected rows into lyrics">Lyrics</button>
-                            <button type="button" class="bulk-type-btn" data-bulk-type="CENTERED" title="Turn selected rows into centered text">Centered</button>
-                            <button type="button" class="bulk-type-btn" data-bulk-type="SECTION" title="Turn selected rows into outline sections (non-printing)">Section</button>
-                            <button type="button" class="bulk-type-btn" data-bulk-type="SYNOPSIS" title="Turn selected rows into synopses (non-printing)">Synopsis</button>
-                            <button type="button" class="bulk-type-btn" data-bulk-type="NOTE" title="Turn selected rows into notes (non-printing)">Note</button>
-                            <button type="button" class="bulk-type-btn" data-bulk-type="PAGE_BREAK" title="Turn selected rows into page breaks">Page Break</button>
-                        </div>
-                    </div>
+            <aside class="project-script-select-toolbar hide-in-reader-view sidebar menu">
+                <div class="project-toolbar-row project-toolbar-select-row">
+                    <aside class="project-toolbar-left block-left-controls">
+                        <div class="block-left-controls-inner" th:insert="~{fragments/blockSelectAllControl :: controls('project-select-all-blocks')}"></div>
+                    </aside>
+                    <div class="project-toolbar-main" aria-hidden="true"></div>
                     <div class="project-toolbar-right" aria-hidden="true"></div>
                 </div>
             </aside>

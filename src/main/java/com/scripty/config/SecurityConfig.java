@@ -48,7 +48,18 @@ public class SecurityConfig {
         http
             .addFilterBefore(new DevAutoLoginFilter(), UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/login").permitAll()
                 .anyRequest().permitAll()
+            )
+            .formLogin(form -> form
+                .loginPage("/login")
+                .loginProcessingUrl("/login")
+                .defaultSuccessUrl("/", false)
+                .failureUrl("/login?login_error=1")
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .permitAll()
             )
             .csrf(csrf -> csrf.disable());
 

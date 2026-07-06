@@ -18,14 +18,6 @@
                     </span>
                 </span>
             </h2>
-            <aside class="block-actions hide-in-reader-view sidebar menu">
-                <span class="block-actions-controls">
-                    <a th:href="@{/block/delete(id=${scene.id})}" hx-boost="false" class="scene-header-delete" _="on click if not confirm('Delete this scene heading? Its blocks will merge into the scene above.') halt">delete</a>
-                    <span class="block-action-slot" aria-hidden="true"></span>
-                    <span class="block-action-slot" aria-hidden="true"></span>
-                    <span class="block-action-slot" aria-hidden="true"></span>
-                </span>
-            </aside>
         </div>
         <div class="scene-blocks table-blocks-all" th:id="${scene.id != null} ? ('table-blocks-' + ${scene.id}) : 'table-blocks-orphan'">
             <th:block th:each="block, blockStat : ${scene.blocks}">

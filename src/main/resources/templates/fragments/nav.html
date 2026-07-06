@@ -1846,8 +1846,15 @@
             link.href = '/css/scripty.css?v=' + expected;
         }
 
+        function syncBodyPageClasses() {
+            var path = window.location.pathname || '';
+            document.body.classList.toggle('has-toolbar-brand', path === '/project/show');
+            document.body.classList.toggle('login-body', path === '/login');
+        }
+
         // Run on initial load
         function initAll() {
+            syncBodyPageClasses();
             syncStylesheetVersion();
             initBlockEmptyBackspace();
             initBlockEditGuards();
@@ -1884,6 +1891,7 @@
         // Run on HTMX content swaps
         document.body.addEventListener('htmx:afterSwap', initAll);
         document.body.addEventListener('htmx:afterSettle', function() {
+            syncBodyPageClasses();
             syncStylesheetVersion();
             updateLastEditedTimes();
             requestAnimationFrame(focusBlockTextareaFromClick);

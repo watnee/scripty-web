@@ -2152,17 +2152,6 @@ html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/bl
     border: 1px solid var(--border, #cbd5e1);
     color: var(--muted-fg, #64748b);
     background: var(--accent-bg, rgba(0, 0, 0, 0.03));
-    text-decoration: none;
-}
-
-a.project-list-team:hover {
-    color: var(--fg, #334155);
-    border-color: var(--muted-fg, #64748b);
-    background: var(--accent-bg-hover, rgba(0, 0, 0, 0.06));
-}
-
-.team-list-row {
-    scroll-margin-top: 1rem;
 }
 
 .project-list-actions {

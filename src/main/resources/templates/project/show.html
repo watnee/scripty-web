@@ -5,7 +5,8 @@
     <meta name="theme-color" content="#111111">
     <link rel="manifest" th:href="@{/manifest.json}">
     <meta charset="UTF-8">
-    <title>Scripty - Project Profile</title>
+    <title th:text="'Scripty - ' + (${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim()) ? 'Project' : viewModel.title})">Scripty - Project</title>
+    <meta property="og:title" th:content="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim()) ? 'Untitled Project' : viewModel.title}">
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
     <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
@@ -74,28 +75,31 @@
             </div>
         </aside>
         <article class="entry-content script-content project-script">
-            <header>
-                <h1 class="project-header-title">
-                    <span class="project-header-row">
-                        <span class="project-name-wrap">
-                            <span class="project-name-display"
-                                  th:attr="hx-get=@{/project/editNameInline(id=${viewModel.id},surface='header')}"
-                                  hx-trigger="click"
-                                  hx-target="closest .project-name-wrap"
-                                  hx-swap="innerHTML"
-                                  title="Click to rename project">
-                                <th:block th:if="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}">
-                                    <span class="project-name-placeholder">Click to name project</span>
-                                </th:block>
-                                <th:block th:unless="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}" th:text="${viewModel.title}"></th:block>
-                            </span>
-                        </span>
-                        <span class="project-last-edited-line hide-in-reader-view sidebar menu" th:if="${viewModel.lastEdited != null}" id="project-last-edited">
-                            <span th:replace="~{fragments/lastEditedLine :: line(${viewModel.lastEdited})}"></span>
+            <div class="project-script-header">
+                <h1 class="project-header-title entry-title">
+                    <span class="reader-visible-project-title"
+                          id="reader-visible-project-title"
+                          th:text="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim()) ? 'Untitled Project' : viewModel.title}">Project</span>
+                </h1>
+                <p class="hide-in-reader-view sidebar menu project-header-row">
+                    <span class="project-name-wrap">
+                        <span class="project-name-display"
+                              th:attr="hx-get=@{/project/editNameInline(id=${viewModel.id},surface='header')}"
+                              hx-trigger="click"
+                              hx-target="closest .project-name-wrap"
+                              hx-swap="innerHTML"
+                              title="Click to rename project">
+                            <th:block th:if="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}">
+                                <span class="project-name-placeholder">Click to name project</span>
+                            </th:block>
+                            <th:block th:unless="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}" th:text="${viewModel.title}"></th:block>
                         </span>
                     </span>
-                </h1>
-            </header>
+                    <span class="project-last-edited-line" th:if="${viewModel.lastEdited != null}" id="project-last-edited">
+                        <span th:replace="~{fragments/lastEditedLine :: line(${viewModel.lastEdited})}"></span>
+                    </span>
+                </p>
+            </div>
             <aside class="project-script-toolbar hide-in-reader-view sidebar menu">
                 <div class="project-toolbar-row">
                     <div class="project-toolbar-left block-left-controls" th:insert="~{fragments/blockSelectAllControl :: controls('project-select-all-blocks')}"></div>

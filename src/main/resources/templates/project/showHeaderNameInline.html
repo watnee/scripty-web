@@ -11,5 +11,9 @@
         <th:block th:unless="${#strings.isEmpty(project.title) || #strings.isEmpty(project.title.trim())}" th:text="${project.title}"></th:block>
     </span>
     <li id="project-breadcrumb-title" aria-current="page" th:text="${project.title}" hx-swap-oob="true"></li>
-    <title th:text="'Scripty - ' + ${project.title}" hx-swap-oob="true">Scripty</title>
+    <span id="reader-visible-project-title"
+          class="reader-visible-project-title"
+          th:text="${#strings.isEmpty(project.title) || #strings.isEmpty(project.title.trim()) ? 'Untitled Project' : project.title}"
+          hx-swap-oob="true"></span>
+    <title th:text="'Scripty - ' + (${#strings.isEmpty(project.title) || #strings.isEmpty(project.title.trim()) ? 'Project' : project.title})" hx-swap-oob="true">Scripty</title>
 </th:block>

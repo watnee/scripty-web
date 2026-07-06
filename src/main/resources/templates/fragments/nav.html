@@ -794,14 +794,16 @@
                 if (title == null) return;
                 var breadcrumb = document.getElementById('project-breadcrumb-title');
                 if (breadcrumb) breadcrumb.textContent = title;
-                var display = document.querySelector('.project-name-display');
-                if (display && !document.querySelector('.project-name-wrap input[name="title"]')) {
-                    var trimmed = (title || '').trim();
-                    if (trimmed === '') {
-                        display.innerHTML = '<span class="project-name-placeholder">Click to name project</span>';
-                    } else {
-                        display.textContent = title;
-                    }
+                var readerTitle = document.getElementById('reader-visible-project-title');
+                if (readerTitle) {
+                    var readerTrimmed = (title || '').trim();
+                    readerTitle.textContent = readerTrimmed === '' ? 'Untitled Project' : title;
+                }
+                if (window.scriptySyncProjectNameDisplay) {
+                    window.scriptySyncProjectNameDisplay();
+                }
+                if (document.title.indexOf('Scripty - ') === 0) {
+                    document.title = 'Scripty - ' + ((title || '').trim() === '' ? 'Project' : title);
                 }
             }
 
@@ -1253,6 +1255,20 @@
             textarea.setSelectionRange(pos, pos);
         }
 
+        function syncProjectNameDisplay() {
+            const readerTitle = document.getElementById('reader-visible-project-title');
+            const display = document.querySelector('.project-name-display');
+            if (!readerTitle || !display || document.querySelector('.project-name-wrap input[name="title"]')) return;
+            const title = (readerTitle.textContent || '').trim();
+            if (title === '' || title === 'Untitled Project') {
+                display.innerHTML = '<span class="project-name-placeholder">Click to name project</span>';
+            } else {
+                display.textContent = title;
+            }
+        }
+
+        window.scriptySyncProjectNameDisplay = syncProjectNameDisplay;
+
         function syncReaderVisibleText(textarea) {
             const blockContent = textarea.closest('.block-content');
             if (!blockContent) return;
@@ -1466,6 +1482,9 @@
             });
             updateLastEditedTimes();
             restoreActiveBlock();
+            if (window.scriptySyncProjectNameDisplay) {
+                window.scriptySyncProjectNameDisplay();
+            }
         }
 
         if (document.readyState === 'loading') {
@@ -1511,25 +1530,30 @@
 
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
-            const SW_MIGRATION_KEY = 'sw-migration-v9';
+            const serviceWorkerEnabled = /*[[${serviceWorkerEnabled}]]*/ true;
+            const SW_MIGRATION_KEY = 'sw-migration-v12';
 
-            async function needsServiceWorkerMigration() {
-                return !localStorage.getItem(SW_MIGRATION_KEY);
-            }
-
-            async function migrateServiceWorker() {
+            async function clearServiceWorkerState() {
                 if ('caches' in window) {
                     const keys = await caches.keys();
                     await Promise.all(keys.map((key) => caches.delete(key)));
                 }
                 const regs = await navigator.serviceWorker.getRegistrations();
                 await Promise.all(regs.map((reg) => reg.unregister()));
+            }
+
+            async function needsServiceWorkerMigration() {
+                return !localStorage.getItem(SW_MIGRATION_KEY);
+            }
+
+            async function migrateServiceWorker() {
+                await clearServiceWorkerState();
                 localStorage.setItem(SW_MIGRATION_KEY, '1');
                 window.location.reload();
             }
 
             function registerServiceWorker() {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('/sw.js?v=' + /*[[${assetVersion}]]*/ '68')
                     .then((reg) => {
                         console.log('SW registered:', reg.scope);
                         reg.update();
@@ -1539,6 +1563,10 @@
 
             const initServiceWorker = async () => {
                 try {
+                    if (!serviceWorkerEnabled) {
+                        await clearServiceWorkerState();
+                        return;
+                    }
                     if (await needsServiceWorkerMigration()) {
                         await migrateServiceWorker();
                         return;
@@ -1546,7 +1574,9 @@
                     registerServiceWorker();
                 } catch (err) {
                     console.error('SW migration check failed:', err);
-                    registerServiceWorker();
+                    if (serviceWorkerEnabled) {
+                        registerServiceWorker();
+                    }
                 }
             };
 

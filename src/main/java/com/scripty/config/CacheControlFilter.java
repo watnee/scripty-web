@@ -23,7 +23,7 @@ public class CacheControlFilter implements Filter {
         HttpServletResponse res = (HttpServletResponse) response;
         String path = req.getRequestURI();
 
-        if (path.startsWith("/css/") || path.startsWith("/js/") || "/sw.js".equals(path)) {
+        if (path.startsWith("/css/") || path.startsWith("/js/") || path.startsWith("/sw.js")) {
             res.setHeader("Cache-Control", "no-cache, must-revalidate");
         } else if (isAppPage(path)) {
             res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");

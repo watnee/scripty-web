@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v10';
+const CACHE_NAME = 'scripty-cache-v12';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/css/scripty.css',
@@ -52,7 +52,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname === '/scene/all' || url.pathname === '/scene/read' || url.pathname === '/project/read') {
+  if (url.pathname === '/scene/all' || url.pathname === '/scene/read' || url.pathname === '/project/read' || url.pathname === '/project/show') {
     return;
   }
 

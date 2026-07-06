@@ -15,8 +15,18 @@ import jakarta.persistence.Transient;
 @Table(name = "`block`")
 public class Block {
 
-    public static final String TYPE_TEXT = "TEXT";
+    // Fountain screenplay element types
     public static final String TYPE_SCENE = "SCENE";
+    public static final String TYPE_ACTION = "ACTION";
+    public static final String TYPE_DIALOGUE = "DIALOGUE";
+    public static final String TYPE_PARENTHETICAL = "PARENTHETICAL";
+    public static final String TYPE_TRANSITION = "TRANSITION";
+    public static final String TYPE_LYRICS = "LYRICS";
+    public static final String TYPE_CENTERED = "CENTERED";
+
+    public static final java.util.Set<String> ELEMENT_TYPES = java.util.Set.of(
+            TYPE_SCENE, TYPE_ACTION, TYPE_DIALOGUE, TYPE_PARENTHETICAL,
+            TYPE_TRANSITION, TYPE_LYRICS, TYPE_CENTERED);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,7 +45,7 @@ public class Block {
     private boolean pinned;
 
     @Column(name = "`type`", nullable = false)
-    private String type = TYPE_TEXT;
+    private String type = TYPE_ACTION;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id")

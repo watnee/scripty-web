@@ -237,7 +237,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
                     List<Map<String, Object>> sceneBlocks = (List<Map<String, Object>>) ss.get("blocks");
                     if (sceneBlocks != null) {
                         for (Map<String, Object> bs : sceneBlocks) {
-                            restoreBlock(project, order++, (String) bs.get("content"), Block.TYPE_TEXT,
+                            restoreBlock(project, order++, (String) bs.get("content"), Block.TYPE_ACTION,
                                     (Integer) bs.get("personOriginalId"), originalIdToNewPerson);
                         }
                     }
@@ -251,7 +251,8 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         Block block = new Block();
         block.setOrder(order);
         block.setContent(content != null ? content : "");
-        block.setType(type != null ? type : Block.TYPE_TEXT);
+        // Snapshots taken before the Fountain taxonomy may carry TEXT or unknown types.
+        block.setType(type != null && Block.ELEMENT_TYPES.contains(type) ? type : Block.TYPE_ACTION);
         block.setProject(project);
         if (personOriginalId != null) {
             Person restoredPerson = originalIdToNewPerson.get(personOriginalId);

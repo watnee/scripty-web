@@ -714,3 +714,35 @@ kbd {
     color: var(--accent, #475569);
     font-size: 1rem;
 }
+/* Fountain element type formatting */
+.block-content.block-type-dialogue {
+    padding-left: 15%;
+    padding-right: 15%;
+}
+
+.block-content.block-type-parenthetical {
+    padding-left: 22%;
+    padding-right: 22%;
+    font-style: italic;
+}
+
+.block-content.block-type-parenthetical > span::before {
+    content: "(";
+}
+
+.block-content.block-type-parenthetical > span::after {
+    content: ")";
+}
+
+.block-content.block-type-transition {
+    text-align: right;
+    text-transform: uppercase;
+}
+
+.block-content.block-type-lyrics {
+    font-style: italic;
+}
+
+.block-content.block-type-centered {
+    text-align: center;
+}

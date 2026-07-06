@@ -126,6 +126,7 @@ public class ProjectServiceImpl implements ProjectService {
             bvm.setContent(block.getContent());
             bvm.setBookmarked(block.isBookmarked());
             bvm.setPinned(block.isPinned());
+            bvm.setType(block.getType());
             bvm.setTags(block.getTags());
             if (block.getPerson() != null) {
                 Person person = personRepository.findById(block.getPerson().getId()).orElse(null);

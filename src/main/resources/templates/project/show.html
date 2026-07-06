@@ -55,9 +55,17 @@
                     </label>
                     <input type="text" id="project-bulk-tags-input" placeholder="Add tags to selected blocks (comma separated)..." style="flex-grow: 1; max-width: 400px; margin: 0;" />
                     <button type="button" id="project-bulk-add-tags-btn" style="margin: 0;">Add Tags</button>
-                    <button type="button" id="project-bulk-type-scene-btn" style="margin: 0;" title="Turn selected rows into scene headings">🎬 Scene</button>
-                    <button type="button" id="project-bulk-type-text-btn" style="margin: 0;" title="Turn selected rows into text blocks">📝 Text</button>
                     <button type="button" id="project-bulk-delete-btn" class="bad" style="margin: 0;" title="Delete selected blocks">🗑️</button>
+                </div>
+                <div class="element-type-actions" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center;">
+                    <span style="margin-right: 0.25rem;">Element:</span>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="SCENE" style="margin: 0;" title="Turn selected rows into scene headings">🎬 Scene</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="ACTION" style="margin: 0;" title="Turn selected rows into action">🎭 Action</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="DIALOGUE" style="margin: 0;" title="Turn selected rows into dialogue">💬 Dialogue</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="PARENTHETICAL" style="margin: 0;" title="Turn selected rows into parentheticals">(Parenthetical)</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="TRANSITION" style="margin: 0;" title="Turn selected rows into transitions">↦ Transition</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="LYRICS" style="margin: 0;" title="Turn selected rows into lyrics">♪ Lyrics</button>
+                    <button type="button" class="bulk-type-btn" data-bulk-type="CENTERED" style="margin: 0;" title="Turn selected rows into centered text">≡ Centered</button>
                 </div>
                 <th:block th:each="scene : ${viewModel.scenes}">
                     <h3 class="scene-header" th:if="${scene.id != null}" style="margin-bottom: 0.25em">
@@ -81,7 +89,7 @@
                                 <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
                                 <span class="drag-handle">&#8942;&#8942;</span>
                             </td>
-                            <td class="block-content" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML" style="cursor: pointer">
+                            <td class="block-content" th:classappend="${block.type != null} ? ('block-type-' + ${#strings.toLowerCase(block.type)}) : ''" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML" style="cursor: pointer">
                                 <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
                                     <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
                                 </p>
@@ -295,15 +303,9 @@
             form.submit();
         }
 
-        var bulkTypeSceneBtn = document.getElementById('project-bulk-type-scene-btn');
-        if (bulkTypeSceneBtn) {
-            bulkTypeSceneBtn.addEventListener('click', function() { bulkSetType('SCENE'); });
-        }
-
-        var bulkTypeTextBtn = document.getElementById('project-bulk-type-text-btn');
-        if (bulkTypeTextBtn) {
-            bulkTypeTextBtn.addEventListener('click', function() { bulkSetType('TEXT'); });
-        }
+        document.querySelectorAll('.bulk-type-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { bulkSetType(btn.getAttribute('data-bulk-type')); });
+        });
 
         var selectAllCheckbox = document.getElementById('project-select-all-blocks');
         if (selectAllCheckbox) {

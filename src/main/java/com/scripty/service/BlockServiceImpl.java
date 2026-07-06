@@ -112,6 +112,7 @@ public class BlockServiceImpl implements BlockService {
         vm.setBookmarked(block.isBookmarked());
         vm.setPinned(block.isPinned());
         vm.setScene(block.isScene());
+        vm.setType(block.getType());
         vm.setTags(block.getTags());
         if (block.getPerson() != null) {
             Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
@@ -450,7 +451,8 @@ public class BlockServiceImpl implements BlockService {
         if (ids == null || ids.isEmpty()) {
             return;
         }
-        String normalized = Block.TYPE_SCENE.equalsIgnoreCase(type) ? Block.TYPE_SCENE : Block.TYPE_TEXT;
+        String normalized = type != null && Block.ELEMENT_TYPES.contains(type.toUpperCase())
+                ? type.toUpperCase() : Block.TYPE_ACTION;
         for (Integer id : ids) {
             Block block = blockRepository.findById(id).orElse(null);
             if (block != null && !normalized.equals(block.getType())) {

@@ -7,193 +7,127 @@
     <meta charset="UTF-8">
     <title>Scripty - Project Profile</title>
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
-    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('')}"></div>
     <main>
-        <div class="top-bar">
+        <aside class="top-bar hide-in-reader-view">
             <nav aria-label="Breadcrumb">
                 <ol>
                     <li><a th:href="@{/project/list}">Projects</a></li>
-                    <li aria-current="page" th:text="${viewModel.title}"></li>
+                    <li id="project-breadcrumb-title" aria-current="page" th:text="${viewModel.title}"></li>
                 </ol>
             </nav>
             <div class="text-size-control">
-                <span class="project-last-edited" th:if="${viewModel.lastEdited != null}" th:title="${#temporals.format(viewModel.lastEdited, 'MMM d, yyyy, h:mm a')}" style="margin-right: auto; font-size: 0.85rem; color: var(--muted-fg); display: inline-flex; align-items: center; gap: 0.25rem;">
-                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.7;">
-                        <path d="M12 20h9"></path>
-                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                    </svg>
-                    <span>Last edited </span>
-                    <span th:replace="~{fragments/lastEditedTime :: relativeTime(${viewModel.lastEdited})}"></span>
-                </span>
-                <button id="nav-undo" type="button" class="history-action-btn" aria-label="Undo">← Undo</button>
-                <button id="nav-redo" type="button" class="history-action-btn" aria-label="Redo">Redo →</button>
+                <button id="nav-bookmarks-toggle"
+                        type="button"
+                        class="nav-dropdown-toggle bookmark-filter-toggle"
+                        aria-pressed="false"
+                        aria-label="Hide bookmark buttons in blocks"
+                        title="Hide bookmark buttons in blocks">
+                    <span th:replace="~{fragments/bookmarkIcon :: toolbarIcon}"></span>
+                </button>
+                <button id="nav-pins-toggle"
+                        type="button"
+                        class="nav-dropdown-toggle pin-filter-toggle"
+                        aria-pressed="false"
+                        aria-label="Hide pin buttons in blocks"
+                        title="Hide pin buttons in blocks">
+                    <span th:replace="~{fragments/pinIcon :: toolbarIcon}"></span>
+                </button>
+                <div class="nav-dropdown project-search-dropdown" id="project-search-dropdown">
+                    <button class="nav-dropdown-toggle project-search-toggle" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Search script" title="Search script">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
+                        </svg>
+                    </button>
+                    <div class="nav-dropdown-menu project-search-panel">
+                        <div class="project-search-wrap">
+                            <label class="visually-hidden" for="project-search">Search scene names, blocks, character names, or tags</label>
+                            <input type="search"
+                                   id="project-search"
+                                   class="project-search-input"
+                                   placeholder="Search scenes, blocks, tags..."
+                                   autocomplete="off"
+                                   enterkeyhint="search" />
+                            <button type="button"
+                                    id="project-search-clear"
+                                    class="project-search-clear"
+                                    aria-label="Clear search"
+                                    hidden>&times;</button>
+                        </div>
+                    </div>
+                </div>
+                <span th:replace="~{fragments/historyToolbarButtons :: buttons}"></span>
                 <div class="nav-dropdown" id="history-dropdown" style="display: inline-block;">
-                    <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false" title="History">🕒</button>
+                    <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false" title="Project menu" aria-label="Project menu">⋯</button>
                     <div class="nav-dropdown-menu">
+                        <a class="nav-dropdown-item" th:href="@{/project/titlePage(id=${viewModel.id})}">Title Page</a>
                         <a class="nav-dropdown-item" id="nav-version-history" th:href="@{/project/version/list(projectId=${viewModel.id})}" hx-boost="false">Version History</a>
                     </div>
                 </div>
                 <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
                 <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
             </div>
-        </div>
-        <h1>
-            <span th:text="${viewModel.title}"></span>
-            <small><a th:href="@{/project/titlePage(id=${viewModel.id})}" role="button">Title Page</a> <a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a></small>
-        </h1>
-        <div>
-                <h2>Scenes <small><a th:href="@{/scene/all(projectId=${viewModel.id})}" role="button">View All</a></small></h2>
-                <div class="project-search-wrapper" style="margin-bottom: 0.75rem; display: flex; gap: 0.5rem; align-items: center;">
-                    <input type="text" id="project-search" placeholder="Search scene names, blocks, character names, or tags..." style="flex-grow: 1; max-width: 500px; margin: 0; padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid var(--border, #cbd5e1);" />
-                    <button type="button" id="project-search-clear" class="bad" style="margin: 0; display: none;">Clear</button>
-                </div>
-                <div class="tags-bulk-action">
-                    <label style="display: flex; align-items: center; margin: 0 0.5rem 0 0; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="project-select-all-blocks" style="margin-right: 6px;" /> Select All
-                    </label>
-                    <input type="text" id="project-bulk-tags-input" placeholder="Add tags to selected blocks (comma separated)..." style="flex-grow: 1; max-width: 400px; margin: 0;" />
-                    <button type="button" id="project-bulk-add-tags-btn" style="margin: 0;">Add Tags</button>
-                    <button type="button" id="project-bulk-delete-btn" class="bad" style="margin: 0;" title="Delete selected blocks">🗑️</button>
-                </div>
-                <th:block th:each="scene : ${viewModel.scenes}">
-                    <h3 class="scene-header" style="margin-bottom: 0.25em">
-                        <span class="scene-name-wrap">
-                            <span class="scene-name-display" th:attr="hx-get=@{/scene/editNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; min-width: 10em; display: inline-block">
-                                <th:block th:if="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}">
-                                    <span style="color: #ccc; font-style: italic">click to name scene</span>
+        </aside>
+        <article class="entry-content script-content project-script">
+            <header>
+                <h1 class="project-header-title">
+                    <span class="project-header-row">
+                        <span class="project-name-wrap">
+                            <span class="project-name-display"
+                                  th:attr="hx-get=@{/project/editNameInline(id=${viewModel.id},surface='header')}"
+                                  hx-trigger="click"
+                                  hx-target="closest .project-name-wrap"
+                                  hx-swap="innerHTML"
+                                  title="Click to rename project">
+                                <th:block th:if="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}">
+                                    <span class="project-name-placeholder">Click to name project</span>
                                 </th:block>
-                                <th:block th:unless="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}" th:text="${scene.name}"></th:block>
+                                <th:block th:unless="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim())}" th:text="${viewModel.title}"></th:block>
                             </span>
                         </span>
-                        <small>
-                            <a th:href="@{/scene/show(id=${scene.id})}" role="button">view</a>
-                        </small>
-                    </h3>
-                    <table class="table-blocks-all" th:id="'table-blocks-' + ${scene.id}">
-                        <tr th:each="block,loop : ${scene.blocks}" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order},data-tags=${block.tags}">
-                            <td class="block-left-controls">
-                                <div class="block-left-controls-inner">
-                                    <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" />
-                                    <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
-                                    <span class="drag-handle">&#8942;&#8942;</span>
-                                </div>
-                            </td>
-                            <td class="block-content" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML" style="cursor: pointer">
-                                <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
-                                    <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
-                                </p>
-                                <span style="white-space: pre-wrap;" th:text="${block.content}"></span>
-                                <div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list">
-                                    <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
-                                          th:if="${not #strings.isEmpty(#strings.trim(tag))}"
-                                          th:text="${#strings.trim(tag)}"
-                                          class="block-tag clickable"></span>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="nowrap">
-                                    <a th:href="@{/block/toggleBookmark(id=${block.id})}" th:title="${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:attr="aria-label=${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:text="${block.bookmarked} ? '★' : '☆'"></a>
-                                    <a th:href="@{/block/togglePinned(id=${block.id})}" th:title="${block.pinned} ? 'Unpin block' : 'Pin block'" th:attr="aria-label=${block.pinned} ? 'Unpin block' : 'Pin block'" th:style="${block.pinned} ? 'text-decoration: none;' : 'filter: grayscale(100%); opacity: 0.3; text-decoration: none;'">📌</a>
-                                    <a th:href="@{/block/edit(id=${block.id})}" role="button">edit</a>
-                                    <a th:href="@{/block/delete(id=${block.id}, projectId=${viewModel.id})}" role="button" hx-boost="false" _="on click if not confirm('Are you sure you want to delete this block?') halt">delete</a>
-                                </span>
-                            </td>
-                        </tr>
-                        <tr th:attr="hx-get=@{/block/createInline(sceneId=${scene.id})}" hx-trigger="load" hx-swap="outerHTML"></tr>
-                    </table>
-                </th:block>
-                <form th:action="@{/scene/createAndReturn}" method="POST" hx-boost="false" style="display:inline">
-                    <input type="hidden" name="projectId" th:value="${viewModel.id}" />
-                    <button type="submit" role="button">Create New Scene</button>
-                </form>
-        </div>
+                        <span class="project-last-edited-line hide-in-reader-view sidebar menu" th:if="${viewModel.lastEdited != null}" id="project-last-edited">
+                            <span th:replace="~{fragments/lastEditedLine :: line(${viewModel.lastEdited})}"></span>
+                        </span>
+                    </span>
+                </h1>
+            </header>
+            <aside class="project-script-toolbar hide-in-reader-view sidebar menu">
+                <div class="project-toolbar-row">
+                    <div class="project-toolbar-left block-left-controls" th:insert="~{fragments/blockSelectAllControl :: controls('project-select-all-blocks')}"></div>
+                    <div class="project-toolbar-main">
+                        <h2 class="project-scenes-heading">Scenes</h2>
+                        <div class="tags-bulk-action tags-bulk-action--compact block-bulk-actions" id="project-bulk-bar" hidden>
+                            <span class="bulk-selection-count" id="project-bulk-count">0 selected</span>
+                            <input type="text" id="project-bulk-tags-input" placeholder="Add tags…" aria-label="Tags to add to selected blocks" />
+                            <button type="button" id="project-bulk-add-tags-btn" title="Add tags to selected blocks">Tag</button>
+                            <button type="button" id="project-bulk-delete-btn" class="bad" title="Delete selected blocks">Delete</button>
+                        </div>
+                    </div>
+                    <div class="project-toolbar-right" aria-hidden="true"></div>
+                </div>
+            </aside>
+            <div th:replace="~{project/showScriptBody :: scriptBody(${viewModel})}"></div>
+        </article>
+        <p class="hide-in-reader-view sidebar menu project-create-scene">
+            <form th:action="@{/scene/createAndReturn}" method="POST" hx-boost="false" style="display:inline">
+                <input type="hidden" name="projectId" th:value="${viewModel.id}" />
+                <button type="submit" role="button">Create New Scene</button>
+            </form>
+        </p>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
-    <script th:src="@{/js/text-size.js}"></script>
+    <script th:src="@{/js/text-size.js(v=${assetVersion})}"></script>
     <script th:inline="javascript">
-    document.querySelectorAll('.table-blocks-all').forEach(function(table) {
-        var dragRow = null;
-
-        table.addEventListener('dragstart', function(e) {
-            var tr = e.target.closest('tr');
-            if (!tr || !table.contains(tr)) { e.preventDefault(); return; }
-            dragRow = tr;
-            tr.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        });
-
-        table.addEventListener('dragend', function() {
-            if (dragRow) dragRow.classList.remove('dragging');
-            table.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
-            dragRow = null;
-        });
-
-        table.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            var tr = e.target.closest('tr');
-            if (!tr || !table.contains(tr) || tr === dragRow) return;
-            table.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
-            tr.classList.add('drag-over');
-        });
-
-        table.addEventListener('dragleave', function(e) {
-            var tr = e.target.closest('tr');
-            if (tr) tr.classList.remove('drag-over');
-        });
-
-        function runWhenHtmxIdle(fn) {
-            if (!document.querySelector('.htmx-request')) {
-                fn();
-                return;
-            }
-            setTimeout(function() { runWhenHtmxIdle(fn); }, 50);
+    document.querySelectorAll('.project-script .scene-blocks').forEach(function(sceneBlocks) {
+        if (window.scriptyInitBlockDragDrop) {
+            window.scriptyInitBlockDragDrop(sceneBlocks, { projectId: /*[[${viewModel.id}]]*/ '' });
         }
-
-        table.addEventListener('drop', function(e) {
-            e.preventDefault();
-            var targetRow = e.target.closest('tr');
-            if (!targetRow || !table.contains(targetRow) || !dragRow || targetRow === dragRow) return;
-            var blockId = dragRow.getAttribute('data-block-id');
-            var newOrder = window.scriptyCalcDropPosition
-                ? window.scriptyCalcDropPosition(dragRow, targetRow, e.clientY)
-                : parseInt(targetRow.getAttribute('data-block-order'), 10);
-            var dragOrder = parseInt(dragRow.getAttribute('data-block-order'), 10);
-            if (blockId && newOrder && newOrder !== dragOrder) {
-                runWhenHtmxIdle(function() {
-                    if (window.scriptyAbortUndoStatusFetch) {
-                        window.scriptyAbortUndoStatusFetch();
-                    }
-                    var params = new URLSearchParams();
-                    params.append('id', blockId);
-                    params.append('position', String(newOrder));
-                    params.append('projectId', /*[[${viewModel.id}]]*/ '');
-                    fetch(/*[[@{/block/moveTo}]]*/ '/block/moveTo', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        cache: 'no-store',
-                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: params.toString()
-                    }).then(function(response) {
-                        if (response.ok || response.redirected) {
-                            window.location.reload();
-                        }
-                    });
-                });
-            } else {
-                var rect = targetRow.getBoundingClientRect();
-                var mid = rect.top + rect.height / 2;
-                if (e.clientY < mid) {
-                    targetRow.parentNode.insertBefore(dragRow, targetRow);
-                } else {
-                    targetRow.parentNode.insertBefore(dragRow, targetRow.nextSibling);
-                }
-            }
-        });
     });
     </script>
     <script th:inline="javascript">
@@ -201,7 +135,7 @@
         var bulkAddTagsBtn = document.getElementById('project-bulk-add-tags-btn');
         if (bulkAddTagsBtn) {
             bulkAddTagsBtn.addEventListener('click', function() {
-                var checkboxes = document.querySelectorAll('.block-select-checkbox:checked');
+                var checkboxes = document.querySelectorAll('.block-row[data-block-id] .block-select-checkbox:checked, tr[data-block-id] .block-select-checkbox:checked');
                 if (checkboxes.length === 0) {
                     alert('Please select at least one block.');
                     return;
@@ -242,12 +176,12 @@
                 var sceneIdInput = document.createElement('input');
                 sceneIdInput.type = 'hidden';
                 sceneIdInput.name = 'sceneId';
-                var firstTr = checkboxes[0].closest('tr');
+                var firstRow = checkboxes[0].closest('.block-row');
                 var sceneId = '';
-                if (firstTr) {
-                    var table = firstTr.closest('table');
-                    if (table) {
-                        sceneId = table.id.replace('table-blocks-', '');
+                if (firstRow) {
+                    var sceneBlocks = firstRow.closest('.scene-blocks');
+                    if (sceneBlocks) {
+                        sceneId = sceneBlocks.id.replace('table-blocks-', '');
                     }
                 }
                 sceneIdInput.value = sceneId;
@@ -261,7 +195,7 @@
         var bulkDeleteBtn = document.getElementById('project-bulk-delete-btn');
         if (bulkDeleteBtn) {
             bulkDeleteBtn.addEventListener('click', function() {
-                var checkboxes = document.querySelectorAll('.block-select-checkbox:checked');
+                var checkboxes = document.querySelectorAll('.block-row[data-block-id] .block-select-checkbox:checked, tr[data-block-id] .block-select-checkbox:checked');
                 if (checkboxes.length === 0) {
                     alert('Please select at least one block.');
                     return;
@@ -297,12 +231,12 @@
                 var sceneIdInput = document.createElement('input');
                 sceneIdInput.type = 'hidden';
                 sceneIdInput.name = 'sceneId';
-                var firstTr = checkboxes[0].closest('tr');
+                var firstRow = checkboxes[0].closest('.block-row');
                 var sceneId = '';
-                if (firstTr) {
-                    var table = firstTr.closest('table');
-                    if (table) {
-                        sceneId = table.id.replace('table-blocks-', '');
+                if (firstRow) {
+                    var sceneBlocks = firstRow.closest('.scene-blocks');
+                    if (sceneBlocks) {
+                        sceneId = sceneBlocks.id.replace('table-blocks-', '');
                     }
                 }
                 sceneIdInput.value = sceneId;
@@ -313,104 +247,121 @@
             });
         }
 
-        var selectAllCheckbox = document.getElementById('project-select-all-blocks');
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function() {
-                var checkboxes = document.querySelectorAll('.block-select-checkbox');
-                checkboxes.forEach(function(cb) {
-                    cb.checked = selectAllCheckbox.checked;
-                });
+        if (window.scriptyInitBlockBulkSelection) {
+            window.scriptyInitBlockBulkSelection({
+                selectAllId: 'project-select-all-blocks',
+                bulkBarId: 'project-bulk-bar',
+                bulkCountId: 'project-bulk-count',
+                resetOnScriptRefresh: true
             });
         }
-
-        document.addEventListener('change', function(e) {
-            if (e.target && e.target.classList.contains('block-select-checkbox')) {
-                var selectAllCheckbox = document.getElementById('project-select-all-blocks');
-                if (selectAllCheckbox) {
-                    var checkboxes = document.querySelectorAll('.block-select-checkbox');
-                    var allChecked = checkboxes.length > 0;
-                    checkboxes.forEach(function(cb) {
-                        if (!cb.checked) allChecked = false;
-                    });
-                    selectAllCheckbox.checked = allChecked;
-                }
-            }
-        });
-
-        document.body.addEventListener('htmx:afterOnLoad', function() {
-            var selectAllCheckbox = document.getElementById('project-select-all-blocks');
-            if (selectAllCheckbox) {
-                var checkboxes = document.querySelectorAll('.block-select-checkbox');
-                var allChecked = checkboxes.length > 0;
-                checkboxes.forEach(function(cb) {
-                    if (!cb.checked) allChecked = false;
-                });
-                selectAllCheckbox.checked = allChecked;
-            }
-        });
     })();
     </script>
     <script th:inline="javascript">
     (function() {
+        const searchDropdown = document.getElementById('project-search-dropdown');
+        const searchToggle = searchDropdown ? searchDropdown.querySelector('.project-search-toggle') : null;
         const searchInput = document.getElementById('project-search');
         const clearBtn = document.getElementById('project-search-clear');
+        const projectId = /*[[${viewModel.id}]]*/ 0;
         if (!searchInput) return;
+
+        if (window.scriptyInitBlockMarkerToggles) {
+            window.scriptyInitBlockMarkerToggles({ projectId: projectId });
+        }
+
+        function rowMatchesSearch(row, query, isSceneNameMatch) {
+            const blockId = row.getAttribute('data-block-id');
+            if (!blockId) return query === '';
+            if (!query) return true;
+            const contentCell = row.querySelector('.block-content');
+            const blockContentText = contentCell ? contentCell.textContent.toLowerCase() : '';
+            const tagsAttr = row.getAttribute('data-tags') || '';
+            return isSceneNameMatch || blockContentText.includes(query) || tagsAttr.toLowerCase().includes(query);
+        }
+
+        function setSearchOpen(isOpen) {
+            if (!searchDropdown || !searchToggle) return;
+            searchDropdown.classList.toggle('open', isOpen);
+            searchToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            if (isOpen) {
+                setTimeout(function() { searchInput.focus(); }, 0);
+            }
+        }
+
+        if (searchToggle) {
+            searchToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isOpen = searchDropdown.classList.contains('open');
+                document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('open'); });
+                if (!isOpen) {
+                    searchDropdown.classList.add('open');
+                    searchToggle.setAttribute('aria-expanded', 'true');
+                    setTimeout(function() { searchInput.focus(); }, 0);
+                } else {
+                    setSearchOpen(false);
+                }
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            const tagBadge = e.target.closest('.block-tag.clickable');
+            if (tagBadge) {
+                searchInput.value = tagBadge.textContent.trim();
+                performSearch();
+                setSearchOpen(true);
+                return;
+            }
+            if (!searchDropdown || !searchDropdown.classList.contains('open')) return;
+            if (!searchDropdown.contains(e.target)) {
+                setSearchOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && searchDropdown && searchDropdown.classList.contains('open')) {
+                setSearchOpen(false);
+                if (searchToggle) searchToggle.focus();
+            }
+        });
 
         function performSearch() {
             const query = searchInput.value.toLowerCase().trim();
             if (clearBtn) {
-                clearBtn.style.display = query ? 'inline-block' : 'none';
+                clearBtn.hidden = !query;
+            }
+            if (searchToggle) {
+                searchToggle.classList.toggle('is-active', !!query);
             }
 
-            const sceneHeaders = document.querySelectorAll('.scene-header');
+            const sceneHeaders = document.querySelectorAll('.project-script .scene-header');
             sceneHeaders.forEach(header => {
                 const sceneNameDisplay = header.querySelector('.scene-name-display');
                 const sceneName = sceneNameDisplay ? sceneNameDisplay.textContent.toLowerCase() : '';
-                const sceneTable = header.nextElementSibling;
+                const sceneBlocks = header.parentElement.querySelector('.scene-blocks');
                 const isSceneNameMatch = sceneName.includes(query);
 
-                let matchedBlocksInScene = 0;
+                let visibleBlocksInScene = 0;
 
-                if (sceneTable && sceneTable.classList.contains('table-blocks-all')) {
-                    const rows = sceneTable.querySelectorAll('tr');
+                if (sceneBlocks) {
+                    const rows = sceneBlocks.querySelectorAll('.block-row');
                     rows.forEach(row => {
                         const blockId = row.getAttribute('data-block-id');
-                        if (blockId) {
-                            const contentCell = row.querySelector('.block-content');
-                            const blockContentText = contentCell ? contentCell.textContent.toLowerCase() : '';
-                            const tagsAttr = row.getAttribute('data-tags') || '';
-                            const blockTagsText = tagsAttr.toLowerCase();
-
-                            const isBlockMatch = blockContentText.includes(query) || blockTagsText.includes(query);
-
-                            if (query === '') {
-                                row.style.display = '';
-                            } else if (isSceneNameMatch || isBlockMatch) {
-                                row.style.display = '';
-                                if (isBlockMatch) {
-                                    matchedBlocksInScene++;
-                                }
-                            } else {
-                                row.style.display = 'none';
-                            }
-                        } else {
-                            // This is the create inline row or placeholder row
-                            row.style.display = (query === '') ? '' : 'none';
+                        const visible = rowMatchesSearch(row, query, isSceneNameMatch);
+                        row.style.display = visible ? '' : 'none';
+                        if (visible && blockId) {
+                            visibleBlocksInScene++;
                         }
                     });
                 }
 
-                // Show/hide scene header and scene table
-                if (query === '') {
-                    header.style.display = '';
-                    if (sceneTable) sceneTable.style.display = '';
-                } else if (isSceneNameMatch || matchedBlocksInScene > 0) {
-                    header.style.display = '';
-                    if (sceneTable) sceneTable.style.display = '';
-                } else {
-                    header.style.display = 'none';
-                    if (sceneTable) sceneTable.style.display = 'none';
-                }
+                const sceneSection = header.closest('.script-scene');
+                const sceneLinks = sceneSection ? sceneSection.querySelector('.scene-header-links') : null;
+                const showScene = query === '' || isSceneNameMatch || visibleBlocksInScene > 0;
+
+                header.style.display = showScene ? '' : 'none';
+                if (sceneLinks) sceneLinks.style.display = showScene ? '' : 'none';
+                if (sceneBlocks) sceneBlocks.style.display = showScene ? '' : 'none';
             });
         }
 
@@ -424,17 +375,19 @@
             });
         }
 
-        // Support tag clicks to filter
-        document.addEventListener('click', function(e) {
-            const tagBadge = e.target.closest('.block-tag.clickable');
-            if (tagBadge) {
-                const tagText = tagBadge.textContent.trim();
-                searchInput.value = tagText;
-                performSearch();
-                searchInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        });
+        performSearch();
+        window.addEventListener('beforeprint', performSearch);
+        window.addEventListener('afterprint', performSearch);
+        window.addEventListener('scripty:project-script-refreshed', performSearch);
     })();
+    </script>
+    <script th:inline="javascript">
+    if (window.scriptyInitProjectLiveSync) {
+        window.scriptyInitProjectLiveSync({
+            projectId: /*[[${viewModel.id}]]*/ 0,
+            revision: /*[[${syncRevision}]]*/ 0
+        });
+    }
     </script>
 </body>
 </html>

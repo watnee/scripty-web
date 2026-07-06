@@ -1,0 +1,23 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="scriptBody(viewModel)" id="project-script-body">
+    <section th:each="scene : ${viewModel.scenes}" class="script-scene">
+        <h2 class="scene-header">
+            <span class="scene-name-wrap">
+                <span class="scene-name-display" th:attr="hx-get=@{/scene/editNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; min-width: 10em; display: inline-block">
+                    <th:block th:if="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}">
+                        <span style="color: #ccc; font-style: italic">click to name scene</span>
+                    </th:block>
+                    <th:block th:unless="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}" th:text="${scene.name}"></th:block>
+                </span>
+            </span>
+        </h2>
+        <p class="scene-header-links hide-in-reader-view sidebar menu">
+            <a th:href="@{/scene/show(id=${scene.id})}">view</a>
+        </p>
+        <div class="scene-blocks table-blocks-all" th:id="'table-blocks-' + ${scene.id}">
+            <th:block th:each="block, blockStat : ${scene.blocks}">
+                <div th:replace="~{block/projectBlockRow :: blockRow(block=${block}, projectId=${viewModel.id}, canMoveUp=${!blockStat.first}, canMoveDown=${!blockStat.last})}"></div>
+            </th:block>
+            <div th:attr="hx-get=@{/block/createInline(sceneId=${scene.id},surface='project')}" hx-trigger="load" hx-swap="outerHTML"></div>
+        </div>
+    </section>
+</div>

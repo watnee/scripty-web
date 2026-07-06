@@ -1,15 +1,15 @@
-<tr xmlns:th="http://www.thymeleaf.org" draggable="true">
+<tr xmlns:th="http://www.thymeleaf.org">
     <td class="block-left-controls">
         <div class="block-left-controls-inner">
             <input type="checkbox" class="block-select-checkbox" />
-            <a th:attr="hx-get=@{/block/createInline(sceneId=${viewModel.sceneId})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
+            <a th:attr="hx-get=@{/block/createInline(sceneId=${viewModel.sceneId})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below" title="Add block below" aria-label="Add block below">+</a>
             <span class="drag-handle">&#8942;&#8942;</span>
         </div>
     </td>
     <td class="block-content">
         <form th:attr="hx-post=@{/block/createBelowInline}" hx-target="closest tr" hx-swap="outerHTML" hx-trigger="keydown[key=='Enter'&amp;&amp;!event.shiftKey] from:find textarea, createNext">
             <input type="hidden" name="id" th:value="${blockId}" />
-            <textarea spellcheck="true" rows="1" style="width: 100%; height: 1.5em; min-height: 1.5em; padding: 0.25em;" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey)event.preventDefault()" _="on blur if my value.trim() is '' and closest &lt;table/&gt;'s querySelectorAll('tr').length > 1 remove closest &lt;tr/&gt;"></textarea>
+            <textarea spellcheck="true" rows="1" class="block-input-textarea" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey)event.preventDefault()" _="on blur if my value.trim() is '' and closest &lt;table/&gt;'s querySelectorAll('tr').length > 1 remove closest &lt;tr/&gt;"></textarea>
         </form>
     </td>
     <td></td>

@@ -12,6 +12,7 @@ import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.ProjectVersionRepository;
 import com.scripty.repository.SceneRepository;
+import com.scripty.viewmodel.project.versionhistory.VersionChangeSummary;
 import com.scripty.viewmodel.project.versionhistory.VersionHistoryViewModel;
 import com.scripty.viewmodel.project.versionhistory.VersionViewModel;
 import jakarta.persistence.EntityManager;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -65,30 +67,27 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         vm.setProjectTitle(project.getTitle());
 
         List<VersionViewModel> versionVMs = new ArrayList<>();
-        for (ProjectVersion version : versions) {
+        for (int i = 0; i < versions.size(); i++) {
+            ProjectVersion version = versions.get(i);
             VersionViewModel vvm = new VersionViewModel();
             vvm.setId(version.getId());
             vvm.setLabel(version.getLabel());
             vvm.setCreatedAt(version.getCreatedAt());
             try {
                 Map<String, Object> snapshot = objectMapper.readValue(version.getSnapshotJson(), Map.class);
-                List<?> scenes = (List<?>) snapshot.get("scenes");
-                List<?> persons = (List<?>) snapshot.get("persons");
-                vvm.setSceneCount(scenes != null ? scenes.size() : 0);
-                vvm.setCharacterCount(persons != null ? persons.size() : 0);
-                int blockCount = 0;
-                if (scenes != null) {
-                    for (Object s : scenes) {
-                        Map<?, ?> sceneMap = (Map<?, ?>) s;
-                        List<?> blocks = (List<?>) sceneMap.get("blocks");
-                        if (blocks != null) blockCount += blocks.size();
-                    }
+                populateCounts(vvm, snapshot);
+                Map<String, Object> olderSnapshot = null;
+                if (i + 1 < versions.size()) {
+                    olderSnapshot = objectMapper.readValue(versions.get(i + 1).getSnapshotJson(), Map.class);
                 }
-                vvm.setBlockCount(blockCount);
+                vvm.setChangeSummary(computeChangeSummary(snapshot, olderSnapshot));
             } catch (JsonProcessingException e) {
                 vvm.setSceneCount(0);
                 vvm.setBlockCount(0);
                 vvm.setCharacterCount(0);
+                VersionChangeSummary emptySummary = new VersionChangeSummary();
+                emptySummary.addDetail("Unable to read snapshot");
+                vvm.setChangeSummary(emptySummary);
             }
             versionVMs.add(vvm);
         }
@@ -96,11 +95,33 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         return vm;
     }
 
+    @SuppressWarnings("unchecked")
+    private void populateCounts(VersionViewModel vvm, Map<String, Object> snapshot) {
+        List<?> scenes = (List<?>) snapshot.get("scenes");
+        List<?> persons = (List<?>) snapshot.get("persons");
+        vvm.setSceneCount(scenes != null ? scenes.size() : 0);
+        vvm.setCharacterCount(persons != null ? persons.size() : 0);
+        int blockCount = 0;
+        if (scenes != null) {
+            for (Object s : scenes) {
+                Map<?, ?> sceneMap = (Map<?, ?>) s;
+                List<?> blocks = (List<?>) sceneMap.get("blocks");
+                if (blocks != null) {
+                    blockCount += blocks.size();
+                }
+            }
+        }
+        vvm.setBlockCount(blockCount);
+    }
+
     @Override
     @Transactional
     public ProjectVersion createVersion(Integer projectId, String label) {
+        return createVersionFromSnapshot(projectId, label, buildSnapshotJson(projectId));
+    }
+
+    private ProjectVersion createVersionFromSnapshot(Integer projectId, String label, String snapshotJson) {
         Project project = projectRepository.findById(projectId).orElse(null);
-        String snapshotJson = buildSnapshotJson(projectId);
 
         ProjectVersion version = new ProjectVersion();
         version.setProject(project);
@@ -280,11 +301,17 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Transactional
     public void autoSaveVersion(Integer projectId) {
         ProjectVersion latest = projectVersionRepository.findFirstByProjectIdOrderByCreatedAtDesc(projectId);
-        if (latest != null && latest.getCreatedAt().plusMinutes(AUTO_SAVE_INTERVAL_MINUTES).isAfter(LocalDateTime.now())) {
-            return;
+        String snapshotJson = buildSnapshotJson(projectId);
+        if (latest != null) {
+            if (latest.getCreatedAt().plusMinutes(AUTO_SAVE_INTERVAL_MINUTES).isAfter(LocalDateTime.now())) {
+                return;
+            }
+            if (snapshotJson.equals(latest.getSnapshotJson())) {
+                return;
+            }
         }
         String label = "Auto-save " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMM d, h:mm a"));
-        createVersion(projectId, label);
+        createVersionFromSnapshot(projectId, label, snapshotJson);
     }
 
     @Override
@@ -336,5 +363,184 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Transactional
     public void deleteVersion(Integer versionId) {
         projectVersionRepository.deleteById(versionId);
+    }
+
+    @SuppressWarnings("unchecked")
+    private VersionChangeSummary computeChangeSummary(Map<String, Object> newer, Map<String, Object> older) {
+        VersionChangeSummary summary = new VersionChangeSummary();
+        if (older == null) {
+            summary.addDetail("Initial saved state");
+            return summary;
+        }
+
+        if (!Objects.equals(newer.get("title"), older.get("title"))
+                || !Objects.equals(newer.get("screenplayTitle"), older.get("screenplayTitle"))
+                || !Objects.equals(newer.get("writers"), older.get("writers"))
+                || !Objects.equals(newer.get("contactInfo"), older.get("contactInfo"))) {
+            summary.setProjectMetadataChanged(true);
+            summary.addDetail("Project details changed");
+        }
+
+        diffScenes(summary, (List<Map<String, Object>>) newer.get("scenes"), (List<Map<String, Object>>) older.get("scenes"));
+        diffPersons(summary, (List<Map<String, Object>>) newer.get("persons"), (List<Map<String, Object>>) older.get("persons"));
+        return summary;
+    }
+
+    private void diffScenes(VersionChangeSummary summary,
+                            List<Map<String, Object>> newerScenes,
+                            List<Map<String, Object>> olderScenes) {
+        Map<Integer, Map<String, Object>> newerByOrder = indexScenesByOrder(newerScenes);
+        Map<Integer, Map<String, Object>> olderByOrder = indexScenesByOrder(olderScenes);
+
+        for (Map.Entry<Integer, Map<String, Object>> entry : newerByOrder.entrySet()) {
+            Map<String, Object> olderScene = olderByOrder.get(entry.getKey());
+            if (olderScene == null) {
+                summary.setScenesAdded(summary.getScenesAdded() + 1);
+                summary.addDetail("Scene added: " + sceneLabel(entry.getValue()));
+                continue;
+            }
+            String sceneName = sceneLabel(entry.getValue());
+            if (!Objects.equals(entry.getValue().get("name"), olderScene.get("name"))) {
+                summary.setScenesRenamed(summary.getScenesRenamed() + 1);
+                summary.addDetail("Scene renamed: " + olderScene.get("name") + " → " + entry.getValue().get("name"));
+            }
+            diffBlocksInScene(summary, entry.getValue(), olderScene, sceneName);
+        }
+
+        for (Map.Entry<Integer, Map<String, Object>> entry : olderByOrder.entrySet()) {
+            if (!newerByOrder.containsKey(entry.getKey())) {
+                summary.setScenesRemoved(summary.getScenesRemoved() + 1);
+                summary.addDetail("Scene removed: " + sceneLabel(entry.getValue()));
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void diffBlocksInScene(VersionChangeSummary summary,
+                                   Map<String, Object> newerScene,
+                                   Map<String, Object> olderScene,
+                                   String sceneName) {
+        Map<Integer, Map<String, Object>> newerBlocks = indexBlocksByOrder((List<Map<String, Object>>) newerScene.get("blocks"));
+        Map<Integer, Map<String, Object>> olderBlocks = indexBlocksByOrder((List<Map<String, Object>>) olderScene.get("blocks"));
+
+        for (Map.Entry<Integer, Map<String, Object>> entry : newerBlocks.entrySet()) {
+            Map<String, Object> olderBlock = olderBlocks.get(entry.getKey());
+            if (olderBlock == null) {
+                summary.setBlocksAdded(summary.getBlocksAdded() + 1);
+                summary.addDetail("Block added in " + sceneName + ": " + blockPreview(entry.getValue()));
+                continue;
+            }
+            if (blockChanged(entry.getValue(), olderBlock)) {
+                summary.setBlocksEdited(summary.getBlocksEdited() + 1);
+                summary.addDetail("Block edited in " + sceneName + ": " + blockPreview(entry.getValue()));
+            }
+        }
+
+        for (Map.Entry<Integer, Map<String, Object>> entry : olderBlocks.entrySet()) {
+            if (!newerBlocks.containsKey(entry.getKey())) {
+                summary.setBlocksRemoved(summary.getBlocksRemoved() + 1);
+                summary.addDetail("Block removed from " + sceneName + ": " + blockPreview(entry.getValue()));
+            }
+        }
+    }
+
+    private void diffPersons(VersionChangeSummary summary,
+                             List<Map<String, Object>> newerPersons,
+                             List<Map<String, Object>> olderPersons) {
+        Map<Integer, Map<String, Object>> newerById = indexPersonsByOriginalId(newerPersons);
+        Map<Integer, Map<String, Object>> olderById = indexPersonsByOriginalId(olderPersons);
+
+        for (Map.Entry<Integer, Map<String, Object>> entry : newerById.entrySet()) {
+            if (!olderById.containsKey(entry.getKey())) {
+                summary.setCharactersAdded(summary.getCharactersAdded() + 1);
+                summary.addDetail("Character added: " + personLabel(entry.getValue()));
+            }
+        }
+
+        for (Map.Entry<Integer, Map<String, Object>> entry : olderById.entrySet()) {
+            if (!newerById.containsKey(entry.getKey())) {
+                summary.setCharactersRemoved(summary.getCharactersRemoved() + 1);
+                summary.addDetail("Character removed: " + personLabel(entry.getValue()));
+            }
+        }
+    }
+
+    private Map<Integer, Map<String, Object>> indexScenesByOrder(List<Map<String, Object>> scenes) {
+        Map<Integer, Map<String, Object>> indexed = new HashMap<>();
+        if (scenes == null) {
+            return indexed;
+        }
+        for (Map<String, Object> scene : scenes) {
+            Integer order = toInteger(scene.get("order"));
+            if (order != null) {
+                indexed.put(order, scene);
+            }
+        }
+        return indexed;
+    }
+
+    private Map<Integer, Map<String, Object>> indexBlocksByOrder(List<Map<String, Object>> blocks) {
+        Map<Integer, Map<String, Object>> indexed = new HashMap<>();
+        if (blocks == null) {
+            return indexed;
+        }
+        for (Map<String, Object> block : blocks) {
+            Integer order = toInteger(block.get("order"));
+            if (order != null) {
+                indexed.put(order, block);
+            }
+        }
+        return indexed;
+    }
+
+    private Map<Integer, Map<String, Object>> indexPersonsByOriginalId(List<Map<String, Object>> persons) {
+        Map<Integer, Map<String, Object>> indexed = new HashMap<>();
+        if (persons == null) {
+            return indexed;
+        }
+        for (Map<String, Object> person : persons) {
+            Integer originalId = toInteger(person.get("originalId"));
+            if (originalId != null) {
+                indexed.put(originalId, person);
+            }
+        }
+        return indexed;
+    }
+
+    private boolean blockChanged(Map<String, Object> newer, Map<String, Object> older) {
+        return !Objects.equals(newer.get("content"), older.get("content"))
+                || !Objects.equals(newer.get("personOriginalId"), older.get("personOriginalId"))
+                || !Objects.equals(newer.get("tags"), older.get("tags"))
+                || toBoolean(newer.get("bookmarked")) != toBoolean(older.get("bookmarked"))
+                || toBoolean(newer.get("pinned")) != toBoolean(older.get("pinned"));
+    }
+
+    private String sceneLabel(Map<String, Object> scene) {
+        Object name = scene.get("name");
+        if (name != null && !name.toString().isBlank()) {
+            return name.toString();
+        }
+        Integer order = toInteger(scene.get("order"));
+        return order != null ? "Scene " + order : "Scene";
+    }
+
+    private String personLabel(Map<String, Object> person) {
+        Object name = person.get("name");
+        if (name != null && !name.toString().isBlank()) {
+            return name.toString();
+        }
+        return "Character";
+    }
+
+    private String blockPreview(Map<String, Object> block) {
+        Object content = block.get("content");
+        if (content == null || content.toString().isBlank()) {
+            return "(empty block)";
+        }
+        String text = content.toString().replaceAll("\\s+", " ").trim();
+        if (text.length() <= 48) {
+            return "\"" + text + "\"";
+        }
+        return "\"" + text.substring(0, 45) + "...\"";
     }
 }

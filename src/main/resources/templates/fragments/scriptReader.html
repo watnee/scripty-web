@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Script</title>
+    <style>
+        body { margin: 0; font-family: Georgia, "Times New Roman", serif; line-height: 1.65; color: #111; background: #fff; }
+        main { max-width: 40rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+        article h1 { font-size: 1.75rem; margin: 0 0 1.5rem; line-height: 1.25; }
+        article h2 { font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin: 2rem 0 1rem; padding-top: 1rem; border-top: 1px solid #ddd; }
+        article h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+        article p { margin: 0 0 1rem; white-space: pre-wrap; }
+        .script-character-name { text-align: center; margin-bottom: 0.25rem; }
+        .script-character-name strong { font-weight: 700; letter-spacing: 0.06em; }
+        .script-reader-byline { color: #666; font-style: italic; margin: -1rem 0 1.5rem; }
+        footer { max-width: 40rem; margin: 0 auto; padding: 0 1.25rem 2rem; font-family: system-ui, sans-serif; font-size: 0.9rem; }
+        footer a { color: #475569; }
+    </style>
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+</head>
+<body>
+
+<th:block th:fragment="blocks(blocks)">
+    <div th:each="block : ${blocks}"
+         class="script-block"
+         th:classappend="${not #strings.isEmpty(block.personName)} ? ' script-block--dialogue' : ' script-block--action'">
+        <p th:if="${not #strings.isEmpty(block.personName)}" class="script-character-name">
+            <strong th:text="${#strings.toUpperCase(block.personName)}"></strong>
+        </p>
+        <p th:if="${not #strings.isEmpty(block.content)}" class="script-block-text" th:text="${block.content}"></p>
+    </div>
+</th:block>
+
+<th:block th:fragment="scenes(scenes)">
+    <section th:each="scene : ${scenes}">
+        <h2 th:text="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim()) ? 'Untitled Scene' : scene.name}">Scene</h2>
+        <th:block th:replace="~{fragments/scriptReader :: blocks(${scene.blocks})}"></th:block>
+    </section>
+</th:block>
+
+<footer th:fragment="projectFooter(projectId)" class="script-reader-footer">
+    <p><a th:href="@{/project/show(id=${projectId})}">← Back to project</a></p>
+</footer>
+
+<footer th:fragment="sceneFooter(scene)" class="script-reader-footer">
+    <p>
+        <a th:href="@{/scene/show(id=${scene.id})}">← Back to scene</a>
+        ·
+        <a th:href="@{/scene/all(projectId=${scene.projectId})}">Read full script</a>
+    </p>
+</footer>
+
+</body>
+</html>

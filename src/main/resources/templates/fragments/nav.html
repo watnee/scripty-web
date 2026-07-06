@@ -13,6 +13,11 @@
             
             const spellcheckEnabled = localStorage.getItem('spellcheck') !== 'false';
             document.documentElement.setAttribute('data-spellcheck', spellcheckEnabled ? 'true' : 'false');
+
+            const href = window.location.href || '';
+            if (window.location.protocol === 'safari-reader:' || href.indexOf('about:reader') === 0) {
+                document.documentElement.classList.add('safari-reader-view');
+            }
         })();
     </script>
     <nav>
@@ -167,27 +172,8 @@
 
         // Track hovered block row
         document.addEventListener('mouseover', function(e) {
-            const tr = e.target.closest('tr[data-block-id]');
-            hoveredRow = tr || null;
+            hoveredRow = findBlockRow(e.target);
         });
-
-        function executeMove(blockId, direction) {
-            sessionStorage.setItem('activeBlockId', blockId);
-            if (window.scriptyAbortUndoStatusFetch) {
-                window.scriptyAbortUndoStatusFetch();
-            }
-            const url = '/block/' + direction + '?id=' + blockId;
-            fetch(url, {
-                method: 'GET',
-                credentials: 'same-origin',
-                cache: 'no-store',
-                redirect: 'manual'
-            }).then(function() {
-                window.location.reload();
-            }).catch(function() {
-                window.location.reload();
-            });
-        }
 
         // Move blocks up/down keyboard shortcut
         document.addEventListener('keydown', function(e) {
@@ -196,12 +182,8 @@
             
             if (!isMoveUp && !isMoveDown) return;
             
-            // Find active or hovered block row
             const activeEl = document.activeElement;
-            let targetRow = null;
-            if (activeEl) {
-                targetRow = activeEl.closest('tr[data-block-id]');
-            }
+            let targetRow = activeEl ? findBlockRow(activeEl) : null;
             if (!targetRow) {
                 targetRow = hoveredRow;
             }
@@ -209,29 +191,27 @@
             if (!targetRow) return;
             
             e.preventDefault();
-            
-            const blockId = targetRow.getAttribute('data-block-id');
-            const direction = isMoveUp ? 'moveUp' : 'moveDown';
-            
-            // Check if there is an active form to save first
-            const form = targetRow.querySelector('form');
-            if (form) {
-                const formData = new FormData(form);
-                const searchParams = new URLSearchParams(formData);
-                const actionUrl = form.getAttribute('hx-post') || form.action || '/block/editInline';
-                
-                fetch(actionUrl, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: searchParams.toString()
-                }).then(function() {
-                    executeMove(blockId, direction);
-                }).catch(function() {
-                    executeMove(blockId, direction);
-                });
-            } else {
-                executeMove(blockId, direction);
+            moveBlockRow(targetRow, isMoveUp ? 'moveUp' : 'moveDown');
+        });
+
+        document.addEventListener('click', function(e) {
+            const markerLink = e.target.closest('a.block-action-pin[href*="togglePinned"], a.block-action-bookmark[href*="toggleBookmark"]');
+            if (!markerLink) return;
+            if (markerLink.getAttribute('hx-boost') === 'false') {
+                return;
             }
+            e.preventDefault();
+            window.location.href = markerLink.href;
+        });
+
+        document.addEventListener('click', function(e) {
+            const moveUpBtn = e.target.closest('.block-move-up, .move-up[role="button"]');
+            const moveDownBtn = e.target.closest('.block-move-down, .move-down[role="button"]');
+            if (!moveUpBtn && !moveDownBtn) return;
+            e.preventDefault();
+            const targetRow = findBlockRow(moveUpBtn || moveDownBtn);
+            if (!targetRow) return;
+            moveBlockRow(targetRow, moveUpBtn ? 'moveUp' : 'moveDown');
         });
 
         function isEditable(el) {
@@ -244,13 +224,13 @@
 
         function isCreateBlockTextarea(el) {
             if (!el || el.tagName !== 'TEXTAREA') return false;
-            const row = el.closest('tr');
+            const row = findBlockRow(el);
             return !!row && !row.hasAttribute('data-block-id');
         }
 
         function isInlineTextEdit(el) {
             if (!isEditable(el)) return false;
-            if (!el.closest('.block-content, .scene-name-wrap')) return false;
+            if (!el.closest('.block-content, .scene-name-wrap, .project-name-wrap')) return false;
             // Empty create-row uses structural undo, not browser text undo
             if (isCreateBlockTextarea(el)) return false;
             return true;
@@ -299,6 +279,601 @@
 
         window.scriptyAbortUndoStatusFetch = abortUndoStatusFetch;
         window.scriptyCalcDropPosition = calcDropPosition;
+
+        function findBlockRow(el) {
+            if (!el) return null;
+            return el.closest('tr[data-block-id], .block-row[data-block-id]');
+        }
+
+        function findAdjacentBlockRow(row, direction) {
+            if (!row) return null;
+            const isUp = direction === 'moveUp';
+            let sibling = isUp ? row.previousElementSibling : row.nextElementSibling;
+            while (sibling) {
+                if (sibling.hasAttribute('data-block-id')) return sibling;
+                sibling = isUp ? sibling.previousElementSibling : sibling.nextElementSibling;
+            }
+            return null;
+        }
+
+        function reindexBlockOrders(container) {
+            if (!container) return;
+            container.querySelectorAll('[data-block-id]').forEach(function(row, index) {
+                row.setAttribute('data-block-order', String(index + 1));
+            });
+        }
+
+        function updateMoveButtonStates(container) {
+            if (!container) return;
+            const rows = container.querySelectorAll('[data-block-id]');
+            rows.forEach(function(row, index) {
+                const up = row.querySelector('.block-move-up');
+                const down = row.querySelector('.block-move-down');
+                if (up) up.style.display = index === 0 ? 'none' : '';
+                if (down) down.style.display = index === rows.length - 1 ? 'none' : '';
+            });
+        }
+
+        function swapBlockRows(row, direction) {
+            const sibling = findAdjacentBlockRow(row, direction);
+            if (!sibling) return false;
+            const container = row.parentNode;
+            if (direction === 'moveUp') {
+                container.insertBefore(row, sibling);
+            } else {
+                container.insertBefore(sibling, row);
+            }
+            reindexBlockOrders(container);
+            updateMoveButtonStates(container);
+            return true;
+        }
+
+        function clearDropMarkers(container) {
+            if (!container) return;
+            container.querySelectorAll('.drop-before, .drop-after, .drag-over').forEach(function(el) {
+                el.classList.remove('drop-before', 'drop-after', 'drag-over');
+            });
+        }
+
+        function findDropTarget(container, clientY, dragRow) {
+            if (!container) return null;
+            const rows = Array.from(container.querySelectorAll('[data-block-id]')).filter(function(row) {
+                return row !== dragRow;
+            });
+            if (rows.length === 0) return null;
+            for (let i = 0; i < rows.length; i++) {
+                const rect = rows[i].getBoundingClientRect();
+                if (clientY < rect.top + rect.height / 2) {
+                    return { row: rows[i], insertBefore: true };
+                }
+            }
+            return { row: rows[rows.length - 1], insertBefore: false };
+        }
+
+        function applyDropMarker(container, clientY, dragRow) {
+            clearDropMarkers(container);
+            const target = findDropTarget(container, clientY, dragRow);
+            if (!target) return null;
+            target.row.classList.add(target.insertBefore ? 'drop-before' : 'drop-after');
+            return target;
+        }
+
+        function executeMove(blockId, direction, targetRow) {
+            sessionStorage.setItem('activeBlockId', blockId);
+            if (window.scriptyAbortUndoStatusFetch) {
+                window.scriptyAbortUndoStatusFetch();
+            }
+            const projectId = resolveProjectId();
+            let url = '/block/' + direction + '?id=' + blockId;
+            if (projectId) {
+                url += '&projectId=' + projectId;
+            }
+            fetch(url, {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                redirect: 'manual'
+            }).then(function(response) {
+                if (response.ok || response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+                    if (targetRow && swapBlockRows(targetRow, direction)) {
+                        updateUndoRedoButtons(projectId);
+                        return;
+                    }
+                }
+                window.location.reload();
+            }).catch(function() {
+                window.location.reload();
+            });
+        }
+
+        function moveBlockRow(targetRow, direction) {
+            if (!targetRow) return;
+            const blockId = targetRow.getAttribute('data-block-id');
+            if (!blockId) return;
+
+            const form = targetRow.querySelector('form');
+            if (form) {
+                const formData = new FormData(form);
+                const actionUrl = form.getAttribute('hx-post') || form.action || '/block/editInline';
+                fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: new URLSearchParams(formData).toString()
+                }).then(function() {
+                    executeMove(blockId, direction, targetRow);
+                }).catch(function() {
+                    executeMove(blockId, direction, targetRow);
+                });
+            } else {
+                executeMove(blockId, direction, targetRow);
+            }
+        }
+
+        function runWhenHtmxIdle(fn) {
+            if (!document.querySelector('.htmx-request')) {
+                fn();
+                return;
+            }
+            setTimeout(function() { runWhenHtmxIdle(fn); }, 50);
+        }
+
+        window.scriptyInitBlockMarkerToggles = function(options) {
+            options = options || {};
+            var projectId = options.projectId;
+            if (!projectId) return;
+
+            var bookmarksToggle = document.getElementById('nav-bookmarks-toggle');
+            var pinsToggle = document.getElementById('nav-pins-toggle');
+            var bookmarksKey = 'scripty-show-block-bookmarks-project-' + projectId;
+            var pinsKey = 'scripty-show-block-pins-project-' + projectId;
+            var showBookmarks = localStorage.getItem(bookmarksKey);
+            var showPins = localStorage.getItem(pinsKey);
+
+            showBookmarks = showBookmarks === null ? true : showBookmarks !== 'false';
+            showPins = showPins === null ? true : showPins !== 'false';
+
+            function applyMarkerVisibility() {
+                document.documentElement.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);
+                document.documentElement.classList.toggle('scripty-hide-block-pins', !showPins);
+            }
+
+            function syncBookmarkToggleUi() {
+                if (!bookmarksToggle) return;
+                bookmarksToggle.setAttribute('aria-pressed', showBookmarks ? 'false' : 'true');
+                bookmarksToggle.classList.toggle('is-active', !showBookmarks);
+                bookmarksToggle.title = showBookmarks ? 'Hide bookmark buttons in blocks' : 'Show bookmark buttons in blocks';
+                bookmarksToggle.setAttribute('aria-label', bookmarksToggle.title);
+            }
+
+            function syncPinToggleUi() {
+                if (!pinsToggle) return;
+                pinsToggle.setAttribute('aria-pressed', showPins ? 'false' : 'true');
+                pinsToggle.classList.toggle('is-active', !showPins);
+                pinsToggle.title = showPins ? 'Hide pin buttons in blocks' : 'Show pin buttons in blocks';
+                pinsToggle.setAttribute('aria-label', pinsToggle.title);
+            }
+
+            if (bookmarksToggle && !bookmarksToggle.dataset.markerToggleInit) {
+                bookmarksToggle.dataset.markerToggleInit = 'true';
+                syncBookmarkToggleUi();
+                bookmarksToggle.addEventListener('click', function() {
+                    showBookmarks = !showBookmarks;
+                    localStorage.setItem(bookmarksKey, showBookmarks ? 'true' : 'false');
+                    syncBookmarkToggleUi();
+                    applyMarkerVisibility();
+                });
+            }
+
+            if (pinsToggle && !pinsToggle.dataset.markerToggleInit) {
+                pinsToggle.dataset.markerToggleInit = 'true';
+                syncPinToggleUi();
+                pinsToggle.addEventListener('click', function() {
+                    showPins = !showPins;
+                    localStorage.setItem(pinsKey, showPins ? 'true' : 'false');
+                    syncPinToggleUi();
+                    applyMarkerVisibility();
+                });
+            }
+
+            syncBookmarkToggleUi();
+            syncPinToggleUi();
+            applyMarkerVisibility();
+        };
+
+        window.scriptyInitBlockBulkSelection = function(options) {
+            options = options || {};
+            var selectAllId = options.selectAllId;
+            if (!selectAllId) return;
+
+            var scope = options.scope || document;
+            var selectAllCheckbox = document.getElementById(selectAllId);
+            if (!selectAllCheckbox || selectAllCheckbox.dataset.bulkSelectionInit === 'true') return;
+            selectAllCheckbox.dataset.bulkSelectionInit = 'true';
+
+            var bulkBar = options.bulkBarId ? document.getElementById(options.bulkBarId) : null;
+            var bulkCount = options.bulkCountId ? document.getElementById(options.bulkCountId) : null;
+            var controlRoot = selectAllCheckbox.closest('.block-left-controls') || scope;
+            var menuDropdown = controlRoot.querySelector('.block-select-menu-dropdown');
+
+            function blockCheckboxes() {
+                return scope.querySelectorAll(
+                    '.block-row[data-block-id] .block-select-checkbox, tr[data-block-id] .block-select-checkbox'
+                );
+            }
+
+            function blockRows() {
+                return scope.querySelectorAll('.block-row[data-block-id], tr[data-block-id]');
+            }
+
+            function isSelectableRow(row) {
+                if (!row || !row.hasAttribute('data-block-id')) return false;
+                if (row.classList.contains('filtered-out')) return false;
+                if (row.style.display === 'none') return false;
+                return true;
+            }
+
+            function isBookmarkedRow(row) {
+                return row.getAttribute('data-bookmarked') === 'true';
+            }
+
+            function updateBulkBar() {
+                var checkboxes = scope.querySelectorAll(
+                    '.block-row[data-block-id] .block-select-checkbox:checked, tr[data-block-id] .block-select-checkbox:checked'
+                );
+                var count = checkboxes.length;
+                if (bulkBar) {
+                    bulkBar.hidden = count === 0;
+                }
+                if (bulkCount) {
+                    bulkCount.textContent = count === 1 ? '1 block selected' : count + ' blocks selected';
+                }
+            }
+
+            function syncSelectAllState() {
+                var checkboxes = blockCheckboxes();
+                var checkedCount = 0;
+                checkboxes.forEach(function(cb) {
+                    if (cb.checked) checkedCount++;
+                });
+                if (checkboxes.length === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                    return;
+                }
+                selectAllCheckbox.checked = checkedCount === checkboxes.length;
+                selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+            }
+
+            function setCheckboxChecked(checkbox, checked) {
+                if (!checkbox || checkbox.checked === checked) return;
+                checkbox.checked = checked;
+                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            function applySelectionAction(action) {
+                if (action === 'all') {
+                    blockCheckboxes().forEach(function(cb) {
+                        setCheckboxChecked(cb, true);
+                    });
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (action === 'none') {
+                    blockCheckboxes().forEach(function(cb) {
+                        setCheckboxChecked(cb, false);
+                    });
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (action === 'bookmarked' || action === 'unbookmark') {
+                    var shouldCheck = action === 'bookmarked';
+                    blockRows().forEach(function(row) {
+                        if (!isSelectableRow(row) || !isBookmarkedRow(row)) return;
+                        var cb = row.querySelector('.block-select-checkbox');
+                        setCheckboxChecked(cb, shouldCheck);
+                    });
+                    syncSelectAllState();
+                }
+                updateBulkBar();
+            }
+
+            function closeSelectMenu() {
+                if (!menuDropdown) return;
+                menuDropdown.classList.remove('open');
+                var toggle = menuDropdown.querySelector('.block-select-menu-toggle');
+                if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            }
+
+            selectAllCheckbox.addEventListener('change', function() {
+                var checked = selectAllCheckbox.checked;
+                selectAllCheckbox.indeterminate = false;
+                blockCheckboxes().forEach(function(cb) {
+                    cb.checked = checked;
+                });
+                updateBulkBar();
+            });
+
+            scope.addEventListener('change', function(e) {
+                if (!e.target || !e.target.classList.contains('block-select-checkbox')) return;
+                if (e.target === selectAllCheckbox || e.target.classList.contains('block-select-all-checkbox')) return;
+                syncSelectAllState();
+                updateBulkBar();
+            });
+
+            if (menuDropdown && !menuDropdown.dataset.selectMenuInit) {
+                menuDropdown.dataset.selectMenuInit = 'true';
+                var menuToggle = menuDropdown.querySelector('.block-select-menu-toggle');
+                if (menuToggle) {
+                    menuToggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var isOpen = menuDropdown.classList.contains('open');
+                        document.querySelectorAll('.block-select-menu-dropdown').forEach(function(d) {
+                            d.classList.remove('open');
+                            var btn = d.querySelector('.block-select-menu-toggle');
+                            if (btn) btn.setAttribute('aria-expanded', 'false');
+                        });
+                        menuToggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+                        if (!isOpen) {
+                            menuDropdown.classList.add('open');
+                        }
+                    });
+                }
+
+                menuDropdown.querySelectorAll('[data-block-select-action]').forEach(function(item) {
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        applySelectionAction(item.getAttribute('data-block-select-action'));
+                        closeSelectMenu();
+                    });
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!menuDropdown.contains(e.target)) {
+                        closeSelectMenu();
+                    }
+                });
+            }
+
+            if (options.syncOnHtmxLoad !== false) {
+                document.body.addEventListener('htmx:afterOnLoad', function() {
+                    syncSelectAllState();
+                    updateBulkBar();
+                });
+            }
+
+            if (options.resetOnScriptRefresh) {
+                window.addEventListener('scripty:project-script-refreshed', function() {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                    blockCheckboxes().forEach(function(cb) {
+                        cb.checked = false;
+                    });
+                    updateBulkBar();
+                });
+            }
+
+            syncSelectAllState();
+            updateBulkBar();
+        };
+
+        window.scriptyInitBlockDragDrop = function(container, options) {
+            if (!container || container.dataset.dragInit === 'true') return;
+            container.dataset.dragInit = 'true';
+            options = options || {};
+            const projectId = options.projectId || resolveProjectId();
+            let dragRow = null;
+
+            updateMoveButtonStates(container);
+
+            container.addEventListener('dragstart', function(e) {
+                const handle = e.target.closest('.drag-handle');
+                if (!handle) {
+                    e.preventDefault();
+                    return;
+                }
+                const row = findBlockRow(handle);
+                if (!row || !container.contains(row) || !row.hasAttribute('data-block-id')) {
+                    e.preventDefault();
+                    return;
+                }
+                dragRow = row;
+                row.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                if (e.dataTransfer.setDragImage) {
+                    e.dataTransfer.setDragImage(row, 24, 16);
+                }
+            });
+
+            container.addEventListener('dragend', function() {
+                if (dragRow) dragRow.classList.remove('dragging');
+                clearDropMarkers(container);
+                dragRow = null;
+            });
+
+            container.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                if (!dragRow) return;
+                if (e.dataTransfer) {
+                    e.dataTransfer.dropEffect = 'move';
+                }
+                applyDropMarker(container, e.clientY, dragRow);
+            });
+
+            container.addEventListener('dragleave', function(e) {
+                if (!e.relatedTarget || !container.contains(e.relatedTarget)) {
+                    clearDropMarkers(container);
+                }
+            });
+
+            container.addEventListener('drop', function(e) {
+                e.preventDefault();
+                const target = applyDropMarker(container, e.clientY, dragRow);
+                clearDropMarkers(container);
+                if (!target || !dragRow) return;
+
+                const targetRow = target.row;
+                const insertBefore = target.insertBefore;
+                if (!container.contains(targetRow) || targetRow === dragRow) return;
+
+                const blockId = dragRow.getAttribute('data-block-id');
+                const newOrder = calcDropPosition(dragRow, targetRow, e.clientY);
+                const dragOrder = parseInt(dragRow.getAttribute('data-block-order'), 10);
+
+                if (insertBefore) {
+                    targetRow.parentNode.insertBefore(dragRow, targetRow);
+                } else {
+                    targetRow.parentNode.insertBefore(dragRow, targetRow.nextSibling);
+                }
+
+                reindexBlockOrders(container);
+                updateMoveButtonStates(container);
+
+                if (!blockId || newOrder == null || newOrder === dragOrder) return;
+
+                runWhenHtmxIdle(function() {
+                    if (window.scriptyAbortUndoStatusFetch) {
+                        window.scriptyAbortUndoStatusFetch();
+                    }
+                    const params = new URLSearchParams();
+                    params.append('id', blockId);
+                    params.append('position', String(newOrder));
+                    if (projectId) params.append('projectId', projectId);
+                    fetch('/block/moveTo', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: params.toString()
+                    }).then(function(response) {
+                        if (response.ok || response.redirected) {
+                            updateUndoRedoButtons(projectId);
+                            return;
+                        }
+                        window.location.reload();
+                    }).catch(function() {
+                        window.location.reload();
+                    });
+                });
+            });
+        };
+
+        window.scriptyUpdateMoveButtonStates = updateMoveButtonStates;
+
+        window.scriptyInitProjectLiveSync = function(options) {
+            options = options || {};
+            var projectId = options.projectId;
+            var revision = options.revision || 0;
+            var pollMs = options.pollMs || 4000;
+            if (!projectId) return;
+
+            var refreshInProgress = false;
+
+            function scriptBody() {
+                return document.getElementById('project-script-body');
+            }
+
+            function isEditing() {
+                if (document.querySelector('.project-name-wrap input[name="title"]')) return true;
+                if (document.querySelector('.scene-name-wrap input[name="name"]')) return true;
+                if (document.querySelector('.block-content textarea:focus')) return true;
+                if (document.querySelector('.block-content form.block-inline-edit-form')) return true;
+                if (document.querySelector('.htmx-request')) return true;
+                return false;
+            }
+
+            function applyTitle(title) {
+                if (title == null) return;
+                var breadcrumb = document.getElementById('project-breadcrumb-title');
+                if (breadcrumb) breadcrumb.textContent = title;
+                var display = document.querySelector('.project-name-display');
+                if (display && !document.querySelector('.project-name-wrap input[name="title"]')) {
+                    var trimmed = (title || '').trim();
+                    if (trimmed === '') {
+                        display.innerHTML = '<span class="project-name-placeholder">Click to name project</span>';
+                    } else {
+                        display.textContent = title;
+                    }
+                }
+            }
+
+            function reinitScriptBody() {
+                var body = scriptBody();
+                if (!body) return;
+                body.querySelectorAll('.scene-blocks').forEach(function(sceneBlocks) {
+                    if (window.scriptyInitBlockDragDrop) {
+                        window.scriptyInitBlockDragDrop(sceneBlocks, { projectId: projectId });
+                    }
+                });
+                if (typeof htmx !== 'undefined') {
+                    htmx.process(body);
+                }
+                window.dispatchEvent(new CustomEvent('scripty:project-script-refreshed', { detail: { projectId: projectId } }));
+            }
+
+            function refreshScript() {
+                if (refreshInProgress) return;
+                refreshInProgress = true;
+                var scrollY = window.scrollY;
+                fetch('/project/showScript?id=' + encodeURIComponent(projectId), {
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    headers: { 'Accept': 'text/html' }
+                }).then(function(response) {
+                    if (!response.ok) throw new Error('refresh failed');
+                    return response.text();
+                }).then(function(html) {
+                    var container = scriptBody();
+                    if (!container) return;
+                    container.outerHTML = html;
+                    reinitScriptBody();
+                    window.scrollTo(0, scrollY);
+                }).catch(function() {
+                }).finally(function() {
+                    refreshInProgress = false;
+                });
+            }
+
+            function bumpRevisionFromServer() {
+                fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=0', {
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                }).then(function(r) { return r.json(); })
+                  .then(function(data) {
+                    if (data && typeof data.revision === 'number') {
+                        revision = data.revision;
+                    }
+                    if (data && data.title != null) {
+                        applyTitle(data.title);
+                    }
+                  }).catch(function() {});
+            }
+
+            function poll() {
+                if (document.hidden || isEditing() || refreshInProgress) return;
+                fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=' + encodeURIComponent(revision), {
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                }).then(function(r) { return r.json(); })
+                  .then(function(data) {
+                    if (!data || !data.changed) return;
+                    revision = data.revision;
+                    if (data.title != null) applyTitle(data.title);
+                    refreshScript();
+                  }).catch(function() {});
+            }
+
+            document.body.addEventListener('htmx:afterOnLoad', function(e) {
+                var path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
+                if (path.indexOf('/block/') === -1 && path.indexOf('/scene/') === -1 && path.indexOf('/project/editNameInline') === -1) return;
+                runWhenHtmxIdle(bumpRevisionFromServer);
+            });
+
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) poll();
+            });
+
+            setInterval(poll, pollMs);
+            bumpRevisionFromServer();
+        };
 
         function setHistoryButtonState(btn, available) {
             btn.disabled = false;
@@ -438,8 +1013,12 @@
             const undoLabel = undoBtn.classList.contains('nav-dropdown-item') ? 'Undo' + undoShortcut : '← Undo';
             const redoLabel = redoBtn.classList.contains('nav-dropdown-item') ? 'Redo' + redoShortcut : 'Redo →';
 
-            undoBtn.textContent = undoLabel;
-            redoBtn.textContent = redoLabel;
+            if (undoBtn.classList.contains('nav-dropdown-item')) {
+                undoBtn.textContent = undoLabel;
+            }
+            if (redoBtn.classList.contains('nav-dropdown-item')) {
+                redoBtn.textContent = redoLabel;
+            }
             undoBtn.title = 'Undo' + undoShortcut;
             undoBtn.setAttribute('aria-label', 'Undo' + undoShortcut);
             redoBtn.title = 'Redo' + redoShortcut;
@@ -608,9 +1187,104 @@
             textarea.style.height = height + 'px';
         }
 
+        function getTextOffsetInElement(root, container, offset) {
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            let total = 0;
+            let node;
+            while ((node = walker.nextNode())) {
+                if (node === container) return total + offset;
+                total += node.textContent.length;
+            }
+            return total;
+        }
+
+        let pendingBlockCaret = null;
+
+        document.body.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            if (e.target.closest('a')) return;
+            const blockContent = e.target.closest('.block-content');
+            if (!blockContent || blockContent.querySelector('form')) return;
+
+            const textEl = blockContent.querySelector('.script-block-text');
+            if (!textEl) return;
+
+            let offset = null;
+            if (document.caretRangeFromPoint) {
+                const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+                if (range && textEl.contains(range.startContainer)) {
+                    offset = getTextOffsetInElement(textEl, range.startContainer, range.startOffset);
+                }
+            } else if (document.caretPositionFromPoint) {
+                const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+                if (pos && textEl.contains(pos.offsetNode)) {
+                    offset = getTextOffsetInElement(textEl, pos.offsetNode, pos.offset);
+                }
+            }
+
+            pendingBlockCaret = {
+                blockContent: blockContent,
+                offset: offset != null ? offset : textEl.textContent.length
+            };
+        });
+
+        function focusBlockTextareaFromClick() {
+            if (!pendingBlockCaret) return;
+            const pending = pendingBlockCaret;
+            pendingBlockCaret = null;
+            if (!pending.blockContent.isConnected) return;
+
+            const textarea = pending.blockContent.querySelector('textarea[name="content"]');
+            if (!textarea) return;
+
+            autoGrowTextarea(textarea);
+            textarea.focus({ preventScroll: true });
+            const pos = Math.max(0, Math.min(pending.offset, textarea.value.length));
+            textarea.setSelectionRange(pos, pos);
+        }
+
+        function syncReaderVisibleText(textarea) {
+            const blockContent = textarea.closest('.block-content');
+            if (!blockContent) return;
+            const mirror = blockContent.querySelector('.reader-visible-text');
+            if (mirror) mirror.textContent = textarea.value;
+        }
+
+        function commitOpenBlockEdits() {
+            document.querySelectorAll('.block-content form.block-inline-edit-form, .block-content form[hx-post*="/block/editInline"]').forEach(function(form) {
+                if (form.dataset.committing === 'true') return;
+                const textarea = form.querySelector('textarea[name="content"]');
+                if (!textarea) return;
+
+                form.dataset.committing = 'true';
+                syncReaderVisibleText(textarea);
+
+                const formData = new FormData(form);
+                const url = form.getAttribute('hx-post') || '/block/editInline';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: new URLSearchParams(formData).toString()
+                }).then(function(response) {
+                    return response.text();
+                }).then(function(html) {
+                    const target = form.closest('.block-content');
+                    if (target) {
+                        target.innerHTML = html;
+                    }
+                }).catch(function() {
+                    /* keep edit form if save fails */
+                }).finally(function() {
+                    delete form.dataset.committing;
+                });
+            });
+        }
+
         function autoGrowInput(input) {
             if (!input) return;
             const isSceneName = input.closest('.scene-name-wrap') || 
+                                input.closest('.project-name-wrap') ||
                                 input.closest('#create-scene-row') || 
                                 input.closest('#create-scene-below-form');
             const hasAutoGrowClass = input.classList.contains('auto-grow');
@@ -694,7 +1368,7 @@
             const activeBlockId = sessionStorage.getItem('activeBlockId');
             if (activeBlockId) {
                 sessionStorage.removeItem('activeBlockId');
-                const row = document.querySelector(`tr[data-block-id="${activeBlockId}"]`);
+                const row = document.querySelector('tr[data-block-id="' + activeBlockId + '"], .block-row[data-block-id="' + activeBlockId + '"]');
                 if (row) {
                     const blockContent = row.querySelector('.block-content');
                     if (blockContent) {
@@ -772,6 +1446,14 @@
             initProjectDeleteConfirm();
             document.querySelectorAll('textarea').forEach(autoGrowTextarea);
             document.querySelectorAll('input[type="text"]').forEach(autoGrowInput);
+            document.querySelectorAll('.scene-blocks, #table-blocks').forEach(function(container) {
+                if (window.scriptyInitBlockDragDrop) {
+                    window.scriptyInitBlockDragDrop(container, { projectId: resolveProjectId() });
+                }
+                if (window.scriptyUpdateMoveButtonStates) {
+                    window.scriptyUpdateMoveButtonStates(container);
+                }
+            });
             updateLastEditedTimes();
             restoreActiveBlock();
         }
@@ -784,7 +1466,10 @@
 
         // Run on HTMX content swaps
         document.body.addEventListener('htmx:afterSwap', initAll);
-        document.body.addEventListener('htmx:afterSettle', updateLastEditedTimes);
+        document.body.addEventListener('htmx:afterSettle', function() {
+            updateLastEditedTimes();
+            requestAnimationFrame(focusBlockTextareaFromClick);
+        });
 
         document.body.addEventListener('htmx:afterRequest', function(e) {
             if (!e.detail.successful) return;
@@ -799,23 +1484,66 @@
             if (e.target) {
                 if (e.target.tagName === 'TEXTAREA') {
                     autoGrowTextarea(e.target);
+                    if (e.target.name === 'content') {
+                        syncReaderVisibleText(e.target);
+                    }
                 } else if (e.target.tagName === 'INPUT' && e.target.type === 'text') {
                     autoGrowInput(e.target);
                 }
             }
         });
 
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                commitOpenBlockEdits();
+            }
+        });
+
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
-            const registerSW = () => {
+            const SW_MIGRATION_KEY = 'sw-migration-v8';
+
+            async function needsServiceWorkerMigration() {
+                return !localStorage.getItem(SW_MIGRATION_KEY);
+            }
+
+            async function migrateServiceWorker() {
+                if ('caches' in window) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map((key) => caches.delete(key)));
+                }
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map((reg) => reg.unregister()));
+                localStorage.setItem(SW_MIGRATION_KEY, '1');
+                window.location.reload();
+            }
+
+            function registerServiceWorker() {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('SW registered:', reg.scope))
-                    .catch(err => console.error('SW registration failed:', err));
+                    .then((reg) => {
+                        console.log('SW registered:', reg.scope);
+                        reg.update();
+                    })
+                    .catch((err) => console.error('SW registration failed:', err));
+            }
+
+            const initServiceWorker = async () => {
+                try {
+                    if (await needsServiceWorkerMigration()) {
+                        await migrateServiceWorker();
+                        return;
+                    }
+                    registerServiceWorker();
+                } catch (err) {
+                    console.error('SW migration check failed:', err);
+                    registerServiceWorker();
+                }
             };
+
             if (document.readyState === 'complete') {
-                registerSW();
+                initServiceWorker();
             } else {
-                window.addEventListener('load', registerSW);
+                window.addEventListener('load', initServiceWorker);
             }
         }
     })();

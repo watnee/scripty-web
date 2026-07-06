@@ -46,8 +46,15 @@ public class BlockController {
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id, @RequestParam(required = false) Integer projectId) {
         projectUndoRedoService.recordCheckpointForBlock(id);
-        Block block = blockService.deleteBlock(id);
-        projectVersionService.autoSaveVersionForBlock(id);
+        Block block = blockService.read(id);
+        Integer resolvedProjectId = projectId;
+        if (resolvedProjectId == null && block != null && block.getScene() != null) {
+            resolvedProjectId = block.getScene().getProject().getId();
+        }
+        block = blockService.deleteBlock(id);
+        if (resolvedProjectId != null) {
+            projectVersionService.autoSaveVersion(resolvedProjectId);
+        }
 
         if (projectId != null) {
             return "redirect:/project/show?id=" + projectId;
@@ -56,7 +63,7 @@ public class BlockController {
     }
     
     @RequestMapping(value = "/moveUp")
-    public String moveUp(@RequestParam Integer id) {
+    public String moveUp(@RequestParam Integer id, @RequestParam(required = false) Integer projectId) {
         Block block = blockService.read(id);
         if (block == null) {
             return "redirect:/project/list";
@@ -67,11 +74,14 @@ public class BlockController {
             projectUndoRedoService.recordMoveCheckpoint(id, fromOrder, moved.getOrder());
             projectVersionService.autoSaveVersionForBlock(moved.getId());
         }
+        if (projectId != null) {
+            return "redirect:/project/show?id=" + projectId;
+        }
         return "redirect:/scene/show?id=" + moved.getScene().getId();
     }
 
     @RequestMapping(value = "/moveDown")
-    public String moveDown(@RequestParam Integer id) {
+    public String moveDown(@RequestParam Integer id, @RequestParam(required = false) Integer projectId) {
         Block block = blockService.read(id);
         if (block == null) {
             return "redirect:/project/list";
@@ -81,6 +91,9 @@ public class BlockController {
         if (moved != null && moved.getOrder() != fromOrder) {
             projectUndoRedoService.recordMoveCheckpoint(id, fromOrder, moved.getOrder());
             projectVersionService.autoSaveVersionForBlock(moved.getId());
+        }
+        if (projectId != null) {
+            return "redirect:/project/show?id=" + projectId;
         }
         return "redirect:/scene/show?id=" + moved.getScene().getId();
     }
@@ -107,14 +120,20 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/toggleBookmark")
-    public String toggleBookmark(@RequestParam Integer id) {
+    public String toggleBookmark(@RequestParam Integer id, @RequestParam(required = false) Integer projectId) {
         Block block = blockService.toggleBookmark(id);
+        if (projectId != null) {
+            return "redirect:/project/show?id=" + projectId;
+        }
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
 
     @RequestMapping(value = "/togglePinned")
-    public String togglePinned(@RequestParam Integer id) {
+    public String togglePinned(@RequestParam Integer id, @RequestParam(required = false) Integer projectId) {
         Block block = blockService.togglePinned(id);
+        if (projectId != null) {
+            return "redirect:/project/show?id=" + projectId;
+        }
         return "redirect:/scene/show?id=" + block.getScene().getId();
     }
 
@@ -123,6 +142,7 @@ public class BlockController {
         EditBlockViewModel viewModel = blockService.getEditBlockViewModel(id);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditBlockCommandModel());
+        model.addAttribute("block", blockService.getBlockViewModel(id));
         return "block/editInline";
     }
 
@@ -132,6 +152,7 @@ public class BlockController {
             EditBlockViewModel viewModel = blockService.getEditBlockViewModel(commandModel.getId());
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
+            model.addAttribute("block", blockService.getBlockViewModel(commandModel.getId()));
             return "block/editInline";
         }
         projectUndoRedoService.recordCheckpointForBlock(commandModel.getId());
@@ -246,14 +267,23 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/createInline")
-    public String createInline(@RequestParam Integer sceneId, Model model) {
+    public String createInline(@RequestParam Integer sceneId,
+                               @RequestParam(required = false) String surface,
+                               Model model) {
         CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(sceneId);
         model.addAttribute("viewModel", viewModel);
+        if ("project".equals(surface)) {
+            return "block/projectCreateInline";
+        }
         return "block/createInline";
     }
 
     @RequestMapping(value = "/createInline", method = RequestMethod.POST)
-    public String saveCreateInline(@RequestParam Integer sceneId, @RequestParam String content, @RequestParam(required = false) Integer personId, Model model) {
+    public String saveCreateInline(@RequestParam Integer sceneId,
+                                   @RequestParam String content,
+                                   @RequestParam(required = false) Integer personId,
+                                   @RequestParam(required = false) String surface,
+                                   Model model) {
         projectUndoRedoService.recordCheckpointForScene(sceneId);
         CreateBlockCommandModel commandModel = new CreateBlockCommandModel();
         commandModel.setSceneId(sceneId);
@@ -266,19 +296,32 @@ public class BlockController {
         CreateBlockBelowViewModel createViewModel = blockService.getCreateBlockBelowViewModel(block.getId());
         model.addAttribute("viewModel", createViewModel);
         model.addAttribute("blockId", block.getId());
+        model.addAttribute("projectId", block.getScene().getProject().getId());
+        if ("project".equals(surface)) {
+            return "block/projectBlockRowWithCreate";
+        }
         return "block/blockRowWithCreate";
     }
 
     @RequestMapping(value = "/createBelowInline")
-    public String createBelowInline(@RequestParam Integer id, Model model) {
+    public String createBelowInline(@RequestParam Integer id,
+                                    @RequestParam(required = false) String surface,
+                                    Model model) {
         CreateBlockBelowViewModel viewModel = blockService.getCreateBlockBelowViewModel(id);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("blockId", id);
+        if ("project".equals(surface)) {
+            return "block/projectCreateBelowInline";
+        }
         return "block/createBelowInline";
     }
 
     @RequestMapping(value = "/createBelowInline", method = RequestMethod.POST)
-    public String saveCreateBelowInline(@RequestParam Integer id, @RequestParam String content, @RequestParam(required = false) Integer personId, Model model) {
+    public String saveCreateBelowInline(@RequestParam Integer id,
+                                        @RequestParam String content,
+                                        @RequestParam(required = false) Integer personId,
+                                        @RequestParam(required = false) String surface,
+                                        Model model) {
         projectUndoRedoService.recordCheckpointForBlock(id);
         CreateBlockBelowCommandModel commandModel = new CreateBlockBelowCommandModel();
         commandModel.setId(id);
@@ -291,6 +334,10 @@ public class BlockController {
         CreateBlockBelowViewModel createViewModel = blockService.getCreateBlockBelowViewModel(block.getId());
         model.addAttribute("viewModel", createViewModel);
         model.addAttribute("blockId", block.getId());
+        model.addAttribute("projectId", block.getScene().getProject().getId());
+        if ("project".equals(surface)) {
+            return "block/projectBlockRowWithCreate";
+        }
         return "block/blockRowWithCreate";
     }
 

@@ -63,6 +63,19 @@ public class SceneController {
 
         return "scene/all";
     }
+
+    @RequestMapping(value = "/read")
+    public String read(@RequestParam Integer id, Model model) {
+        Scene scene = sceneService.read(id);
+        if (scene == null) {
+            return "redirect:/project/list";
+        }
+
+        SceneProfileViewModel viewModel = sceneService.getSceneProfileViewModel(id);
+        model.addAttribute("scene", viewModel);
+
+        return "scene/read";
+    }
     
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id) {

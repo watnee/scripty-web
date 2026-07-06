@@ -87,7 +87,8 @@
                                             class="project-list-action-btn rename-project-btn"
                                             th:attr="hx-get=@{/project/editNameInline(id=${project.id})}"
                                             hx-target="closest .project-title-container"
-                                            hx-swap="outerHTML">Rename</button>
+                                            hx-swap="outerHTML"
+                                            title="Rename project">Rename</button>
                                     <button type="button"
                                             class="project-list-action-btn project-list-delete-btn bad"
                                             th:attr="data-delete-url=@{/project/delete(id=${project.id})}">Delete</button>

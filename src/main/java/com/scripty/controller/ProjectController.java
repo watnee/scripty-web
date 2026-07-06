@@ -17,6 +17,8 @@ import com.scripty.service.ProjectVersionService;
 import com.scripty.service.SceneService;
 import com.scripty.service.UserService;
 import java.security.Principal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,8 +99,32 @@ public class ProjectController {
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("isDefault", isDefault);
+        model.addAttribute("syncRevision", projectRevision(viewModel.getLastEdited()));
 
         return "project/show";
+    }
+
+    @RequestMapping(value = "/syncStatus")
+    @ResponseBody
+    public Map<String, Object> syncStatus(@RequestParam Integer id, @RequestParam(required = false) Long since) {
+        Project project = projectService.read(id);
+        Map<String, Object> body = new HashMap<>();
+        long revision = projectRevision(project.getLastEdited());
+        body.put("revision", revision);
+        body.put("title", project.getTitle());
+        body.put("changed", since == null || since < revision);
+        return body;
+    }
+
+    @RequestMapping(value = "/showScript")
+    public String showScript(@RequestParam Integer id, Model model) {
+        model.addAttribute("viewModel", projectService.getProjectProfileViewModel(id));
+        return "project/showScript";
+    }
+
+    @RequestMapping(value = "/read")
+    public String read(@RequestParam Integer id) {
+        return "redirect:/scene/all?projectId=" + id;
     }
 
     @RequestMapping(value = "/undo", method = RequestMethod.POST)
@@ -122,6 +148,13 @@ public class ProjectController {
         status.put("canUndo", projectUndoRedoService.canUndo(projectId));
         status.put("canRedo", projectUndoRedoService.canRedo(projectId));
         return status;
+    }
+
+    private long projectRevision(LocalDateTime lastEdited) {
+        if (lastEdited == null) {
+            return 0L;
+        }
+        return lastEdited.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
     private Map<String, Object> buildUndoRedoResponse(ProjectUndoRedoService.UndoRedoResult result,
@@ -190,25 +223,34 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/editNameInline")
-    public String editNameInline(@RequestParam Integer id, Model model) {
+    public String editNameInline(@RequestParam Integer id, @RequestParam(required = false) String surface, Model model) {
         EditProjectViewModel viewModel = projectService.getEditProjectViewModel(id);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditProjectCommandModel());
+        if ("header".equals(surface)) {
+            return "project/showHeaderEditNameInline";
+        }
         return "project/editNameInline";
     }
 
     @RequestMapping(value = "/editNameInline", method = RequestMethod.POST)
-    public String saveEditNameInline(@Valid @ModelAttribute("commandModel") EditProjectCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
+    public String saveEditNameInline(@Valid @ModelAttribute("commandModel") EditProjectCommandModel commandModel, BindingResult bindingResult, @RequestParam(required = false) String surface, Model model, Principal principal) {
         if (bindingResult.hasErrors()) {
             EditProjectViewModel viewModel = projectService.getEditProjectViewModel(commandModel.getId());
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("commandModel", commandModel);
+            if ("header".equals(surface)) {
+                return "project/showHeaderEditNameInline";
+            }
             return "project/editNameInline";
         }
         Project project = projectService.saveEditProjectCommandModel(commandModel);
         projectVersionService.autoSaveVersion(project.getId());
         model.addAttribute("project", project);
         addDefaultProjectId(model, principal);
+        if ("header".equals(surface)) {
+            return "project/showHeaderNameInline";
+        }
         return "project/showNameInline";
     }
 

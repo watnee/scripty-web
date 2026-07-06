@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <title>Scripty - Help Center</title>
     <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
-    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
@@ -89,6 +89,10 @@
                     <h3>📦 Bulk Tagging &amp; Deletions</h3>
                     <p>Need to manage multiple blocks at once? Use the checkboxes on the left control panel of blocks (or the "Select All" checkbox) to perform bulk actions: type tags in the action bar to add tags in bulk, or click the trash can (<kbd>🗑️</kbd>) to delete multiple selected blocks.</p>
                 </div>
+                <div class="help-card" data-keywords="safari reader read script view all read script mobile ios distraction free">
+                    <h3>📖 Safari Reader &amp; Read Script</h3>
+                    <p>To read your screenplay in Safari Reader (or other browser reading modes), open <strong>Read Script</strong> from the project page, or <strong>Read</strong> on an individual scene. These pages show only script text — no editing controls — so blocks appear correctly in Reader view.</p>
+                </div>
                 <div class="help-card" data-keywords="font size text zoom controls A+ A- scale larger smaller readability">
                     <h3>🔍 Text Size Controls</h3>
                     <p>Improve screenplay readability. Use the <kbd>A−</kbd> and <kbd>A+</kbd> buttons on the top-right of the page to scale text size down or up instantly to suit your display.</p>
@@ -107,9 +111,9 @@
                     <h3>🕒 History Dropdown Menu</h3>
                     <p>Access the history menu by clicking the clock icon (<kbd>🕒</kbd>) next to the text controls. From here, you can click <strong>Undo</strong>, <strong>Redo</strong>, or select <strong>Version History</strong> to review previous auto-saved stages of the project.</p>
                 </div>
-                <div class="help-card" data-keywords="version history list list-versions backup revision timestamp restore auto-save">
+                <div class="help-card" data-keywords="version history list list-versions backup revision timestamp restore auto-save block edit add delete move">
                     <h3>💾 Version History</h3>
-                    <p>Every structural change (reorders, deletes, inserts) triggers a version save. In the Version History page, you can review the history of edits with precise timestamps and project state backups.</p>
+                    <p>Block edits, adds, deletes, moves, and tag changes trigger auto-saved versions (at most every 10 minutes when content changes). In Version History, each entry shows what changed since the previous save — block edits with previews, plus scene and character changes.</p>
                 </div>
             </div>
         </div>

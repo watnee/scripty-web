@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/scriptReader :: head(${(#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim()) ? 'Untitled Scene' : scene.name) + ' – ' + scene.projectTitle})}"></head>
+<body class="script-reader-page">
+    <main role="main">
+        <article>
+            <header>
+                <h1 th:text="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim()) ? 'Untitled Scene' : scene.name}">Scene</h1>
+                <p class="script-reader-byline" th:text="${scene.projectTitle}">Project</p>
+            </header>
+            <section>
+                <th:block th:replace="~{fragments/scriptReader :: blocks(${scene.blocks})}"></th:block>
+            </section>
+        </article>
+    </main>
+    <footer th:replace="~{fragments/scriptReader :: sceneFooter(${scene})}"></footer>
+</body>
+</html>

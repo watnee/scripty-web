@@ -3523,6 +3523,7 @@ kbd {
 
     .has-toolbar-brand .header-actions {
         top: var(--toolbar-brand-top-space, 0.5rem) !important;
+        right: var(--toolbar-brand-side-space, 0.5rem) !important;
     }
 
     .has-toolbar-brand .project-top-bar {
@@ -3927,7 +3928,7 @@ kbd {
 
 .has-toolbar-brand .header-actions {
     top: var(--toolbar-brand-top-space, 0.5rem);
-    right: 0.5rem;
+    right: var(--toolbar-brand-side-space, 0.5rem);
 }
 
 .has-toolbar-brand .project-top-bar {
@@ -3956,7 +3957,10 @@ kbd {
 body.has-toolbar-brand {
     --toolbar-brand-top-space: 1rem;
     --toolbar-brand-bottom-space: 1rem;
+    --toolbar-brand-side-space: 0.5rem;
     padding-top: var(--toolbar-brand-top-space);
+    padding-left: var(--toolbar-brand-side-space);
+    padding-right: var(--toolbar-brand-side-space);
 }
 
 .has-toolbar-brand .project-script-toolbar {

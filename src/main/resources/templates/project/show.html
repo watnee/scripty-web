@@ -273,11 +273,8 @@
             </header>
             <div th:replace="~{project/showScriptBody :: scriptBody(${viewModel})}"></div>
         </article>
-        <p class="hide-in-reader-view sidebar menu project-create-scene">
-            <form th:action="@{/block/createSceneAndReturn}" method="POST" hx-boost="false" style="display:inline">
-                <input type="hidden" name="projectId" th:value="${viewModel.id}" />
-                <button type="submit" role="button">Create New Scene</button>
-            </form>
+        <p class="hide-in-reader-view sidebar menu project-create-scene" th:if="${#lists.isEmpty(viewModel.scenes)}">
+            <a th:href="@{/block/create(projectId=${viewModel.id})}" role="button">Add your first block</a>
         </p>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
@@ -378,12 +375,7 @@
 
             const sceneSections = document.querySelectorAll('.project-script .script-scene');
             sceneSections.forEach(section => {
-                const readerSceneName = section.querySelector('.reader-visible-scene-name');
-                const sceneNameDisplay = section.querySelector('.scene-name-display');
-                const sceneNameSource = readerSceneName || sceneNameDisplay;
-                const sceneName = sceneNameSource ? sceneNameSource.textContent.toLowerCase() : '';
                 const sceneBlocks = section.querySelector('.scene-blocks');
-                const isSceneNameMatch = sceneName.includes(query);
 
                 let visibleBlocksInScene = 0;
 
@@ -391,7 +383,7 @@
                     const rows = sceneBlocks.querySelectorAll('.block-row');
                     rows.forEach(row => {
                         const blockId = row.getAttribute('data-block-id');
-                        const visible = rowMatchesSearch(row, query, isSceneNameMatch);
+                        const visible = rowMatchesSearch(row, query, false);
                         row.style.display = visible ? '' : 'none';
                         if (visible && blockId) {
                             visibleBlocksInScene++;
@@ -399,7 +391,7 @@
                     });
                 }
 
-                const showScene = query === '' || isSceneNameMatch || visibleBlocksInScene > 0;
+                const showScene = query === '' || visibleBlocksInScene > 0;
                 section.style.display = showScene ? '' : 'none';
             });
         }

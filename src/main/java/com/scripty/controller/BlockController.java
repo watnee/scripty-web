@@ -252,30 +252,6 @@ public class BlockController {
         return "block/blockRowWithCreate";
     }
 
-    // Creates a scene-type block at the end of the project.
-    @RequestMapping(value = "/createSceneAndReturn", method = RequestMethod.POST)
-    public String createSceneAndReturn(@RequestParam Integer projectId) {
-        blockService.createSceneBlock(projectId, " ");
-        projectVersionService.autoSaveVersion(projectId);
-        return "redirect:/project/show?id=" + projectId;
-    }
-
-    @RequestMapping(value = "/editSceneNameInline")
-    public String editSceneNameInline(@RequestParam Integer id, Model model) {
-        BlockViewModel vm = blockService.getBlockViewModel(id);
-        model.addAttribute("scene", vm);
-        return "block/editSceneNameInline";
-    }
-
-    @RequestMapping(value = "/editSceneNameInline", method = RequestMethod.POST)
-    public String saveEditSceneNameInline(@RequestParam Integer id, @RequestParam(defaultValue = "") String name, Model model) {
-        Block block = blockService.updateSceneName(id, name);
-        projectVersionService.autoSaveVersionForBlock(block.getId());
-        BlockViewModel vm = blockService.getBlockViewModel(block.getId());
-        model.addAttribute("scene", vm);
-        return "block/showSceneNameInline";
-    }
-
     private java.util.List<Integer> parseBlockIds(String ids) {
         java.util.List<Integer> blockIds = new java.util.ArrayList<>();
         if (ids == null || ids.trim().isEmpty()) {

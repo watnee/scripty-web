@@ -1422,9 +1422,6 @@ h1.scene-header > small a[role="button"] {
     font-size: 0.75em;
 }
 
-.scene-name-wrap input[name="name"],
-#create-scene-row input[type="text"],
-#create-scene-below-form input[type="text"],
 form[action*="/scene/"] input[type="text"],
 form[hx-post*="/scene/"] input[type="text"] {
     width: 100%;
@@ -2585,13 +2582,6 @@ html:not(.safari-reader-view) .project-script-header .project-header-title {
     font-style: italic;
 }
 
-.scene-name-wrap input[name="name"]:focus,
-.scene-name-wrap input[name="name"]:focus-visible {
-    outline: none !important;
-    box-shadow: none !important;
-    border: none !important;
-    border-bottom: 1px solid var(--accent, #475569);
-}
 
 .project-breadcrumb-name-wrap {
     display: inline-block;
@@ -5028,34 +5018,6 @@ main h3 {
     max-width: 100%;
 }
 
-.project-script .scene-header-row {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: subgrid;
-    gap: 0 var(--screenplay-chrome-gap);
-    align-items: start;
-    margin-bottom: 0;
-}
-
-.project-script .scene-header {
-    grid-column: 1 / -1;
-    margin: 0;
-    text-align: center;
-}
-
-.project-script .scene-header-row .scene-header-edit {
-    grid-column: auto;
-    margin: 0;
-    text-align: center;
-}
-
-.project-script .scene-header-edit .scene-name-placeholder {
-    color: #ccc;
-    font-style: italic;
-    text-transform: none;
-    letter-spacing: normal;
-}
-
 .project-script .scene-blocks {
     grid-column: 1 / -1;
     display: grid;
@@ -5135,22 +5097,10 @@ main h3 {
     padding-top: 0;
 }
 
-.project-script .scene-header {
-    margin: 0;
-    font-size: inherit;
-    font-weight: inherit;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-}
-
 .project-script-toolbar {
     margin-bottom: 0.35rem;
     width: 100%;
     max-width: 100%;
-}
-
-.project-script .scene-header-links {
-    margin: 0;
 }
 
 @media (max-width: 640px) {
@@ -5161,18 +5111,6 @@ main h3 {
     .table-blocks-all .block-row:has(.script-character-name) .script-block-text {
         max-width: 100%;
     }
-}
-
-html:not(.safari-reader-view) .project-script h2.scene-header {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
 }
 
 html:not(.safari-reader-view) .block-content .reader-visible-character-name {
@@ -5219,21 +5157,6 @@ html.safari-reader-view .project-script .block-content {
     font-size: inherit;
 }
 
-html.safari-reader-view .project-script .scene-header {
-    font-size: 1.1rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin: 2rem 0 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border, #ddd);
-}
-
-html.safari-reader-view .project-script .script-scene:first-of-type .scene-header {
-    border-top: none;
-    padding-top: 0;
-    margin-top: 0;
-}
 
 html.safari-reader-view .project-script .script-block-text {
     margin: 0 0 1rem;
@@ -5247,19 +5170,6 @@ html.safari-reader-view .project-header-title .reader-visible-project-title {
     font-size: 1.75rem;
     line-height: 1.25;
     margin-bottom: 1rem;
-}
-
-html.safari-reader-view .project-script .reader-visible-scene-name {
-    display: inline;
-}
-
-html.safari-reader-view .project-script h2.scene-header {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip: auto;
-    white-space: normal;
 }
 
 html.safari-reader-view .block-content .block-inline-edit-form,
@@ -5540,19 +5450,16 @@ body.focus-mode .project-script {
 }
 
 @media print {
-    .project-script .scene-header-row,
     .project-script .scene-blocks .block-row {
         grid-template-columns: min(var(--screenplay-action-width, 6in), 100%);
     }
 
-    .project-script .scene-header-row,
     .project-script .scene-blocks,
     .project-script .scene-blocks .block-row {
         grid-column: 1;
         display: block;
     }
 
-    .project-script .scene-header-row .scene-header,
     #table-blocks .block-content,
     .table-blocks-all .block-content {
         width: var(--screenplay-action-width, 6in);

@@ -220,21 +220,12 @@ public class BlockServiceImpl implements BlockService {
         Block block = new Block();
         block.setContent(name);
         block.setType(Block.TYPE_SCENE);
-        block.setSceneDelimiter(true);
         block.setProject(project);
         block.setBookmarked(false);
         block.setPinned(false);
 
         int order = blockRepository.countByProjectId(project.getId()) + 1;
         block.setOrder(order);
-        return blockRepository.save(block);
-    }
-
-    @Override
-    @Transactional
-    public Block updateSceneName(Integer id, String name) {
-        Block block = blockRepository.findById(id).orElse(null);
-        block.setContent(name);
         return blockRepository.save(block);
     }
 

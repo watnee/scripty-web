@@ -23,7 +23,6 @@ public interface BlockService {
     Block saveEditBlockCommandModel(EditBlockCommandModel editBlockCommandModel);
 
     Block createSceneBlock(Integer projectId, String name);
-    Block updateSceneName(Integer id, String name);
 
     Block deleteBlock(Integer id);
     Block moveBlockUp(Integer id);

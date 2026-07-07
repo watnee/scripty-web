@@ -486,7 +486,7 @@
 
         function isInlineTextEdit(el) {
             if (!isEditable(el)) return false;
-            if (!el.closest('.block-content, .scene-name-wrap, .project-breadcrumb-name-wrap')) return false;
+            if (!el.closest('.block-content, .project-breadcrumb-name-wrap')) return false;
             // Empty create-row uses structural undo, not browser text undo
             if (isCreateBlockTextarea(el)) return false;
             return true;
@@ -928,16 +928,6 @@
 
             function getBlockRowCopyText(row) {
                 if (!row) return '';
-
-                if (row.classList.contains('scene-header-row')) {
-                    var sceneName = row.querySelector('.scene-name-display');
-                    if (sceneName && !sceneName.querySelector('.scene-name-placeholder')) {
-                        return sceneName.textContent.trim();
-                    }
-                    var sceneSection = row.closest('.script-scene');
-                    var readerSceneName = sceneSection ? sceneSection.querySelector('.reader-visible-scene-name') : null;
-                    return readerSceneName ? readerSceneName.textContent.trim() : '';
-                }
 
                 var content = row.querySelector('.block-content');
                 if (!content) return '';
@@ -1409,7 +1399,6 @@
 
             function isEditing() {
                 if (document.querySelector('.project-breadcrumb-name-wrap input[name="title"]')) return true;
-                if (document.querySelector('.scene-name-wrap input[name="name"]')) return true;
                 if (document.querySelector('.block-content textarea:focus')) return true;
                 if (document.querySelector('.block-content form')) return true;
                 if (document.querySelector('.htmx-request')) return true;
@@ -1974,10 +1963,7 @@
 
         function autoGrowInput(input) {
             if (!input) return;
-            const isSceneName = input.closest('.scene-name-wrap') || 
-                                input.closest('.project-breadcrumb-name-wrap') ||
-                                input.closest('#create-scene-row') || 
-                                input.closest('#create-scene-below-form');
+            const isSceneName = input.closest('.project-breadcrumb-name-wrap');
             const hasAutoGrowClass = input.classList.contains('auto-grow');
             if (!isSceneName && !hasAutoGrowClass) return;
 

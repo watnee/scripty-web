@@ -28,6 +28,20 @@ public class Block {
     public static final String TYPE_NOTE = "NOTE";
     public static final String TYPE_PAGE_BREAK = "PAGE_BREAK";
 
+    public static final String ALIGN_LEFT = "LEFT";
+    public static final String ALIGN_CENTER = "CENTER";
+    public static final String ALIGN_RIGHT = "RIGHT";
+
+    public static final java.util.Set<String> TEXT_ALIGNS = java.util.Set.of(
+            ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT);
+
+    public static final String STYLE_BOLD = "BOLD";
+    public static final String STYLE_ITALIC = "ITALIC";
+    public static final String STYLE_UNDERLINE = "UNDERLINE";
+
+    public static final java.util.Set<String> TEXT_STYLES = java.util.Set.of(
+            STYLE_BOLD, STYLE_ITALIC, STYLE_UNDERLINE);
+
     public static final java.util.Set<String> ELEMENT_TYPES = java.util.Set.of(
             TYPE_SCENE, TYPE_ACTION, TYPE_DIALOGUE, TYPE_PARENTHETICAL,
             TYPE_TRANSITION, TYPE_LYRICS, TYPE_CENTERED,
@@ -54,6 +68,18 @@ public class Block {
 
     @Column(name = "scene_delimiter", nullable = false)
     private boolean sceneDelimiter = false;
+
+    @Column(name = "text_align")
+    private String textAlign;
+
+    @Column(name = "text_bold", nullable = false)
+    private boolean textBold = false;
+
+    @Column(name = "text_italic", nullable = false)
+    private boolean textItalic = false;
+
+    @Column(name = "text_underline", nullable = false)
+    private boolean textUnderline = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id")
@@ -106,6 +132,38 @@ public class Block {
 
     public void setSceneDelimiter(boolean sceneDelimiter) {
         this.sceneDelimiter = sceneDelimiter;
+    }
+
+    public String getTextAlign() {
+        return textAlign;
+    }
+
+    public void setTextAlign(String textAlign) {
+        this.textAlign = textAlign;
+    }
+
+    public boolean isTextBold() {
+        return textBold;
+    }
+
+    public void setTextBold(boolean textBold) {
+        this.textBold = textBold;
+    }
+
+    public boolean isTextItalic() {
+        return textItalic;
+    }
+
+    public void setTextItalic(boolean textItalic) {
+        this.textItalic = textItalic;
+    }
+
+    public boolean isTextUnderline() {
+        return textUnderline;
+    }
+
+    public void setTextUnderline(boolean textUnderline) {
+        this.textUnderline = textUnderline;
     }
 
     public Person getPerson() {

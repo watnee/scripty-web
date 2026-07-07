@@ -155,6 +155,10 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             b.put("bookmarked", block.isBookmarked());
             b.put("pinned", block.isPinned());
             b.put("tags", block.getTags());
+            b.put("textAlign", block.getTextAlign());
+            b.put("textBold", block.isTextBold());
+            b.put("textItalic", block.isTextItalic());
+            b.put("textUnderline", block.isTextUnderline());
             b.put("personOriginalId", block.getPerson() != null ? block.getPerson().getId() : null);
             blockSnapshots.add(b);
         }
@@ -223,21 +227,22 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
                 restoreBlock(project, (Integer) bs.get("order"), (String) bs.get("content"),
                         (String) bs.get("type"), (Integer) bs.get("personOriginalId"), originalIdToNewPerson,
                         (Boolean) bs.get("bookmarked"), (Boolean) bs.get("pinned"), (String) bs.get("tags"),
-                        (Boolean) bs.get("sceneDelimiter"));
+                        (Boolean) bs.get("sceneDelimiter"), (String) bs.get("textAlign"),
+                        (Boolean) bs.get("textBold"), (Boolean) bs.get("textItalic"), (Boolean) bs.get("textUnderline"));
             }
         } else {
             List<Map<String, Object>> sceneSnapshots = (List<Map<String, Object>>) snapshot.get("scenes");
             if (sceneSnapshots != null) {
                 int order = 1;
                 for (Map<String, Object> ss : sceneSnapshots) {
-                    restoreBlock(project, order++, (String) ss.get("name"), Block.TYPE_SCENE, null, originalIdToNewPerson, false, false, null, true);
+                    restoreBlock(project, order++, (String) ss.get("name"), Block.TYPE_SCENE, null, originalIdToNewPerson, false, false, null, false, null, false, false, false);
                     List<Map<String, Object>> sceneBlocks = (List<Map<String, Object>>) ss.get("blocks");
                     if (sceneBlocks != null) {
                         for (Map<String, Object> bs : sceneBlocks) {
                             restoreBlock(project, order++, (String) bs.get("content"), Block.TYPE_ACTION,
                                     (Integer) bs.get("personOriginalId"), originalIdToNewPerson,
                                     (Boolean) bs.get("bookmarked"), (Boolean) bs.get("pinned"), (String) bs.get("tags"),
-                                    false);
+                                    false, null, false, false, false);
                         }
                     }
                 }
@@ -291,7 +296,8 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
 
     private void restoreBlock(Project project, Integer order, String content, String type,
                               Integer personOriginalId, Map<Integer, Person> originalIdToNewPerson,
-                              Boolean bookmarked, Boolean pinned, String tags, Boolean sceneDelimiter) {
+                              Boolean bookmarked, Boolean pinned, String tags, Boolean sceneDelimiter,
+                              String textAlign, Boolean textBold, Boolean textItalic, Boolean textUnderline) {
         Block block = new Block();
         block.setOrder(order);
         block.setContent(content != null ? content : "");
@@ -299,12 +305,18 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         block.setType(normalizedType);
         boolean delimiter = Boolean.TRUE.equals(sceneDelimiter);
         if (sceneDelimiter == null && Block.TYPE_SCENE.equals(normalizedType)) {
-            delimiter = true;
+            delimiter = false;
         }
         block.setSceneDelimiter(delimiter);
         block.setBookmarked(Boolean.TRUE.equals(bookmarked));
         block.setPinned(Boolean.TRUE.equals(pinned));
         block.setTags(tags);
+        if (textAlign != null && Block.TEXT_ALIGNS.contains(textAlign.toUpperCase())) {
+            block.setTextAlign(textAlign.toUpperCase());
+        }
+        block.setTextBold(Boolean.TRUE.equals(textBold));
+        block.setTextItalic(Boolean.TRUE.equals(textItalic));
+        block.setTextUnderline(Boolean.TRUE.equals(textUnderline));
         block.setProject(project);
         if (personOriginalId != null) {
             Person restoredPerson = originalIdToNewPerson.get(personOriginalId);

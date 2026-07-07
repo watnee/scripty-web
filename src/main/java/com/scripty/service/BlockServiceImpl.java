@@ -114,6 +114,10 @@ public class BlockServiceImpl implements BlockService {
         vm.setScene(block.isScene());
         vm.setType(block.getType());
         vm.setTags(block.getTags());
+        vm.setTextAlign(block.getTextAlign());
+        vm.setTextBold(block.isTextBold());
+        vm.setTextItalic(block.isTextItalic());
+        vm.setTextUnderline(block.isTextUnderline());
         if (block.getPerson() != null) {
             Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
             if (person != null) {
@@ -215,18 +219,19 @@ public class BlockServiceImpl implements BlockService {
 
     @Override
     @Transactional
-    public Block createSceneBlock(Integer projectId, String name) {
+    public Block createInitialBlock(Integer projectId) {
         Project project = projectRepository.findById(projectId).orElse(null);
+        if (project == null || blockRepository.countByProjectId(projectId) > 0) {
+            return null;
+        }
         Block block = new Block();
-        block.setContent(name);
-        block.setType(Block.TYPE_SCENE);
-        block.setSceneDelimiter(true);
+        block.setContent("");
+        block.setType(Block.TYPE_ACTION);
+        block.setSceneDelimiter(false);
         block.setProject(project);
         block.setBookmarked(false);
         block.setPinned(false);
-
-        int order = blockRepository.countByProjectId(project.getId()) + 1;
-        block.setOrder(order);
+        block.setOrder(1);
         return blockRepository.save(block);
     }
 
@@ -466,6 +471,48 @@ public class BlockServiceImpl implements BlockService {
                 }
                 blockRepository.save(block);
             }
+        }
+    }
+
+    @Override
+    @Transactional
+    public void setBlockAlignments(List<Integer> ids, String align) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        String normalized = align != null && Block.TEXT_ALIGNS.contains(align.toUpperCase())
+                ? align.toUpperCase() : Block.ALIGN_LEFT;
+        for (Integer id : ids) {
+            Block block = blockRepository.findById(id).orElse(null);
+            if (block != null && !normalized.equals(block.getTextAlign())) {
+                block.setTextAlign(normalized);
+                blockRepository.save(block);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    public void toggleBlockTextStyles(List<Integer> ids, String style) {
+        if (ids == null || ids.isEmpty() || style == null) {
+            return;
+        }
+        String normalized = style.toUpperCase();
+        if (!Block.TEXT_STYLES.contains(normalized)) {
+            return;
+        }
+        for (Integer id : ids) {
+            Block block = blockRepository.findById(id).orElse(null);
+            if (block == null) {
+                continue;
+            }
+            switch (normalized) {
+                case Block.STYLE_BOLD -> block.setTextBold(!block.isTextBold());
+                case Block.STYLE_ITALIC -> block.setTextItalic(!block.isTextItalic());
+                case Block.STYLE_UNDERLINE -> block.setTextUnderline(!block.isTextUnderline());
+                default -> { continue; }
+            }
+            blockRepository.save(block);
         }
     }
 

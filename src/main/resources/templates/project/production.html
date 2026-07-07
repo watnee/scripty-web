@@ -29,9 +29,9 @@
                     <span class="project-list-last-edited" th:if="${viewModel.lastEdited != null}">
                         Last edited <span th:replace="~{fragments/lastEditedTime :: relativeTime(${viewModel.lastEdited})}"></span>
                     </span>
-                    <span class="production-meta-stat" th:if="${viewModel.scenes != null}">
-                        <span th:text="${#lists.size(viewModel.scenes)}"></span>
-                        <span th:text="${#lists.size(viewModel.scenes) == 1} ? ' scene' : ' scenes'"></span>
+                    <span class="production-meta-stat" th:if="${viewModel.scenes != null and !viewModel.scenes.isEmpty() and viewModel.scenes[0].blocks != null}">
+                        <span th:text="${#lists.size(viewModel.scenes[0].blocks)}"></span>
+                        <span th:text="${#lists.size(viewModel.scenes[0].blocks) == 1} ? ' block' : ' blocks'"></span>
                     </span>
                 </div>
             </div>

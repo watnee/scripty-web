@@ -252,14 +252,6 @@ public class BlockController {
         return "block/blockRowWithCreate";
     }
 
-    // Creates a scene-type block at the end of the project.
-    @RequestMapping(value = "/createSceneAndReturn", method = RequestMethod.POST)
-    public String createSceneAndReturn(@RequestParam Integer projectId) {
-        blockService.createSceneBlock(projectId, " ");
-        projectVersionService.autoSaveVersion(projectId);
-        return "redirect:/project/show?id=" + projectId;
-    }
-
     @RequestMapping(value = "/editSceneNameInline")
     public String editSceneNameInline(@RequestParam Integer id, Model model) {
         BlockViewModel vm = blockService.getBlockViewModel(id);
@@ -330,6 +322,34 @@ public class BlockController {
         java.util.List<Integer> blockIds = parseBlockIds(ids);
         if (!blockIds.isEmpty()) {
             blockService.setBlockTypes(blockIds, type);
+            Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+            if (resolvedProjectId != null) {
+                projectVersionService.autoSaveVersion(resolvedProjectId);
+            }
+        }
+        return redirectAfterBulkAction(projectId, blockIds);
+    }
+
+    @RequestMapping(value = "/bulkSetAlign", method = RequestMethod.POST)
+    public String bulkSetAlign(@RequestParam String ids, @RequestParam String align,
+                               @RequestParam(required = false) Integer projectId) {
+        java.util.List<Integer> blockIds = parseBlockIds(ids);
+        if (!blockIds.isEmpty()) {
+            blockService.setBlockAlignments(blockIds, align);
+            Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+            if (resolvedProjectId != null) {
+                projectVersionService.autoSaveVersion(resolvedProjectId);
+            }
+        }
+        return redirectAfterBulkAction(projectId, blockIds);
+    }
+
+    @RequestMapping(value = "/bulkToggleStyle", method = RequestMethod.POST)
+    public String bulkToggleStyle(@RequestParam String ids, @RequestParam String style,
+                                  @RequestParam(required = false) Integer projectId) {
+        java.util.List<Integer> blockIds = parseBlockIds(ids);
+        if (!blockIds.isEmpty()) {
+            blockService.toggleBlockTextStyles(blockIds, style);
             Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
             if (resolvedProjectId != null) {
                 projectVersionService.autoSaveVersion(resolvedProjectId);

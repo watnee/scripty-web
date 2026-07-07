@@ -5659,6 +5659,61 @@ body.focus-mode .project-script {
     padding: 0.2rem 0.55rem;
 }
 
+.text-align-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding-left: 0.35rem;
+    margin-left: 0.15rem;
+    border-left: 1px solid var(--border, #ddd);
+}
+
+.text-align-actions .bulk-align-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0.2rem 0.35rem;
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
+.text-align-actions .bulk-align-btn svg {
+    display: block;
+}
+
+.text-style-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding-left: 0.35rem;
+    margin-left: 0.15rem;
+    border-left: 1px solid var(--border, #ddd);
+}
+
+.text-style-actions .bulk-style-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.85rem;
+    line-height: 1;
+    min-width: 1.5rem;
+    font-family: inherit;
+}
+
+.text-style-actions .bulk-style-btn strong,
+.text-style-actions .bulk-style-btn em {
+    font-weight: 700;
+    font-style: italic;
+    line-height: 1;
+}
+
+.text-style-actions .bulk-style-btn--underline {
+    text-decoration: underline;
+}
+
 /* Fountain element type formatting */
 .block-content.block-type-scene .script-block-text {
     text-transform: uppercase;
@@ -5764,4 +5819,40 @@ body.focus-mode .project-script {
     margin-left: auto;
     margin-right: auto;
     display: block;
+}
+
+.block-content.block-text-align-left .script-block-text,
+.block-content.block-text-align-left .block-input-textarea,
+.block-content.block-text-align-left textarea {
+    text-align: left !important;
+}
+
+.block-content.block-text-align-center .script-block-text,
+.block-content.block-text-align-center .block-input-textarea,
+.block-content.block-text-align-center textarea {
+    text-align: center !important;
+}
+
+.block-content.block-text-align-right .script-block-text,
+.block-content.block-text-align-right .block-input-textarea,
+.block-content.block-text-align-right textarea {
+    text-align: right !important;
+}
+
+.block-content.block-text-bold .script-block-text,
+.block-content.block-text-bold .block-input-textarea,
+.block-content.block-text-bold textarea {
+    font-weight: bold;
+}
+
+.block-content.block-text-italic .script-block-text,
+.block-content.block-text-italic .block-input-textarea,
+.block-content.block-text-italic textarea {
+    font-style: italic;
+}
+
+.block-content.block-text-underline .script-block-text,
+.block-content.block-text-underline .block-input-textarea,
+.block-content.block-text-underline textarea {
+    text-decoration: underline;
 }

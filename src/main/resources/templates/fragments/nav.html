@@ -1024,6 +1024,44 @@
                     return;
                 }
 
+                var alignBtn = e.target.closest('.bulk-align-btn');
+                if (alignBtn) {
+                    e.preventDefault();
+                    var alignIds = window.scriptyGetSelectedBlockIds();
+                    if (alignIds.length === 0) {
+                        window.scriptyBulkSelectionAlert();
+                        return;
+                    }
+                    runBulkAction({
+                        action: '/block/bulkSetAlign',
+                        fields: {
+                            ids: alignIds.join(','),
+                            align: alignBtn.getAttribute('data-bulk-align'),
+                            projectId: resolveBulkProjectId()
+                        }
+                    });
+                    return;
+                }
+
+                var styleBtn = e.target.closest('.bulk-style-btn');
+                if (styleBtn) {
+                    e.preventDefault();
+                    var styleIds = window.scriptyGetSelectedBlockIds();
+                    if (styleIds.length === 0) {
+                        window.scriptyBulkSelectionAlert();
+                        return;
+                    }
+                    runBulkAction({
+                        action: '/block/bulkToggleStyle',
+                        fields: {
+                            ids: styleIds.join(','),
+                            style: styleBtn.getAttribute('data-bulk-style'),
+                            projectId: resolveBulkProjectId()
+                        }
+                    });
+                    return;
+                }
+
                 if (e.target.closest('#project-bulk-add-tags-btn')) {
                     e.preventDefault();
                     var tagIds = window.scriptyGetSelectedBlockIds();

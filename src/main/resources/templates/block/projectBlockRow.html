@@ -7,7 +7,7 @@
         </div>
     </aside>
     <div class="block-content script-block"
-         th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (not #strings.isEmpty(block.personName) ? ' script-block--dialogue' : ' script-block--action')}"
+         th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (block.textAlign != null ? ' block-text-align-' + #strings.toLowerCase(block.textAlign) : '') + (block.textBold ? ' block-text-bold' : '') + (block.textItalic ? ' block-text-italic' : '') + (block.textUnderline ? ' block-text-underline' : '') + (not #strings.isEmpty(block.personName) ? ' script-block--dialogue' : ' script-block--action')}"
          th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')&amp;&amp;!window.scriptySuppressBlockEditClick&amp;&amp;!window.scriptyBlockEditLocked]" hx-swap="innerHTML">
         <p th:if="${not #strings.isEmpty(block.personName)}" class="script-character-name">
             <strong class="reader-visible-character-name" th:text="${#strings.toUpperCase(block.personName)}"></strong>

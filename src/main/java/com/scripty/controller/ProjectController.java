@@ -433,7 +433,7 @@ public class ProjectController {
         }
 
         Project project = projectService.saveCreateProjectCommandModel(commandModel);
-        blockService.createSceneBlock(project.getId(), " ");
+        blockService.createInitialBlock(project.getId());
 
         return "redirect:/project/show?id=" + project.getId();
     }

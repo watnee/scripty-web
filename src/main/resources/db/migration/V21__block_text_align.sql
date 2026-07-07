@@ -1,0 +1,1 @@
+ALTER TABLE `block` ADD COLUMN `text_align` VARCHAR(10) NULL;

@@ -22,7 +22,7 @@ public interface BlockService {
     Block saveCreateBlockBelowCommandModel(CreateBlockBelowCommandModel createBlockBelowCommandModel);
     Block saveEditBlockCommandModel(EditBlockCommandModel editBlockCommandModel);
 
-    Block createSceneBlock(Integer projectId, String name);
+    Block createInitialBlock(Integer projectId);
     Block updateSceneName(Integer id, String name);
 
     Block deleteBlock(Integer id);
@@ -34,4 +34,6 @@ public interface BlockService {
     void addTagsToBlocks(java.util.List<Integer> ids, String tags);
     void deleteBlocks(java.util.List<Integer> ids);
     void setBlockTypes(java.util.List<Integer> ids, String type);
+    void setBlockAlignments(java.util.List<Integer> ids, String align);
+    void toggleBlockTextStyles(java.util.List<Integer> ids, String style);
 }

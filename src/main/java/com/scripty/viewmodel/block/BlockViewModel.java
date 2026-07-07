@@ -94,4 +94,42 @@ public class BlockViewModel {
     public void setTags(String tags) {
         this.tags = tags;
     }
+
+    private String textAlign;
+
+    public String getTextAlign() {
+        return textAlign;
+    }
+
+    public void setTextAlign(String textAlign) {
+        this.textAlign = textAlign;
+    }
+
+    private boolean textBold;
+    private boolean textItalic;
+    private boolean textUnderline;
+
+    public boolean isTextBold() {
+        return textBold;
+    }
+
+    public void setTextBold(boolean textBold) {
+        this.textBold = textBold;
+    }
+
+    public boolean isTextItalic() {
+        return textItalic;
+    }
+
+    public void setTextItalic(boolean textItalic) {
+        this.textItalic = textItalic;
+    }
+
+    public boolean isTextUnderline() {
+        return textUnderline;
+    }
+
+    public void setTextUnderline(boolean textUnderline) {
+        this.textUnderline = textUnderline;
+    }
 }

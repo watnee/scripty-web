@@ -1,0 +1,18 @@
+<form xmlns:th="http://www.thymeleaf.org"
+      th:if="${block != null and not #strings.isEmpty(block.personName)}"
+      class="script-character-name hide-in-reader-view"
+      th:attr="hx-post=@{/block/editCharacterNameInline}"
+      hx-target="closest .script-character-name"
+      hx-swap="outerHTML"
+      hx-trigger="input delay:500ms from:find input[name='name'], change from:find input[name='name']">
+    <input type="hidden" name="id" th:value="${block.id}" />
+    <input type="text"
+           name="name"
+           maxlength="60"
+           th:value="${block.personName}"
+           class="character-name-input auto-grow"
+           style="font-size: inherit; font-weight: inherit; text-align: center; text-transform: uppercase; min-width: 8em;"
+           spellcheck="true"
+           autofocus
+           _="on keydown[key=='Enter'] halt the event then blur() me on blur if my.value.trim() is '' set my.value to my.defaultValue then trigger change" />
+</form>

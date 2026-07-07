@@ -245,6 +245,29 @@ public class BlockServiceImpl implements BlockService {
 
     @Override
     @Transactional
+    public Block updateCharacterName(Integer id, String name) {
+        Block block = blockRepository.findById(id).orElse(null);
+        if (block == null || block.getProject() == null) {
+            return block;
+        }
+
+        String trimmed = name != null ? name.trim() : "";
+        if (trimmed.isEmpty()) {
+            return block;
+        }
+        if (trimmed.length() > 60) {
+            trimmed = trimmed.substring(0, 60).trim();
+        }
+        if (trimmed.isEmpty()) {
+            return block;
+        }
+
+        block.setPerson(findOrCreatePerson(trimmed, block.getProject()));
+        return blockRepository.save(block);
+    }
+
+    @Override
+    @Transactional
     public Block deleteBlock(Integer id) {
         Block block = blockRepository.findById(id).orElse(null);
         blockRepository.delete(block);

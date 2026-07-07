@@ -1,10 +1,7 @@
-<p xmlns:th="http://www.thymeleaf.org" th:if="${block != null and not #strings.isEmpty(block.personName)}" class="script-character-name">
-    <strong class="reader-visible-character-name" th:text="${#strings.toUpperCase(block.personName)}"></strong>
-    <a th:href="@{/character/show(id=${block.personId})}" class="character-name hide-in-reader-view sidebar menu" th:text="${block.personName}"></a>
-</p>
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{block/showCharacterNameInline :: characterName(${block})}"></th:block>
 <form xmlns:th="http://www.thymeleaf.org" class="hide-in-reader-view block-inline-edit-form" th:attr="hx-post=@{/block/editInline}" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="change from:find select, focusout[target.value.trim()!=''] from:find textarea">
     <input type="hidden" name="id" th:value="${commandModel.id}" />
-    <input type="hidden" name="personId" th:value="${commandModel.personId}" />
+    <input type="hidden" name="personId" th:id="'block-person-id-' + ${commandModel.id}" th:value="${commandModel.personId}" />
     <input type="hidden" name="tags" th:value="${commandModel.tags}" />
     <textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" th:text="${commandModel.content}"></textarea>
     <div th:if="${block != null and not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu">

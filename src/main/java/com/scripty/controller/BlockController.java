@@ -268,6 +268,23 @@ public class BlockController {
         return "block/showSceneNameInline";
     }
 
+    @RequestMapping(value = "/editCharacterNameInline")
+    public String editCharacterNameInline(@RequestParam Integer id, Model model) {
+        BlockViewModel vm = blockService.getBlockViewModel(id);
+        model.addAttribute("block", vm);
+        return "block/editCharacterNameInline";
+    }
+
+    @RequestMapping(value = "/editCharacterNameInline", method = RequestMethod.POST)
+    public String saveEditCharacterNameInline(@RequestParam Integer id, @RequestParam(defaultValue = "") String name, Model model) {
+        Block block = blockService.updateCharacterName(id, name);
+        projectVersionService.autoSaveVersionForBlock(block.getId());
+        BlockViewModel vm = blockService.getBlockViewModel(block.getId());
+        model.addAttribute("block", vm);
+        model.addAttribute("updateInlinePersonInput", true);
+        return "block/showCharacterNameInline";
+    }
+
     private java.util.List<Integer> parseBlockIds(String ids) {
         java.util.List<Integer> blockIds = new java.util.ArrayList<>();
         if (ids == null || ids.trim().isEmpty()) {

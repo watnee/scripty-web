@@ -24,6 +24,7 @@ public interface BlockService {
 
     Block createInitialBlock(Integer projectId);
     Block updateSceneName(Integer id, String name);
+    Block updateCharacterName(Integer id, String name);
 
     Block deleteBlock(Integer id);
     Block moveBlockUp(Integer id);

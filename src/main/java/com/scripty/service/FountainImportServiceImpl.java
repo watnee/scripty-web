@@ -90,9 +90,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             block.setType(parsedBlock.type());
             block.setBookmarked(false);
             block.setPinned(false);
-            if (Block.TYPE_SCENE.equals(parsedBlock.type())) {
-                block.setSceneDelimiter(true);
-            }
+            block.setSceneDelimiter(false);
 
             if (Block.TYPE_DIALOGUE.equals(parsedBlock.type()) && parsedBlock.characterName() != null) {
                 block.setPerson(findOrCreatePerson(project, parsedBlock.characterName(), characterCache));
@@ -251,10 +249,6 @@ public class FountainImportServiceImpl implements FountainImportService {
         }
 
         flushDialogue(blocks, dialogueBuffer, pendingCharacter);
-
-        if (blocks.stream().noneMatch(block -> Block.TYPE_SCENE.equals(block.type()))) {
-            blocks.add(0, new ParsedBlock(Block.TYPE_SCENE, " "));
-        }
 
         return blocks;
     }

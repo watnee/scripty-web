@@ -230,7 +230,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             if (sceneSnapshots != null) {
                 int order = 1;
                 for (Map<String, Object> ss : sceneSnapshots) {
-                    restoreBlock(project, order++, (String) ss.get("name"), Block.TYPE_SCENE, null, originalIdToNewPerson, false, false, null, true);
+                    restoreBlock(project, order++, (String) ss.get("name"), Block.TYPE_SCENE, null, originalIdToNewPerson, false, false, null, false);
                     List<Map<String, Object>> sceneBlocks = (List<Map<String, Object>>) ss.get("blocks");
                     if (sceneBlocks != null) {
                         for (Map<String, Object> bs : sceneBlocks) {
@@ -297,11 +297,8 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         block.setContent(content != null ? content : "");
         String normalizedType = type != null && Block.ELEMENT_TYPES.contains(type) ? type : Block.TYPE_ACTION;
         block.setType(normalizedType);
-        boolean delimiter = Boolean.TRUE.equals(sceneDelimiter);
-        if (sceneDelimiter == null && Block.TYPE_SCENE.equals(normalizedType)) {
-            delimiter = true;
-        }
-        block.setSceneDelimiter(delimiter);
+        // Scene headings are inline elements only; delimiters from old snapshots are not restored.
+        block.setSceneDelimiter(false);
         block.setBookmarked(Boolean.TRUE.equals(bookmarked));
         block.setPinned(Boolean.TRUE.equals(pinned));
         block.setTags(tags);

@@ -252,7 +252,7 @@ public class BlockController {
         return "block/blockRowWithCreate";
     }
 
-    // Creates a scene-type block at the end of the project.
+    // Creates a scene heading element block at the end of the project.
     @RequestMapping(value = "/createSceneAndReturn", method = RequestMethod.POST)
     public String createSceneAndReturn(@RequestParam Integer projectId) {
         blockService.createSceneBlock(projectId, " ");

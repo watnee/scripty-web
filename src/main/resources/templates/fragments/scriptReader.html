@@ -33,10 +33,9 @@
 </th:block>
 
 <th:block th:fragment="scenes(scenes)">
-    <section th:each="scene : ${scenes}">
-        <h2 th:text="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim()) ? 'Untitled Scene' : scene.name}">Scene</h2>
+    <th:block th:each="scene : ${scenes}">
         <th:block th:replace="~{fragments/scriptReader :: blocks(${scene.blocks})}"></th:block>
-    </section>
+    </th:block>
 </th:block>
 
 <footer th:fragment="projectFooter(projectId)" class="script-reader-footer">

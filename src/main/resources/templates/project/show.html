@@ -103,11 +103,11 @@
                 </button>
                 <div class="nav-dropdown-menu project-search-panel">
                     <div class="project-search-wrap">
-                        <label class="visually-hidden" for="project-search">Search scene names, blocks, character names, or tags</label>
+                        <label class="visually-hidden" for="project-search">Search blocks, character names, or tags</label>
                         <input type="search"
                                id="project-search"
                                class="project-search-input"
-                               placeholder="Search scenes, blocks, tags..."
+                               placeholder="Search blocks, tags..."
                                autocomplete="off"
                                enterkeyhint="search" />
                         <button type="button"
@@ -376,31 +376,9 @@
                 searchToggle.classList.toggle('is-active', !!query);
             }
 
-            const sceneSections = document.querySelectorAll('.project-script .script-scene');
-            sceneSections.forEach(section => {
-                const readerSceneName = section.querySelector('.reader-visible-scene-name');
-                const sceneNameDisplay = section.querySelector('.scene-name-display');
-                const sceneNameSource = readerSceneName || sceneNameDisplay;
-                const sceneName = sceneNameSource ? sceneNameSource.textContent.toLowerCase() : '';
-                const sceneBlocks = section.querySelector('.scene-blocks');
-                const isSceneNameMatch = sceneName.includes(query);
-
-                let visibleBlocksInScene = 0;
-
-                if (sceneBlocks) {
-                    const rows = sceneBlocks.querySelectorAll('.block-row');
-                    rows.forEach(row => {
-                        const blockId = row.getAttribute('data-block-id');
-                        const visible = rowMatchesSearch(row, query, isSceneNameMatch);
-                        row.style.display = visible ? '' : 'none';
-                        if (visible && blockId) {
-                            visibleBlocksInScene++;
-                        }
-                    });
-                }
-
-                const showScene = query === '' || isSceneNameMatch || visibleBlocksInScene > 0;
-                section.style.display = showScene ? '' : 'none';
+            document.querySelectorAll('.project-script .scene-blocks .block-row[data-block-id]').forEach(function(row) {
+                const visible = rowMatchesSearch(row, query, false);
+                row.style.display = visible ? '' : 'none';
             });
         }
 

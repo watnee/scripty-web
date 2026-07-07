@@ -236,23 +236,9 @@ public class ProjectServiceImpl implements ProjectService {
         vm.setWriters(project.getWriters());
         vm.setContactInfo(project.getContactInfo());
 
-        List<SceneViewModel> sceneViewModels = new ArrayList<>();
-        SceneViewModel currentScene = null;
+        List<BlockViewModel> blockViewModels = new ArrayList<>();
+        Integer lastBlockId = null;
         for (Block block : blocks) {
-            if (block.isScene() && block.isSceneDelimiter()) {
-                currentScene = new SceneViewModel();
-                currentScene.setId(block.getId());
-                currentScene.setName(block.getContent());
-                currentScene.setLastBlockId(block.getId());
-                currentScene.setBlocks(new ArrayList<>());
-                sceneViewModels.add(currentScene);
-                continue;
-            }
-            if (currentScene == null) {
-                currentScene = new SceneViewModel();
-                currentScene.setBlocks(new ArrayList<>());
-                sceneViewModels.add(currentScene);
-            }
             BlockViewModel bvm = new BlockViewModel();
             bvm.setId(block.getId());
             bvm.setOrder(block.getOrder());
@@ -268,10 +254,13 @@ public class ProjectServiceImpl implements ProjectService {
                     bvm.setPersonName(person.getName());
                 }
             }
-            currentScene.getBlocks().add(bvm);
-            currentScene.setLastBlockId(block.getId());
+            blockViewModels.add(bvm);
+            lastBlockId = block.getId();
         }
-        vm.setScenes(sceneViewModels);
+        SceneViewModel script = new SceneViewModel();
+        script.setBlocks(blockViewModels);
+        script.setLastBlockId(lastBlockId);
+        vm.setScenes(List.of(script));
 
         List<PersonViewModel> personViewModels = new ArrayList<>();
         for (Person person : persons) {

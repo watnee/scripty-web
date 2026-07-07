@@ -203,8 +203,7 @@ h1:hover > small a[role="button"],
     opacity: 1;
 }
 
-#table-scenes tr:last-child .move-up,
-#table-blocks tr:last-child .move-up {
+#table-scenes tr:last-child .move-up {
     margin-left: 22px;
 }
 

@@ -23,8 +23,8 @@
 
 <th:block th:fragment="blocks(blocks)">
     <div th:each="block : ${blocks}"
-         class="script-block"
-         th:classappend="${not #strings.isEmpty(block.personName)} ? ' script-block--dialogue' : ' script-block--action'">
+         class="script-block block-content"
+         th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (block.textAlign != null ? ' block-text-align-' + #strings.toLowerCase(block.textAlign) : '') + (block.textBold ? ' block-text-bold' : '') + (block.textItalic ? ' block-text-italic' : '') + (block.textUnderline ? ' block-text-underline' : '') + (not #strings.isEmpty(block.personName) ? ' script-block--dialogue' : ' script-block--action')}">
         <p th:if="${not #strings.isEmpty(block.personName)}" class="script-character-name">
             <strong th:text="${#strings.toUpperCase(block.personName)}"></strong>
         </p>

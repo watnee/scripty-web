@@ -248,6 +248,9 @@ public class ProjectServiceImpl implements ProjectService {
             bvm.setType(block.getType());
             bvm.setTags(block.getTags());
             bvm.setTextAlign(block.getTextAlign());
+            bvm.setTextBold(block.isTextBold());
+            bvm.setTextItalic(block.isTextItalic());
+            bvm.setTextUnderline(block.isTextUnderline());
             if (block.getPerson() != null) {
                 Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
                 if (person != null) {

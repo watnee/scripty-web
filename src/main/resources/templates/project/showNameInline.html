@@ -3,8 +3,9 @@
         <div class="project-list-title-row">
             <a th:href="@{/project/show(id=${project.id})}" class="project-list-title" th:text="${project.title}"></a>
             <span class="project-list-default-label" th:if="${defaultProjectId != null and project.id == defaultProjectId}">Default</span>
-            <th:block th:each="team : ${project.sortedTeams}"
-                      th:replace="~{fragments/projectListTeam :: link(${team.id}, ${team.name})}"></th:block>
+            <th:block th:each="team : ${project.sortedTeams}">
+                <span th:replace="~{fragments/projectListTeam :: link(${team.id}, ${team.name})}"></span>
+            </th:block>
         </div>
         <span class="project-list-last-edited" th:if="${project.lastEdited != null}" th:title="${#temporals.format(project.lastEdited, 'MMM d, yyyy, h:mm a')}">
             Last edited <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.lastEdited})}"></span>

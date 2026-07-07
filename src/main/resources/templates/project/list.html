@@ -14,6 +14,14 @@
     <div th:replace="~{fragments/nav :: nav('projects')}"></div>
     <main class="project-list-page">
 
+        <header class="project-list-header">
+            <div class="project-list-header-text">
+                <h1>Projects</h1>
+                <p class="muted" th:if="${!#lists.isEmpty(viewModel.projects)}"
+                   th:text="${#lists.size(viewModel.projects)} + (${#lists.size(viewModel.projects) == 1} ? ' project' : ' projects')"></p>
+            </div>
+        </header>
+
         <div class="project-list-toolbar">
             <div class="project-list-search-wrap" id="project-list-search-wrap">
                 <label class="visually-hidden" for="project-list-search">Search projects</label>
@@ -96,9 +104,18 @@
         </div>
 
         <div class="project-list-empty" th:if="${#lists.isEmpty(viewModel.projects)}">
+            <span class="project-list-empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+            </span>
             <p class="project-list-empty-title">No projects yet</p>
             <p class="muted">Create your first screenplay to get started.</p>
-            <a th:href="@{/project/create}" role="button">Create New Project</a>
+            <a th:href="@{/project/create}" role="button" class="project-list-create-btn">
+                <span class="project-list-create-icon" aria-hidden="true">+</span>
+                Create New Project
+            </a>
         </div>
     </main>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>

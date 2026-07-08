@@ -5467,11 +5467,15 @@ main h3 {
 }
 
 .script-block--dialogue .script-block-text,
+.script-block--dialogue .reader-visible-text,
 .project-script .block-row:has(.script-character-name) .script-block-text,
+.project-script .block-row:has(.script-character-name) .reader-visible-text,
 .project-script .block-content:has(.script-character-name) .block-input-textarea,
 #table-blocks tr[data-block-id]:has(.script-character-name) .script-block-text,
+#table-blocks tr[data-block-id]:has(.script-character-name) .reader-visible-text,
 #table-blocks tr[data-block-id]:has(.script-character-name) .block-input-textarea,
 .table-blocks-all .block-row:has(.script-character-name) .script-block-text,
+.table-blocks-all .block-row:has(.script-character-name) .reader-visible-text,
 .table-blocks-all .block-row:has(.script-character-name) .block-input-textarea {
     max-width: min(var(--screenplay-dialogue-width, 3.5in), 100%);
     margin-left: auto;
@@ -6287,13 +6291,13 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     font-style: italic;
 }
 
-.block-content.block-type-parenthetical > .script-block-text::before,
-.block-content.block-type-parenthetical > span::before {
+.block-content.block-type-parenthetical .script-block-text:not(textarea)::before,
+.block-content.block-type-parenthetical .reader-visible-text::before {
     content: "(";
 }
 
-.block-content.block-type-parenthetical > .script-block-text::after,
-.block-content.block-type-parenthetical > span::after {
+.block-content.block-type-parenthetical .script-block-text:not(textarea)::after,
+.block-content.block-type-parenthetical .reader-visible-text::after {
     content: ")";
 }
 
@@ -6316,8 +6320,8 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     color: var(--accent, #475569);
 }
 
-.block-content.block-type-section > .script-block-text::before,
-.block-content.block-type-section > span::before {
+.block-content.block-type-section .script-block-text:not(textarea)::before,
+.block-content.block-type-section .reader-visible-text::before {
     content: "# ";
 }
 
@@ -6326,8 +6330,8 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     color: #999;
 }
 
-.block-content.block-type-synopsis > .script-block-text::before,
-.block-content.block-type-synopsis > span::before {
+.block-content.block-type-synopsis .script-block-text:not(textarea)::before,
+.block-content.block-type-synopsis .reader-visible-text::before {
     content: "= ";
 }
 
@@ -6336,14 +6340,14 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     font-style: italic;
 }
 
-.block-content.block-type-note > .script-block-text::before,
-.block-content.block-type-note > span::before {
+.block-content.block-type-note .script-block-text:not(textarea)::before,
+.block-content.block-type-note .reader-visible-text::before {
     content: "[[ ";
     opacity: 0.5;
 }
 
-.block-content.block-type-note > .script-block-text::after,
-.block-content.block-type-note > span::after {
+.block-content.block-type-note .script-block-text:not(textarea)::after,
+.block-content.block-type-note .reader-visible-text::after {
     content: " ]]";
     opacity: 0.5;
 }
@@ -6357,18 +6361,22 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     border-top: 2px dashed #999;
 }
 
+.block-content.block-type-centered .reader-visible-text,
 .block-content.block-type-centered .block-input-textarea,
 .block-content.block-type-centered textarea,
+.block-content.block-type-page_break .reader-visible-text,
 .block-content.block-type-page_break .block-input-textarea,
 .block-content.block-type-page_break textarea {
     text-align: center;
 }
 
+.block-content.block-type-transition .reader-visible-text,
 .block-content.block-type-transition .block-input-textarea,
 .block-content.block-type-transition textarea {
     text-align: right;
 }
 
+.block-content.block-type-dialogue .reader-visible-text,
 .block-content.block-type-dialogue .block-input-textarea,
 .block-content.block-type-dialogue textarea {
     max-width: min(var(--screenplay-dialogue-width, 3.5in), 100%);
@@ -6378,36 +6386,42 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
 }
 
 .block-content.block-text-align-left .script-block-text,
+.block-content.block-text-align-left .reader-visible-text,
 .block-content.block-text-align-left .block-input-textarea,
 .block-content.block-text-align-left textarea {
     text-align: left !important;
 }
 
 .block-content.block-text-align-center .script-block-text,
+.block-content.block-text-align-center .reader-visible-text,
 .block-content.block-text-align-center .block-input-textarea,
 .block-content.block-text-align-center textarea {
     text-align: center !important;
 }
 
 .block-content.block-text-align-right .script-block-text,
+.block-content.block-text-align-right .reader-visible-text,
 .block-content.block-text-align-right .block-input-textarea,
 .block-content.block-text-align-right textarea {
     text-align: right !important;
 }
 
 .block-content.block-text-bold .script-block-text,
+.block-content.block-text-bold .reader-visible-text,
 .block-content.block-text-bold .block-input-textarea,
 .block-content.block-text-bold textarea {
     font-weight: bold;
 }
 
 .block-content.block-text-italic .script-block-text,
+.block-content.block-text-italic .reader-visible-text,
 .block-content.block-text-italic .block-input-textarea,
 .block-content.block-text-italic textarea {
     font-style: italic;
 }
 
 .block-content.block-text-underline .script-block-text,
+.block-content.block-text-underline .reader-visible-text,
 .block-content.block-text-underline .block-input-textarea,
 .block-content.block-text-underline textarea {
     text-decoration: underline;

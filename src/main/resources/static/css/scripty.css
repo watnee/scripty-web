@@ -5523,34 +5523,83 @@ main h3 {
     position: fixed;
     z-index: 1200;
     display: inline-flex;
-    gap: 0.15rem;
-    padding: 0.2rem;
+    align-items: stretch;
+    gap: 0.1rem;
+    padding: 0.28rem;
     border: 1px solid var(--border, #cbd5e1);
-    border-radius: calc(var(--border-radius, 6px) + 2px);
+    border-radius: calc(var(--border-radius, 6px) + 4px);
     background: var(--box-bg, #fff);
-    box-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.35);
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.06),
+        0 10px 28px rgba(15, 23, 42, 0.14);
+    user-select: none;
+    -webkit-user-select: none;
+    animation: blockSelectionMenuIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.block-selection-menu button {
+@keyframes blockSelectionMenuIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.block-selection-menu-divider {
+    width: 1px;
+    align-self: stretch;
+    margin: 0.12rem 0.08rem;
+    background: var(--border, #cbd5e1);
+    flex-shrink: 0;
+}
+
+.block-selection-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
     border: none;
     background: transparent;
     color: var(--fg, #0f172a);
     font: inherit;
     font-size: 0.82rem;
-    padding: 0.28rem 0.55rem;
-    border-radius: var(--border-radius, 6px);
+    line-height: 1.2;
+    padding: 0.34rem 0.58rem;
+    border-radius: calc(var(--border-radius, 6px) + 1px);
     cursor: pointer;
+    white-space: nowrap;
 }
 
-.block-selection-menu button:hover:not(:disabled),
-.block-selection-menu button:focus-visible:not(:disabled) {
+.block-selection-menu-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.78;
+}
+
+.block-selection-menu-btn:hover,
+.block-selection-menu-btn:focus-visible {
     background: var(--accent-bg, rgba(0, 0, 0, 0.05));
     outline: none;
 }
 
-.block-selection-menu button:disabled {
-    opacity: 0.45;
-    cursor: default;
+.block-selection-menu-btn:focus-visible {
+    box-shadow: 0 0 0 2px var(--accent-bg, rgba(0, 0, 0, 0.08)), 0 0 0 3px var(--accent, #475569);
+}
+
+.block-selection-menu-btn[data-action="delete"]:hover,
+.block-selection-menu-btn[data-action="delete"]:focus-visible {
+    color: #b91c1c;
+    background: rgba(185, 28, 28, 0.08);
+}
+
+:root.-dark-theme .block-selection-menu-btn[data-action="delete"]:hover,
+:root.-dark-theme .block-selection-menu-btn[data-action="delete"]:focus-visible {
+    color: #fca5a5;
+    background: rgba(248, 113, 113, 0.12);
 }
 
 .project-script aside.block-left-controls,

@@ -9,6 +9,7 @@ public class CreateBlockCommandModel {
 
     private Integer personId;
     private Integer projectId;
+    private String type;
 
     public String getContent() {
         return content;
@@ -32,5 +33,13 @@ public class CreateBlockCommandModel {
 
     public void setProjectId(Integer projectId) {
         this.projectId = projectId;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

@@ -234,6 +234,7 @@ public class BlockController {
     public String saveCreateInline(@RequestParam Integer projectId,
                                    @RequestParam(defaultValue = "") String content,
                                    @RequestParam(required = false) Integer personId,
+                                   @RequestParam(required = false) String type,
                                    @RequestParam(required = false) String surface,
                                    HttpServletRequest request,
                                    Model model) {
@@ -249,6 +250,7 @@ public class BlockController {
         commandModel.setProjectId(projectId);
         commandModel.setContent(content);
         commandModel.setPersonId(personId);
+        commandModel.setType(type);
         Block block = blockService.saveCreateBlockCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
 
@@ -316,6 +318,7 @@ public class BlockController {
     public String saveCreateBelowInline(@RequestParam Integer id,
                                         @RequestParam(defaultValue = "") String content,
                                         @RequestParam(required = false) Integer personId,
+                                        @RequestParam(required = false) String type,
                                         @RequestParam(required = false) String surface,
                                         HttpServletRequest request,
                                         Model model) {
@@ -329,6 +332,7 @@ public class BlockController {
         commandModel.setId(id);
         commandModel.setContent(content);
         commandModel.setPersonId(personId);
+        commandModel.setType(type);
         Block block = blockService.saveCreateBlockBelowCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
         BlockViewModel vm = blockService.getBlockViewModel(block.getId());

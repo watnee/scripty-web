@@ -10,6 +10,7 @@ public class CreateBlockBelowCommandModel {
     private String content;
 
     private Integer personId;
+    private String type;
 
     public Integer getId() {
         return id;
@@ -33,5 +34,13 @@ public class CreateBlockBelowCommandModel {
 
     public void setPersonId(Integer personId) {
         this.personId = personId;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

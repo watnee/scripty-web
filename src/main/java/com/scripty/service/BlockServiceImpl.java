@@ -152,6 +152,7 @@ public class BlockServiceImpl implements BlockService {
         block.setProject(project);
         block.setBookmarked(false);
         block.setPinned(false);
+        block.setType(normalizeBlockType(cmd.getType()));
 
         int order = blockRepository.countByProjectId(project.getId()) + 1;
         block.setOrder(order);
@@ -184,6 +185,7 @@ public class BlockServiceImpl implements BlockService {
             if (person != null) {
                 existingBlock.setPerson(person);
             }
+            existingBlock.setType(normalizeBlockType(cmd.getType()));
             return blockRepository.save(existingBlock);
         }
 
@@ -193,6 +195,7 @@ public class BlockServiceImpl implements BlockService {
         block.setProject(project);
         block.setBookmarked(false);
         block.setPinned(false);
+        block.setType(normalizeBlockType(cmd.getType()));
 
         int newOrder = existingBlock.getOrder() + 1;
         blockRepository.incrementOrdersAbove(existingBlock.getOrder(), project.getId());
@@ -413,6 +416,11 @@ public class BlockServiceImpl implements BlockService {
             return i;
         }
         return -1;
+    }
+
+    private String normalizeBlockType(String type) {
+        return type != null && Block.ELEMENT_TYPES.contains(type.toUpperCase())
+                ? type.toUpperCase() : Block.TYPE_ACTION;
     }
 
     private String characterNameFromLine(String line) {

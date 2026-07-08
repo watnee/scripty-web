@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Controller
 @RequestMapping(value = "/block")
@@ -32,6 +33,19 @@ public class BlockController {
 
     private String redirectToProject(Block block) {
         return "redirect:/project/show?id=" + block.getProject().getId();
+    }
+
+    private String resolveProjectSurface(String surface, HttpServletRequest request) {
+        if ("project".equals(surface)) {
+            return "project";
+        }
+        if (request != null) {
+            String referer = request.getHeader("Referer");
+            if (referer != null && referer.contains("/project/show")) {
+                return "project";
+            }
+        }
+        return surface;
     }
 
     @RequestMapping(value = "/delete")
@@ -187,7 +201,9 @@ public class BlockController {
     @RequestMapping(value = "/createInline")
     public String createInline(@RequestParam Integer projectId,
                                @RequestParam(required = false) String surface,
+                               HttpServletRequest request,
                                Model model) {
+        surface = resolveProjectSurface(surface, request);
         CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(projectId);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("projectId", projectId);
@@ -199,17 +215,16 @@ public class BlockController {
 
     @RequestMapping(value = "/createInline", method = RequestMethod.POST)
     public String saveCreateInline(@RequestParam Integer projectId,
-                                   @RequestParam String content,
+                                   @RequestParam(defaultValue = "") String content,
                                    @RequestParam(required = false) Integer personId,
                                    @RequestParam(required = false) String surface,
+                                   HttpServletRequest request,
                                    Model model) {
-        if (content == null || content.trim().isEmpty()) {
+        surface = resolveProjectSurface(surface, request);
+        if (!"project".equals(surface) && (content == null || content.trim().isEmpty())) {
             CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(projectId);
             model.addAttribute("viewModel", viewModel);
             model.addAttribute("projectId", projectId);
-            if ("project".equals(surface)) {
-                return "block/projectCreateInline";
-            }
             return "block/create";
         }
 
@@ -268,7 +283,9 @@ public class BlockController {
     @RequestMapping(value = "/createBelowInline")
     public String createBelowInline(@RequestParam Integer id,
                                     @RequestParam(required = false) String surface,
+                                    HttpServletRequest request,
                                     Model model) {
+        surface = resolveProjectSurface(surface, request);
         CreateBlockBelowViewModel viewModel = blockService.getCreateBlockBelowViewModel(id);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("blockId", id);
@@ -280,13 +297,15 @@ public class BlockController {
 
     @RequestMapping(value = "/createBelowInline", method = RequestMethod.POST)
     public String saveCreateBelowInline(@RequestParam Integer id,
-                                        @RequestParam String content,
+                                        @RequestParam(defaultValue = "") String content,
                                         @RequestParam(required = false) Integer personId,
                                         @RequestParam(required = false) String surface,
+                                        HttpServletRequest request,
                                         Model model) {
-        if ("project".equals(surface) && (content == null || content.trim().isEmpty())) {
+        surface = resolveProjectSurface(surface, request);
+        if (!"project".equals(surface) && (content == null || content.trim().isEmpty())) {
             model.addAttribute("blockId", id);
-            return "block/projectCreateBelowInline";
+            return "block/createBelowInline";
         }
 
         CreateBlockBelowCommandModel commandModel = new CreateBlockBelowCommandModel();

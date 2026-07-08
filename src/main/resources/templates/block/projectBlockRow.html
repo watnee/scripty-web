@@ -1,4 +1,8 @@
-<div xmlns:th="http://www.thymeleaf.org" th:fragment="blockRow (block, projectId, canMoveUp, canMoveDown)" class="block-row" th:attr="data-block-id=${block.id},data-block-order=${block.order},data-tags=${block.tags},data-bookmarked=${block.bookmarked},data-pinned=${block.pinned}">
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="blockRow (block, projectId, canMoveUp, canMoveDown)" class="block-row" th:attr="data-block-id=${block.id},data-block-order=${block.order},data-block-type=${block.type},data-tags=${block.tags},data-bookmarked=${block.bookmarked},data-pinned=${block.pinned}">
+    <span class="block-element-label hide-in-reader-view sidebar menu"
+          th:text="${block.typeLabel}"
+          th:attr="data-block-type=${block.type}"
+          title="Fountain element type"></span>
     <aside class="block-left-controls hide-in-reader-view sidebar menu">
         <div class="block-left-controls-inner">
             <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" />

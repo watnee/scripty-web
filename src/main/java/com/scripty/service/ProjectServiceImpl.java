@@ -223,8 +223,12 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public ProjectProfileViewModel getProjectProfileViewModel(Integer id) {
-        ProjectProfileViewModel vm = new ProjectProfileViewModel();
         Project project = projectRepository.findWithTeamsById(id).orElse(null);
+        if (project == null) {
+            return null;
+        }
+
+        ProjectProfileViewModel vm = new ProjectProfileViewModel();
         List<Block> blocks = blockRepository.findByProjectIdOrderByOrderAsc(project.getId());
         List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(project.getId());
 

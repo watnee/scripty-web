@@ -1668,6 +1668,29 @@ tr[data-block-id]:focus-within .block-tags-list {
     cursor: pointer;
 }
 
+.project-script .block-select-checkbox {
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    border: 1.5px solid #374151;
+    border-radius: 0.2rem;
+    background-color: var(--box-bg, #ffffff);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% 100%;
+}
+
+.project-script .block-select-checkbox:checked {
+    background-color: var(--accent, #145591);
+    border-color: var(--accent, #145591);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M12.207 4.793a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0l-2.5-2.5a1 1 0 0 1 1.414-1.414L6.5 9.086l4.293-4.293a1 1 0 0 1 1.414 0z'/%3E%3C/svg%3E");
+}
+
+.project-script .block-select-checkbox:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent, #145591) 35%, transparent);
+    outline-offset: 1px;
+}
+
 .tag-filter-bar {
     display: flex;
     align-items: center;
@@ -2235,9 +2258,33 @@ html.scripty-hide-block-select .table-blocks-all aside.block-actions {
     pointer-events: none;
 }
 
-.block-row:not([data-block-id]):not(.project-script-select-row) .block-select-checkbox-placeholder,
+html.scripty-hide-block-element-labels .block-element-label {
+    display: none !important;
+}
+
+.project-script .block-element-label {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    align-self: start;
+    width: 4rem;
+    margin-left: -4.35rem;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: var(--block-text-line-box, calc(12pt * 1.5));
+    text-align: right;
+    color: var(--muted-fg, #64748b);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    user-select: none;
+}
+
 tr:not([data-block-id]) .block-select-checkbox {
     pointer-events: none;
+    cursor: default;
 }
 
 html.scripty-block-edit-locked .project-script .block-content {
@@ -2252,6 +2299,7 @@ html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/bl
 .text-size-control .bookmark-filter-toggle.is-active,
 .text-size-control .pin-filter-toggle.is-active,
 .text-size-control .select-filter-toggle.is-active,
+.text-size-control .element-label-filter-toggle.is-active,
 .text-size-control .lock-filter-toggle.is-active {
     color: var(--accent, #475569);
     border-color: var(--accent, #475569);
@@ -2260,6 +2308,7 @@ html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/bl
 .text-size-control .bookmark-filter-toggle,
 .text-size-control .pin-filter-toggle,
 .text-size-control .select-filter-toggle,
+.text-size-control .element-label-filter-toggle,
 .text-size-control .lock-filter-toggle,
 .text-size-control .spellcheck-toggle-btn {
     font-size: 1rem;
@@ -4501,7 +4550,8 @@ kbd {
         margin-bottom: 0.5rem !important;
     }
 
-    .block-left-controls-inner {
+    #table-blocks tr .block-left-controls-inner,
+    .table-blocks-all tr .block-left-controls-inner {
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
@@ -4520,14 +4570,16 @@ kbd {
     }
 
     /* Checkbox layout alignment */
-    .block-select-checkbox {
+    #table-blocks tr .block-select-checkbox,
+    .table-blocks-all tr .block-select-checkbox {
         width: 1.35rem !important;
         height: 1.35rem !important;
         margin: 0 !important;
     }
 
     /* Touch-friendly + Create Below Button */
-    a.create-below[role="button"] {
+    #table-blocks tr a.create-below[role="button"],
+    .table-blocks-all tr a.create-below[role="button"] {
         width: 2rem !important;
         height: 2rem !important;
         min-width: 2rem !important;
@@ -5502,6 +5554,7 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
 
 .text-size-control .bookmark-filter-toggle svg,
 .text-size-control .pin-filter-toggle svg,
+.text-size-control .element-label-filter-toggle svg,
 .text-size-control .lock-filter-toggle svg,
 .text-size-control .spellcheck-toggle-btn svg,
 .text-size-control .version-history-toolbar-btn svg,
@@ -5623,11 +5676,22 @@ body.focus-mode .project-script {
 }
 
 .project-script aside.block-left-controls {
+    grid-column: 1;
+    grid-row: 1;
     justify-self: end;
     min-width: calc(var(--block-select-col-checkbox) + var(--block-select-col-plus) + var(--block-select-col-drag) + 2 * var(--block-select-col-gap));
 }
 
+.project-script .block-content {
+    grid-column: 2;
+    grid-row: 1;
+    cursor: pointer;
+    min-width: 0;
+}
+
 .project-script aside.block-actions {
+    grid-column: 3;
+    grid-row: 1;
     justify-self: start;
     min-width: calc(4 * 1.15rem + 3 * 0.1rem);
 }
@@ -5645,11 +5709,37 @@ body.focus-mode .project-script {
 }
 
 .project-script aside.block-left-controls .block-left-controls-inner {
-    display: inline-grid;
+    display: inline-grid !important;
     grid-template-columns: var(--block-select-col-checkbox) var(--block-select-col-plus) var(--block-select-col-drag);
     align-items: center;
     gap: var(--block-select-col-gap);
     min-height: var(--block-text-line-box);
+}
+
+.project-script .block-left-controls-inner > .block-select-checkbox,
+.project-script .block-left-controls-inner > .block-select-all-label {
+    grid-column: 1;
+    grid-row: 1;
+    position: relative;
+    z-index: 2;
+}
+
+.project-script .block-left-controls-inner > .block-select-menu-dropdown,
+.project-script .block-left-controls-inner > a.create-below {
+    grid-column: 2;
+    grid-row: 1;
+    position: relative;
+    z-index: 1;
+    justify-self: center;
+}
+
+.project-script .block-left-controls-inner > .drag-handle,
+.project-script .block-left-controls-inner > .block-select-all-slot {
+    grid-column: 3;
+    grid-row: 1;
+    position: relative;
+    z-index: 1;
+    justify-self: center;
 }
 
 .project-script-select-row {
@@ -5661,6 +5751,8 @@ body.focus-mode .project-script {
 }
 
 .project-script-select-row .project-script-select-spacer {
+    grid-column: 2;
+    grid-row: 1;
     min-height: var(--block-text-line-box);
     pointer-events: none;
 }
@@ -5668,11 +5760,6 @@ body.focus-mode .project-script {
 .project-script .block-row:hover a[role="button"]:not(.create-below),
 .project-script .block-row a[role="button"]:focus:not(.create-below) {
     opacity: 1;
-}
-
-.project-script .block-content {
-    cursor: pointer;
-    min-width: 0;
 }
 
 html.scripty-hide-block-select:not(.scripty-block-edit-locked) .project-script .block-content,

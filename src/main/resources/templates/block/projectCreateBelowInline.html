@@ -1,14 +1,18 @@
-<div xmlns:th="http://www.thymeleaf.org" class="block-row">
+<div xmlns:th="http://www.thymeleaf.org" class="block-row" data-block-type="ACTION">
+    <span class="block-element-label hide-in-reader-view sidebar menu"
+          data-block-type="ACTION"
+          title="Fountain element type">Action</span>
     <aside class="block-left-controls hide-in-reader-view sidebar menu">
         <div class="block-left-controls-inner">
-            <input type="checkbox" class="block-select-checkbox block-select-checkbox-placeholder" disabled tabindex="-1" aria-hidden="true" />
+            <input type="checkbox" class="block-select-checkbox" title="Selection available after saving block" aria-label="Selection available after saving block" />
             <a th:attr="hx-get=@{/block/createBelowInline(id=${blockId},surface='project')}" hx-target="closest .block-row" hx-swap="afterend" hx-boost="false" role="button" class="create-below" title="Add block below" aria-label="Add block below">+</a>
             <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">&#8942;&#8942;</span>
         </div>
     </aside>
-    <div class="block-content script-block">
+    <div class="block-content script-block block-type-action script-block--action">
         <form th:attr="hx-post=@{/block/createBelowInline(surface='project')}" hx-target="closest .block-row" hx-swap="outerHTML" hx-trigger="keydown[key=='Enter'&amp;&amp;!event.shiftKey] from:find textarea, createNext">
             <input type="hidden" name="id" th:value="${blockId}" />
+            <input type="hidden" name="surface" value="project" />
             <textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();event.stopPropagation();if(window.scriptyCreateBlockFromCreateRow){window.scriptyCreateBlockFromCreateRow(this);}return false;}"></textarea>
         </form>
     </div>

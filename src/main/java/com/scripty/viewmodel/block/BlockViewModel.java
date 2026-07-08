@@ -1,5 +1,7 @@
 package com.scripty.viewmodel.block;
 
+import com.scripty.dto.Block;
+
 public class BlockViewModel {
 
     private int id;
@@ -83,6 +85,10 @@ public class BlockViewModel {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getTypeLabel() {
+        return Block.typeLabelFor(type);
     }
 
     private String tags;

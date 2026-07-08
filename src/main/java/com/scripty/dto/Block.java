@@ -47,6 +47,26 @@ public class Block {
             TYPE_TRANSITION, TYPE_LYRICS, TYPE_CENTERED,
             TYPE_SECTION, TYPE_SYNOPSIS, TYPE_NOTE, TYPE_PAGE_BREAK);
 
+    public static String typeLabelFor(String type) {
+        if (type == null) {
+            return "Action";
+        }
+        return switch (type) {
+            case TYPE_SCENE -> "Scene";
+            case TYPE_ACTION -> "Action";
+            case TYPE_DIALOGUE -> "Dialogue";
+            case TYPE_PARENTHETICAL -> "(Paren)";
+            case TYPE_TRANSITION -> "Transition";
+            case TYPE_LYRICS -> "Lyrics";
+            case TYPE_CENTERED -> "Centered";
+            case TYPE_SECTION -> "Section";
+            case TYPE_SYNOPSIS -> "Synopsis";
+            case TYPE_NOTE -> "Note";
+            case TYPE_PAGE_BREAK -> "Page Break";
+            default -> type;
+        };
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

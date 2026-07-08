@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" class="scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" class="scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select scripty-hide-block-element-labels">
 <head>
     <script th:inline="javascript">
     (function() {
@@ -8,15 +8,18 @@
         var showBookmarks = localStorage.getItem('scripty-show-block-bookmarks-project-' + projectId);
         var showPins = localStorage.getItem('scripty-show-block-pins-project-' + projectId);
         var showSelect = localStorage.getItem('scripty-show-block-select-project-' + projectId);
+        var showElementLabels = localStorage.getItem('scripty-show-block-element-labels-project-' + projectId);
         var blockEditLocked = localStorage.getItem('scripty-block-edit-locked-project-' + projectId) === 'true';
         showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
         showPins = showPins === null ? false : showPins !== 'false';
         showSelect = showSelect === null ? false : showSelect !== 'false';
+        showElementLabels = showElementLabels === null ? false : showElementLabels !== 'false';
         window.scriptyBlockEditLocked = blockEditLocked;
         var root = document.documentElement;
         root.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);
         root.classList.toggle('scripty-hide-block-pins', !showPins);
         root.classList.toggle('scripty-hide-block-select', !showSelect);
+        root.classList.toggle('scripty-hide-block-element-labels', !showElementLabels);
         root.classList.toggle('scripty-block-edit-locked', blockEditLocked);
         var toolbarHidden = localStorage.getItem('scripty-toolbar-hidden') === 'true';
         root.classList.toggle('scripty-toolbar-hidden', toolbarHidden);
@@ -84,6 +87,14 @@
                     aria-label="Show block controls"
                     title="Show block controls">
                 <span th:replace="~{fragments/selectIcon :: toolbarIcon}"></span>
+            </button>
+            <button id="nav-element-labels-toggle"
+                    type="button"
+                    class="nav-dropdown-toggle element-label-filter-toggle is-active"
+                    aria-pressed="true"
+                    aria-label="Show element labels in blocks"
+                    title="Show element labels in blocks">
+                <span th:replace="~{fragments/elementLabelIcon :: toolbarIcon}"></span>
             </button>
             <button id="nav-lock-toggle"
                     type="button"

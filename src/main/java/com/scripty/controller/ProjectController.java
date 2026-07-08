@@ -105,6 +105,9 @@ public class ProjectController {
         }
 
         ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+        if (viewModel == null) {
+            return "redirect:/project/list";
+        }
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("syncRevision", projectRevision(viewModel.getLastEdited()));
@@ -134,7 +137,11 @@ public class ProjectController {
 
     @RequestMapping(value = "/showScript")
     public String showScript(@RequestParam Integer id, Model model) {
-        model.addAttribute("viewModel", projectService.getProjectProfileViewModel(id));
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+        if (viewModel == null) {
+            return "redirect:/project/list";
+        }
+        model.addAttribute("viewModel", viewModel);
         return "project/showScript";
     }
 
@@ -359,6 +366,9 @@ public class ProjectController {
     public String titlePage(@RequestParam Integer id, Model model) {
         TitlePageCommandModel commandModel = projectService.getTitlePageCommandModel(id);
         ProjectProfileViewModel projectViewModel = projectService.getProjectProfileViewModel(id);
+        if (commandModel == null || projectViewModel == null) {
+            return "redirect:/project/list";
+        }
 
         model.addAttribute("project", projectViewModel);
         model.addAttribute("commandModel", commandModel);
@@ -370,6 +380,9 @@ public class ProjectController {
     public String saveTitlePage(@Valid @ModelAttribute("commandModel") TitlePageCommandModel commandModel, BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
             ProjectProfileViewModel projectViewModel = projectService.getProjectProfileViewModel(commandModel.getId());
+            if (projectViewModel == null) {
+                return "redirect:/project/list";
+            }
             model.addAttribute("project", projectViewModel);
             model.addAttribute("commandModel", commandModel);
             return "project/titlePage";

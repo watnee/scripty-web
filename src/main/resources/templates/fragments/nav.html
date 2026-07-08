@@ -200,7 +200,13 @@
         document.addEventListener('keydown', function(e) {
             if (e.key !== 'Enter' || e.shiftKey || e.repeat) return;
             const textarea = e.target;
-            if (!isBlockContentTextarea(textarea) || isCreateBlockTextarea(textarea)) return;
+            if (!isBlockContentTextarea(textarea)) return;
+            if (isCreateBlockTextarea(textarea)) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                submitCreateRowFromEnter(textarea);
+                return;
+            }
             const form = textarea.closest('form[hx-post*="/block/editInline"]');
             if (!form) return;
             e.preventDefault();
@@ -460,16 +466,29 @@
             }).then(function(html) {
                 const template = document.createElement('template');
                 template.innerHTML = html.trim();
-                const newRow = template.content.firstElementChild;
-                if (!newRow || !row.parentNode) return;
-                row.insertAdjacentElement('afterend', newRow);
-                if (typeof htmx !== 'undefined') {
-                    htmx.process(newRow);
-                }
-                if (newRow.hasAttribute('data-block-id')) {
-                    editSavedBlockRow(newRow);
+                const newRows = Array.from(template.content.children);
+                if (newRows.length === 0 || !row.parentNode) return;
+                let insertAfter = row;
+                newRows.forEach(function(newRow) {
+                    insertAfter.insertAdjacentElement('afterend', newRow);
+                    insertAfter = newRow;
+                    if (typeof htmx !== 'undefined') {
+                        htmx.process(newRow);
+                    }
+                });
+                dedupeTrailingCreateRows(row.parentNode);
+                const createRow = newRows.find(function(newRow) {
+                    return !newRow.hasAttribute('data-block-id') && newRow.querySelector('textarea[name="content"]');
+                });
+                if (createRow) {
+                    focusBlockContentEnd(createRow);
                 } else {
-                    focusBlockContentEnd(newRow);
+                    const savedRow = newRows.find(function(newRow) {
+                        return newRow.hasAttribute('data-block-id');
+                    });
+                    if (savedRow) {
+                        editSavedBlockRow(savedRow);
+                    }
                 }
             }).catch(function() {
                 /* keep current edit if create fails */
@@ -485,8 +504,29 @@
             row.dataset.enterCreatingBelow = 'true';
             const textarea = form.querySelector('textarea[name="content"]');
             if (textarea && textarea.value.trim() === '') {
-                createEmptyBlockBelow(row);
-                delete row.dataset.enterCreatingBelow;
+                const blockContent = form.closest('.block-content');
+                if (!blockContent) {
+                    delete row.dataset.enterCreatingBelow;
+                    return;
+                }
+                fetch('/block/showInline?id=' + encodeURIComponent(row.getAttribute('data-block-id')), {
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                }).then(function(response) {
+                    return response.text();
+                }).then(function(html) {
+                    if (blockContent.isConnected) {
+                        blockContent.innerHTML = html;
+                        if (typeof htmx !== 'undefined') {
+                            htmx.process(blockContent);
+                        }
+                    }
+                }).catch(function() {
+                    /* keep edit form if revert fails */
+                }).finally(function() {
+                    createEmptyBlockBelow(row);
+                    delete row.dataset.enterCreatingBelow;
+                });
                 return;
             }
             closeBlockEdit(form, function() {
@@ -495,20 +535,33 @@
             });
         }
 
+        function buildCreateFormPostBody(form) {
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
+            if (document.querySelector('.project-script') && !params.has('surface')) {
+                params.set('surface', 'project');
+            }
+            return params;
+        }
+
+        function ensureProjectCreateUrl(url) {
+            if (!url || !document.querySelector('.project-script')) return url;
+            if (url.indexOf('surface=') !== -1) return url;
+            return url + (url.indexOf('?') === -1 ? '?' : '&') + 'surface=project';
+        }
+
         function submitCreateRowFromEnter(textarea) {
             if (!isBlockContentTextarea(textarea) || !isCreateBlockTextarea(textarea)) return;
             const form = textarea.closest('form');
             const row = findAnyBlockRow(textarea);
             if (!form || !row || row.dataset.enterCreatingBelow === 'true') return;
-            if (textarea.value.trim() === '') return;
             row.dataset.enterCreatingBelow = 'true';
-            const formData = new FormData(form);
-            const url = form.getAttribute('hx-post') || '/block/createBelowInline';
+            const url = ensureProjectCreateUrl(form.getAttribute('hx-post') || '/block/createBelowInline');
             fetch(url, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 credentials: 'same-origin',
-                body: new URLSearchParams(formData).toString()
+                body: buildCreateFormPostBody(form).toString()
             }).then(function(response) {
                 return response.text();
             }).then(function(html) {
@@ -522,6 +575,7 @@
                         htmx.process(newRow);
                     });
                 }
+                dedupeTrailingCreateRows(row.parentNode);
                 const savedRow = newRows.find(function(newRow) {
                     return newRow.hasAttribute('data-block-id');
                 });
@@ -564,6 +618,19 @@
             return true;
         }
 
+        function dedupeTrailingCreateRows(container) {
+            if (!container) return;
+            const rowSelector = container.matches('tbody') ? 'tr' : '.block-row';
+            const createRows = Array.from(container.querySelectorAll(rowSelector)).filter(function(row) {
+                return !row.hasAttribute('data-block-id') &&
+                    !row.classList.contains('project-script-select-row');
+            });
+            if (createRows.length <= 1) return;
+            createRows.slice(0, -1).forEach(function(row) {
+                row.remove();
+            });
+        }
+
         function initBlockEmptyBackspace() {
             if (window.scriptyInstallBlockEmptyGuard) {
                 window.scriptyInstallBlockEmptyGuard();
@@ -573,6 +640,20 @@
         function initBlockEditGuards() {
             if (window._scriptyBlockEditGuardsInit) return;
             window._scriptyBlockEditGuardsInit = true;
+
+            document.body.addEventListener('htmx:configRequest', function(e) {
+                if (!document.querySelector('.project-script')) return;
+                const path = e.detail.path || '';
+                if (path.indexOf('/block/createInline') === -1 &&
+                    path.indexOf('/block/createBelowInline') === -1) {
+                    return;
+                }
+                e.detail.parameters = e.detail.parameters || {};
+                e.detail.parameters.surface = 'project';
+                if (path.indexOf('surface=') === -1) {
+                    e.detail.path = ensureProjectCreateUrl(path);
+                }
+            });
 
             document.body.addEventListener('htmx:beforeRequest', function(e) {
                 const path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
@@ -924,24 +1005,29 @@
             var bookmarksToggle = document.getElementById('nav-bookmarks-toggle');
             var pinsToggle = document.getElementById('nav-pins-toggle');
             var selectToggle = document.getElementById('nav-select-toggle');
+            var elementLabelsToggle = document.getElementById('nav-element-labels-toggle');
             var lockToggle = document.getElementById('nav-lock-toggle');
             var bookmarksKey = 'scripty-show-block-bookmarks-project-' + projectId;
             var pinsKey = 'scripty-show-block-pins-project-' + projectId;
             var selectKey = 'scripty-show-block-select-project-' + projectId;
+            var elementLabelsKey = 'scripty-show-block-element-labels-project-' + projectId;
             var blockEditLockedKey = 'scripty-block-edit-locked-project-' + projectId;
             var showBookmarks = localStorage.getItem(bookmarksKey);
             var showPins = localStorage.getItem(pinsKey);
             var showSelect = localStorage.getItem(selectKey);
+            var showElementLabels = localStorage.getItem(elementLabelsKey);
             var blockEditLocked = localStorage.getItem(blockEditLockedKey) === 'true';
 
             showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
             showPins = showPins === null ? false : showPins !== 'false';
             showSelect = showSelect === null ? false : showSelect !== 'false';
+            showElementLabels = showElementLabels === null ? false : showElementLabels !== 'false';
 
             function applyMarkerVisibility() {
                 document.documentElement.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);
                 document.documentElement.classList.toggle('scripty-hide-block-pins', !showPins);
                 document.documentElement.classList.toggle('scripty-hide-block-select', !showSelect);
+                document.documentElement.classList.toggle('scripty-hide-block-element-labels', !showElementLabels);
             }
 
             function applyBlockEditLock() {
@@ -1005,6 +1091,14 @@
                 selectToggle.classList.toggle('is-active', !showSelect);
                 selectToggle.title = showSelect ? 'Hide block controls' : 'Show block controls';
                 selectToggle.setAttribute('aria-label', selectToggle.title);
+            }
+
+            function syncElementLabelsToggleUi() {
+                if (!elementLabelsToggle) return;
+                elementLabelsToggle.setAttribute('aria-pressed', showElementLabels ? 'false' : 'true');
+                elementLabelsToggle.classList.toggle('is-active', !showElementLabels);
+                elementLabelsToggle.title = showElementLabels ? 'Hide element labels in blocks' : 'Show element labels in blocks';
+                elementLabelsToggle.setAttribute('aria-label', elementLabelsToggle.title);
             }
 
             function syncLockToggleUi() {
@@ -1096,6 +1190,17 @@
                 });
             }
 
+            if (elementLabelsToggle && !elementLabelsToggle.dataset.markerToggleInit) {
+                elementLabelsToggle.dataset.markerToggleInit = 'true';
+                syncElementLabelsToggleUi();
+                elementLabelsToggle.addEventListener('click', function() {
+                    showElementLabels = !showElementLabels;
+                    localStorage.setItem(elementLabelsKey, showElementLabels ? 'true' : 'false');
+                    syncElementLabelsToggleUi();
+                    applyMarkerVisibility();
+                });
+            }
+
             if (lockToggle && !lockToggle.dataset.markerToggleInit) {
                 lockToggle.dataset.markerToggleInit = 'true';
                 syncLockToggleUi();
@@ -1120,6 +1225,7 @@
             syncBookmarkToggleUi();
             syncPinToggleUi();
             syncSelectToggleUi();
+            syncElementLabelsToggleUi();
             syncLockToggleUi();
             applyMarkerVisibility();
             applyBlockEditLock();
@@ -1224,7 +1330,32 @@
                 } else {
                     blockContent.classList.add('script-block--action');
                 }
+                var row = blockContent.closest('.block-row');
+                if (!row) return;
+                row.setAttribute('data-block-type', type);
+                var label = row.querySelector('.block-element-label');
+                if (label) {
+                    label.setAttribute('data-block-type', type);
+                    label.textContent = window.scriptyBlockTypeLabel ? window.scriptyBlockTypeLabel(type) : type;
+                }
             }
+
+            window.scriptyBlockTypeLabel = function(type) {
+                var labels = {
+                    SCENE: 'Scene',
+                    ACTION: 'Action',
+                    DIALOGUE: 'Dialogue',
+                    PARENTHETICAL: '(Paren)',
+                    TRANSITION: 'Transition',
+                    LYRICS: 'Lyrics',
+                    CENTERED: 'Centered',
+                    SECTION: 'Section',
+                    SYNOPSIS: 'Synopsis',
+                    NOTE: 'Note',
+                    PAGE_BREAK: 'Page Break'
+                };
+                return labels[type] || type;
+            };
 
             var pendingTypeChangeContent = null;
 
@@ -1547,6 +1678,9 @@
 
         window.scriptyInitProjectPageScripts = function() {
             if (!document.querySelector('.project-script')) return;
+            document.querySelectorAll('.project-script .scene-blocks').forEach(function(container) {
+                dedupeTrailingCreateRows(container);
+            });
             if (window.scriptyInitProjectBulkActions) {
                 window.scriptyInitProjectBulkActions();
             }

@@ -5653,7 +5653,12 @@ body.focus-mode .project-script {
     margin-top: 0;
 }
 
-.element-type-actions {
+.project-toolbar-main .text-format-actions {
+    margin-top: 0.35rem;
+}
+
+.element-type-actions,
+.text-format-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
@@ -5671,9 +5676,6 @@ body.focus-mode .project-script {
     display: inline-flex;
     align-items: center;
     gap: 0.15rem;
-    padding-left: 0.35rem;
-    margin-left: 0.15rem;
-    border-left: 1px solid var(--border, #ddd);
 }
 
 .text-align-actions .bulk-align-btn {

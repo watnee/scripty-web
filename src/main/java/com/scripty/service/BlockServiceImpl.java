@@ -219,6 +219,33 @@ public class BlockServiceImpl implements BlockService {
 
     @Override
     @Transactional
+    public Block updateBlockTypeAndContent(Integer id, String type, String content, Integer personId, String tags) {
+        Block block = blockRepository.findById(id).orElse(null);
+        if (block == null) {
+            return null;
+        }
+
+        String normalized = type != null && Block.ELEMENT_TYPES.contains(type.toUpperCase())
+                ? type.toUpperCase() : Block.TYPE_ACTION;
+        block.setType(normalized);
+        block.setContent(content != null ? content : "");
+        if (tags != null) {
+            block.setTags(tags);
+        }
+
+        if (Block.TYPE_SCENE.equals(normalized)) {
+            block.setPerson(null);
+            block.setSceneDelimiter(false);
+        } else {
+            Person person = personId != null ? personRepository.findById(personId).orElse(null) : null;
+            block.setPerson(person);
+        }
+
+        return blockRepository.save(block);
+    }
+
+    @Override
+    @Transactional
     public Block createInitialBlock(Integer projectId) {
         Project project = projectRepository.findById(projectId).orElse(null);
         if (project == null || blockRepository.countByProjectId(projectId) > 0) {

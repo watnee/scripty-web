@@ -5,6 +5,8 @@
  */
 package com.scripty.controller;
 
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -17,7 +19,12 @@ import org.springframework.web.bind.annotation.RequestMethod;
 public class LoginController {
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
-    public String login() {
+    public String login(Authentication authentication) {
+        if (authentication != null &&
+                authentication.isAuthenticated() &&
+                !(authentication instanceof AnonymousAuthenticationToken)) {
+            return "redirect:/";
+        }
         return "login";
     }
 }

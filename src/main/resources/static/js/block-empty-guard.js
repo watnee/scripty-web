@@ -1,7 +1,7 @@
 /**
  * Backspace/Delete in an empty block textarea deletes the block (saved blocks
- * via /block/deleteInline, unsaved create rows are just removed) and moves
- * focus to the previous block. Also prevents blank content from being saved
+ * via /block/deleteInline, unsaved create rows are just removed) and keeps
+ * focus in a neighboring block. Also prevents blank content from being saved
  * and Backspace from triggering browser back-navigation.
  * Loaded on the screenplay page with a cache-busted asset version.
  */
@@ -44,10 +44,16 @@
         var isUp = direction === 'moveUp';
         var sibling = isUp ? row.previousElementSibling : row.nextElementSibling;
         while (sibling) {
-            if (sibling.hasAttribute('data-block-id')) return sibling;
+            if (sibling.classList.contains('block-row') || sibling.hasAttribute('data-block-id')) return sibling;
             sibling = isUp ? sibling.previousElementSibling : sibling.nextElementSibling;
         }
         return null;
+    }
+
+    function findFocusTargetRow(row, key) {
+        var primaryDirection = key === 'Delete' ? 'moveDown' : 'moveUp';
+        var fallbackDirection = primaryDirection === 'moveDown' ? 'moveUp' : 'moveDown';
+        return findAdjacentBlockRow(row, primaryDirection) || findAdjacentBlockRow(row, fallbackDirection);
     }
 
     function focusBlockContentEnd(row) {
@@ -61,7 +67,27 @@
             existingTa.setSelectionRange(len, len);
             return;
         }
-        blockContent.click();
+        if (!row.hasAttribute('data-block-id')) return;
+        var blockId = row.getAttribute('data-block-id');
+        fetch('/block/editInline?id=' + encodeURIComponent(blockId), {
+            credentials: 'same-origin',
+            cache: 'no-store'
+        }).then(function(response) {
+            return response.text();
+        }).then(function(html) {
+            if (!blockContent.isConnected) return;
+            blockContent.innerHTML = html;
+            if (typeof htmx !== 'undefined') {
+                htmx.process(blockContent);
+            }
+            var ta = blockContent.querySelector('textarea[name="content"]');
+            if (!ta) return;
+            ta.focus({ preventScroll: true });
+            var len = ta.value.length;
+            ta.setSelectionRange(len, len);
+        }).catch(function() {
+            blockContent.click();
+        });
     }
 
     function removeEmptyCreateRow(row) {
@@ -105,14 +131,14 @@
         });
     }
 
-    function onEmptyBlockDeleteKey(ta) {
+    function onEmptyBlockDeleteKey(ta, key) {
         var row = findAnyBlockRow(ta);
         if (!row) return;
-        var prevRow = findAdjacentBlockRow(row, 'moveUp');
+        var focusTarget = findFocusTargetRow(row, key);
 
         if (!row.hasAttribute('data-block-id')) {
             if (removeEmptyCreateRow(row)) {
-                focusBlockContentEnd(prevRow);
+                focusBlockContentEnd(focusTarget);
             }
             return;
         }
@@ -125,7 +151,7 @@
         }).then(function(response) {
             if (!response.ok) throw new Error('delete failed');
             row.remove();
-            focusBlockContentEnd(prevRow);
+            focusBlockContentEnd(focusTarget);
         }).catch(function() {
             delete row.dataset.deleting;
             ta.focus({ preventScroll: true });
@@ -143,7 +169,7 @@
 
             e.preventDefault();
             e.stopImmediatePropagation();
-            onEmptyBlockDeleteKey(ta);
+            onEmptyBlockDeleteKey(ta, e.key);
         }, true);
 
         document.addEventListener('beforeinput', function(e) {
@@ -163,9 +189,9 @@
 
             e.preventDefault();
             var row = findAnyBlockRow(ta);
-            var prevRow = row ? findAdjacentBlockRow(row, 'moveUp') : null;
+            var focusTarget = findFocusTargetRow(row, 'Backspace');
             if (removeEmptyCreateRow(row)) {
-                focusBlockContentEnd(prevRow);
+                focusBlockContentEnd(focusTarget);
             }
         });
 

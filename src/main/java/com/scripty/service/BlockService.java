@@ -21,6 +21,7 @@ public interface BlockService {
     Block saveCreateBlockCommandModel(CreateBlockCommandModel createBlockCommandModel);
     Block saveCreateBlockBelowCommandModel(CreateBlockBelowCommandModel createBlockBelowCommandModel);
     Block saveEditBlockCommandModel(EditBlockCommandModel editBlockCommandModel);
+    Block updateBlockTypeAndContent(Integer id, String type, String content, Integer personId, String tags);
 
     Block createInitialBlock(Integer projectId);
     Block updateSceneName(Integer id, String name);

@@ -13,7 +13,7 @@ spring:
   thymeleaf:
     cache: false
   datasource:
-    url: jdbc:h2:file:./db/scripty;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;AUTO_SERVER=TRUE
+    url: jdbc:h2:file:./db/scripty;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -40,7 +40,7 @@ ADMIN_USERNAME: admin
 ADMIN_PASSWORD: admin
 
 app:
-  asset-version: 80
+  asset-version: 82
   service-worker-enabled: false
   uploads-dir: ./uploads
   headshot-max-bytes: 5242880

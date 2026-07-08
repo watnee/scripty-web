@@ -4,7 +4,7 @@
             <th:block th:each="block, blockStat : ${scene.blocks}">
                 <div th:replace="~{block/projectBlockRow :: blockRow(block=${block}, projectId=${viewModel.id}, canMoveUp=${!blockStat.first}, canMoveDown=${!blockStat.last})}"></div>
             </th:block>
-            <div th:if="${scene.lastBlockId != null}" class="hide-in-reader-view sidebar menu" th:attr="hx-get=@{/block/createBelowInline(id=${scene.lastBlockId},surface='project')}" hx-trigger="load" hx-swap="outerHTML"></div>
+            <div th:if="${scene.lastBlockId != null and !#lists.isEmpty(scene.blocks) and !#strings.isEmpty(scene.blocks[scene.blocks.size() - 1].content)}" class="hide-in-reader-view sidebar menu" th:attr="hx-get=@{/block/createBelowInline(id=${scene.lastBlockId},surface='project')}" hx-trigger="load" hx-swap="outerHTML"></div>
         </div>
     </section>
 </div>

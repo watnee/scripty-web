@@ -106,6 +106,7 @@
     (function() {
         let lastFocusedEditable = null;
         let hoveredRow = null;
+        let lastActiveBlockRow = null;
         if (typeof window.scriptyBlockEditLocked === 'undefined') {
             window.scriptyBlockEditLocked = false;
         }
@@ -162,16 +163,49 @@
             updateAllSpellcheckElements();
         });
 
+        function rememberActiveBlockRow(row) {
+            if (row && row.hasAttribute('data-block-id')) {
+                lastActiveBlockRow = row;
+            }
+        }
+
         // Track last focused input/textarea
         document.addEventListener('focusin', function(e) {
             if (e.target.tagName === 'TEXTAREA' || (e.target.tagName === 'INPUT' && (e.target.type === 'text' || e.target.type === 'textarea'))) {
                 lastFocusedEditable = e.target;
+                rememberActiveBlockRow(findBlockRow(e.target));
             }
         });
 
         // Track hovered block row
         document.addEventListener('mouseover', function(e) {
             hoveredRow = findBlockRow(e.target);
+            rememberActiveBlockRow(hoveredRow);
+        });
+
+        document.addEventListener('click', function(e) {
+            rememberActiveBlockRow(findBlockRow(e.target));
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('a, button, input, textarea, select')) return;
+            const createBlockContent = e.target.closest('.project-script .block-row:not([data-block-id]) .block-content');
+            if (!createBlockContent) return;
+            const textarea = createBlockContent.querySelector('textarea[name="content"]');
+            if (textarea) {
+                textarea.focus({ preventScroll: true });
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter' || e.shiftKey || e.repeat) return;
+            const textarea = e.target;
+            if (!isBlockContentTextarea(textarea) || isCreateBlockTextarea(textarea)) return;
+            const form = textarea.closest('form[hx-post*="/block/editInline"]');
+            if (!form) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            saveBlockThenOpenCreateBelow(form);
         });
 
         // Move blocks up/down keyboard shortcut
@@ -351,6 +385,172 @@
                 requestAnimationFrame(focusBlockTextareaFromClick);
             });
         }
+
+        function editSavedBlockRow(row) {
+            if (!row || !row.hasAttribute('data-block-id')) return;
+            const blockContent = row.querySelector('.block-content');
+            const blockId = row.getAttribute('data-block-id');
+            if (!blockContent || !blockId) return;
+            fetch('/block/editInline?id=' + encodeURIComponent(blockId), {
+                credentials: 'same-origin',
+                cache: 'no-store'
+            }).then(function(response) {
+                return response.text();
+            }).then(function(html) {
+                if (!blockContent.isConnected) return;
+                blockContent.innerHTML = html;
+                if (typeof htmx !== 'undefined') {
+                    htmx.process(blockContent);
+                }
+                focusBlockContentEnd(row);
+            }).catch(function() {
+                focusBlockContentEnd(row);
+            });
+        }
+
+        function openCreateBelowRow(row) {
+            if (!row || !row.hasAttribute('data-block-id')) return;
+            if (row.dataset.openingCreateBelow === 'true') return;
+            const nextRow = row.nextElementSibling;
+            if (nextRow && nextRow.classList.contains('block-row') && !nextRow.hasAttribute('data-block-id')) {
+                focusBlockContentEnd(nextRow);
+                return;
+            }
+            row.dataset.openingCreateBelow = 'true';
+            const blockId = row.getAttribute('data-block-id');
+            fetch('/block/createBelowInline?id=' + encodeURIComponent(blockId) + '&surface=project', {
+                credentials: 'same-origin',
+                cache: 'no-store'
+            }).then(function(response) {
+                return response.text();
+            }).then(function(html) {
+                const template = document.createElement('template');
+                template.innerHTML = html.trim();
+                const createRow = template.content.firstElementChild;
+                if (!createRow || !row.parentNode) return;
+                row.insertAdjacentElement('afterend', createRow);
+                if (typeof htmx !== 'undefined') {
+                    htmx.process(createRow);
+                }
+                focusBlockContentEnd(createRow);
+            }).catch(function() {
+                /* keep current edit if create-row load fails */
+            }).finally(function() {
+                delete row.dataset.openingCreateBelow;
+            });
+        }
+
+        function createEmptyBlockBelow(row) {
+            if (!row || !row.hasAttribute('data-block-id')) return;
+            if (row.dataset.openingCreateBelow === 'true') return;
+            row.dataset.openingCreateBelow = 'true';
+            const blockId = row.getAttribute('data-block-id');
+            const body = new URLSearchParams({
+                id: blockId,
+                content: '',
+                surface: 'project'
+            });
+            fetch('/block/createBelowInline', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                credentials: 'same-origin',
+                body: body.toString()
+            }).then(function(response) {
+                return response.text();
+            }).then(function(html) {
+                const template = document.createElement('template');
+                template.innerHTML = html.trim();
+                const newRow = template.content.firstElementChild;
+                if (!newRow || !row.parentNode) return;
+                row.insertAdjacentElement('afterend', newRow);
+                if (typeof htmx !== 'undefined') {
+                    htmx.process(newRow);
+                }
+                if (newRow.hasAttribute('data-block-id')) {
+                    editSavedBlockRow(newRow);
+                } else {
+                    focusBlockContentEnd(newRow);
+                }
+            }).catch(function() {
+                /* keep current edit if create fails */
+            }).finally(function() {
+                delete row.dataset.openingCreateBelow;
+            });
+        }
+
+        function saveBlockThenOpenCreateBelow(form) {
+            const row = form ? form.closest('[data-block-id]') : null;
+            if (!row) return;
+            if (row.dataset.enterCreatingBelow === 'true') return;
+            row.dataset.enterCreatingBelow = 'true';
+            const textarea = form.querySelector('textarea[name="content"]');
+            if (textarea && textarea.value.trim() === '') {
+                createEmptyBlockBelow(row);
+                delete row.dataset.enterCreatingBelow;
+                return;
+            }
+            closeBlockEdit(form, function() {
+                openCreateBelowRow(row);
+                delete row.dataset.enterCreatingBelow;
+            });
+        }
+
+        function submitCreateRowFromEnter(textarea) {
+            if (!isBlockContentTextarea(textarea) || !isCreateBlockTextarea(textarea)) return;
+            const form = textarea.closest('form');
+            const row = findAnyBlockRow(textarea);
+            if (!form || !row || row.dataset.enterCreatingBelow === 'true') return;
+            row.dataset.enterCreatingBelow = 'true';
+            const formData = new FormData(form);
+            const url = form.getAttribute('hx-post') || '/block/createBelowInline';
+            fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                credentials: 'same-origin',
+                body: new URLSearchParams(formData).toString()
+            }).then(function(response) {
+                return response.text();
+            }).then(function(html) {
+                const template = document.createElement('template');
+                template.innerHTML = html.trim();
+                const newRows = Array.from(template.content.children);
+                if (newRows.length === 0 || !row.parentNode) return;
+                row.replaceWith.apply(row, newRows);
+                if (typeof htmx !== 'undefined') {
+                    newRows.forEach(function(newRow) {
+                        htmx.process(newRow);
+                    });
+                }
+                const savedRow = newRows.find(function(newRow) {
+                    return newRow.hasAttribute('data-block-id');
+                });
+                const createRow = newRows.find(function(newRow) {
+                    return !newRow.hasAttribute('data-block-id') && newRow.querySelector('textarea[name="content"]');
+                });
+                if (createRow) {
+                    focusBlockContentEnd(createRow);
+                } else if (savedRow) {
+                    editSavedBlockRow(savedRow);
+                } else {
+                    focusBlockContentEnd(newRows[0]);
+                }
+            }).catch(function() {
+                focusBlockContentEnd(row);
+            }).finally(function() {
+                delete row.dataset.enterCreatingBelow;
+            });
+        }
+
+        window.scriptyCreateBlockFromSavedEdit = function(textarea) {
+            if (!isBlockContentTextarea(textarea) || isCreateBlockTextarea(textarea)) return;
+            const form = textarea.closest('form[hx-post*="/block/editInline"]');
+            if (!form) return;
+            saveBlockThenOpenCreateBelow(form);
+        };
+
+        window.scriptyCreateBlockFromCreateRow = function(textarea) {
+            submitCreateRowFromEnter(textarea);
+        };
 
         function removeEmptyCreateRow(row) {
             if (!row || row.hasAttribute('data-block-id')) return false;
@@ -541,6 +741,29 @@
             if (!el) return null;
             return el.closest('tr[data-block-id], .block-row[data-block-id]');
         }
+
+        function getBlockRowId(row) {
+            if (!row || !row.isConnected || row.classList.contains('filtered-out') || row.style.display === 'none') {
+                return null;
+            }
+            const id = row.getAttribute('data-block-id');
+            return id && /^\d+$/.test(id) ? id : null;
+        }
+
+        window.scriptyGetActiveBlockId = function(triggerEl) {
+            const candidates = [
+                findBlockRow(document.activeElement),
+                lastFocusedEditable ? findBlockRow(lastFocusedEditable) : null,
+                lastActiveBlockRow,
+                hoveredRow,
+                findBlockRow(triggerEl)
+            ];
+            for (let i = 0; i < candidates.length; i++) {
+                const id = getBlockRowId(candidates[i]);
+                if (id) return id;
+            }
+            return null;
+        };
 
         function findAnyBlockRow(el) {
             if (!el) return null;
@@ -921,9 +1144,39 @@
             }
 
             function runBulkAction(fieldsByAction) {
-                flushOpenBlockEdits(function() {
-                    submitBulkPostForm(fieldsByAction.action, fieldsByAction.fields);
+                runWhenHtmxIdle(function() {
+                    flushOpenBlockEdits(function() {
+                        runWhenHtmxIdle(function() {
+                            submitBulkPostForm(fieldsByAction.action, fieldsByAction.fields);
+                        });
+                    });
                 });
+            }
+
+            function findOpenEditFormForBlock(blockId) {
+                if (!blockId) return null;
+                var row = document.querySelector(
+                    '.block-row[data-block-id="' + blockId + '"], tr[data-block-id="' + blockId + '"]'
+                );
+                return row ? row.querySelector('.block-content form[hx-post*="/block/editInline"]') : null;
+            }
+
+            function runSingleBlockTypeAction(blockId, type, form) {
+                var fields = {
+                    id: blockId,
+                    type: type,
+                    projectId: resolveBulkProjectId()
+                };
+                if (form) {
+                    var formData = new FormData(form);
+                    fields.content = formData.get('content') || '';
+                    var personId = formData.get('personId');
+                    if (personId) {
+                        fields.personId = personId;
+                    }
+                    fields.tags = formData.get('tags') || '';
+                }
+                submitBulkPostForm('/block/setTypeAndContent', fields);
             }
 
             function getBlockRowCopyText(row) {
@@ -1010,14 +1263,29 @@
                     e.preventDefault();
                     var typeIds = window.scriptyGetSelectedBlockIds();
                     if (typeIds.length === 0) {
-                        window.scriptyBulkSelectionAlert();
-                        return;
+                        var activeBlockId = window.scriptyGetActiveBlockId
+                            ? window.scriptyGetActiveBlockId(typeBtn)
+                            : null;
+                        if (!activeBlockId) {
+                            window.scriptyBulkSelectionAlert();
+                            return;
+                        }
+                        typeIds = [activeBlockId];
+                    }
+                    sessionStorage.setItem('activeBlockId', typeIds[0]);
+                    var type = typeBtn.getAttribute('data-bulk-type');
+                    if (typeIds.length === 1) {
+                        var editForm = findOpenEditFormForBlock(typeIds[0]);
+                        if (editForm) {
+                            runSingleBlockTypeAction(typeIds[0], type, editForm);
+                            return;
+                        }
                     }
                     runBulkAction({
                         action: '/block/bulkSetType',
                         fields: {
                             ids: typeIds.join(','),
-                            type: typeBtn.getAttribute('data-bulk-type'),
+                            type: type,
                             projectId: resolveBulkProjectId()
                         }
                     });
@@ -1126,6 +1394,12 @@
                             projectId: resolveBulkProjectId()
                         }
                     });
+                }
+            });
+
+            document.body.addEventListener('mousedown', function(e) {
+                if (e.target.closest('.bulk-type-btn')) {
+                    e.preventDefault();
                 }
             });
         };

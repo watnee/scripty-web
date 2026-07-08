@@ -247,6 +247,11 @@ public class BlockController {
         model.addAttribute("blockId", block.getId());
         model.addAttribute("projectId", block.getProject().getId());
         if ("project".equals(surface)) {
+            if (content == null || content.trim().isEmpty()) {
+                model.addAttribute("canMoveUp", true);
+                model.addAttribute("canMoveDown", false);
+                return "block/projectBlockRow";
+            }
             return "block/projectBlockRowWithCreate";
         }
         return "block/blockRowWithCreate";
@@ -345,6 +350,20 @@ public class BlockController {
             }
         }
         return redirectAfterBulkAction(projectId, blockIds);
+    }
+
+    @RequestMapping(value = "/setTypeAndContent", method = RequestMethod.POST)
+    public String setTypeAndContent(@RequestParam Integer id,
+                                    @RequestParam String type,
+                                    @RequestParam(defaultValue = "") String content,
+                                    @RequestParam(required = false) Integer personId,
+                                    @RequestParam(required = false) String tags,
+                                    @RequestParam(required = false) Integer projectId) {
+        Block block = blockService.updateBlockTypeAndContent(id, type, content, personId, tags);
+        if (block != null) {
+            projectVersionService.autoSaveVersionForBlock(block.getId());
+        }
+        return redirectAfterBulkAction(projectId, java.util.List.of(id));
     }
 
     @RequestMapping(value = "/bulkSetAlign", method = RequestMethod.POST)

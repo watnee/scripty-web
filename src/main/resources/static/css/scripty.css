@@ -2171,6 +2171,10 @@ html.scripty-hide-block-select .scene-bulk-select {
     grid-template-columns: var(--block-select-col-plus) var(--block-select-col-drag);
 }
 
+html.scripty-hide-block-select .block-left-controls-inner > .block-select-all-slot {
+    display: none;
+}
+
 .block-row:not([data-block-id]) .block-select-checkbox,
 tr:not([data-block-id]) .block-select-checkbox {
     display: none !important;
@@ -5565,12 +5569,6 @@ body.focus-mode .project-script {
     align-self: start;
 }
 
-/* Script blocks carry a 1em top margin; shift side controls to line up with the first text line */
-.project-script aside.block-left-controls:has(+ .block-content.script-block),
-.project-script .block-content.script-block + aside.block-actions {
-    margin-top: calc(1em - 2px);
-}
-
 .project-script aside.block-left-controls {
     justify-self: end;
 }
@@ -5605,6 +5603,21 @@ body.focus-mode .project-script {
 .project-script .block-content {
     cursor: pointer;
     min-width: 0;
+}
+
+.project-script .block-content.script-block {
+    min-height: 1.5em;
+}
+
+.project-script .block-row:not([data-block-id]) .block-content form,
+.project-script .block-row:not([data-block-id]) .block-content textarea[name="content"] {
+    min-height: 1.5em;
+}
+
+/* Script blocks carry a 1em top margin; shift side controls to line up with the first text line. */
+.project-script aside.block-left-controls:has(+ .block-content.script-block),
+.project-script .block-content.script-block + aside.block-actions {
+    margin-top: calc(1em - 2px);
 }
 
 .project-script .block-row.dragging {

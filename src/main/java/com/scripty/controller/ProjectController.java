@@ -122,7 +122,14 @@ public class ProjectController {
     public Map<String, Object> syncStatus(@RequestParam Integer id, @RequestParam(required = false) Long since) {
         Project project = projectService.read(id);
         Map<String, Object> body = new HashMap<>();
+        if (project == null) {
+            body.put("exists", false);
+            body.put("revision", since != null ? since : 0L);
+            body.put("changed", false);
+            return body;
+        }
         long revision = projectRevision(project.getLastEdited());
+        body.put("exists", true);
         body.put("revision", revision);
         body.put("title", project.getTitle());
         body.put("changed", since == null || since < revision);

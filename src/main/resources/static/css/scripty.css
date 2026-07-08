@@ -6279,3 +6279,41 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
 .block-content.block-text-underline textarea {
     text-decoration: underline;
 }
+
+.scripty-offline-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    padding: 0.55rem 1rem;
+    background: #5c3d00;
+    color: #fff4d6;
+    font-size: 0.875rem;
+    text-align: center;
+    border-bottom: 1px solid #8a5a00;
+}
+
+html.scripty-offline body.has-toolbar-brand {
+    padding-top: calc(var(--toolbar-height, 3rem) + 2rem);
+}
+
+html.scripty-offline .scripty-offline-banner {
+    display: block;
+}
+
+.scripty-offline [hx-post],
+.scripty-offline [hx-put],
+.scripty-offline [hx-delete],
+.scripty-offline [hx-patch],
+.scripty-offline .block-drag-handle,
+.scripty-offline .bulk-style-btn,
+.scripty-offline .project-toolbar-bulk-actions,
+.scripty-offline .hide-in-reader-view.sidebar.menu [hx-get] {
+    pointer-events: none;
+    opacity: 0.55;
+}
+
+.scripty-offline .project-script .block-content:not(.block-content-readonly) {
+    cursor: default;
+}

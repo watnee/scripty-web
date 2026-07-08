@@ -1,16 +1,63 @@
-const CACHE_NAME = 'scripty-cache-v12';
+const CACHE_NAME = 'scripty-cache-v13';
 const ASSETS_TO_CACHE = [
   '/offline.html',
+  '/css/missing.min.css',
   '/css/scripty.css',
+  '/js/htmx.min.js',
   '/js/_hyperscript.min.js',
   '/js/text-size.js',
+  '/js/block-empty-guard.js',
+  '/js/focus-mode.js',
+  '/js/toolbar-toggle.js',
+  '/js/import-script.js',
+  '/js/offline-store.js',
+  '/js/offline.js',
   '/favicon.ico',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  '/manifest.json',
-  'https://unpkg.com/missing.css@1.1.3/dist/missing.min.css',
-  'https://unpkg.com/htmx.org@2.0.4'
+  '/manifest.json'
 ];
+
+function isCacheableAppRequest(url, request) {
+  if (request.method !== 'GET') {
+    return false;
+  }
+  if (url.pathname.startsWith('/h2-console') || url.pathname.startsWith('/api/')) {
+    return false;
+  }
+  return request.mode === 'navigate'
+    || url.pathname === '/'
+    || url.pathname === '/project/show'
+    || url.pathname === '/project/list'
+    || url.pathname === '/project/showScript'
+    || url.pathname === '/project/read'
+    || url.pathname.startsWith('/scene/read')
+    || url.pathname === '/help'
+    || url.pathname === '/shortcuts';
+}
+
+async function networkFirstWithCache(request) {
+  try {
+    const response = await fetch(request);
+    if (response && response.status === 200) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (err) {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    if (request.mode === 'navigate') {
+      const offlinePage = await caches.match('/offline.html');
+      if (offlinePage) {
+        return offlinePage;
+      }
+    }
+    throw err;
+  }
+}
 
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
@@ -48,11 +95,8 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  if (url.pathname.startsWith('/h2-console') || url.pathname.startsWith('/api/')) {
-    return;
-  }
-
-  if (url.pathname === '/scene/all' || url.pathname === '/scene/read' || url.pathname === '/project/read' || url.pathname === '/project/show') {
+  if (isCacheableAppRequest(url, event.request)) {
+    event.respondWith(networkFirstWithCache(event.request));
     return;
   }
 
@@ -65,25 +109,10 @@ self.addEventListener('fetch', (event) => {
     url.pathname === '/manifest.json' ||
     url.pathname === '/offline.html';
 
-  if (!isStaticAsset && event.request.mode !== 'navigate') {
-    return;
-  }
-
-  // HTML pages: always fetch fresh from network; only use cache when offline.
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => response)
-        .catch(() => caches.match(event.request).then((cachedResponse) => cachedResponse || caches.match('/offline.html')))
-    );
-    return;
-  }
-
   if (!isStaticAsset) {
     return;
   }
 
-  // CSS/JS: network-first so updates apply immediately when online.
   if (url.pathname.startsWith('/css/') || url.pathname.startsWith('/js/')) {
     event.respondWith(
       fetch(event.request)

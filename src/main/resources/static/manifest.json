@@ -1,7 +1,7 @@
 {
   "name": "Scripty",
   "short_name": "Scripty",
-  "description": "A screenwriting and scene-builder web application.",
+  "description": "A screenwriting and scene-builder web application. Works offline for recently visited projects.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#111111",

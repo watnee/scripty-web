@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <header th:fragment="nav(currentPage)" class="sidebar menu">
+    <div id="scripty-offline-banner" class="scripty-offline-banner" hidden role="status" aria-live="polite">
+        You're offline — viewing cached content. Edits won't sync until you're back online.
+    </div>
     <meta name="app-asset-version" th:content="${assetVersion}">
     <script>
         (function() {
@@ -2587,6 +2590,9 @@
                     container.outerHTML = html;
                     reinitScriptBody();
                     window.scrollTo(0, scrollY);
+                    if (window.scriptySaveProjectSnapshot) {
+                        window.scriptySaveProjectSnapshot();
+                    }
                 }).catch(function() {
                 }).finally(function() {
                     refreshInProgress = false;
@@ -2594,6 +2600,7 @@
             }
 
             function bumpRevisionFromServer() {
+                if (window.scriptyIsOffline && window.scriptyIsOffline()) return;
                 fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=0', {
                     credentials: 'same-origin',
                     cache: 'no-store'
@@ -2609,6 +2616,7 @@
             }
 
             function poll() {
+                if (window.scriptyIsOffline && window.scriptyIsOffline()) return;
                 if (document.hidden || isEditing() || refreshInProgress) return;
                 fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=' + encodeURIComponent(revision), {
                     credentials: 'same-origin',
@@ -3383,7 +3391,7 @@
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
             const serviceWorkerEnabled = /*[[${serviceWorkerEnabled}]]*/ true;
-            const SW_MIGRATION_KEY = 'sw-migration-v12';
+            const SW_MIGRATION_KEY = 'sw-migration-v13';
 
             async function clearServiceWorkerState() {
                 if ('caches' in window) {
@@ -3440,6 +3448,8 @@
         }
     })();
     </script>
+    <script th:src="@{/js/offline-store.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/offline.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/block-empty-guard.js(v=${assetVersion})}"></script>
 </header>
 </html>

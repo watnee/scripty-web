@@ -6,7 +6,7 @@
     <link rel="manifest" th:href="@{/manifest.json}">
     <meta charset="UTF-8">
     <title>Scripty - Keyboard Shortcuts</title>
-    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
+    <link rel="stylesheet" href="/css/missing.min.css">
     <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
@@ -25,7 +25,7 @@
         <div th:replace="~{fragments/shortcuts :: shortcutsContent}"></div>
     </main>
 
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="/js/htmx.min.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:replace="~{fragments/shortcuts :: shortcutsScript}"></script>
 </body>

@@ -1,4 +1,4 @@
 <th:block xmlns:th="http://www.thymeleaf.org">
-    <div th:replace="~{block/projectBlockRow :: blockRow(block=${block}, projectId=${projectId}, canMoveUp=true, canMoveDown=false)}"></div>
+    <div th:replace="~{block/projectBlockRow :: blockRow(block=${block}, projectId=${projectId}, canMoveUp=${canMoveUp != null ? canMoveUp : true}, canMoveDown=${canMoveDown != null ? canMoveDown : false})}"></div>
     <div th:replace="~{block/projectCreateBelowInline}"></div>
 </th:block>

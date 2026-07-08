@@ -81,8 +81,8 @@
                     type="button"
                     class="nav-dropdown-toggle select-filter-toggle is-active"
                     aria-pressed="true"
-                    aria-label="Show select checkboxes in blocks"
-                    title="Show select checkboxes in blocks">
+                    aria-label="Show block controls"
+                    title="Show block controls">
                 <span th:replace="~{fragments/selectIcon :: toolbarIcon}"></span>
             </button>
             <button id="nav-lock-toggle"
@@ -284,15 +284,6 @@
         </div>
     </aside>
     <main role="main">
-        <aside class="project-script-select-toolbar hide-in-reader-view sidebar menu">
-            <div class="project-toolbar-row project-toolbar-select-row">
-                <aside class="project-toolbar-left block-left-controls">
-                    <div class="block-left-controls-inner" th:insert="~{fragments/blockSelectAllControl :: controls('project-select-all-blocks')}"></div>
-                </aside>
-                <div class="project-toolbar-main" aria-hidden="true"></div>
-                <div class="project-toolbar-right" aria-hidden="true"></div>
-            </div>
-        </aside>
         <article class="entry-content script-content project-script" role="article">
             <header class="project-script-header">
                 <h1 class="project-header-title entry-title">

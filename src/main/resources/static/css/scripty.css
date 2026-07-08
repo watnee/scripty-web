@@ -867,8 +867,11 @@ body.login-body main.login-page {
     align-items: center;
     gap: var(--block-select-col-gap);
     vertical-align: middle;
+    width: calc(var(--block-select-col-checkbox) + var(--block-select-col-plus) + var(--block-select-col-drag) + 2 * var(--block-select-col-gap));
+    max-width: 100%;
 }
 
+.project-script-select-row,
 .project-script,
 .script-content.entry-content,
 .scene-blocks-layout {
@@ -876,6 +879,7 @@ body.login-body main.login-page {
     --block-select-col-plus: 1.5rem;
     --block-select-col-drag: 1.15rem;
     --block-select-col-gap: 8px;
+    --block-text-line-box: calc(12pt * 1.5);
 }
 
 .project-toolbar-row {
@@ -942,45 +946,91 @@ body.login-body main.login-page {
     align-items: center;
     justify-content: center;
     width: 100%;
+    min-height: var(--block-select-col-plus, 1.5rem);
 }
 
-.block-select-menu-toggle {
+button.block-select-menu-toggle.nav-dropdown-toggle {
+    box-sizing: border-box;
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
     width: 1.5rem;
     height: 1.5rem;
     min-width: 1.5rem;
-    padding: 0;
-    font-size: 0.75rem;
+    min-height: 1.5rem;
+    padding: 0 !important;
+    margin: 0;
+    font: inherit;
+    font-weight: 600;
     line-height: 1;
+    gap: 0;
     border-radius: 999px;
     border: 1px solid var(--border, #cbd5e1);
     background: var(--accent-bg, rgba(0, 0, 0, 0.05));
     color: var(--accent, #475569);
     opacity: 0.55;
-    transition: opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.12s ease;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-.block-select-menu-toggle:hover,
-.block-select-menu-toggle:focus-visible,
-.block-select-menu-dropdown.open .block-select-menu-toggle {
+.block-select-menu-icon {
+    display: block;
+    transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.project-script-select-row:hover button.block-select-menu-toggle.nav-dropdown-toggle,
+button.block-select-menu-toggle.nav-dropdown-toggle:hover,
+button.block-select-menu-toggle.nav-dropdown-toggle:focus-visible,
+.block-select-menu-dropdown.open button.block-select-menu-toggle.nav-dropdown-toggle {
     opacity: 1;
     border-color: var(--accent, #475569);
     outline: none;
 }
 
-.block-select-menu-dropdown.open .block-select-menu-toggle {
+button.block-select-menu-toggle.nav-dropdown-toggle:hover {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.08));
+    transform: scale(1.06);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+button.block-select-menu-toggle.nav-dropdown-toggle:active {
+    transform: scale(0.96);
+}
+
+.block-select-menu-dropdown.open button.block-select-menu-toggle.nav-dropdown-toggle {
     background: var(--pressed-interactive-bg, var(--accent-bg));
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) inset;
+}
+
+.block-select-menu-dropdown.open .block-select-menu-icon {
     transform: rotate(180deg);
 }
 
-.block-select-menu-dropdown .nav-dropdown-menu {
+.block-select-menu-dropdown .nav-dropdown-menu.block-select-menu {
     left: 0;
     right: auto;
-    min-width: 12rem;
+    min-width: 13rem;
+    padding: 0.45rem;
     transform-origin: top left;
     z-index: 1100;
+}
+
+.block-select-menu-heading {
+    margin: 0.15rem 0.45rem 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted, #64748b);
+}
+
+.block-select-menu .nav-dropdown-item {
+    font-size: 0.875rem;
+}
+
+.block-select-menu .nav-dropdown-divider {
+    margin: 0.35rem 0.35rem;
 }
 
 .scene-blocks-layout {
@@ -1610,11 +1660,11 @@ tr[data-block-id]:focus-within .block-tags-list {
 }
 
 .block-select-checkbox {
-    display: inline-block !important;
-    width: 1.1rem;
-    height: 1.1rem;
+    display: block !important;
+    width: var(--block-select-col-checkbox, 1.1rem);
+    height: var(--block-select-col-checkbox, 1.1rem);
     margin: 0;
-    vertical-align: middle;
+    justify-self: center;
     cursor: pointer;
 }
 
@@ -2162,22 +2212,32 @@ html.scripty-hide-block-pins .block-action-pin {
 }
 
 html.scripty-hide-block-select .block-select-checkbox,
-html.scripty-hide-block-select .project-script-select-toolbar {
-    display: none !important;
-}
-
-html.scripty-hide-block-select .block-left-controls-inner,
+html.scripty-hide-block-select a.create-below[role="button"],
+html.scripty-hide-block-select .drag-handle,
+html.scripty-hide-block-select .block-actions-controls,
+html.scripty-hide-block-select .block-left-controls-inner > .block-select-all-slot,
 html.scripty-hide-block-select .scene-bulk-select {
-    grid-template-columns: var(--block-select-col-plus) var(--block-select-col-drag);
+    visibility: hidden;
+    pointer-events: none;
 }
 
-html.scripty-hide-block-select .block-left-controls-inner > .block-select-all-slot {
+html.scripty-hide-block-select .project-script-select-row {
     display: none;
 }
 
-.block-row:not([data-block-id]) .block-select-checkbox,
+html.scripty-hide-block-select .project-script aside.block-left-controls,
+html.scripty-hide-block-select #table-blocks aside.block-left-controls,
+html.scripty-hide-block-select .table-blocks-all aside.block-left-controls,
+html.scripty-hide-block-select .project-script aside.block-actions,
+html.scripty-hide-block-select #table-blocks aside.block-actions,
+html.scripty-hide-block-select .table-blocks-all aside.block-actions {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.block-row:not([data-block-id]):not(.project-script-select-row) .block-select-checkbox-placeholder,
 tr:not([data-block-id]) .block-select-checkbox {
-    display: none !important;
+    pointer-events: none;
 }
 
 html.scripty-block-edit-locked .project-script .block-content {
@@ -4650,10 +4710,15 @@ kbd {
 
 .project-top-bar,
 .project-script-toolbar,
-.project-script-select-toolbar {
+.project-script-select-toolbar,
+aside.block-left-controls,
+aside.block-actions {
     border: none;
+    border-block: none;
     padding-block: 0;
     margin-block: 0;
+    font-size: inherit;
+    line-height: inherit;
 }
 
 .top-bar nav[aria-label="Breadcrumb"] {
@@ -4730,14 +4795,10 @@ body.has-toolbar-brand {
 }
 
 .has-toolbar-brand .project-script-select-toolbar {
-    margin: 0 0 0.15rem;
+    margin: 0;
     padding: 0;
     width: 100%;
     max-width: 100%;
-}
-
-.has-toolbar-brand .project-script-header {
-    margin-bottom: 0.35rem;
 }
 
 .project-script-toolbar > .project-toolbar-row:first-child {
@@ -5192,8 +5253,7 @@ html.safari-reader-view .hide-in-reader-view {
 
 html.safari-reader-view body > header,
 html.safari-reader-view .project-top-bar,
-html.safari-reader-view .project-script-toolbar,
-html.safari-reader-view .project-script-select-toolbar {
+html.safari-reader-view .project-script-toolbar {
     display: none !important;
 }
 
@@ -5468,8 +5528,7 @@ html.scripty-toolbar-hidden .toolbar-visibility-icon--hidden {
 }
 
 html.scripty-toolbar-hidden .text-size-control > :not(#nav-toolbar-toggle),
-html.scripty-toolbar-hidden .project-script-toolbar,
-html.scripty-toolbar-hidden .project-script-select-toolbar {
+html.scripty-toolbar-hidden .project-script-toolbar {
     display: none !important;
 }
 
@@ -5500,7 +5559,6 @@ body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb,
 body.focus-mode .text-size-control > :not(#focus-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle),
 body.focus-mode .project-script-toolbar,
-body.focus-mode .project-script-select-toolbar,
 body.focus-mode .project-header-row,
 body.focus-mode .project-create-scene,
 body.focus-mode .block-left-controls,
@@ -5566,10 +5624,12 @@ body.focus-mode .project-script {
 
 .project-script aside.block-left-controls {
     justify-self: end;
+    min-width: calc(var(--block-select-col-checkbox) + var(--block-select-col-plus) + var(--block-select-col-drag) + 2 * var(--block-select-col-gap));
 }
 
 .project-script aside.block-actions {
     justify-self: start;
+    min-width: calc(4 * 1.15rem + 3 * 0.1rem);
 }
 
 .project-script aside.block-left-controls,
@@ -5586,8 +5646,23 @@ body.focus-mode .project-script {
 
 .project-script aside.block-left-controls .block-left-controls-inner {
     display: inline-grid;
+    grid-template-columns: var(--block-select-col-checkbox) var(--block-select-col-plus) var(--block-select-col-drag);
     align-items: center;
     gap: var(--block-select-col-gap);
+    min-height: var(--block-text-line-box);
+}
+
+.project-script-select-row {
+    margin-block: 0;
+}
+
+.project-script-select-row .block-left-controls-inner {
+    grid-template-columns: var(--block-select-col-checkbox) var(--block-select-col-plus) var(--block-select-col-drag);
+}
+
+.project-script-select-row .project-script-select-spacer {
+    min-height: var(--block-text-line-box);
+    pointer-events: none;
 }
 
 .project-script .block-row:hover a[role="button"]:not(.create-below),
@@ -5600,19 +5675,20 @@ body.focus-mode .project-script {
     min-width: 0;
 }
 
+html.scripty-hide-block-select:not(.scripty-block-edit-locked) .project-script .block-content,
+html.scripty-hide-block-select:not(.scripty-block-edit-locked) #table-blocks .block-content,
+html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all .block-content {
+    cursor: text;
+}
+
 .project-script .block-content.script-block {
     min-height: 1.5em;
+    margin-top: 0;
 }
 
-.project-script .block-row:not([data-block-id]) .block-content form,
-.project-script .block-row:not([data-block-id]) .block-content textarea[name="content"] {
+.project-script .block-row:not([data-block-id]):not(.project-script-select-row) .block-content form,
+.project-script .block-row:not([data-block-id]):not(.project-script-select-row) .block-content textarea[name="content"] {
     min-height: 1.5em;
-}
-
-/* Script blocks carry a 1em top margin; shift side controls to line up with the first text line. */
-.project-script aside.block-left-controls:has(+ .block-content.script-block),
-.project-script .block-content.script-block + aside.block-actions {
-    margin-top: calc(1em - 2px);
 }
 
 .project-script .block-row.dragging {
@@ -5733,6 +5809,23 @@ body.focus-mode .project-script {
 .block-content.block-type-dialogue {
     padding-left: 15%;
     padding-right: 15%;
+}
+
+.project-script .block-content:has(form[hx-post*="/block/editInline"]) {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.project-script .block-content form[hx-post*="/block/editInline"] textarea[name="content"],
+.project-script .block-content form.block-inline-edit-form textarea[name="content"],
+#table-blocks .block-content form[hx-post*="/block/editInline"] textarea[name="content"],
+.table-blocks-all .block-content form[hx-post*="/block/editInline"] textarea[name="content"] {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    text-align: left;
+    display: block;
 }
 
 .block-content.block-type-parenthetical {

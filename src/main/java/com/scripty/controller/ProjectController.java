@@ -12,7 +12,6 @@ import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectTeamViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
-import com.scripty.service.BlockService;
 import com.scripty.service.FountainExportService;
 import com.scripty.service.FountainImportService;
 import com.scripty.service.ProjectService;
@@ -57,9 +56,6 @@ public class ProjectController {
 
     @Autowired
     ProjectUndoRedoService projectUndoRedoService;
-
-    @Autowired
-    BlockService blockService;
 
     @Autowired
     UserService userService;
@@ -440,7 +436,6 @@ public class ProjectController {
         }
 
         Project project = projectService.saveCreateProjectCommandModel(commandModel);
-        blockService.createInitialBlock(project.getId());
 
         return "redirect:/project/show?id=" + project.getId();
     }

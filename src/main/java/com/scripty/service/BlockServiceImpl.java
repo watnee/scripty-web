@@ -177,6 +177,16 @@ public class BlockServiceImpl implements BlockService {
             }
         }
 
+        String existingContent = existingBlock.getContent();
+        if ((existingContent == null || existingContent.trim().isEmpty())
+                && blockRepository.countByProjectId(project.getId()) == 1) {
+            existingBlock.setContent(content);
+            if (person != null) {
+                existingBlock.setPerson(person);
+            }
+            return blockRepository.save(existingBlock);
+        }
+
         Block block = new Block();
         block.setContent(content);
         if (person != null) block.setPerson(person);
@@ -228,7 +238,9 @@ public class BlockServiceImpl implements BlockService {
         String normalized = type != null && Block.ELEMENT_TYPES.contains(type.toUpperCase())
                 ? type.toUpperCase() : Block.TYPE_ACTION;
         block.setType(normalized);
-        block.setContent(content != null ? content : "");
+        if (content != null) {
+            block.setContent(content);
+        }
         if (tags != null) {
             block.setTags(tags);
         }

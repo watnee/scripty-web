@@ -184,6 +184,56 @@ public class BlockController {
         return redirectToProject(block);
     }
 
+    @RequestMapping(value = "/createInline")
+    public String createInline(@RequestParam Integer projectId,
+                               @RequestParam(required = false) String surface,
+                               Model model) {
+        CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(projectId);
+        model.addAttribute("viewModel", viewModel);
+        model.addAttribute("projectId", projectId);
+        if ("project".equals(surface)) {
+            return "block/projectCreateInline";
+        }
+        return "block/create";
+    }
+
+    @RequestMapping(value = "/createInline", method = RequestMethod.POST)
+    public String saveCreateInline(@RequestParam Integer projectId,
+                                   @RequestParam String content,
+                                   @RequestParam(required = false) Integer personId,
+                                   @RequestParam(required = false) String surface,
+                                   Model model) {
+        if (content == null || content.trim().isEmpty()) {
+            CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(projectId);
+            model.addAttribute("viewModel", viewModel);
+            model.addAttribute("projectId", projectId);
+            if ("project".equals(surface)) {
+                return "block/projectCreateInline";
+            }
+            return "block/create";
+        }
+
+        CreateBlockCommandModel commandModel = new CreateBlockCommandModel();
+        commandModel.setProjectId(projectId);
+        commandModel.setContent(content);
+        commandModel.setPersonId(personId);
+        Block block = blockService.saveCreateBlockCommandModel(commandModel);
+        projectVersionService.autoSaveVersionForBlock(block.getId());
+
+        BlockViewModel vm = blockService.getBlockViewModel(block.getId());
+        CreateBlockBelowViewModel createViewModel = blockService.getCreateBlockBelowViewModel(block.getId());
+        model.addAttribute("block", vm);
+        model.addAttribute("viewModel", createViewModel);
+        model.addAttribute("blockId", block.getId());
+        model.addAttribute("projectId", projectId);
+        model.addAttribute("canMoveUp", false);
+        model.addAttribute("canMoveDown", false);
+        if ("project".equals(surface)) {
+            return "block/projectBlockRowWithCreate";
+        }
+        return "block/blockRowWithCreate";
+    }
+
     // Show Form
     @RequestMapping(value = "/createBelow")
     public String createBelow(@RequestParam Integer id, Model model) {
@@ -234,6 +284,11 @@ public class BlockController {
                                         @RequestParam(required = false) Integer personId,
                                         @RequestParam(required = false) String surface,
                                         Model model) {
+        if ("project".equals(surface) && (content == null || content.trim().isEmpty())) {
+            model.addAttribute("blockId", id);
+            return "block/projectCreateBelowInline";
+        }
+
         CreateBlockBelowCommandModel commandModel = new CreateBlockBelowCommandModel();
         commandModel.setId(id);
         commandModel.setContent(content);
@@ -247,11 +302,6 @@ public class BlockController {
         model.addAttribute("blockId", block.getId());
         model.addAttribute("projectId", block.getProject().getId());
         if ("project".equals(surface)) {
-            if (content == null || content.trim().isEmpty()) {
-                model.addAttribute("canMoveUp", true);
-                model.addAttribute("canMoveDown", false);
-                return "block/projectBlockRow";
-            }
             return "block/projectBlockRowWithCreate";
         }
         return "block/blockRowWithCreate";
@@ -355,13 +405,22 @@ public class BlockController {
     @RequestMapping(value = "/setTypeAndContent", method = RequestMethod.POST)
     public String setTypeAndContent(@RequestParam Integer id,
                                     @RequestParam String type,
-                                    @RequestParam(defaultValue = "") String content,
+                                    @RequestParam(required = false) String content,
                                     @RequestParam(required = false) Integer personId,
                                     @RequestParam(required = false) String tags,
-                                    @RequestParam(required = false) Integer projectId) {
+                                    @RequestParam(required = false) Integer projectId,
+                                    @RequestParam(required = false) String partial,
+                                    Model model) {
         Block block = blockService.updateBlockTypeAndContent(id, type, content, personId, tags);
         if (block != null) {
             projectVersionService.autoSaveVersionForBlock(block.getId());
+        }
+        if ("project".equals(partial) && block != null) {
+            EditBlockViewModel viewModel = blockService.getEditBlockViewModel(id);
+            model.addAttribute("viewModel", viewModel);
+            model.addAttribute("commandModel", viewModel.getEditBlockCommandModel());
+            model.addAttribute("block", blockService.getBlockViewModel(id));
+            return "block/editInline";
         }
         return redirectAfterBulkAction(projectId, java.util.List.of(id));
     }

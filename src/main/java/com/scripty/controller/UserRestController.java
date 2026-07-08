@@ -1,5 +1,7 @@
 package com.scripty.controller;
 
+import com.scripty.api.UserResource;
+import com.scripty.api.UserResourceAssembler;
 import com.scripty.commandmodel.user.createuser.CreateUserCommandModel;
 import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
 import com.scripty.dto.User;
@@ -9,6 +11,10 @@ import com.scripty.service.UserService;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -28,68 +34,51 @@ public class UserRestController {
     @Autowired
     UserService userService;
 
-    @RequestMapping(method = RequestMethod.GET, produces = "application/json")
-    public ResponseEntity<?> list() {
+    @Autowired
+    UserResourceAssembler userResourceAssembler;
+
+    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<CollectionModel<EntityModel<UserResource>>> list() {
         UserListViewModel viewModel = userService.getUserListViewModel();
-        return new ResponseEntity<>(viewModel.getUsers(), HttpStatus.OK);
+        return ResponseEntity.ok(userResourceAssembler.toUserCollection(viewModel.getUsers()));
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = "application/json")
-    public ResponseEntity<?> create(@Valid @RequestBody CreateUserCommandModel commandModel, BindingResult bindingResult) {
+    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<EntityModel<UserResource>> create(
+            @Valid @RequestBody CreateUserCommandModel commandModel, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(buildErrors(bindingResult), HttpStatus.BAD_REQUEST);
         }
         User user = userService.saveCreateUserCommandModel(commandModel);
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", user.getId());
-        response.put("username", user.getUsername());
-        response.put("firstName", user.getFirstName());
-        response.put("lastName", user.getLastName());
-        response.put("team", user.getTeam());
-        response.put("admin", user.isAdmin());
-        response.put("producer", user.isProducer());
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        EntityModel<UserResource> resource = userResourceAssembler.toModel(user);
+        return ResponseEntity
+                .created(resource.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .body(resource);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
-    public ResponseEntity<?> show(@PathVariable Integer id) {
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<EntityModel<UserResource>> show(@PathVariable Integer id) {
         UserProfileViewModel viewModel = userService.getUserProfileViewModel(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", viewModel.getId());
-        response.put("username", viewModel.getUsername());
-        response.put("firstName", viewModel.getFirstName());
-        response.put("lastName", viewModel.getLastName());
-        response.put("team", viewModel.getTeam());
-        response.put("admin", viewModel.isAdmin());
-        response.put("enabled", viewModel.isEnabled());
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return ResponseEntity.ok(userResourceAssembler.toModel(viewModel));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = "application/json")
-    public ResponseEntity<?> update(@PathVariable Integer id, @Valid @RequestBody EditUserCommandModel commandModel, BindingResult bindingResult) {
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<?> update(
+            @PathVariable Integer id,
+            @Valid @RequestBody EditUserCommandModel commandModel,
+            BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(buildErrors(bindingResult), HttpStatus.BAD_REQUEST);
         }
         commandModel.setId(id);
         User user = userService.saveEditUserCommandModel(commandModel);
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", user.getId());
-        response.put("username", user.getUsername());
-        response.put("firstName", user.getFirstName());
-        response.put("lastName", user.getLastName());
-        response.put("team", user.getTeam());
-        response.put("admin", user.isAdmin());
-        response.put("producer", user.isProducer());
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return ResponseEntity.ok(userResourceAssembler.toModel(user));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = "application/json")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<EntityModel<UserResource>> delete(@PathVariable Integer id) {
         User user = userService.deleteUser(id);
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", user.getId());
-        response.put("username", user.getUsername());
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return ResponseEntity.ok(userResourceAssembler.toDeleteModel(user));
     }
 
     private Map<String, String> buildErrors(BindingResult bindingResult) {

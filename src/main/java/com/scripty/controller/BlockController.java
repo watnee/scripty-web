@@ -1,5 +1,6 @@
 package com.scripty.controller;
 
+import com.scripty.api.HypermediaSupport;
 import com.scripty.commandmodel.block.createblock.CreateBlockCommandModel;
 import com.scripty.commandmodel.block.createblockbelow.CreateBlockBelowCommandModel;
 import com.scripty.commandmodel.block.editblock.EditBlockCommandModel;
@@ -11,6 +12,8 @@ import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 import com.scripty.service.BlockService;
 import com.scripty.service.ProjectVersionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.MediaTypes;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -98,11 +101,11 @@ public class BlockController {
         return redirectToProject(block);
     }
 
-    @RequestMapping(value = "/toggleBookmarkInline", method = RequestMethod.POST)
+    @RequestMapping(value = "/toggleBookmarkInline", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @org.springframework.web.bind.annotation.ResponseBody
-    public java.util.Map<String, Boolean> toggleBookmarkInline(@RequestParam Integer id) {
+    public EntityModel<java.util.Map<String, Boolean>> toggleBookmarkInline(@RequestParam Integer id) {
         Block block = blockService.toggleBookmark(id);
-        return java.util.Map.of("bookmarked", block.isBookmarked());
+        return HypermediaSupport.blockToggle(java.util.Map.of("bookmarked", block.isBookmarked()), id, true);
     }
 
     @RequestMapping(value = "/togglePinned")
@@ -111,11 +114,11 @@ public class BlockController {
         return redirectToProject(block);
     }
 
-    @RequestMapping(value = "/togglePinnedInline", method = RequestMethod.POST)
+    @RequestMapping(value = "/togglePinnedInline", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @org.springframework.web.bind.annotation.ResponseBody
-    public java.util.Map<String, Boolean> togglePinnedInline(@RequestParam Integer id) {
+    public EntityModel<java.util.Map<String, Boolean>> togglePinnedInline(@RequestParam Integer id) {
         Block block = blockService.togglePinned(id);
-        return java.util.Map.of("pinned", block.isPinned());
+        return HypermediaSupport.blockToggle(java.util.Map.of("pinned", block.isPinned()), id, false);
     }
 
     @RequestMapping(value = "/editInline")

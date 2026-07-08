@@ -1,5 +1,6 @@
 package com.scripty.controller;
 
+import com.scripty.api.HypermediaSupport;
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
@@ -29,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -116,23 +119,23 @@ public class ProjectController {
         return "project/show";
     }
 
-    @RequestMapping(value = "/syncStatus")
+    @RequestMapping(value = "/syncStatus", produces = MediaTypes.HAL_JSON_VALUE)
     @ResponseBody
-    public Map<String, Object> syncStatus(@RequestParam Integer id, @RequestParam(required = false) Long since) {
+    public EntityModel<Map<String, Object>> syncStatus(@RequestParam Integer id, @RequestParam(required = false) Long since) {
         Project project = projectService.read(id);
         Map<String, Object> body = new HashMap<>();
         if (project == null) {
             body.put("exists", false);
             body.put("revision", since != null ? since : 0L);
             body.put("changed", false);
-            return body;
+            return HypermediaSupport.projectSyncStatus(body, id, since);
         }
         long revision = projectRevision(project.getLastEdited());
         body.put("exists", true);
         body.put("revision", revision);
         body.put("title", project.getTitle());
         body.put("changed", since == null || since < revision);
-        return body;
+        return HypermediaSupport.projectSyncStatus(body, id, since);
     }
 
     @RequestMapping(value = "/showScript")
@@ -150,27 +153,27 @@ public class ProjectController {
         return "redirect:/scene/all?projectId=" + id;
     }
 
-    @RequestMapping(value = "/undo", method = RequestMethod.POST)
+    @RequestMapping(value = "/undo", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @ResponseBody
-    public Map<String, Object> undo(@RequestParam Integer projectId) {
+    public EntityModel<Map<String, Object>> undo(@RequestParam Integer projectId) {
         ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.undoWithDetails(projectId);
-        return buildUndoRedoResponse(result, projectId);
+        return HypermediaSupport.projectUndoRedo(buildUndoRedoResponse(result, projectId), projectId, true);
     }
 
-    @RequestMapping(value = "/redo", method = RequestMethod.POST)
+    @RequestMapping(value = "/redo", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @ResponseBody
-    public Map<String, Object> redo(@RequestParam Integer projectId) {
+    public EntityModel<Map<String, Object>> redo(@RequestParam Integer projectId) {
         ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.redoWithDetails(projectId);
-        return buildUndoRedoResponse(result, projectId);
+        return HypermediaSupport.projectUndoRedo(buildUndoRedoResponse(result, projectId), projectId, false);
     }
 
-    @RequestMapping(value = "/undoRedoStatus")
+    @RequestMapping(value = "/undoRedoStatus", produces = MediaTypes.HAL_JSON_VALUE)
     @ResponseBody
-    public Map<String, Object> undoRedoStatus(@RequestParam Integer projectId) {
+    public EntityModel<Map<String, Object>> undoRedoStatus(@RequestParam Integer projectId) {
         Map<String, Object> status = new HashMap<>();
         status.put("canUndo", projectUndoRedoService.canUndo(projectId));
         status.put("canRedo", projectUndoRedoService.canRedo(projectId));
-        return status;
+        return HypermediaSupport.projectUndoRedoStatus(status, projectId);
     }
 
     private long projectRevision(LocalDateTime lastEdited) {

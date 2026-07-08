@@ -2,7 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <header th:fragment="nav(currentPage)" class="sidebar menu">
     <div id="scripty-offline-banner" class="scripty-offline-banner" hidden role="status" aria-live="polite">
-        You're offline — viewing cached content. Edits won't sync until you're back online.
+        <span id="scripty-offline-banner-text">You're offline — edits save locally and sync when you're back online.</span>
+        <button type="button" id="scripty-offline-sync-retry" class="scripty-offline-sync-retry" hidden>Retry sync</button>
     </div>
     <meta name="app-asset-version" th:content="${assetVersion}">
     <script>
@@ -293,6 +294,10 @@
                 if (done) done();
                 return;
             }
+            if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptySaveBlockEditOffline) {
+                window.scriptySaveBlockEditOffline(form, done);
+                return;
+            }
             form.dataset.committing = 'true';
             const formData = new FormData(form);
             const url = form.getAttribute('hx-post') || '/block/editInline';
@@ -352,6 +357,14 @@
             const textarea = form.querySelector('textarea[name="content"]');
             if (!textarea || textarea.value.trim() !== '') return;
 
+            if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptyRevertBlockEditOffline) {
+                form.dataset.reverting = 'true';
+                window.scriptyRevertBlockEditOffline(form).finally(function() {
+                    delete form.dataset.reverting;
+                });
+                return;
+            }
+
             form.dataset.reverting = 'true';
             const blockId = row.getAttribute('data-block-id');
             fetch('/block/showInline?id=' + encodeURIComponent(blockId), {
@@ -400,6 +413,11 @@
             const blockContent = row.querySelector('.block-content');
             const blockId = row.getAttribute('data-block-id');
             if (!blockContent || !blockId) return;
+            if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptyOpenBlockEditOffline) {
+                window.scriptyOpenBlockEditOffline(blockContent);
+                focusBlockContentEnd(row);
+                return;
+            }
             fetch('/block/editInline?id=' + encodeURIComponent(blockId), {
                 credentials: 'same-origin',
                 cache: 'no-store'
@@ -423,6 +441,10 @@
             const nextRow = row.nextElementSibling;
             if (nextRow && nextRow.classList.contains('block-row') && !nextRow.hasAttribute('data-block-id')) {
                 focusBlockContentEnd(nextRow);
+                return;
+            }
+            if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptyOpenCreateBelowOffline) {
+                window.scriptyOpenCreateBelowOffline(row);
                 return;
             }
             row.dataset.openingCreateBelow = 'true';
@@ -558,6 +580,13 @@
             const form = textarea.closest('form');
             const row = findAnyBlockRow(textarea);
             if (!form || !row || row.dataset.enterCreatingBelow === 'true') return;
+            if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptySaveCreateBelowOffline) {
+                row.dataset.enterCreatingBelow = 'true';
+                window.scriptySaveCreateBelowOffline(form, row, function() {
+                    delete row.dataset.enterCreatingBelow;
+                });
+                return;
+            }
             row.dataset.enterCreatingBelow = 'true';
             const url = ensureProjectCreateUrl(form.getAttribute('hx-post') || '/block/createBelowInline');
             fetch(url, {
@@ -953,6 +982,17 @@
             }
 
             if (!blockId || !blockContent.isConnected) return;
+
+            if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptyOpenBlockEditOffline) {
+                var offlineTextarea = window.scriptyOpenBlockEditOffline(blockContent, offset);
+                if (offlineTextarea) {
+                    autoGrowTextarea(offlineTextarea);
+                    var offlineOffset = applyPreviewKeystroke(offlineTextarea, Math.max(0, Math.min(offset, offlineTextarea.value.length)), e);
+                    offlineTextarea.focus({ preventScroll: true });
+                    offlineTextarea.setSelectionRange(offlineOffset, offlineOffset);
+                }
+                return;
+            }
 
             fetch('/block/editInline?id=' + encodeURIComponent(blockId), {
                 credentials: 'same-origin',
@@ -3067,6 +3107,11 @@
                 const textarea = form.querySelector('textarea[name="content"]');
                 if (!textarea || textarea.value.trim() === '') return;
 
+                if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptySaveBlockEditOffline) {
+                    window.scriptySaveBlockEditOffline(form);
+                    return;
+                }
+
                 form.dataset.committing = 'true';
                 syncReaderVisibleText(textarea);
 
@@ -3391,7 +3436,7 @@
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
             const serviceWorkerEnabled = /*[[${serviceWorkerEnabled}]]*/ true;
-            const SW_MIGRATION_KEY = 'sw-migration-v13';
+            const SW_MIGRATION_KEY = 'sw-migration-v14';
 
             async function clearServiceWorkerState() {
                 if ('caches' in window) {
@@ -3450,6 +3495,7 @@
     </script>
     <script th:src="@{/js/offline-store.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/offline-edit.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/block-empty-guard.js(v=${assetVersion})}"></script>
 </header>
 </html>

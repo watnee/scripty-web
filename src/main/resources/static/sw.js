@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v13';
+const CACHE_NAME = 'scripty-cache-v14';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/css/missing.min.css',
@@ -12,6 +12,7 @@ const ASSETS_TO_CACHE = [
   '/js/import-script.js',
   '/js/offline-store.js',
   '/js/offline.js',
+  '/js/offline-edit.js',
   '/favicon.ico',
   '/icons/icon-192.png',
   '/icons/icon-512.png',

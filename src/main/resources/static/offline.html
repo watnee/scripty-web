@@ -135,17 +135,28 @@
                 var container = document.getElementById('cached-projects');
                 var list = document.getElementById('cached-projects-list');
                 container.hidden = false;
-                projects.forEach(function (project) {
-                    var item = document.createElement('li');
-                    var link = document.createElement('a');
-                    link.href = project.pageUrl || ('/project/show?id=' + encodeURIComponent(project.id));
-                    link.textContent = project.title || ('Project ' + project.id);
-                    var meta = document.createElement('span');
-                    meta.className = 'cached-at';
-                    meta.textContent = 'Saved ' + new Date(project.cachedAt).toLocaleString();
-                    link.appendChild(meta);
-                    item.appendChild(link);
-                    list.appendChild(item);
+                Promise.all(projects.map(function (project) {
+                    return window.scriptyOfflineStore.countPendingEdits(project.id).then(function (count) {
+                        return { project: project, pending: count };
+                    });
+                })).then(function (items) {
+                    items.forEach(function (item) {
+                        var project = item.project;
+                        var itemEl = document.createElement('li');
+                        var link = document.createElement('a');
+                        link.href = project.pageUrl || ('/project/show?id=' + encodeURIComponent(project.id));
+                        link.textContent = project.title || ('Project ' + project.id);
+                        var meta = document.createElement('span');
+                        meta.className = 'cached-at';
+                        var savedAt = 'Saved ' + new Date(project.cachedAt).toLocaleString();
+                        if (item.pending > 0) {
+                            savedAt += ' · ' + item.pending + ' unsynced change' + (item.pending === 1 ? '' : 's');
+                        }
+                        meta.textContent = savedAt;
+                        link.appendChild(meta);
+                        itemEl.appendChild(link);
+                        list.appendChild(itemEl);
+                    });
                 });
             }).catch(function () {
                 document.getElementById('cached-projects-empty').hidden = false;

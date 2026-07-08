@@ -69,6 +69,15 @@
         }
         if (!row.hasAttribute('data-block-id')) return;
         var blockId = row.getAttribute('data-block-id');
+        if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptyOpenBlockEditOffline) {
+            window.scriptyOpenBlockEditOffline(blockContent);
+            var ta = blockContent.querySelector('textarea[name="content"]');
+            if (!ta) return;
+            ta.focus({ preventScroll: true });
+            var len = ta.value.length;
+            ta.setSelectionRange(len, len);
+            return;
+        }
         fetch('/block/editInline?id=' + encodeURIComponent(blockId), {
             credentials: 'same-origin',
             cache: 'no-store'
@@ -109,6 +118,14 @@
         if (!row.isConnected || row.dataset.deleting === 'true') return;
         var textarea = form.querySelector('textarea[name="content"]');
         if (!textarea || textarea.value.trim() !== '') return;
+
+        if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptyRevertBlockEditOffline) {
+            form.dataset.reverting = 'true';
+            window.scriptyRevertBlockEditOffline(form).finally(function () {
+                delete form.dataset.reverting;
+            });
+            return;
+        }
 
         form.dataset.reverting = 'true';
         var blockId = row.getAttribute('data-block-id');

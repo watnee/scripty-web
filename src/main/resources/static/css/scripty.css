@@ -2652,11 +2652,6 @@ html:not(.safari-reader-view) .project-script-header .project-header-title {
     font-size: 0.85rem;
 }
 
-.rename-project-btn::before {
-    content: "✎ ";
-    opacity: 0.85;
-}
-
 .project-list-no-results {
     margin: 0;
     padding: 1.25rem;

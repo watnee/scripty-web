@@ -3,11 +3,11 @@ spring:
     restart:
       poll-interval: 1s
       quiet-period: 400ms
-      # Only template/static changes should trigger a DevTools restart. Java
-      # recompiles (e.g. SecurityConfig) can leave the restart classloader in a
-      # broken state where custom security is replaced by Spring Boot defaults.
-      include: static/**,public/**,templates/**
-      exclude: static/**,public/**,templates/**,META-INF/maven/**,META-INF/resources/**
+      # Avoid automatic restarts on Java/classpath changes. DevTools restarts after
+      # recompiles can leave the restart classloader broken (custom SecurityConfig
+      # replaced by Spring Boot defaults, login page falls back, CSRF blocks sign-in).
+      # Touch .reloadtrigger in the project root when you need a full restart.
+      trigger-file: .reloadtrigger
     livereload:
       enabled: true
   thymeleaf:

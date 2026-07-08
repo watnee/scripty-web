@@ -1,0 +1,32 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="handle (saved, bookmarked, pinned)">
+    <div class="nav-dropdown block-drag-menu-dropdown">
+        <button type="button"
+                class="drag-handle block-drag-menu-toggle nav-dropdown-toggle"
+                draggable="true"
+                aria-haspopup="true"
+                aria-expanded="false"
+                title="Drag to reorder; click for options"
+                aria-label="Block options">&#8942;&#8942;</button>
+        <div class="nav-dropdown-menu block-drag-menu" role="menu" aria-label="Block options">
+            <button th:if="${saved}"
+                    type="button"
+                    class="nav-dropdown-item block-drag-menu-bookmark"
+                    role="menuitem"
+                    data-block-drag-action="toggle-bookmark"
+                    th:text="${bookmarked} ? 'Remove bookmark' : 'Bookmark block'"
+                    th:attr="data-bookmarked=${bookmarked}"></button>
+            <button th:if="${saved}"
+                    type="button"
+                    class="nav-dropdown-item block-drag-menu-pin"
+                    role="menuitem"
+                    data-block-drag-action="toggle-pin"
+                    th:text="${pinned} ? 'Unpin block' : 'Pin block'"
+                    th:attr="data-pinned=${pinned}"></button>
+            <hr th:if="${saved}" class="nav-dropdown-divider" />
+            <button type="button"
+                    class="nav-dropdown-item block-drag-menu-delete"
+                    role="menuitem"
+                    data-block-drag-action="delete">Delete block</button>
+        </div>
+    </div>
+</th:block>

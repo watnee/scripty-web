@@ -1033,6 +1033,189 @@ button.block-select-menu-toggle.nav-dropdown-toggle:active {
     margin: 0.35rem 0.35rem;
 }
 
+.block-drag-menu-dropdown {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: var(--block-select-col-drag, 1.15rem);
+}
+
+button.block-drag-menu-toggle.nav-dropdown-toggle {
+    box-sizing: border-box;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 1.15rem;
+    min-height: 1.5rem;
+    padding: 0.1em 0.25em !important;
+    margin: 0;
+    font: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: 1;
+    gap: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--muted, #94a3b8);
+    opacity: 1;
+    cursor: grab;
+    flex-shrink: 0;
+    user-select: none;
+    touch-action: none;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.block-row:hover button.block-drag-menu-toggle.nav-dropdown-toggle,
+tr[data-block-id]:hover button.block-drag-menu-toggle.nav-dropdown-toggle,
+button.block-drag-menu-toggle.nav-dropdown-toggle:hover,
+button.block-drag-menu-toggle.nav-dropdown-toggle:focus-visible,
+.block-drag-menu-dropdown.open button.block-drag-menu-toggle.nav-dropdown-toggle {
+    color: var(--accent, #475569);
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
+}
+
+button.block-drag-menu-toggle.nav-dropdown-toggle:active {
+    cursor: grabbing;
+}
+
+.block-drag-menu-dropdown .nav-dropdown-menu.block-drag-menu {
+    left: 0;
+    right: auto;
+    min-width: 11rem;
+    padding: 0.4rem;
+    transform-origin: top left;
+    z-index: 1100;
+    background-color: var(--block-menu-bg, var(--box-bg, #ffffff));
+    border: 1px solid var(--block-menu-border, color-mix(in srgb, var(--border, #cbd5e1) 88%, var(--fg, #0f172a) 12%));
+    border-radius: 0.7rem;
+    box-shadow:
+        0 1px 2px color-mix(in srgb, var(--fg, #0f172a) 5%, transparent),
+        0 10px 28px color-mix(in srgb, var(--fg, #0f172a) 14%, transparent);
+}
+
+:root.-dark-theme .block-drag-menu-dropdown .nav-dropdown-menu.block-drag-menu {
+    --block-menu-bg: color-mix(in srgb, var(--box-bg, #1e293b) 92%, #000 8%);
+    --block-menu-border: color-mix(in srgb, var(--border, #475569) 70%, #94a3b8 30%);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.-no-dark-theme):not([data-theme-setting="light"]) .block-drag-menu-dropdown .nav-dropdown-menu.block-drag-menu {
+        --block-menu-bg: color-mix(in srgb, var(--box-bg, #1e293b) 92%, #000 8%);
+        --block-menu-border: color-mix(in srgb, var(--border, #475569) 70%, #94a3b8 30%);
+    }
+}
+
+.block-drag-menu .nav-dropdown-item {
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: var(--fg, #334155);
+    gap: 0.55rem;
+    padding: 0.48rem 0.62rem;
+}
+
+.block-drag-menu .nav-dropdown-divider {
+    margin: 0.3rem 0.4rem;
+    background-color: color-mix(in srgb, var(--border, #cbd5e1) 75%, transparent);
+}
+
+.block-drag-menu-bookmark {
+    color: var(--block-menu-bookmark-fg, #92400e);
+}
+
+.block-drag-menu-bookmark:hover,
+.block-drag-menu-bookmark:focus-visible {
+    color: var(--block-menu-bookmark-fg-hover, #b45309);
+    background-color: color-mix(in srgb, var(--block-menu-bookmark-fg-hover, #f59e0b) 14%, transparent);
+}
+
+.block-drag-menu-bookmark[data-bookmarked='true'] {
+    color: var(--block-menu-bookmark-active-fg, #b45309);
+    background-color: color-mix(in srgb, var(--block-menu-bookmark-active-fg, #f59e0b) 12%, transparent);
+}
+
+.block-drag-menu-bookmark[data-bookmarked='true']:hover,
+.block-drag-menu-bookmark[data-bookmarked='true']:focus-visible {
+    color: var(--block-menu-bookmark-active-fg, #b45309);
+    background-color: color-mix(in srgb, var(--block-menu-bookmark-active-fg, #f59e0b) 20%, transparent);
+}
+
+.block-drag-menu-pin {
+    color: var(--block-menu-pin-fg, #4338ca);
+}
+
+.block-drag-menu-pin:hover,
+.block-drag-menu-pin:focus-visible {
+    color: var(--block-menu-pin-fg-hover, #4f46e5);
+    background-color: color-mix(in srgb, var(--block-menu-pin-fg-hover, #6366f1) 14%, transparent);
+}
+
+.block-drag-menu-pin[data-pinned='true'] {
+    color: var(--block-menu-pin-active-fg, #4f46e5);
+    background-color: color-mix(in srgb, var(--block-menu-pin-active-fg, #6366f1) 12%, transparent);
+}
+
+.block-drag-menu-pin[data-pinned='true']:hover,
+.block-drag-menu-pin[data-pinned='true']:focus-visible {
+    color: var(--block-menu-pin-active-fg, #4f46e5);
+    background-color: color-mix(in srgb, var(--block-menu-pin-active-fg, #6366f1) 20%, transparent);
+}
+
+.block-drag-menu-delete {
+    color: var(--block-menu-delete-fg, #dc2626);
+}
+
+.block-drag-menu-delete:hover,
+.block-drag-menu-delete:focus-visible {
+    color: var(--block-menu-delete-fg-hover, #b91c1c);
+    background-color: color-mix(in srgb, var(--block-menu-delete-fg-hover, #ef4444) 14%, transparent);
+}
+
+:root.-dark-theme .block-drag-menu-bookmark {
+    --block-menu-bookmark-fg: #fbbf24;
+    --block-menu-bookmark-fg-hover: #fcd34d;
+    --block-menu-bookmark-active-fg: #fde68a;
+}
+
+:root.-dark-theme .block-drag-menu-pin {
+    --block-menu-pin-fg: #a5b4fc;
+    --block-menu-pin-fg-hover: #c7d2fe;
+    --block-menu-pin-active-fg: #e0e7ff;
+}
+
+:root.-dark-theme .block-drag-menu-delete {
+    --block-menu-delete-fg: #f87171;
+    --block-menu-delete-fg-hover: #fca5a5;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.-no-dark-theme):not([data-theme-setting="light"]) .block-drag-menu-bookmark {
+        --block-menu-bookmark-fg: #fbbf24;
+        --block-menu-bookmark-fg-hover: #fcd34d;
+        --block-menu-bookmark-active-fg: #fde68a;
+    }
+
+    :root:not(.-no-dark-theme):not([data-theme-setting="light"]) .block-drag-menu-pin {
+        --block-menu-pin-fg: #a5b4fc;
+        --block-menu-pin-fg-hover: #c7d2fe;
+        --block-menu-pin-active-fg: #e0e7ff;
+    }
+
+    :root:not(.-no-dark-theme):not([data-theme-setting="light"]) .block-drag-menu-delete {
+        --block-menu-delete-fg: #f87171;
+        --block-menu-delete-fg-hover: #fca5a5;
+    }
+}
+
+.block-drag-menu-dropdown.open button.block-drag-menu-toggle.nav-dropdown-toggle {
+    color: var(--accent, #475569);
+    background-color: color-mix(in srgb, var(--accent-bg, rgba(0, 0, 0, 0.05)) 80%, var(--accent, #475569) 20%);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent, #475569) 18%, transparent);
+}
+
 .scene-blocks-layout {
     width: fit-content;
     max-width: 100%;
@@ -2237,6 +2420,7 @@ html.scripty-hide-block-pins .block-action-pin {
 html.scripty-hide-block-select .block-select-checkbox,
 html.scripty-hide-block-select a.create-below[role="button"],
 html.scripty-hide-block-select .drag-handle,
+html.scripty-hide-block-select .block-drag-menu-dropdown,
 html.scripty-hide-block-select .block-actions-controls,
 html.scripty-hide-block-select .block-left-controls-inner > .block-select-all-slot,
 html.scripty-hide-block-select .scene-bulk-select {
@@ -5734,6 +5918,7 @@ body.focus-mode .project-script {
 }
 
 .project-script .block-left-controls-inner > .drag-handle,
+.project-script .block-left-controls-inner > .block-drag-menu-dropdown,
 .project-script .block-left-controls-inner > .block-select-all-slot {
     grid-column: 3;
     grid-row: 1;

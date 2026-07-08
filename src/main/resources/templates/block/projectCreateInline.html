@@ -6,7 +6,7 @@
         <div class="block-left-controls-inner">
             <input type="checkbox" class="block-select-checkbox" title="Selection available after saving block" aria-label="Selection available after saving block" />
             <a th:attr="hx-get=@{/block/createInline(projectId=${projectId},surface='project')}" hx-target="closest .block-row" hx-swap="afterend" hx-boost="false" role="button" class="create-below" title="Add block below" aria-label="Add block below">+</a>
-            <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">&#8942;&#8942;</span>
+            <th:block th:replace="~{fragments/blockDragMenu :: handle(false, false, false)}"></th:block>
         </div>
     </aside>
     <div class="block-content script-block block-type-action script-block--action">

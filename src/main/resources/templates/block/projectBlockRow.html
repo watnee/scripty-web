@@ -7,7 +7,7 @@
         <div class="block-left-controls-inner">
             <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" />
             <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id},surface='project')}" hx-target="closest .block-row" hx-swap="afterend" hx-boost="false" class="create-below" role="button" title="Add block below" aria-label="Add block below">+</a>
-            <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">&#8942;&#8942;</span>
+            <th:block th:replace="~{fragments/blockDragMenu :: handle(true, ${block.bookmarked}, ${block.pinned})}"></th:block>
         </div>
     </aside>
     <div class="block-content script-block"

@@ -728,7 +728,7 @@
 
             document.body.addEventListener('mousedown', function(e) {
                 if (e.button !== 0) return;
-                if (e.target.closest('a, .drag-handle, .block-left-controls, .block-actions, .block-select-checkbox')) return;
+                if (e.target.closest('a, .drag-handle, .block-drag-menu-dropdown, .block-left-controls, .block-actions, .block-select-checkbox')) return;
 
                 const blockContent = e.target.closest('.block-content');
                 pointerState = blockContent ? {
@@ -1870,8 +1870,234 @@
             updateBulkBar();
         };
 
+        function closeAllBlockDragMenus() {
+            document.querySelectorAll('.block-drag-menu-dropdown.open').forEach(function(dropdown) {
+                dropdown.classList.remove('open');
+                var toggle = dropdown.querySelector('.block-drag-menu-toggle');
+                if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            });
+        }
+
+        function removeUnsavedBlockRow(row) {
+            if (!row || row.hasAttribute('data-block-id')) return false;
+            var container = row.closest('.scene-blocks, #table-blocks, tbody');
+            if (!container) return false;
+            var rowSelector = container.matches('tbody') ? 'tr' : '.block-row';
+            var savedBlocks = container.querySelectorAll(rowSelector + '[data-block-id]').length;
+            if (savedBlocks === 0 && container.querySelectorAll(rowSelector).length <= 1) return false;
+            row.remove();
+            return true;
+        }
+
+        function deleteBlockFromDragMenu(row, container) {
+            if (!row) return;
+
+            if (!row.hasAttribute('data-block-id')) {
+                removeUnsavedBlockRow(row);
+                return;
+            }
+
+            if (row.dataset.deleting === 'true') return;
+            if (!confirm('Are you sure you want to delete this block?')) return;
+
+            row.dataset.deleting = 'true';
+            fetch('/block/deleteInline?id=' + encodeURIComponent(row.getAttribute('data-block-id')), {
+                method: 'POST',
+                credentials: 'same-origin'
+            }).then(function(response) {
+                if (!response.ok) throw new Error('delete failed');
+                row.remove();
+                if (container) {
+                    reindexBlockOrders(container);
+                    updateMoveButtonStates(container);
+                }
+                updateUndoRedoButtons(resolveProjectId());
+            }).catch(function() {
+                delete row.dataset.deleting;
+            });
+        }
+
+        function swapMarkerIcon(sideLink, active, type) {
+            var filled = sideLink.querySelector('.' + type + '-icon--filled');
+            var outline = sideLink.querySelector('.' + type + '-icon--outline');
+            if (filled && outline) {
+                filled.style.display = active ? '' : 'none';
+                outline.style.display = active ? 'none' : '';
+                return true;
+            }
+            var hasFilled = !!filled;
+            var hasOutline = !!outline;
+            if ((active && hasFilled) || (!active && hasOutline)) {
+                return true;
+            }
+            if (type === 'bookmark') {
+                sideLink.innerHTML = active
+                    ? '<svg class="bookmark-icon bookmark-icon--filled" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>'
+                    : '<svg class="bookmark-icon bookmark-icon--outline" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>';
+                return true;
+            }
+            if (type === 'pin') {
+                sideLink.innerHTML = active
+                    ? '<svg class="pin-icon pin-icon--filled" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>'
+                    : '<svg class="pin-icon pin-icon--outline" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>';
+                return true;
+            }
+            return false;
+        }
+
+        function updateBlockBookmarkUi(row, bookmarked) {
+            if (!row) return;
+            row.setAttribute('data-bookmarked', bookmarked ? 'true' : 'false');
+            var menuBtn = row.querySelector('[data-block-drag-action="toggle-bookmark"]');
+            if (menuBtn) {
+                menuBtn.textContent = bookmarked ? 'Remove bookmark' : 'Bookmark block';
+                menuBtn.setAttribute('data-bookmarked', bookmarked ? 'true' : 'false');
+            }
+            var sideLink = row.querySelector('.block-action-bookmark');
+            if (!sideLink) return;
+            sideLink.title = bookmarked ? 'Remove bookmark' : 'Bookmark block';
+            sideLink.setAttribute('aria-label', bookmarked ? 'Remove bookmark' : 'Bookmark block');
+            if (swapMarkerIcon(sideLink, bookmarked, 'bookmark')) return;
+            sideLink.textContent = bookmarked ? '★' : '☆';
+        }
+
+        function toggleBookmarkFromDragMenu(row) {
+            if (!row || !row.hasAttribute('data-block-id')) return;
+            if (row.dataset.togglingBookmark === 'true') return;
+            row.dataset.togglingBookmark = 'true';
+            fetch('/block/toggleBookmarkInline?id=' + encodeURIComponent(row.getAttribute('data-block-id')), {
+                method: 'POST',
+                credentials: 'same-origin'
+            }).then(function(response) {
+                if (!response.ok) throw new Error('bookmark failed');
+                return response.json();
+            }).then(function(data) {
+                updateBlockBookmarkUi(row, !!data.bookmarked);
+            }).catch(function() {
+                /* keep current state */
+            }).finally(function() {
+                delete row.dataset.togglingBookmark;
+            });
+        }
+
+        function updateBlockPinUi(row, pinned) {
+            if (!row) return;
+            row.setAttribute('data-pinned', pinned ? 'true' : 'false');
+            var menuBtn = row.querySelector('[data-block-drag-action="toggle-pin"]');
+            if (menuBtn) {
+                menuBtn.textContent = pinned ? 'Unpin block' : 'Pin block';
+                menuBtn.setAttribute('data-pinned', pinned ? 'true' : 'false');
+            }
+            var sideLink = row.querySelector('.block-action-pin');
+            if (!sideLink) return;
+            sideLink.title = pinned ? 'Unpin block' : 'Pin block';
+            sideLink.setAttribute('aria-label', pinned ? 'Unpin block' : 'Pin block');
+            sideLink.classList.toggle('is-pinned', pinned);
+            if (swapMarkerIcon(sideLink, pinned, 'pin')) return;
+            sideLink.style.textDecoration = pinned ? 'none' : '';
+            sideLink.style.filter = pinned ? '' : 'grayscale(100%)';
+            sideLink.style.opacity = pinned ? '' : '0.3';
+        }
+
+        function togglePinFromDragMenu(row) {
+            if (!row || !row.hasAttribute('data-block-id')) return;
+            if (row.dataset.togglingPin === 'true') return;
+            row.dataset.togglingPin = 'true';
+            fetch('/block/togglePinnedInline?id=' + encodeURIComponent(row.getAttribute('data-block-id')), {
+                method: 'POST',
+                credentials: 'same-origin'
+            }).then(function(response) {
+                if (!response.ok) throw new Error('pin failed');
+                return response.json();
+            }).then(function(data) {
+                updateBlockPinUi(row, !!data.pinned);
+            }).catch(function() {
+                /* keep current state */
+            }).finally(function() {
+                delete row.dataset.togglingPin;
+            });
+        }
+
+        function initBlockDragMenus(container) {
+            if (!container) return;
+
+            container.querySelectorAll('.block-drag-menu-dropdown').forEach(function(dropdown) {
+                if (dropdown.dataset.dragMenuInit === 'true') return;
+                dropdown.dataset.dragMenuInit = 'true';
+
+                var toggle = dropdown.querySelector('.block-drag-menu-toggle');
+                var deleteBtn = dropdown.querySelector('[data-block-drag-action="delete"]');
+                var bookmarkBtn = dropdown.querySelector('[data-block-drag-action="toggle-bookmark"]');
+                var pinBtn = dropdown.querySelector('[data-block-drag-action="toggle-pin"]');
+                var dragStarted = false;
+
+                if (toggle) {
+                    toggle.addEventListener('dragstart', function() {
+                        dragStarted = true;
+                        closeAllBlockDragMenus();
+                    });
+                    toggle.addEventListener('dragend', function() {
+                        setTimeout(function() {
+                            dragStarted = false;
+                        }, 0);
+                    });
+                    toggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (dragStarted) return;
+                        var isOpen = dropdown.classList.contains('open');
+                        closeAllBlockDragMenus();
+                        if (!isOpen) {
+                            dropdown.classList.add('open');
+                            toggle.setAttribute('aria-expanded', 'true');
+                        }
+                    });
+                }
+
+                if (bookmarkBtn) {
+                    bookmarkBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        closeAllBlockDragMenus();
+                        var row = findBlockRow(dropdown);
+                        toggleBookmarkFromDragMenu(row);
+                    });
+                }
+
+                if (pinBtn) {
+                    pinBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        closeAllBlockDragMenus();
+                        var row = findBlockRow(dropdown);
+                        togglePinFromDragMenu(row);
+                    });
+                }
+
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        closeAllBlockDragMenus();
+                        var row = findAnyBlockRow(dropdown);
+                        deleteBlockFromDragMenu(row, container);
+                    });
+                }
+            });
+
+            if (!window._scriptyBlockDragMenuCloseInit) {
+                window._scriptyBlockDragMenuCloseInit = true;
+                document.addEventListener('click', function(e) {
+                    if (e.target.closest('.block-drag-menu-dropdown')) return;
+                    closeAllBlockDragMenus();
+                });
+            }
+        }
+
         window.scriptyInitBlockDragDrop = function(container, options) {
-            if (!container || container.dataset.dragInit === 'true') return;
+            if (!container) return;
+            initBlockDragMenus(container);
+            if (container.dataset.dragInit === 'true') return;
             container.dataset.dragInit = 'true';
             options = options || {};
             const projectId = options.projectId || resolveProjectId();

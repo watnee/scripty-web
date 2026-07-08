@@ -98,10 +98,24 @@ public class BlockController {
         return redirectToProject(block);
     }
 
+    @RequestMapping(value = "/toggleBookmarkInline", method = RequestMethod.POST)
+    @org.springframework.web.bind.annotation.ResponseBody
+    public java.util.Map<String, Boolean> toggleBookmarkInline(@RequestParam Integer id) {
+        Block block = blockService.toggleBookmark(id);
+        return java.util.Map.of("bookmarked", block.isBookmarked());
+    }
+
     @RequestMapping(value = "/togglePinned")
     public String togglePinned(@RequestParam Integer id) {
         Block block = blockService.togglePinned(id);
         return redirectToProject(block);
+    }
+
+    @RequestMapping(value = "/togglePinnedInline", method = RequestMethod.POST)
+    @org.springframework.web.bind.annotation.ResponseBody
+    public java.util.Map<String, Boolean> togglePinnedInline(@RequestParam Integer id) {
+        Block block = blockService.togglePinned(id);
+        return java.util.Map.of("pinned", block.isPinned());
     }
 
     @RequestMapping(value = "/editInline")

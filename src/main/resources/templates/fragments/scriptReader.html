@@ -28,7 +28,7 @@
         <p th:if="${not #strings.isEmpty(block.personName)}" class="script-character-name">
             <strong th:text="${#strings.toUpperCase(block.personName)}"></strong>
         </p>
-        <p th:if="${not #strings.isEmpty(block.content)}" class="script-block-text" th:text="${block.content}"></p>
+        <p class="script-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></p>
     </div>
 </th:block>
 

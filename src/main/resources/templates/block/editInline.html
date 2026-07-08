@@ -3,7 +3,7 @@
     <input type="hidden" name="id" th:value="${commandModel.id}" />
     <input type="hidden" name="personId" th:id="'block-person-id-' + ${commandModel.id}" th:value="${commandModel.personId}" />
     <input type="hidden" name="tags" th:value="${commandModel.tags}" />
-    <textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" th:text="${commandModel.content}" onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();event.stopPropagation();if(window.scriptyCreateBlockFromSavedEdit){window.scriptyCreateBlockFromSavedEdit(this);}return false;}"></textarea>
+    <span class="script-block-text reader-visible-text"><th:block th:if="${#strings.isEmpty(commandModel.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(commandModel.content)}" th:text="${commandModel.content}"></th:block></span><textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" th:text="${commandModel.content}" onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();event.stopPropagation();if(window.scriptyCreateBlockFromSavedEdit){window.scriptyCreateBlockFromSavedEdit(this);}return false;}"></textarea>
     <div th:if="${block != null and not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu">
         <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
               th:if="${not #strings.isEmpty(#strings.trim(tag))}"

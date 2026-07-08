@@ -1,12 +1,12 @@
 package com.scripty.commandmodel.block.editblock;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public class EditBlockCommandModel {
 
     private Integer id;
 
-    @NotBlank(message = "You must supply a value for Content.")
+    @NotNull(message = "You must supply a value for Content.")
     private String content;
 
     private Integer personId;

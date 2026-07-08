@@ -40,6 +40,16 @@
         return match ? Number(match[1]) : null;
     }
 
+    function renderBlockTextHtml(content) {
+        var text = escText(content || '');
+        return '<p class="script-block-text">' + (text || '&#160;') + '</p>';
+    }
+
+    function renderMirrorTextHtml(content) {
+        var text = escText(content || '');
+        return '<span class="script-block-text reader-visible-text">' + (text || '&#160;') + '</span>';
+    }
+
     function getCharacterHtml(blockContent) {
         var charEl = blockContent.querySelector('.script-character-name');
         return charEl ? charEl.outerHTML : '';
@@ -94,6 +104,7 @@
             '<input type="hidden" name="id" value="' + escAttr(ctx.blockId) + '" />' +
             '<input type="hidden" name="personId" id="block-person-id-' + escAttr(ctx.blockId) + '" value="' + escAttr(ctx.personId) + '" />' +
             '<input type="hidden" name="tags" value="' + escAttr(ctx.tags) + '" />' +
+            renderMirrorTextHtml(ctx.content) +
             '<textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" ' +
             'onkeydown="' + enterHandler + '">' + escText(ctx.content) + '</textarea>' +
             renderTagsHtml(ctx.tags) +
@@ -101,10 +112,9 @@
     }
 
     function renderShowInline(ctx) {
-        var contentHtml = ctx.content && ctx.content.trim()
-            ? '<p class="script-block-text">' + escText(ctx.content) + '</p>'
-            : '';
-        return (ctx.characterHtml || '') + contentHtml + renderTagsHtml(ctx.tags);
+        return (ctx.characterHtml || '') +
+            renderBlockTextHtml(ctx.content) +
+            renderTagsHtml(ctx.tags);
     }
 
     function renderCreateBelowRow(anchorBlockId) {
@@ -128,9 +138,7 @@
     }
 
     function renderOptimisticBlockRow(opts) {
-        var contentHtml = opts.content && opts.content.trim()
-            ? '<p class="script-block-text">' + escText(opts.content) + '</p>'
-            : '';
+        var contentHtml = renderBlockTextHtml(opts.content);
         return '<div class="block-row block-offline-pending" data-block-id="' + escAttr(opts.tempBlockId) + '" ' +
             'data-offline-pending="create" data-block-type="ACTION" data-tags="" data-bookmarked="false" data-pinned="false">' +
             '<span class="block-element-label hide-in-reader-view sidebar menu" data-block-type="ACTION" title="Fountain element type">Action</span>' +
@@ -628,6 +636,53 @@
         updateOfflineBanner();
     }
 
+    function saveBlockContentInline(blockContent, fields) {
+        if (!blockContent || !fields || !fields.id) {
+            return Promise.resolve();
+        }
+
+        var ctx = getBlockEditContext(blockContent);
+        ctx.blockId = String(fields.id);
+        ctx.content = fields.content == null ? '' : String(fields.content);
+        ctx.personId = fields.personId == null ? '' : String(fields.personId);
+        ctx.tags = fields.tags == null ? '' : String(fields.tags);
+        if (!ctx.personId) {
+            ctx.characterHtml = '';
+        }
+
+        var projectId = getProjectIdFromPage();
+        var work = Promise.resolve();
+
+        if (window.scriptyOfflineStore && projectId && !isTempBlockId(ctx.blockId)) {
+            work = window.scriptyOfflineStore.clearPendingEditsForBlock(ctx.blockId)
+                .then(function () {
+                    return window.scriptyOfflineStore.enqueueBlockEdit({
+                        projectId: projectId,
+                        blockId: Number(ctx.blockId),
+                        payload: {
+                            id: ctx.blockId,
+                            content: ctx.content,
+                            personId: ctx.personId || '',
+                            tags: ctx.tags || ''
+                        }
+                    });
+                });
+        } else if (window.scriptyOfflineStore && projectId && isTempBlockId(ctx.blockId)) {
+            work = window.scriptyOfflineStore.updatePendingCreateContent(ctx.blockId, ctx.content);
+        }
+
+        return work.then(function () {
+            blockContent.innerHTML = renderShowInline(ctx);
+            processNodes([blockContent]);
+            scheduleSnapshot();
+            flashSavedLocally();
+            return refreshPendingMarkers(projectId);
+        }).catch(function () {
+            /* keep current DOM if local save fails */
+        });
+    }
+
+    window.scriptySaveBlockContentInline = saveBlockContentInline;
     window.scriptySaveBlockEditOffline = saveBlockEditOffline;
     window.scriptyRevertBlockEditOffline = revertBlockEditOffline;
     window.scriptyOpenBlockEditOffline = openBlockEditOffline;

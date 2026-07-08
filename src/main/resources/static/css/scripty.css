@@ -1730,6 +1730,34 @@ form[hx-post*="/block/"] textarea:focus-visible {
 .block-content form {
     margin: 0;
     padding: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 100%);
+}
+
+.block-content form .reader-visible-text,
+.block-content form .block-input-textarea.script-block-text {
+    grid-area: 1 / 1;
+    width: 100%;
+    margin: 0;
+}
+
+.block-content:has(.block-inline-edit-form) .reader-visible-text,
+.block-content:has(form[hx-post*="/block/editInline"]) .reader-visible-text {
+    display: block;
+    white-space: pre-wrap;
+    user-select: text;
+}
+
+.block-content:has(.block-inline-edit-form:focus-within) .reader-visible-text,
+.block-content:has(form[hx-post*="/block/editInline"]:focus-within) .reader-visible-text {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.block-content:has(.block-inline-edit-form:not(:focus-within)) .block-input-textarea,
+.block-content:has(form[hx-post*="/block/editInline"]:not(:focus-within)) .block-input-textarea {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .block-content:has(.block-input-textarea),
@@ -5461,6 +5489,100 @@ main h3 {
     min-height: 1.5em;
 }
 
+.project-script .block-content .script-block-text:not(textarea),
+.table-blocks-all .block-content .script-block-text:not(textarea),
+#table-blocks .block-content .script-block-text:not(textarea),
+.project-script .block-content .reader-visible-text,
+.table-blocks-all .block-content .reader-visible-text,
+#table-blocks .block-content .reader-visible-text,
+.project-script .block-content .character-name,
+.table-blocks-all .block-content .character-name,
+#table-blocks .block-content .character-name,
+.project-script .block-content .reader-visible-character-name,
+.table-blocks-all .block-content .reader-visible-character-name,
+#table-blocks .block-content .reader-visible-character-name {
+    user-select: text;
+}
+
+.project-script .block-content .script-block-text[contenteditable]:not(textarea),
+.table-blocks-all .block-content .script-block-text[contenteditable]:not(textarea),
+#table-blocks .block-content .script-block-text[contenteditable]:not(textarea),
+.project-script .block-content .reader-visible-text[contenteditable],
+.table-blocks-all .block-content .reader-visible-text[contenteditable],
+#table-blocks .block-content .reader-visible-text[contenteditable] {
+    outline: none;
+    cursor: text;
+    caret-color: auto;
+}
+
+.block-selection-menu {
+    position: fixed;
+    z-index: 1200;
+    display: inline-flex;
+    gap: 0.15rem;
+    padding: 0.2rem;
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: calc(var(--border-radius, 6px) + 2px);
+    background: var(--box-bg, #fff);
+    box-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.35);
+}
+
+.block-selection-menu button {
+    border: none;
+    background: transparent;
+    color: var(--fg, #0f172a);
+    font: inherit;
+    font-size: 0.82rem;
+    padding: 0.28rem 0.55rem;
+    border-radius: var(--border-radius, 6px);
+    cursor: pointer;
+}
+
+.block-selection-menu button:hover:not(:disabled),
+.block-selection-menu button:focus-visible:not(:disabled) {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    outline: none;
+}
+
+.block-selection-menu button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.project-script aside.block-left-controls,
+.project-script aside.block-actions,
+#table-blocks td.block-left-controls,
+#table-blocks td.block-actions-cell,
+.table-blocks-all td.block-left-controls,
+.table-blocks-all td.block-actions-cell,
+.block-left-controls-inner,
+.block-actions-controls,
+.block-element-label,
+.block-select-checkbox,
+.block-select-all-checkbox,
+a.create-below[role="button"],
+.drag-handle,
+.block-drag-menu-dropdown,
+button.block-drag-menu-toggle,
+.block-action-bookmark,
+.block-action-pin,
+.block-action-move {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+html.scripty-block-text-selecting .project-script aside.block-left-controls,
+html.scripty-block-text-selecting .project-script aside.block-actions,
+html.scripty-block-text-selecting #table-blocks td.block-left-controls,
+html.scripty-block-text-selecting #table-blocks td.block-actions-cell,
+html.scripty-block-text-selecting .table-blocks-all td.block-left-controls,
+html.scripty-block-text-selecting .table-blocks-all td.block-actions-cell,
+html.scripty-block-text-selecting .block-element-label,
+html.scripty-block-text-selecting .block-left-controls-inner,
+html.scripty-block-text-selecting .block-actions-controls {
+    pointer-events: none;
+}
+
 .script-block-text:empty::before {
     content: '\00a0';
 }
@@ -5610,9 +5732,37 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
     display: none !important;
 }
 
+html.safari-reader-view .block-content .reader-visible-text {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: pre-wrap !important;
+    border: 0 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
 @media print {
     .block-content .script-block-text:not(textarea) {
         display: block !important;
+    }
+
+    .block-content .reader-visible-text {
+        display: block !important;
+        position: static !important;
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
+        overflow: visible !important;
+        clip: auto !important;
+        white-space: pre-wrap !important;
+        border: 0 !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
     }
 
     .block-content .block-inline-edit-form,
@@ -6129,23 +6279,6 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
 .block-content.block-type-dialogue {
     padding-left: 15%;
     padding-right: 15%;
-}
-
-.project-script .block-content:has(form[hx-post*="/block/editInline"]) {
-    padding-left: 0;
-    padding-right: 0;
-}
-
-.project-script .block-content form[hx-post*="/block/editInline"] textarea[name="content"],
-.project-script .block-content form.block-inline-edit-form textarea[name="content"],
-#table-blocks .block-content form[hx-post*="/block/editInline"] textarea[name="content"],
-.table-blocks-all .block-content form[hx-post*="/block/editInline"] textarea[name="content"] {
-    width: 100%;
-    max-width: 100%;
-    margin-left: 0;
-    margin-right: 0;
-    text-align: left;
-    display: block;
 }
 
 .block-content.block-type-parenthetical {

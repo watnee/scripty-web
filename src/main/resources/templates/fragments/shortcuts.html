@@ -5,7 +5,7 @@
         <div class="help-card-grid">
             <div class="help-card" data-keywords="keyboard shortcuts undo redo history control command">
                 <h3>🕒 History &amp; Undo</h3>
-                <p class="muted shortcuts-context">Available on project and scene pages when the history menu is visible.</p>
+                <p class="muted shortcuts-context">Available on the project page when the history toolbar is visible.</p>
                 <div class="shortcuts-list">
                     <div class="help-shortcut-row">
                         <span>Undo edit</span>
@@ -14,6 +14,25 @@
                     <div class="help-shortcut-row">
                         <span>Redo edit</span>
                         <kbd class="kb-mod-shift-z">Cmd + Shift + Z</kbd>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-card" data-keywords="search find filter script project">
+                <h3>🔍 Search &amp; Navigation</h3>
+                <p class="muted shortcuts-context">On the project page:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Search script</span>
+                        <kbd class="kb-mod-f">Cmd + F</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Close search</span>
+                        <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>View keyboard shortcuts</span>
+                        <span class="shortcut-keys"><kbd>?</kbd></span>
                     </div>
                 </div>
             </div>
@@ -39,6 +58,30 @@
                         </span>
                     </div>
                 </div>
+                <p class="muted shortcuts-context">Move shortcuts are disabled while typing in a block textarea.</p>
+            </div>
+
+            <div class="help-card" data-keywords="copy cut paste delete selection clipboard">
+                <h3>📋 Text Selection</h3>
+                <p class="muted shortcuts-context">Select text across blocks in the script view, then use:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Copy selection</span>
+                        <kbd class="kb-mod-c">Cmd + C</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Cut selection</span>
+                        <kbd class="kb-mod-x">Cmd + X</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Paste at caret</span>
+                        <kbd class="kb-mod-v">Cmd + V</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Delete selection</span>
+                        <span class="shortcut-keys"><kbd>Delete</kbd> <span class="shortcut-or">or</span> <kbd>Backspace</kbd></span>
+                    </div>
+                </div>
             </div>
 
             <div class="help-card" data-keywords="inline editing enter escape shift submit save block scene">
@@ -54,12 +97,35 @@
                         <span class="shortcut-keys"><kbd>Shift</kbd> + <kbd>Enter</kbd></span>
                     </div>
                     <div class="help-shortcut-row">
+                        <span>Delete empty block</span>
+                        <span class="shortcut-keys"><kbd>Backspace</kbd> <span class="shortcut-or">or</span> <kbd>Delete</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Cancel empty create row</span>
+                        <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
                         <span>Save scene name</span>
                         <span class="shortcut-keys"><kbd>Enter</kbd></span>
                     </div>
                     <div class="help-shortcut-row">
                         <span>Cancel project rename</span>
                         <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-card" data-keywords="text size zoom font readability">
+                <h3>🔤 Text Size</h3>
+                <p class="muted shortcuts-context">On the project page:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Increase text size</span>
+                        <kbd class="kb-mod-plus">Cmd + +</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Decrease text size</span>
+                        <kbd class="kb-mod-minus">Cmd + −</kbd>
                     </div>
                 </div>
             </div>
@@ -73,7 +139,7 @@
 
     <script th:fragment="shortcutsScript">
     (function() {
-        const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+        const isMac = window.scriptyIsMac ? window.scriptyIsMac() : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
         const modLabel = isMac ? '⌘' : 'Ctrl';
 
         document.querySelectorAll('.kb-mod-z').forEach(function(el) {
@@ -81,6 +147,24 @@
         });
         document.querySelectorAll('.kb-mod-shift-z').forEach(function(el) {
             el.textContent = isMac ? '⌘ ⇧ Z' : 'Ctrl + Y';
+        });
+        document.querySelectorAll('.kb-mod-f').forEach(function(el) {
+            el.textContent = isMac ? '⌘ F' : 'Ctrl + F';
+        });
+        document.querySelectorAll('.kb-mod-c').forEach(function(el) {
+            el.textContent = isMac ? '⌘ C' : 'Ctrl + C';
+        });
+        document.querySelectorAll('.kb-mod-x').forEach(function(el) {
+            el.textContent = isMac ? '⌘ X' : 'Ctrl + X';
+        });
+        document.querySelectorAll('.kb-mod-v').forEach(function(el) {
+            el.textContent = isMac ? '⌘ V' : 'Ctrl + V';
+        });
+        document.querySelectorAll('.kb-mod-plus').forEach(function(el) {
+            el.textContent = isMac ? '⌘ +' : 'Ctrl + +';
+        });
+        document.querySelectorAll('.kb-mod-minus').forEach(function(el) {
+            el.textContent = isMac ? '⌘ −' : 'Ctrl + −';
         });
         document.querySelectorAll('.kb-ctrl').forEach(function(el) {
             el.textContent = modLabel;

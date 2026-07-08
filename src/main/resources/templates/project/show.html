@@ -353,11 +353,20 @@
             searchDropdown.classList.toggle('open', isOpen);
             searchToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
             if (isOpen) {
-                setTimeout(function() { searchInput.focus(); }, 0);
+                setTimeout(function() { searchInput.focus(); searchInput.select(); }, 0);
             }
         }
 
+        window.scriptyOpenProjectSearch = function() {
+            setSearchOpen(true);
+        };
+
         if (searchToggle) {
+            const isMac = window.scriptyIsMac ? window.scriptyIsMac() : /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
+            const searchShortcut = isMac ? ' (⌘F)' : ' (Ctrl+F)';
+            searchToggle.title = 'Search script' + searchShortcut;
+            searchToggle.setAttribute('aria-label', 'Search script' + searchShortcut);
+
             searchToggle.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const isOpen = searchDropdown.classList.contains('open');
@@ -391,6 +400,18 @@
                 setSearchOpen(false);
                 if (searchToggle) searchToggle.focus();
             }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+            if (e.key.toLowerCase() !== 'f') return;
+            const active = document.activeElement;
+            if (window.scriptyIsTypingContext && window.scriptyIsTypingContext(active)) {
+                if (active !== searchInput) return;
+            }
+            e.preventDefault();
+            document.querySelectorAll('.nav-dropdown').forEach(function(d) { d.classList.remove('open'); });
+            setSearchOpen(true);
         });
 
         function performSearch() {

@@ -224,8 +224,10 @@
             const isMoveDown = (e.altKey && e.key === 'ArrowDown') || (e.ctrlKey && e.shiftKey && e.key === 'ArrowDown');
             
             if (!isMoveUp && !isMoveDown) return;
-            
+
             const activeEl = document.activeElement;
+            if (isEditable(activeEl) && !e.altKey) return;
+            
             let targetRow = activeEl ? findBlockRow(activeEl) : null;
             if (!targetRow) {
                 targetRow = hoveredRow;
@@ -1158,6 +1160,107 @@
                 return match ? match[1] : '';
             }
 
+            const SCRIPTY_BLOCKS_MIME = 'application/x-scripty-blocks+json';
+            const SCRIPTY_BLOCKS_EMBED = '\u2063';
+
+            function getBlockRowType(row) {
+                return ((row && row.getAttribute('data-block-type')) || 'ACTION').toUpperCase();
+            }
+
+            function getBlockCharacterName(blockContent) {
+                if (!blockContent) return '';
+                const charEl = blockContent.querySelector('.reader-visible-character-name, .character-name');
+                return charEl ? charEl.textContent.trim() : '';
+            }
+
+            function buildSelectionClipboardBlock(row, blockContent, range, index, from, to) {
+                const isMiddleRow = to > from && index > from && index < to;
+                let content = '';
+                let personId = getBlockPersonId(blockContent) || '';
+                let characterName = getBlockCharacterName(blockContent);
+                let clearCharacter = false;
+
+                if (isMiddleRow) {
+                    content = getBlockContentText(blockContent);
+                } else {
+                    getBlockSelectableTextNodes(blockContent).forEach(function(node) {
+                        const isCharacter = node.classList.contains('reader-visible-character-name') ||
+                            node.classList.contains('character-name');
+                        if (rangeIntersectsNode(range, node)) {
+                            if (isCharacter) {
+                                characterName = normalizeSelectableText(node.textContent || '');
+                            } else {
+                                content = getSelectedTextInNode(range, node);
+                            }
+                        }
+                        if (isCharacter && rangeIntersectsNode(range, node) && isNodeFullySelected(range, node)) {
+                            clearCharacter = true;
+                        }
+                    });
+                }
+
+                return {
+                    type: getBlockRowType(row),
+                    content: content,
+                    personId: clearCharacter ? '' : personId,
+                    characterName: clearCharacter ? '' : characterName,
+                    tags: row.getAttribute('data-tags') || ''
+                };
+            }
+
+            function serializeScriptyBlocksPayload(blocks) {
+                return JSON.stringify({ version: 1, blocks: blocks || [] });
+            }
+
+            function parseScriptyBlocksPayload(raw) {
+                if (!raw) return null;
+                try {
+                    const payload = JSON.parse(raw);
+                    if (!payload || !Array.isArray(payload.blocks)) return null;
+                    return payload.blocks.map(function(block) {
+                        return {
+                            type: (block.type || 'ACTION').toUpperCase(),
+                            content: block.content != null ? block.content : '',
+                            personId: block.personId != null ? String(block.personId) : '',
+                            characterName: block.characterName != null ? block.characterName : '',
+                            tags: block.tags != null ? block.tags : ''
+                        };
+                    });
+                } catch (_err) {
+                    return null;
+                }
+            }
+
+            function embedScriptyBlocksInPlainText(text, blocks) {
+                if (!blocks || !blocks.length) return text;
+                return text + '\n' + SCRIPTY_BLOCKS_EMBED + serializeScriptyBlocksPayload(blocks) + SCRIPTY_BLOCKS_EMBED;
+            }
+
+            function parseEmbeddedScriptyBlocks(text) {
+                if (text == null) return { text: '', blocks: null };
+                const endMarker = text.lastIndexOf(SCRIPTY_BLOCKS_EMBED);
+                if (endMarker === -1) return { text: text, blocks: null };
+                const startMarker = text.lastIndexOf(SCRIPTY_BLOCKS_EMBED, endMarker - 1);
+                if (startMarker === -1) return { text: text, blocks: null };
+                const plain = text.slice(0, startMarker).replace(/\n?$/, '');
+                const blocks = parseScriptyBlocksPayload(text.slice(startMarker + 1, endMarker));
+                return { text: plain, blocks: blocks };
+            }
+
+            function normalizeClipboardPayload(pastePayload, pasteBlocks) {
+                if (typeof pastePayload === 'object' && pastePayload !== null) {
+                    return {
+                        text: pastePayload.text != null ? pastePayload.text : '',
+                        blocks: pasteBlocks || pastePayload.blocks || null
+                    };
+                }
+                const embedded = parseEmbeddedScriptyBlocks(pastePayload || '');
+                return {
+                    text: embedded.text,
+                    blocks: pasteBlocks || embedded.blocks
+                };
+            }
+
             function getRemainingTextInNode(range, node) {
                 if (!range || !node) return normalizeSelectableText(node ? node.textContent : '');
                 if (!rangeIntersectsNode(range, node)) {
@@ -1241,7 +1344,7 @@
                 return true;
             }
 
-            function getBlockPasteMutations(pasteText) {
+            function getBlockPasteMutations(pasteText, pasteBlocks) {
                 if (pasteText == null) pasteText = '';
 
                 const selection = window.getSelection && window.getSelection();
@@ -1277,36 +1380,40 @@
                     const isMiddle = from !== to && i > from && i < to;
                     let newContent = originalContent;
                     let clearCharacter = false;
+                    const blockData = pasteBlocks && pasteBlocks[i - from] ? pasteBlocks[i - from] : null;
 
                     if (isCollapsed && isStart && textEl) {
                         const offset = getTextOffsetAtRangeStart(range, textEl);
                         newContent = originalContent.slice(0, offset) + pasteText + originalContent.slice(offset);
                     } else if (!isCollapsed) {
                         if (isMiddle) {
-                            newContent = '';
+                            newContent = blockData ? (blockData.content != null ? blockData.content : '') : '';
                             if (charName && rangeIntersectsNode(range, charName)) {
-                                clearCharacter = true;
+                                clearCharacter = !blockData || !blockData.personId;
                             }
                         } else if (textEl && rangeIntersectsNode(range, textEl)) {
                             if (isStart && isEnd) {
-                                newContent = getTextBeforeRangeInNode(range, textEl) + pasteText +
+                                newContent = getTextBeforeRangeInNode(range, textEl) +
+                                    (blockData ? blockData.content : pasteText) +
                                     getTextAfterRangeInNode(range, textEl);
                             } else if (isStart) {
-                                newContent = getTextBeforeRangeInNode(range, textEl) + pasteText;
+                                newContent = getTextBeforeRangeInNode(range, textEl) +
+                                    (blockData ? blockData.content : pasteText);
                             } else if (isEnd) {
-                                newContent = getTextAfterRangeInNode(range, textEl);
+                                newContent = (blockData ? blockData.content : pasteText) +
+                                    getTextAfterRangeInNode(range, textEl);
                             } else {
                                 newContent = getRemainingTextInNode(range, textEl);
                             }
                         }
 
                         if (charName && rangeIntersectsNode(range, charName) && isNodeFullySelected(range, charName)) {
-                            clearCharacter = true;
+                            clearCharacter = !blockData || !blockData.personId;
                         }
                     }
 
-                    if (newContent !== originalContent || clearCharacter) {
-                        mutations.push({
+                    if (newContent !== originalContent || clearCharacter || blockData) {
+                        const mutation = {
                             blockId: blockId,
                             row: row,
                             blockContent: blockContent,
@@ -1315,7 +1422,19 @@
                             clearCharacter: clearCharacter,
                             personId: clearCharacter ? '' : originalPersonId,
                             tags: row.getAttribute('data-tags') || ''
-                        });
+                        };
+                        if (blockData) {
+                            mutation.type = blockData.type;
+                            if (blockData.personId) {
+                                mutation.personId = blockData.personId;
+                            } else if (clearCharacter) {
+                                mutation.personId = '';
+                            }
+                            if (blockData.tags) {
+                                mutation.tags = blockData.tags;
+                            }
+                        }
+                        mutations.push(mutation);
                     }
                 }
 
@@ -1339,6 +1458,7 @@
                 const from = Math.min(startIdx, endIdx);
                 const to = Math.max(startIdx, endIdx);
                 const lines = [];
+                const blocks = [];
                 const mutations = [];
 
                 for (let i = from; i <= to; i++) {
@@ -1353,6 +1473,7 @@
                     const isMiddleRow = from !== to && i > from && i < to;
                     const originalContent = getBlockContentText(blockContent);
                     const originalPersonId = getBlockPersonId(blockContent);
+                    const clipboardBlock = buildSelectionClipboardBlock(row, blockContent, range, i, from, to);
 
                     if (isMiddleRow) {
                         newContent = '';
@@ -1382,6 +1503,7 @@
                     }
 
                     lines.push(parts.length ? parts.join('\n') : '');
+                    blocks.push(clipboardBlock);
                     mutations.push({
                         blockId: blockId,
                         row: row,
@@ -1390,7 +1512,8 @@
                         originalContent: originalContent,
                         clearCharacter: clearCharacter,
                         personId: clearCharacter ? '' : originalPersonId,
-                        tags: row.getAttribute('data-tags') || ''
+                        tags: row.getAttribute('data-tags') || '',
+                        type: clipboardBlock.type
                     });
                 }
 
@@ -1402,6 +1525,7 @@
 
                 return {
                     copyText: copyText,
+                    blocks: blocks,
                     mutations: mutations,
                     isCrossBlock: isCrossBlock,
                     hasCut: hasCut
@@ -1412,6 +1536,20 @@
                 const data = getCrossBlockSelectionData();
                 if (!data || !data.isCrossBlock) return null;
                 return data.copyText;
+            }
+
+            function applyBlockMutationHtml(mutation, html) {
+                if (!mutation.blockContent) return;
+                if (!mutation.type && html.indexOf('block-inline-edit-form') !== -1) {
+                    throw new Error('block save rejected');
+                }
+                mutation.blockContent.innerHTML = html;
+                if (mutation.type && window.scriptyApplyBlockTypeClass) {
+                    window.scriptyApplyBlockTypeClass(mutation.blockContent, mutation.type);
+                }
+                if (typeof htmx !== 'undefined') {
+                    htmx.process(mutation.blockContent);
+                }
             }
 
             function saveBlockContentAfterCut(mutation) {
@@ -1429,6 +1567,35 @@
                     return window.scriptySaveBlockContentInline(mutation.blockContent, fields);
                 }
 
+                if (mutation.type) {
+                    const typeFields = Object.assign({}, fields, {
+                        type: mutation.type,
+                        partial: 'project'
+                    });
+                    const projectId = typeof resolveProjectId === 'function' ? resolveProjectId() : null;
+                    if (projectId) {
+                        typeFields.projectId = projectId;
+                    }
+                    return fetch('/block/setTypeAndContent', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: new URLSearchParams(typeFields).toString(),
+                        credentials: 'same-origin'
+                    }).then(function(response) {
+                        if (!response.ok) throw new Error('typed save failed');
+                        return response.text();
+                    }).then(function() {
+                        return fetch('/block/showInline?id=' + encodeURIComponent(mutation.blockId), {
+                            credentials: 'same-origin'
+                        });
+                    }).then(function(response) {
+                        if (!response.ok) throw new Error('show inline failed');
+                        return response.text();
+                    }).then(function(html) {
+                        applyBlockMutationHtml(mutation, html);
+                    });
+                }
+
                 return fetch('/block/editInline', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -1438,14 +1605,153 @@
                     if (!response.ok) throw new Error('cut save failed');
                     return response.text();
                 }).then(function(html) {
-                    if (!mutation.blockContent) return;
-                    if (html.indexOf('block-inline-edit-form') !== -1) {
-                        throw new Error('cut save rejected');
-                    }
-                    mutation.blockContent.innerHTML = html;
+                    applyBlockMutationHtml(mutation, html);
+                });
+            }
+
+            function insertBlockRowHtml(afterRow, html) {
+                const template = document.createElement('template');
+                template.innerHTML = html.trim();
+                const newRows = Array.from(template.content.children);
+                if (!newRows.length || !afterRow || !afterRow.parentNode) return null;
+                let insertAfter = afterRow;
+                let savedRow = null;
+                newRows.forEach(function(newRow) {
+                    insertAfter.insertAdjacentElement('afterend', newRow);
+                    insertAfter = newRow;
                     if (typeof htmx !== 'undefined') {
-                        htmx.process(mutation.blockContent);
+                        htmx.process(newRow);
                     }
+                    if (newRow.hasAttribute('data-block-id')) {
+                        savedRow = newRow;
+                    }
+                });
+                return savedRow;
+            }
+
+            function createTypedBlockBelow(afterRow, blockData) {
+                const blockId = afterRow && afterRow.getAttribute('data-block-id');
+                if (!blockId || !blockData) return Promise.resolve(afterRow);
+
+                const body = new URLSearchParams({
+                    id: blockId,
+                    content: blockData.content != null ? blockData.content : '',
+                    surface: 'project'
+                });
+                if (blockData.personId) {
+                    body.set('personId', blockData.personId);
+                }
+
+                return fetch('/block/createBelowInline', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: body.toString(),
+                    credentials: 'same-origin'
+                }).then(function(response) {
+                    if (!response.ok) throw new Error('create below failed');
+                    return response.text();
+                }).then(function(html) {
+                    const newRow = insertBlockRowHtml(afterRow, html);
+                    if (!newRow) return afterRow;
+                    const newBlockId = newRow.getAttribute('data-block-id');
+                    const blockContent = newRow.querySelector('.block-content');
+                    if (!newBlockId || !blockContent) return newRow;
+                    if (!blockData.type || blockData.type === 'ACTION') {
+                        return newRow;
+                    }
+                    return saveBlockContentAfterCut({
+                        blockId: newBlockId,
+                        row: newRow,
+                        blockContent: blockContent,
+                        content: blockData.content != null ? blockData.content : '',
+                        personId: blockData.personId || '',
+                        tags: blockData.tags || '',
+                        type: blockData.type
+                    }).then(function() {
+                        return newRow;
+                    });
+                }).catch(function() {
+                    return afterRow;
+                });
+            }
+
+            function createTypedBlocksBelowChain(afterRow, blocks) {
+                if (!blocks || !blocks.length) return Promise.resolve();
+                let chain = Promise.resolve(afterRow);
+                blocks.forEach(function(blockData) {
+                    chain = chain.then(function(currentRow) {
+                        return createTypedBlockBelow(currentRow, blockData);
+                    });
+                });
+                return chain;
+            }
+
+            function applyStructuredBlockPaste(pasteText, pasteBlocks) {
+                const selection = window.getSelection && window.getSelection();
+                if (!selection || !selection.rangeCount || !pasteBlocks || !pasteBlocks.length) {
+                    return Promise.resolve(false);
+                }
+
+                const range = selection.getRangeAt(0);
+                const rows = Array.from(document.querySelectorAll('.block-row[data-block-id], tr[data-block-id]'));
+                const startRow = getRowForRangePoint(range.startContainer);
+                const endRow = getRowForRangePoint(range.endContainer);
+                if (!startRow || !endRow) return Promise.resolve(false);
+
+                const startIdx = rows.indexOf(startRow);
+                const endIdx = rows.indexOf(endRow);
+                if (startIdx === -1 || endIdx === -1) return Promise.resolve(false);
+
+                const from = Math.min(startIdx, endIdx);
+                const to = Math.max(startIdx, endIdx);
+                const isCollapsed = range.collapsed;
+                let mutations;
+                let trailingBlocks = [];
+
+                if (isCollapsed && from === to && pasteBlocks.length === 1) {
+                    const blockContent = startRow.querySelector('.block-content');
+                    const textEl = getBlockMainTextEl(blockContent);
+                    const originalContent = getBlockContentText(blockContent);
+                    const blockData = pasteBlocks[0];
+                    const offset = textEl ? getTextOffsetAtRangeStart(range, textEl) : originalContent.length;
+                    mutations = [{
+                        blockId: startRow.getAttribute('data-block-id'),
+                        row: startRow,
+                        blockContent: blockContent,
+                        content: originalContent.slice(0, offset) +
+                            (blockData.content != null ? blockData.content : pasteText) +
+                            originalContent.slice(offset),
+                        originalContent: originalContent,
+                        clearCharacter: false,
+                        personId: blockData.personId || getBlockPersonId(blockContent) || '',
+                        tags: blockData.tags || startRow.getAttribute('data-tags') || '',
+                        type: blockData.type
+                    }];
+                } else {
+                    mutations = getBlockPasteMutations(pasteText, pasteBlocks);
+                    if (mutations && pasteBlocks.length > mutations.length) {
+                        trailingBlocks = pasteBlocks.slice(mutations.length);
+                    }
+                }
+
+                if (!mutations || !mutations.length) return Promise.resolve(false);
+
+                clearBlockTextEditability();
+                removeBlockSelectionMenu();
+                selection.removeAllRanges();
+
+                const lastRow = rows[to];
+                return Promise.all(mutations.map(saveBlockContentAfterCut)).then(function() {
+                    if (!trailingBlocks.length) return true;
+                    return createTypedBlocksBelowChain(lastRow, trailingBlocks).then(function() {
+                        return true;
+                    });
+                }).then(function(result) {
+                    clearBlockTextEditability();
+                    updateUndoRedoButtons(resolveProjectId());
+                    return result;
+                }).catch(function() {
+                    return false;
                 });
             }
 
@@ -1546,6 +1852,14 @@
                 document.querySelectorAll('.block-selection-menu').forEach(function(el) {
                     el.remove();
                 });
+                document.removeEventListener('keydown', blockSelectionMenuEscapeHandler, true);
+            }
+
+            function blockSelectionMenuEscapeHandler(e) {
+                if (e.key !== 'Escape') return;
+                if (!document.querySelector('.block-selection-menu')) return;
+                e.preventDefault();
+                removeBlockSelectionMenu();
             }
 
             function writeTextToClipboard(text) {
@@ -1611,6 +1925,92 @@
                 };
             }
 
+            const BLOCK_SELECTION_ICONS = {
+                copy: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+                cut: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88"/><path d="M14.47 14.48 20 20"/><path d="M8.12 8.12 12 12"/></svg>',
+                paste: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H9a1 1 0 0 0-1 1v2c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V3a1 1 0 0 0-1-1Z"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/></svg>',
+                delete: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+            };
+
+            function isMacPlatform() {
+                return /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+            }
+
+            function blockSelectionShortcut(key) {
+                return isMacPlatform() ? '⌘' + key : 'Ctrl+' + key;
+            }
+
+            function createBlockSelectionMenuButton(action, label, shortcut) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.dataset.action = action;
+                btn.className = 'block-selection-menu-btn';
+                btn.setAttribute('role', 'menuitem');
+                const hint = shortcut ? label + ' (' + shortcut + ')' : label;
+                btn.title = hint;
+                btn.setAttribute('aria-label', hint);
+                btn.innerHTML =
+                    '<span class="block-selection-menu-icon">' + BLOCK_SELECTION_ICONS[action] + '</span>' +
+                    '<span class="block-selection-menu-label">' + label + '</span>';
+                return btn;
+            }
+
+            function appendBlockSelectionMenuDivider(menu) {
+                const divider = document.createElement('span');
+                divider.className = 'block-selection-menu-divider';
+                divider.setAttribute('role', 'separator');
+                divider.setAttribute('aria-hidden', 'true');
+                menu.appendChild(divider);
+            }
+
+            function runBlockSelectionMenuAction(action, menuData) {
+                if (action === 'copy') {
+                    if (!menuData || !menuData.copyText) return;
+                    writeTextToClipboard(menuData.copyText);
+                    removeBlockSelectionMenu();
+                } else if (action === 'cut') {
+                    if (!menuData || !menuData.hasCut) return;
+                    clearBlockTextEditability();
+                    removeBlockSelectionMenu();
+                    applyCrossBlockCut(menuData.mutations);
+                    writeTextToClipboard(menuData.copyText);
+                } else if (action === 'paste') {
+                    readTextFromClipboard().then(function(pasteText) {
+                        return applyBlockTextPaste(pasteText);
+                    }).finally(function() {
+                        removeBlockSelectionMenu();
+                    });
+                } else if (action === 'delete') {
+                    if (!menuData || !menuData.hasCut) return;
+                    clearBlockTextEditability();
+                    removeBlockSelectionMenu();
+                    applyCrossBlockCut(menuData.mutations);
+                }
+            }
+
+            function positionBlockSelectionMenu(menu, rect, pointerX, pointerY) {
+                menu.style.visibility = 'hidden';
+                menu.style.left = '0';
+                menu.style.top = '0';
+                document.body.appendChild(menu);
+
+                const menuWidth = menu.offsetWidth;
+                const menuHeight = menu.offsetHeight;
+                const anchorLeft = rect.left + (rect.width / 2) - (menuWidth / 2);
+                let left = Math.max(8, Math.min(anchorLeft, window.innerWidth - menuWidth - 8));
+                let top = rect.bottom + 8;
+                if (top + menuHeight > window.innerHeight - 8) {
+                    top = Math.max(8, rect.top - menuHeight - 8);
+                }
+                if (pointerX != null && pointerY != null && top + menuHeight > window.innerHeight - 8) {
+                    top = Math.max(8, Math.min(pointerY - menuHeight - 8, window.innerHeight - menuHeight - 8));
+                }
+
+                menu.style.left = left + 'px';
+                menu.style.top = top + 'px';
+                menu.style.visibility = '';
+            }
+
             function showBlockSelectionMenu(pointerX, pointerY, forceShow) {
                 removeBlockSelectionMenu();
 
@@ -1640,84 +2040,71 @@
 
                 const menu = document.createElement('div');
                 menu.className = 'block-selection-menu';
-                menu.setAttribute('role', 'toolbar');
+                menu.setAttribute('role', 'menu');
                 menu.setAttribute('aria-label', 'Selection actions');
-
-                const copyBtn = document.createElement('button');
-                copyBtn.type = 'button';
-                copyBtn.dataset.action = 'copy';
-                copyBtn.textContent = 'Copy';
-                if (!data || !data.copyText) {
-                    copyBtn.disabled = true;
-                }
-
-                const cutBtn = document.createElement('button');
-                cutBtn.type = 'button';
-                cutBtn.dataset.action = 'cut';
-                cutBtn.textContent = 'Cut';
-                if (!data || !data.hasCut) {
-                    cutBtn.disabled = true;
-                }
-
-                const pasteBtn = document.createElement('button');
-                pasteBtn.type = 'button';
-                pasteBtn.dataset.action = 'paste';
-                pasteBtn.textContent = 'Paste';
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.type = 'button';
-                deleteBtn.dataset.action = 'delete';
-                deleteBtn.textContent = 'Delete';
-                if (!data || !data.hasCut) {
-                    deleteBtn.disabled = true;
-                }
-
-                menu.appendChild(copyBtn);
-                menu.appendChild(cutBtn);
-                menu.appendChild(pasteBtn);
-                menu.appendChild(deleteBtn);
-
-                const menuWidth = 220;
-                const menuHeight = 34;
-                let left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8));
-                let top = rect.bottom + 6;
-                if (top + menuHeight > window.innerHeight - 8) {
-                    top = Math.max(8, rect.top - menuHeight - 6);
-                }
-
-                menu.style.left = left + 'px';
-                menu.style.top = top + 'px';
                 menu._blockSelectionData = data;
-                document.body.appendChild(menu);
+
+                let hasClipboardActions = false;
+                if (data && data.copyText) {
+                    menu.appendChild(createBlockSelectionMenuButton('copy', 'Copy', blockSelectionShortcut('C')));
+                    hasClipboardActions = true;
+                }
+                if (data && data.hasCut) {
+                    menu.appendChild(createBlockSelectionMenuButton('cut', 'Cut', blockSelectionShortcut('X')));
+                    hasClipboardActions = true;
+                }
+                menu.appendChild(createBlockSelectionMenuButton('paste', 'Paste', blockSelectionShortcut('V')));
+                if (data && data.hasCut) {
+                    if (hasClipboardActions) {
+                        appendBlockSelectionMenuDivider(menu);
+                    }
+                    menu.appendChild(createBlockSelectionMenuButton('delete', 'Delete', 'Del'));
+                }
+
+                positionBlockSelectionMenu(menu, rect, pointerX, pointerY);
+                document.addEventListener('keydown', blockSelectionMenuEscapeHandler, true);
+
+                const firstBtn = menu.querySelector('.block-selection-menu-btn');
+                if (firstBtn) {
+                    requestAnimationFrame(function() {
+                        firstBtn.focus({ preventScroll: true });
+                    });
+                }
 
                 menu.addEventListener('mousedown', function(e) {
                     const btn = e.target.closest('[data-action]');
-                    if (btn && !btn.disabled) {
+                    if (btn) {
                         e.preventDefault();
-                        const action = btn.dataset.action;
-                        const menuData = menu._blockSelectionData;
-                        if (action === 'copy') {
-                            if (!menuData || !menuData.copyText) return;
-                            writeTextToClipboard(menuData.copyText);
-                            removeBlockSelectionMenu();
-                        } else if (action === 'cut') {
-                            if (!menuData || !menuData.hasCut) return;
-                            clearBlockTextEditability();
-                            removeBlockSelectionMenu();
-                            applyCrossBlockCut(menuData.mutations);
-                            writeTextToClipboard(menuData.copyText);
-                        } else if (action === 'paste') {
-                            readTextFromClipboard().then(function(pasteText) {
-                                return applyBlockTextPaste(pasteText);
-                            }).finally(function() {
-                                removeBlockSelectionMenu();
-                            });
-                        } else if (action === 'delete') {
-                            performBlockTextDelete();
-                        }
+                        runBlockSelectionMenuAction(btn.dataset.action, menu._blockSelectionData);
                         return;
                     }
                     e.preventDefault();
+                });
+
+                menu.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        removeBlockSelectionMenu();
+                        return;
+                    }
+                    const buttons = Array.from(menu.querySelectorAll('.block-selection-menu-btn'));
+                    const currentIndex = buttons.indexOf(document.activeElement);
+                    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const next = buttons[(currentIndex + 1) % buttons.length];
+                        if (next) next.focus();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        const prev = buttons[(currentIndex - 1 + buttons.length) % buttons.length];
+                        if (prev) prev.focus();
+                    } else if (e.key === 'Enter' || e.key === ' ') {
+                        const activeBtn = document.activeElement;
+                        if (activeBtn && activeBtn.closest('.block-selection-menu') === menu &&
+                            activeBtn.matches('.block-selection-menu-btn')) {
+                            e.preventDefault();
+                            runBlockSelectionMenuAction(activeBtn.dataset.action, menu._blockSelectionData);
+                        }
+                    }
                 });
             }
 
@@ -1942,6 +2329,33 @@
                 if (isBlockContentTextarea(active) && active.selectionStart !== active.selectionEnd) return;
                 if (!hasActiveBlockTextSelection()) return;
                 if (performBlockTextCut()) {
+                    e.preventDefault();
+                }
+            }, true);
+
+            document.addEventListener('keydown', function(e) {
+                if (!(e.metaKey || e.ctrlKey) || e.altKey || e.key.toLowerCase() !== 'v') return;
+                if (!shouldHandleBlockTextClipboard()) return;
+                const active = document.activeElement;
+                if (isBlockContentTextarea(active)) return;
+                const selection = window.getSelection && window.getSelection();
+                if (!selection || !selection.rangeCount) return;
+                const range = selection.getRangeAt(0);
+                if (!getRowForRangePoint(range.startContainer)) return;
+                e.preventDefault();
+                readTextFromClipboard().then(function(pasteText) {
+                    return applyBlockTextPaste(pasteText);
+                });
+            }, true);
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+                if (e.metaKey || e.ctrlKey || e.altKey) return;
+                if (!shouldHandleBlockTextClipboard()) return;
+                const active = document.activeElement;
+                if (isBlockContentTextarea(active)) return;
+                if (!hasActiveBlockTextSelection()) return;
+                if (performBlockTextDelete()) {
                     e.preventDefault();
                 }
             }, true);
@@ -4591,6 +5005,17 @@
             document.body.classList.toggle('landing-body', path === '/');
         }
 
+        function initGlobalShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== '?' || e.metaKey || e.ctrlKey || e.altKey) return;
+                const active = document.activeElement;
+                if (isEditable(active)) return;
+                if (window.location.pathname === '/shortcuts') return;
+                e.preventDefault();
+                window.location.href = '/shortcuts';
+            });
+        }
+
         // Run on initial load
         function initAll() {
             syncBodyPageClasses();
@@ -4606,6 +5031,7 @@
             initSettingsDropdown();
             initThemeToggle();
             initProjectDeleteConfirm();
+            initGlobalShortcuts();
             document.querySelectorAll('textarea').forEach(growTextarea);
             document.querySelectorAll('input[type="text"]').forEach(autoGrowInput);
             document.querySelectorAll('.scene-blocks, #table-blocks').forEach(function(container) {
@@ -4751,6 +5177,7 @@
         }
     })();
     </script>
+    <script th:src="@{/js/shortcuts.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline-store.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline-edit.js(v=${assetVersion})}"></script>

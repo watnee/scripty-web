@@ -1,10 +1,11 @@
-const CACHE_NAME = 'scripty-cache-v14';
+const CACHE_NAME = 'scripty-cache-v15';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/css/missing.min.css',
   '/css/scripty.css',
   '/js/htmx.min.js',
   '/js/_hyperscript.min.js',
+  '/js/shortcuts.js',
   '/js/text-size.js',
   '/js/block-empty-guard.js',
   '/js/focus-mode.js',

@@ -282,6 +282,38 @@
                    textarea.selectionStart === textarea.selectionEnd;
         }
 
+        window.scriptyBeginBlockTypeChangeWait = function() {
+            window.scriptyBlockTypeChangePending = true;
+            if (!window.scriptyBlockTypeChangePromise) {
+                window.scriptyBlockTypeChangePromise = new Promise(function(resolve) {
+                    window.scriptyBlockTypeChangeResolve = resolve;
+                });
+            }
+        };
+
+        window.scriptyFinishBlockTypeChangeWait = function() {
+            window.scriptyBlockTypeChangePending = false;
+            if (window.scriptyBlockTypeChangeResolve) {
+                window.scriptyBlockTypeChangeResolve();
+                window.scriptyBlockTypeChangeResolve = null;
+                window.scriptyBlockTypeChangePromise = null;
+            }
+        };
+
+        function waitForBlockTypeChange() {
+            if (!window.scriptyBlockTypeChangePending) {
+                return Promise.resolve();
+            }
+            return window.scriptyBlockTypeChangePromise || Promise.resolve();
+        }
+
+        function resolveLiveEditForm(form) {
+            if (!form) return null;
+            const row = form.closest('[data-block-id]');
+            if (!row || !row.isConnected) return null;
+            return row.querySelector('.block-content form[hx-post*="/block/editInline"]') || form;
+        }
+
         function closeBlockEdit(form, done) {
             if (!form) {
                 if (done) done();
@@ -291,34 +323,45 @@
                 if (done) done();
                 return;
             }
-            const textarea = form.querySelector('textarea[name="content"]');
-            if (!textarea) {
-                if (done) done();
-                return;
-            }
-            if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptySaveBlockEditOffline) {
-                window.scriptySaveBlockEditOffline(form, done);
-                return;
-            }
-            form.dataset.committing = 'true';
-            const formData = new FormData(form);
-            const url = form.getAttribute('hx-post') || '/block/editInline';
-            fetch(url, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: new URLSearchParams(formData).toString()
-            }).then(function(response) {
-                return response.text();
-            }).then(function(html) {
-                const target = form.closest('.block-content');
-                if (target) {
-                    target.innerHTML = html;
+            waitForBlockTypeChange().then(function() {
+                const liveForm = resolveLiveEditForm(form);
+                if (!liveForm) {
+                    if (done) done();
+                    return;
                 }
-            }).catch(function() {
-                /* keep edit form if save fails */
-            }).finally(function() {
-                delete form.dataset.committing;
-                if (done) done();
+                if (liveForm.dataset.committing === 'true') {
+                    if (done) done();
+                    return;
+                }
+                const textarea = liveForm.querySelector('textarea[name="content"]');
+                if (!textarea) {
+                    if (done) done();
+                    return;
+                }
+                if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptySaveBlockEditOffline) {
+                    window.scriptySaveBlockEditOffline(liveForm, done);
+                    return;
+                }
+                liveForm.dataset.committing = 'true';
+                const formData = new FormData(liveForm);
+                const url = liveForm.getAttribute('hx-post') || '/block/editInline';
+                fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: new URLSearchParams(formData).toString()
+                }).then(function(response) {
+                    return response.text();
+                }).then(function(html) {
+                    const target = liveForm.closest('.block-content');
+                    if (target && target.isConnected) {
+                        target.innerHTML = html;
+                    }
+                }).catch(function() {
+                    /* keep edit form if save fails */
+                }).finally(function() {
+                    delete liveForm.dataset.committing;
+                    if (done) done();
+                });
             });
         }
 
@@ -529,36 +572,43 @@
             if (!row) return;
             if (row.dataset.enterCreatingBelow === 'true') return;
             row.dataset.enterCreatingBelow = 'true';
-            const textarea = form.querySelector('textarea[name="content"]');
-            if (textarea && textarea.value.trim() === '') {
-                const blockContent = form.closest('.block-content');
-                if (!blockContent) {
+            waitForBlockTypeChange().then(function() {
+                const liveForm = resolveLiveEditForm(form);
+                if (!liveForm || !row.isConnected) {
                     delete row.dataset.enterCreatingBelow;
                     return;
                 }
-                fetch('/block/showInline?id=' + encodeURIComponent(row.getAttribute('data-block-id')), {
-                    credentials: 'same-origin',
-                    cache: 'no-store'
-                }).then(function(response) {
-                    return response.text();
-                }).then(function(html) {
-                    if (blockContent.isConnected) {
-                        blockContent.innerHTML = html;
-                        if (typeof htmx !== 'undefined') {
-                            htmx.process(blockContent);
-                        }
+                const textarea = liveForm.querySelector('textarea[name="content"]');
+                if (textarea && textarea.value.trim() === '') {
+                    const blockContent = liveForm.closest('.block-content');
+                    if (!blockContent) {
+                        delete row.dataset.enterCreatingBelow;
+                        return;
                     }
-                }).catch(function() {
-                    /* keep edit form if revert fails */
-                }).finally(function() {
-                    createEmptyBlockBelow(row);
+                    fetch('/block/showInline?id=' + encodeURIComponent(row.getAttribute('data-block-id')), {
+                        credentials: 'same-origin',
+                        cache: 'no-store'
+                    }).then(function(response) {
+                        return response.text();
+                    }).then(function(html) {
+                        if (blockContent.isConnected) {
+                            blockContent.innerHTML = html;
+                            if (typeof htmx !== 'undefined') {
+                                htmx.process(blockContent);
+                            }
+                        }
+                    }).catch(function() {
+                        /* keep edit form if revert fails */
+                    }).finally(function() {
+                        createEmptyBlockBelow(row);
+                        delete row.dataset.enterCreatingBelow;
+                    });
+                    return;
+                }
+                closeBlockEdit(liveForm, function() {
+                    openCreateBelowRow(row);
                     delete row.dataset.enterCreatingBelow;
                 });
-                return;
-            }
-            closeBlockEdit(form, function() {
-                openCreateBelowRow(row);
-                delete row.dataset.enterCreatingBelow;
             });
         }
 
@@ -3457,12 +3507,12 @@
             var pendingTypeChangeContent = null;
 
             function finishBlockTypeChange() {
-                window.scriptyBlockTypeChangePending = false;
                 pendingTypeChangeContent = null;
+                window.scriptyFinishBlockTypeChangeWait();
             }
 
             function beginBlockTypeChange(blockId) {
-                window.scriptyBlockTypeChangePending = true;
+                window.scriptyBeginBlockTypeChangeWait();
                 pendingTypeChangeContent = null;
                 if (!blockId) return;
                 var row = document.querySelector(
@@ -3521,7 +3571,9 @@
                     }
                     return response.text();
                 }).then(function(html) {
-                    var row = form.closest('.block-row');
+                    var row = document.querySelector(
+                        '.block-row[data-block-id="' + blockId + '"], tr[data-block-id="' + blockId + '"]'
+                    );
                     var blockContent = row ? row.querySelector('.block-content') : null;
                     if (!blockContent) return;
                     applyBlockTypeClass(blockContent, type);

@@ -44,7 +44,7 @@ public class UserRestController {
     }
 
     @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<UserResource>> create(
+    public ResponseEntity<?> create(
             @Valid @RequestBody CreateUserCommandModel commandModel, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(buildErrors(bindingResult), HttpStatus.BAD_REQUEST);

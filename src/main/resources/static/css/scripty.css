@@ -2442,6 +2442,54 @@ html.scripty-hide-block-select .table-blocks-all aside.block-actions {
     pointer-events: none;
 }
 
+html.scripty-hide-block-select .block-row.block-controls-revealed .block-select-checkbox,
+html.scripty-hide-block-select .block-row.block-controls-revealed a.create-below[role="button"],
+html.scripty-hide-block-select .block-row.block-controls-revealed .drag-handle,
+html.scripty-hide-block-select .block-row.block-controls-revealed .block-drag-menu-dropdown,
+html.scripty-hide-block-select tr.block-controls-revealed .block-select-checkbox,
+html.scripty-hide-block-select tr.block-controls-revealed a.create-below[role="button"],
+html.scripty-hide-block-select tr.block-controls-revealed .drag-handle,
+html.scripty-hide-block-select tr.block-controls-revealed .block-drag-menu-dropdown {
+    visibility: visible;
+    pointer-events: auto;
+}
+
+html.scripty-hide-block-select .block-row.block-controls-revealed aside.block-left-controls,
+html.scripty-hide-block-select tr.block-controls-revealed td.block-left-controls {
+    visibility: visible;
+    pointer-events: auto;
+}
+
+html.scripty-hide-block-select .block-row.block-controls-revealed a.create-below[role="button"],
+html.scripty-hide-block-select tr.block-controls-revealed a.create-below[role="button"] {
+    opacity: 1;
+}
+
+html.scripty-hide-block-select .block-row.block-controls-revealed button.block-drag-menu-toggle.nav-dropdown-toggle,
+html.scripty-hide-block-select tr.block-controls-revealed button.block-drag-menu-toggle.nav-dropdown-toggle {
+    color: var(--accent, #475569);
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
+}
+
+.block-content.has-block-caret-preview {
+    position: relative;
+}
+
+.block-caret-preview {
+    position: absolute;
+    width: 1px;
+    margin-left: -0.5px;
+    background-color: var(--fg, currentColor);
+    pointer-events: none;
+    z-index: 2;
+    animation: block-caret-preview-blink 1.05s step-end infinite;
+}
+
+@keyframes block-caret-preview-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
 html.scripty-hide-block-element-labels .block-element-label {
     display: none !important;
 }

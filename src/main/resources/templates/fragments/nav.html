@@ -178,16 +178,23 @@
             if (e.target.tagName === 'TEXTAREA' || (e.target.tagName === 'INPUT' && (e.target.type === 'text' || e.target.type === 'textarea'))) {
                 lastFocusedEditable = e.target;
                 rememberActiveBlockRow(findBlockRow(e.target));
+                var row = findBlockRow(e.target);
+                if (row && window.scriptySyncElementTypeToolbar) {
+                    window.scriptySyncElementTypeToolbar(row.getAttribute('data-block-type'));
+                }
             }
         });
 
-        // Track hovered block row
+        // Track hovered block row for fallback only — do not promote hover to
+        // "active", or moving the pointer to the element toolbar retargets type changes.
         document.addEventListener('mouseover', function(e) {
             hoveredRow = findBlockRow(e.target);
-            rememberActiveBlockRow(hoveredRow);
         });
 
         document.addEventListener('click', function(e) {
+            if (e.target.closest('.bulk-type-btn, .bulk-align-btn, .bulk-style-btn, .project-script-toolbar')) {
+                return;
+            }
             rememberActiveBlockRow(findBlockRow(e.target));
         });
 
@@ -365,27 +372,37 @@
             });
         }
 
-        function flushOpenBlockEdits(done) {
-            var forms = Array.from(document.querySelectorAll(
-                '.block-content form[hx-post*="/block/editInline"]'
-            ));
-            if (forms.length === 0) {
-                if (done) done();
-                return;
-            }
-            var remaining = forms.length;
-            function finishOne() {
-                remaining--;
-                if (remaining <= 0 && done) done();
-            }
-            forms.forEach(function(form) {
-                var textarea = form.querySelector('textarea[name="content"]');
-                if (!textarea || textarea.value.trim() === '') {
-                    revertEmptySavedBlockEdit(form);
-                    finishOne();
+        function flushOpenBlockEdits(done, blockIds) {
+            waitForBlockTypeChange().then(function() {
+                var forms = Array.from(document.querySelectorAll(
+                    '.block-content form[hx-post*="/block/editInline"]'
+                ));
+                if (blockIds && blockIds.length > 0) {
+                    var idSet = {};
+                    blockIds.forEach(function(id) { idSet[String(id)] = true; });
+                    forms = forms.filter(function(form) {
+                        var row = form.closest('[data-block-id]');
+                        return row && idSet[row.getAttribute('data-block-id')];
+                    });
+                }
+                if (forms.length === 0) {
+                    if (done) done();
                     return;
                 }
-                closeBlockEdit(form, finishOne);
+                var remaining = forms.length;
+                function finishOne() {
+                    remaining--;
+                    if (remaining <= 0 && done) done();
+                }
+                forms.forEach(function(form) {
+                    var textarea = form.querySelector('textarea[name="content"]');
+                    if (!textarea || textarea.value.trim() === '') {
+                        revertEmptySavedBlockEdit(form);
+                        finishOne();
+                        return;
+                    }
+                    closeBlockEdit(form, finishOne);
+                });
             });
         }
 
@@ -2679,6 +2696,7 @@
                 textEl: clickOffset.textEl,
                 offset: clickOffset.offset
             };
+            rememberActiveBlockRow(row);
             window.scriptySuppressBlockEditClick = true;
             window.scriptySuppressBlockEditForPreview = true;
             positionBlockCaretPreview(blockContent);
@@ -2802,6 +2820,7 @@
                 if (!row || !isGloballyHidden()) return;
                 clearRevealedBlockControls();
                 row.classList.add('block-controls-revealed');
+                rememberActiveBlockRow(row);
             }
 
             function hideRevealedBlockControls(row) {
@@ -2895,6 +2914,8 @@
             }
             return null;
         }
+        window.scriptyResolveProjectId = resolveProjectId;
+        window.scriptyFlushOpenBlockEdits = flushOpenBlockEdits;
 
         function abortUndoStatusFetch() {
             if (window._undoStatusAbort) {
@@ -2936,9 +2957,42 @@
         }
 
         window.scriptyGetActiveBlockId = function(triggerEl) {
+            function findEditingBlockRow() {
+                const focused = document.activeElement;
+                if (focused && focused.name === 'content') {
+                    const row = findBlockRow(focused);
+                    if (row && row.querySelector('.block-content form[hx-post*="/block/editInline"]')) {
+                        return row;
+                    }
+                }
+                const form = document.querySelector(
+                    '.block-content form[hx-post*="/block/editInline"]:focus-within'
+                );
+                return form ? findBlockRow(form) : null;
+            }
+
+            function findCaretPreviewBlockRow() {
+                const preview = window.scriptyBlockCaretPreviewActive;
+                if (preview && preview.row && preview.row.isConnected) {
+                    return preview.row;
+                }
+                return document.querySelector('.block-row.block-controls-revealed[data-block-id], tr.block-controls-revealed[data-block-id]');
+            }
+
+            const focusedEditableRow = (function() {
+                if (!lastFocusedEditable || !lastFocusedEditable.isConnected) return null;
+                if (document.activeElement === lastFocusedEditable) {
+                    return findBlockRow(lastFocusedEditable);
+                }
+                // Stale blur target — only trust it when nothing more recent is active.
+                return null;
+            })();
+
             const candidates = [
+                findEditingBlockRow(),
+                findCaretPreviewBlockRow(),
                 findBlockRow(document.activeElement),
-                lastFocusedEditable ? findBlockRow(lastFocusedEditable) : null,
+                focusedEditableRow,
                 lastActiveBlockRow,
                 hoveredRow,
                 findBlockRow(triggerEl)
@@ -3405,192 +3459,8 @@
                         runWhenHtmxIdle(function() {
                             submitBulkPostForm(fieldsByAction.action, fieldsByAction.fields);
                         });
-                    });
+                    }, fieldsByAction.flushBlockIds || null);
                 });
-            }
-
-            function findOpenEditFormForBlock(blockId) {
-                if (!blockId) return null;
-                var row = document.querySelector(
-                    '.block-row[data-block-id="' + blockId + '"], tr[data-block-id="' + blockId + '"]'
-                );
-                return row ? row.querySelector('.block-content form[hx-post*="/block/editInline"]') : null;
-            }
-
-            function applyBlockTypeClass(blockContent, type) {
-                if (!blockContent || !type) return;
-                blockContent.classList.forEach(function(cls) {
-                    if (cls.indexOf('block-type-') === 0) {
-                        blockContent.classList.remove(cls);
-                    }
-                });
-                blockContent.classList.add('block-type-' + type.toLowerCase());
-                blockContent.classList.remove('script-block--dialogue', 'script-block--action');
-                if (type === 'DIALOGUE') {
-                    blockContent.classList.add('script-block--dialogue');
-                } else {
-                    blockContent.classList.add('script-block--action');
-                }
-                var row = blockContent.closest('.block-row');
-                if (!row) return;
-                row.setAttribute('data-block-type', type);
-                var label = row.querySelector('.block-element-label');
-                if (label) {
-                    label.setAttribute('data-block-type', type);
-                    label.textContent = window.scriptyBlockTypeLabel ? window.scriptyBlockTypeLabel(type) : type;
-                }
-            }
-
-            window.scriptyApplyBlockTypeClass = applyBlockTypeClass;
-
-            function findWritableBlockRow(el) {
-                if (!el) return null;
-                var saved = el.closest('tr[data-block-id], .block-row[data-block-id]');
-                if (saved) return saved;
-                var unsaved = el.closest('tr:not([data-block-id]), .block-row:not([data-block-id])');
-                if (!unsaved || unsaved.classList.contains('project-script-select-spacer')) return null;
-                return unsaved.querySelector('textarea[name="content"], form[hx-post*="/block/createInline"], form[hx-post*="/block/createBelowInline"]')
-                    ? unsaved
-                    : null;
-            }
-
-            function getActiveWritableBlockRow(triggerEl) {
-                var candidates = [
-                    findWritableBlockRow(document.activeElement),
-                    lastFocusedEditable ? findWritableBlockRow(lastFocusedEditable) : null,
-                    lastActiveBlockRow,
-                    hoveredRow ? findWritableBlockRow(hoveredRow) : null,
-                    findWritableBlockRow(triggerEl)
-                ];
-                for (var i = 0; i < candidates.length; i++) {
-                    if (candidates[i]) return candidates[i];
-                }
-                return null;
-            }
-
-            function setCreateRowType(row, type) {
-                if (!row || row.hasAttribute('data-block-id') || !type) return false;
-                var blockContent = row.querySelector('.block-content');
-                if (!blockContent) return false;
-                applyBlockTypeClass(blockContent, type);
-                var form = row.querySelector('form');
-                if (form) {
-                    var typeInput = form.querySelector('input[name="type"]');
-                    if (!typeInput) {
-                        typeInput = document.createElement('input');
-                        typeInput.type = 'hidden';
-                        typeInput.name = 'type';
-                        form.appendChild(typeInput);
-                    }
-                    typeInput.value = type;
-                }
-                return true;
-            }
-
-            window.scriptyBlockTypeLabel = function(type) {
-                var labels = {
-                    SCENE: 'Scene',
-                    ACTION: 'Action',
-                    DIALOGUE: 'Dialogue',
-                    PARENTHETICAL: '(Paren)',
-                    TRANSITION: 'Transition',
-                    LYRICS: 'Lyrics',
-                    CENTERED: 'Centered',
-                    SECTION: 'Section',
-                    SYNOPSIS: 'Synopsis',
-                    NOTE: 'Note',
-                    PAGE_BREAK: 'Page Break'
-                };
-                return labels[type] || type;
-            };
-
-            var pendingTypeChangeContent = null;
-
-            function finishBlockTypeChange() {
-                pendingTypeChangeContent = null;
-                window.scriptyFinishBlockTypeChangeWait();
-            }
-
-            function beginBlockTypeChange(blockId) {
-                window.scriptyBeginBlockTypeChangeWait();
-                pendingTypeChangeContent = null;
-                if (!blockId) return;
-                var row = document.querySelector(
-                    '.block-row[data-block-id="' + blockId + '"], tr[data-block-id="' + blockId + '"]'
-                );
-                if (!row) return;
-                var textarea = row.querySelector('textarea[name="content"]');
-                if (textarea) {
-                    pendingTypeChangeContent = textarea.value;
-                }
-            }
-
-            function resolveTypeChangeContent(form) {
-                var textarea = form ? form.querySelector('textarea[name="content"]') : null;
-                if (textarea && textarea.value != null) {
-                    return textarea.value;
-                }
-                if (pendingTypeChangeContent != null) {
-                    return pendingTypeChangeContent;
-                }
-                return null;
-            }
-
-            function runSingleBlockTypeAction(blockId, type, form) {
-                var textarea = form.querySelector('textarea[name="content"]');
-                var caretStart = textarea ? textarea.selectionStart : 0;
-                var caretEnd = textarea ? textarea.selectionEnd : caretStart;
-                var fields = {
-                    id: blockId,
-                    type: type,
-                    projectId: resolveBulkProjectId(),
-                    partial: 'project'
-                };
-                var content = resolveTypeChangeContent(form);
-                if (content != null) {
-                    fields.content = content;
-                }
-                if (form) {
-                    var formData = new FormData(form);
-                    var personId = formData.get('personId');
-                    if (personId) {
-                        fields.personId = personId;
-                    }
-                    var tags = formData.get('tags');
-                    if (tags != null && tags !== '') {
-                        fields.tags = tags;
-                    }
-                }
-                fetch('/block/setTypeAndContent', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: new URLSearchParams(fields).toString()
-                }).then(function(response) {
-                    if (!response.ok) {
-                        throw new Error('setTypeAndContent failed');
-                    }
-                    return response.text();
-                }).then(function(html) {
-                    var row = document.querySelector(
-                        '.block-row[data-block-id="' + blockId + '"], tr[data-block-id="' + blockId + '"]'
-                    );
-                    var blockContent = row ? row.querySelector('.block-content') : null;
-                    if (!blockContent) return;
-                    applyBlockTypeClass(blockContent, type);
-                    blockContent.innerHTML = html;
-                    var newTextarea = blockContent.querySelector('textarea[name="content"]');
-                    if (!newTextarea) return;
-                    growTextarea(newTextarea);
-                    newTextarea.focus({ preventScroll: true });
-                    var len = newTextarea.value.length;
-                    var start = Math.max(0, Math.min(caretStart, len));
-                    var end = Math.max(start, Math.min(caretEnd, len));
-                    newTextarea.setSelectionRange(start, end);
-                }).catch(function() {
-                    var fallbackFields = Object.assign({}, fields);
-                    delete fallbackFields.partial;
-                    submitBulkPostForm('/block/setTypeAndContent', fallbackFields);
-                }).finally(finishBlockTypeChange);
             }
 
             function getBlockRowCopyText(row) {
@@ -3671,50 +3541,7 @@
 
             document.body.addEventListener('click', function(e) {
                 if (!document.querySelector('.project-script')) return;
-
-                var typeBtn = e.target.closest('.bulk-type-btn');
-                if (typeBtn) {
-                    e.preventDefault();
-                    var type = typeBtn.getAttribute('data-bulk-type');
-                    var typeIds = window.scriptyGetSelectedBlockIds();
-                    if (typeIds.length === 0) {
-                        var activeBlockId = window.scriptyGetActiveBlockId
-                            ? window.scriptyGetActiveBlockId(typeBtn)
-                            : null;
-                        if (!activeBlockId) {
-                            var activeRow = getActiveWritableBlockRow(typeBtn);
-                            if (activeRow && !activeRow.hasAttribute('data-block-id')) {
-                                finishBlockTypeChange();
-                                setCreateRowType(activeRow, type);
-                                return;
-                            }
-                            finishBlockTypeChange();
-                            window.scriptyBulkSelectionAlert();
-                            return;
-                        }
-                        typeIds = [activeBlockId];
-                    }
-                    sessionStorage.setItem('activeBlockId', typeIds[0]);
-                    rememberActiveBlockCaret(typeIds[0]);
-                    if (typeIds.length === 1) {
-                        beginBlockTypeChange(typeIds[0]);
-                        var editForm = findOpenEditFormForBlock(typeIds[0]);
-                        if (editForm) {
-                            runSingleBlockTypeAction(typeIds[0], type, editForm);
-                            return;
-                        }
-                        finishBlockTypeChange();
-                    }
-                    runBulkAction({
-                        action: '/block/bulkSetType',
-                        fields: {
-                            ids: typeIds.join(','),
-                            type: type,
-                            projectId: resolveBulkProjectId()
-                        }
-                    });
-                    return;
-                }
+                // Element type buttons are handled by /js/element-type.js
 
                 var alignBtn = e.target.closest('.bulk-align-btn');
                 if (alignBtn) {
@@ -3821,17 +3648,6 @@
                 }
             });
 
-            document.body.addEventListener('mousedown', function(e) {
-                if (e.target.closest('.bulk-type-btn')) {
-                    var activeBlockId = window.scriptyGetActiveBlockId
-                        ? window.scriptyGetActiveBlockId(e.target)
-                        : null;
-                    if (activeBlockId) {
-                        beginBlockTypeChange(activeBlockId);
-                    }
-                    e.preventDefault();
-                }
-            }, true);
         };
 
         window.scriptyInitProjectPageScripts = function() {
@@ -4951,6 +4767,7 @@
                 autoGrowTextarea(textarea);
             }
         }
+        window.scriptyGrowTextarea = growTextarea;
 
         function commitOpenBlockEdits() {
             document.querySelectorAll('.block-content form.block-inline-edit-form, .block-content form[hx-post*="/block/editInline"]').forEach(function(form) {

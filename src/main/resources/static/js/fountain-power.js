@@ -1001,6 +1001,17 @@
     }
     window.scriptyRefreshFountainOutline = refreshOutline;
 
+    function syncListsToolbarActive() {
+        var listsBtn = document.querySelector('#project-lists-dropdown .lists-toolbar-btn');
+        if (!listsBtn) return;
+        var anyOpen =
+            (outlineEl && !outlineEl.hidden) ||
+            (characterListEl && !characterListEl.hidden) ||
+            (locationListEl && !locationListEl.hidden);
+        listsBtn.classList.toggle('is-active', !!anyOpen);
+        listsBtn.setAttribute('aria-pressed', anyOpen ? 'true' : 'false');
+    }
+
     function setOutlineOpen(open) {
         var el = ensureOutline();
         el.hidden = !open;
@@ -1019,6 +1030,7 @@
             syncOutlineTabs();
             refreshOutline();
         }
+        syncListsToolbarActive();
         // Outline padding shifts script layout; keep the test caret aligned.
         requestAnimationFrame(function() {
             requestAnimationFrame(function() {
@@ -1116,6 +1128,7 @@
             if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
             refreshCharacterList();
         }
+        syncListsToolbarActive();
         requestAnimationFrame(function() {
             requestAnimationFrame(function() {
                 if (typeof window.scriptyRepositionBlockCaretPreview === 'function') {
@@ -1254,6 +1267,7 @@
             if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
             refreshLocationList();
         }
+        syncListsToolbarActive();
         requestAnimationFrame(function() {
             requestAnimationFrame(function() {
                 if (typeof window.scriptyRepositionBlockCaretPreview === 'function') {

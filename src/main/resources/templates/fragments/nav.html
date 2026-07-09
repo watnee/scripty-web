@@ -3014,7 +3014,7 @@
 
                 // Keep the test caret when interacting with chrome (outline, toolbars, etc.)
                 if (e.target.closest(
-                    '#nav-outline-toggle, #fountain-outline, #nav-character-list-toggle, #fountain-character-list, #nav-location-list-toggle, #fountain-location-list, .project-script-toolbar, ' +
+                    '#project-lists-dropdown, #nav-outline-toggle, #fountain-outline, #nav-character-list-toggle, #fountain-character-list, #nav-location-list-toggle, #fountain-location-list, .project-script-toolbar, ' +
                     '.text-size-control, .bulk-type-btn, .bulk-align-btn, .bulk-style-btn, ' +
                     '.header-actions-group, .nav-dropdown'
                 )) {
@@ -3401,36 +3401,52 @@
                 });
             }
 
+            function syncViewToolbarActive() {
+                var viewBtn = document.querySelector('#project-view-dropdown .view-toolbar-btn');
+                if (!viewBtn) return;
+                // Highlight when any marker visibility is currently off.
+                var anyHidden = !showBookmarks || !showPins || !showSelect || !showElementLabels;
+                viewBtn.classList.toggle('is-active', anyHidden);
+            }
+
             function syncBookmarkToggleUi() {
                 if (!bookmarksToggle) return;
                 bookmarksToggle.setAttribute('aria-pressed', showBookmarks ? 'false' : 'true');
+                bookmarksToggle.setAttribute('aria-checked', showBookmarks ? 'true' : 'false');
                 bookmarksToggle.classList.toggle('is-active', !showBookmarks);
                 bookmarksToggle.title = showBookmarks ? 'Hide bookmark buttons in blocks' : 'Show bookmark buttons in blocks';
                 bookmarksToggle.setAttribute('aria-label', bookmarksToggle.title);
+                syncViewToolbarActive();
             }
 
             function syncPinToggleUi() {
                 if (!pinsToggle) return;
                 pinsToggle.setAttribute('aria-pressed', showPins ? 'false' : 'true');
+                pinsToggle.setAttribute('aria-checked', showPins ? 'true' : 'false');
                 pinsToggle.classList.toggle('is-active', !showPins);
                 pinsToggle.title = showPins ? 'Hide pin buttons in blocks' : 'Show pin buttons in blocks';
                 pinsToggle.setAttribute('aria-label', pinsToggle.title);
+                syncViewToolbarActive();
             }
 
             function syncSelectToggleUi() {
                 if (!selectToggle) return;
                 selectToggle.setAttribute('aria-pressed', showSelect ? 'false' : 'true');
+                selectToggle.setAttribute('aria-checked', showSelect ? 'true' : 'false');
                 selectToggle.classList.toggle('is-active', !showSelect);
                 selectToggle.title = showSelect ? 'Hide block controls' : 'Show block controls';
                 selectToggle.setAttribute('aria-label', selectToggle.title);
+                syncViewToolbarActive();
             }
 
             function syncElementLabelsToggleUi() {
                 if (!elementLabelsToggle) return;
                 elementLabelsToggle.setAttribute('aria-pressed', showElementLabels ? 'false' : 'true');
+                elementLabelsToggle.setAttribute('aria-checked', showElementLabels ? 'true' : 'false');
                 elementLabelsToggle.classList.toggle('is-active', !showElementLabels);
                 elementLabelsToggle.title = showElementLabels ? 'Hide element labels in blocks' : 'Show element labels in blocks';
                 elementLabelsToggle.setAttribute('aria-label', elementLabelsToggle.title);
+                syncViewToolbarActive();
             }
 
             function syncLockToggleUi() {

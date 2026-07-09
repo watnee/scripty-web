@@ -72,7 +72,9 @@ body, main, header, nav, footer, table, tr, td, th, input, textarea, button, sel
     display: inline-flex;
     align-items: center;
     gap: 0.15rem;
-    padding: 0.1rem 0.2rem;
+    height: 2.25rem;
+    padding: 0 0.2rem;
+    box-sizing: border-box;
     background: var(--interactive-bg);
     border: 1px solid var(--muted-fg);
     border-radius: var(--border-radius);
@@ -214,8 +216,8 @@ html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="s
 .header-actions-group .user-toggle-btn {
     width: auto;
     height: auto;
-    min-width: 1.75rem;
-    min-height: 1.75rem;
+    min-width: 2rem;
+    min-height: 2rem;
     padding: 0.15em 0.35em;
     border-radius: calc(var(--border-radius) - 2px);
 }
@@ -233,8 +235,8 @@ html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="s
 .header-actions-group .help-icon,
 .header-actions-group .settings-icon,
 .header-actions-group .user-icon {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
 }
 
 
@@ -2329,6 +2331,98 @@ input.project-list-search:focus-visible {
     user-select: none;
 }
 
+.text-size-control .lists-dropdown {
+    display: inline-block;
+    position: relative;
+    z-index: 1300;
+}
+
+.text-size-control .lists-dropdown .nav-dropdown-menu.lists-menu {
+    display: none;
+    left: 0;
+    right: auto;
+    min-width: 10.5rem;
+    padding: 0.35rem;
+    transform-origin: top left;
+    z-index: 1300;
+}
+
+.text-size-control .lists-dropdown.open .nav-dropdown-menu.lists-menu {
+    display: block;
+}
+
+.lists-menu .nav-dropdown-item {
+    font-size: 0.84rem;
+    font-weight: 500;
+}
+
+.lists-menu .nav-dropdown-item.is-active {
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    color: var(--accent, inherit);
+    font-weight: 600;
+}
+
+.text-size-control .lists-toolbar-btn.is-active {
+    box-shadow: 0 2px 4px -1px var(--fg) inset;
+    background: var(--pressed-interactive-bg);
+    color: var(--accent);
+}
+
+.text-size-control .view-dropdown {
+    display: inline-block;
+    position: relative;
+    z-index: 1300;
+}
+
+.text-size-control .view-dropdown .nav-dropdown-menu.view-menu {
+    display: none;
+    left: 0;
+    right: auto;
+    min-width: 11.5rem;
+    padding: 0.35rem;
+    transform-origin: top left;
+    z-index: 1300;
+}
+
+.text-size-control .view-dropdown.open .nav-dropdown-menu.view-menu {
+    display: block;
+}
+
+.view-menu .nav-dropdown-item {
+    font-size: 0.84rem;
+    font-weight: 500;
+    gap: 0.55rem;
+}
+
+.view-menu .nav-dropdown-item svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+}
+
+.view-menu .nav-dropdown-item.is-active {
+    color: inherit;
+    font-weight: 500;
+    background: none;
+}
+
+.view-menu .nav-dropdown-item[aria-checked="true"] {
+    color: var(--accent, #475569);
+    font-weight: 600;
+}
+
+.view-menu .nav-dropdown-item[aria-checked="true"]::after {
+    content: "✓";
+    margin-left: auto;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.text-size-control .view-toolbar-btn.is-active {
+    color: var(--accent, #475569);
+    border-color: var(--accent, #475569);
+}
+
 .project-share-intro {
     margin: 0 0 0.65rem;
     font-size: 0.85rem;
@@ -2604,19 +2698,11 @@ html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/bl
 }
 
 .text-size-control .project-search-toggle.is-active,
-.text-size-control .bookmark-filter-toggle.is-active,
-.text-size-control .pin-filter-toggle.is-active,
-.text-size-control .select-filter-toggle.is-active,
-.text-size-control .element-label-filter-toggle.is-active,
 .text-size-control .lock-filter-toggle.is-active {
     color: var(--accent, #475569);
     border-color: var(--accent, #475569);
 }
 
-.text-size-control .bookmark-filter-toggle,
-.text-size-control .pin-filter-toggle,
-.text-size-control .select-filter-toggle,
-.text-size-control .element-label-filter-toggle,
 .text-size-control .lock-filter-toggle,
 .text-size-control .spellcheck-toggle-btn {
     font-size: 1rem;
@@ -2714,20 +2800,23 @@ html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/bl
 .project-last-edited {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    font-size: 0.85rem;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
     color: var(--muted-fg, #64748b);
 }
 
 .project-last-edited svg {
     opacity: 0.7;
     flex-shrink: 0;
+    width: 12px;
+    height: 12px;
 }
 
 .project-last-edited-line {
     margin: 0;
-    font-size: 0.85rem;
-    line-height: 1.3;
+    font-size: 0.8rem;
+    line-height: 1.2;
 }
 
 .project-header-row {
@@ -2746,9 +2835,9 @@ html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/bl
 
 .breadcrumb-name-meta {
     display: inline-flex;
-    align-items: baseline;
+    align-items: center;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.65rem;
     min-width: 0;
     max-width: 100%;
 }
@@ -2766,7 +2855,7 @@ html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/bl
 .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] {
     flex: 1 1 auto;
     min-width: 0;
-    padding-right: 2.75rem;
+    padding-right: 6rem;
 }
 
 .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol {
@@ -2797,16 +2886,16 @@ html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/bl
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line {
     display: inline-flex;
     align-items: center;
-    line-height: 1;
+    line-height: 1.2;
 }
 
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line {
-    margin-left: auto;
-    padding-left: 1rem;
+    margin-left: 0;
+    padding: 0.15rem 0.35rem 0.15rem 0.5rem;
 }
 
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited {
-    line-height: 1;
+    line-height: 1.2;
 }
 
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-breadcrumb-name-display {
@@ -3652,6 +3741,205 @@ html:not(.safari-reader-view) .project-script-header .project-header-title {
 
 .production-card-link h3 {
     color: var(--accent, #1e293b);
+}
+
+.text-documents-page {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 1.25rem 2.5rem;
+    line-height: 1.5;
+}
+
+.text-documents-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 0.75rem 0 1.5rem;
+}
+
+.text-documents-header-text h1 {
+    margin: 0 0 0.35rem;
+}
+
+.text-documents-header-text p {
+    margin: 0;
+    max-width: 36rem;
+}
+
+.text-documents-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.text-documents-secondary-btn {
+    margin: 0;
+}
+
+.text-documents-empty {
+    margin: 1.5rem 0;
+}
+
+.text-documents-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.text-document-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--line, #d6d3d1);
+    background: var(--bg, #fff);
+}
+
+.text-document-card-main {
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
+.text-document-card-title {
+    display: inline-block;
+    font-weight: 600;
+    font-size: 1.05rem;
+    text-decoration: none;
+    color: inherit;
+    margin-bottom: 0.35rem;
+}
+
+.text-document-card-title:hover {
+    text-decoration: underline;
+}
+
+.text-document-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+}
+
+.text-document-type-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--muted-fg, #64748b);
+    border: 1px solid var(--line, #d6d3d1);
+    padding: 0.1rem 0.45rem;
+}
+
+.text-document-preview {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.4;
+}
+
+.text-document-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.text-document-card-actions form,
+.text-document-insert-form,
+.text-document-delete-form {
+    margin: 0;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.text-document-form {
+    margin-bottom: 2rem;
+}
+
+.text-document-form-row {
+    display: grid;
+    grid-template-columns: 1fr minmax(8rem, 10rem);
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 640px) {
+    .text-document-form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.text-document-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0;
+}
+
+.text-document-content-label {
+    margin-bottom: 1rem;
+}
+
+.text-document-content {
+    width: 100%;
+    min-height: 22rem;
+    font-family: "Courier Prime", "Courier New", Courier, monospace;
+    font-size: 1rem;
+    line-height: 1.55;
+    padding: 0.85rem 1rem;
+    resize: vertical;
+    white-space: pre-wrap;
+}
+
+.text-document-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.text-document-insert-panel {
+    margin-top: 0.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line, #d6d3d1);
+}
+
+.text-document-insert-panel h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.15rem;
+}
+
+.text-document-insert-panel > .muted {
+    margin: 0 0 0.85rem;
+}
+
+.text-document-insert-type-label {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.text-document-insert-banner {
+    max-width: 52rem;
+    margin: 0.75rem auto 0;
+    padding: 0.65rem 1rem;
+    background: color-mix(in srgb, var(--accent, #1e293b) 8%, transparent);
+    border: 1px solid var(--line, #d6d3d1);
+    font-size: 0.92rem;
 }
 
 .production-team-section {
@@ -4700,7 +4988,7 @@ kbd {
     }
 
     .has-toolbar-brand .project-top-bar {
-        padding: 0 var(--toolbar-brand-header-actions-space, 6.5rem) 0 var(--project-chrome-inset, 0) !important;
+        padding: 0 var(--toolbar-brand-header-actions-space, 7.5rem) 0 var(--project-chrome-inset, 0) !important;
     }
 
     .has-toolbar-brand header {
@@ -5149,8 +5437,10 @@ aside.block-actions {
 }
 
 .has-toolbar-brand .project-top-bar {
+    position: relative;
+    z-index: 20;
     margin: 0 0 0.25rem;
-    padding: 0 var(--toolbar-brand-header-actions-space, 6.5rem) 0 var(--project-chrome-inset, 0);
+    padding: 0 var(--toolbar-brand-header-actions-space, 7.5rem) 0 var(--project-chrome-inset, 0);
     gap: 0.25rem;
     flex-direction: column;
     align-items: stretch;
@@ -5160,14 +5450,51 @@ aside.block-actions {
 .has-toolbar-brand .project-top-bar-breadcrumb {
     display: flex;
     align-items: center;
-    min-height: 2.1rem;
+    min-height: 2.5rem;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb .project-share-dropdown {
     position: absolute;
-    top: var(--toolbar-brand-top-space, 0.5rem);
-    right: calc(var(--toolbar-brand-header-actions-space, 6.5rem) + 0.35rem);
+    top: 0;
+    right: calc(var(--toolbar-brand-header-actions-space, 7.5rem) + 0.35rem + 2.25rem + 0.5rem);
     z-index: 1001;
+    height: 2.25rem;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history {
+    position: absolute;
+    top: 0;
+    right: calc(var(--toolbar-brand-header-actions-space, 7.5rem) + 0.5rem);
+    z-index: 1001;
+    background: var(--interactive-bg);
+    border: 1px solid var(--muted-fg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 4px -2px var(--fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg);
+    font-size: 0.85rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    box-sizing: border-box;
+    text-decoration: none;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history:hover,
+.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history:focus {
+    filter: brightness(1.1);
+    box-shadow: 0 3px 6px -2px var(--fg);
+    background-color: var(--interactive-bg);
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history svg {
+    display: block;
+    width: 20px;
+    height: 20px;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn {
@@ -5180,7 +5507,43 @@ aside.block-actions {
     justify-content: center;
     color: var(--fg);
     font-size: 0.85rem;
-    padding: 0.15em 0.5em;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history:hover,
+.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history:focus {
+    filter: brightness(1.1);
+    box-shadow: 0 3px 6px -2px var(--fg);
+    background-color: var(--interactive-bg);
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn {
+    background: var(--interactive-bg);
+    border: 1px solid var(--muted-fg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 4px -2px var(--fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg);
+    font-size: 0.85rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn:hover,
@@ -5197,6 +5560,8 @@ aside.block-actions {
 
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn svg {
     display: block;
+    width: 20px;
+    height: 20px;
 }
 
 .project-top-bar-breadcrumb {
@@ -5218,7 +5583,7 @@ body.has-toolbar-brand {
     --toolbar-brand-top-space: 0.65rem;
     --toolbar-brand-bottom-space: 0.5rem;
     --toolbar-brand-side-space: 0.5rem;
-    --toolbar-brand-header-actions-space: 6.5rem;
+    --toolbar-brand-header-actions-space: 7.5rem;
     --project-chrome-inset: 0;
     padding-top: var(--toolbar-brand-top-space);
     padding-left: var(--toolbar-brand-side-space);
@@ -6084,18 +6449,14 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
     display: none;
 }
 
-.text-size-control .bookmark-filter-toggle svg,
-.text-size-control .pin-filter-toggle svg,
-.text-size-control .element-label-filter-toggle svg,
 .text-size-control .lock-filter-toggle svg,
 .text-size-control .spellcheck-toggle-btn svg,
-.text-size-control .version-history-toolbar-btn svg,
 .text-size-control .title-page-toolbar-btn svg,
+.text-size-control .drafts-toolbar-btn svg,
 .text-size-control .file-toolbar-btn svg,
 .text-size-control .share-toolbar-btn svg,
-.text-size-control .outline-toolbar-btn svg,
-.text-size-control .character-list-toolbar-btn svg,
-.text-size-control .location-list-toolbar-btn svg,
+.text-size-control .lists-toolbar-btn svg,
+.text-size-control .view-toolbar-btn svg,
 .text-size-control .focus-toolbar-btn svg,
 .text-size-control .toolbar-visibility-toggle svg {
     display: block;
@@ -6143,7 +6504,7 @@ html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
 
 body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb,
-body.focus-mode .text-size-control > :not(#focus-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#nav-outline-toggle):not(#nav-character-list-toggle):not(#nav-location-list-toggle),
+body.focus-mode .text-size-control > :not(#focus-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
 body.focus-mode .project-script-toolbar,
 body.focus-mode .project-header-row,
 body.focus-mode .project-create-scene,
@@ -6978,11 +7339,9 @@ html.fountain-location-list-open .project-script-toolbar {
 }
 
 body.focus-mode .fountain-outline,
-body.focus-mode #nav-outline-toggle,
 body.focus-mode .fountain-character-list,
-body.focus-mode #nav-character-list-toggle,
 body.focus-mode .fountain-location-list,
-body.focus-mode #nav-location-list-toggle {
+body.focus-mode #project-lists-dropdown {
     display: none !important;
 }
 

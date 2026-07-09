@@ -113,8 +113,12 @@
         return null;
     }
 
-    /** New blocks always default to Action; type can be changed via toolbar/Tab. */
-    function nextTypeAfter(/* type */) {
+    /** After Character/Dual cue → Dialogue; otherwise default to Action. */
+    function nextTypeAfter(type) {
+        var upper = (type || 'ACTION').toUpperCase();
+        if (upper === 'CHARACTER' || upper === 'DUAL_DIALOGUE') {
+            return 'DIALOGUE';
+        }
         return 'ACTION';
     }
     window.scriptyNextFountainType = nextTypeAfter;

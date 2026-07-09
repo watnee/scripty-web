@@ -13,8 +13,10 @@ import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectTeamViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
+import com.scripty.service.DocxExportService;
 import com.scripty.service.FountainExportService;
 import com.scripty.service.FountainImportService;
+import com.scripty.service.PdfExportService;
 import com.scripty.service.ProjectService;
 import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
@@ -71,6 +73,12 @@ public class ProjectController {
 
     @Autowired
     FountainExportService fountainExportService;
+
+    @Autowired
+    PdfExportService pdfExportService;
+
+    @Autowired
+    DocxExportService docxExportService;
 
     @RequestMapping(value = "/list")
     public String list(Model model, Principal principal) {
@@ -421,22 +429,65 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/export", method = RequestMethod.GET)
-    public ResponseEntity<byte[]> exportScript(@RequestParam Integer id) {
+    public ResponseEntity<byte[]> exportScript(
+            @RequestParam Integer id,
+            @RequestParam(required = false, defaultValue = "fountain") String format) {
         Project project = projectService.read(id);
         if (project == null) {
             return ResponseEntity.notFound().build();
         }
 
-        String fountain = fountainExportService.exportProject(id);
-        String filename = "script.fountain";
-        if (project.getTitle() != null && !project.getTitle().isBlank()) {
-            filename = project.getTitle().trim().replaceAll("[^a-zA-Z0-9._-]+", "-") + ".fountain";
+        String normalized = format == null ? "fountain" : format.trim().toLowerCase();
+        if ("pdf".equals(normalized)) {
+            byte[] pdf = pdfExportService.exportProject(id);
+            String filename = exportFilename(project, "pdf");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(pdf);
+        }
+        if ("docx".equals(normalized) || "word".equals(normalized)) {
+            byte[] docx = docxExportService.exportProject(id);
+            String filename = exportFilename(project, "docx");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(docx);
         }
 
+        String fountain = fountainExportService.exportProject(id);
+        String filename = exportFilename(project, "fountain");
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/plain; charset=UTF-8"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .body(fountain.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String exportFilename(Project project, String extension) {
+        String fallback = "script." + extension;
+        String base = null;
+        if (project.getScreenplayTitle() != null && !project.getScreenplayTitle().isBlank()) {
+            base = project.getScreenplayTitle();
+        } else if (project.getTitle() != null && !project.getTitle().isBlank()) {
+            base = project.getTitle();
+        }
+        if (base == null) {
+            return fallback;
+        }
+        String sanitized = base.trim()
+                .replaceAll("[\\\\/:*?\"<>|]+", "-")
+                .replaceAll("\\s+", "-")
+                .replaceAll("[^a-zA-Z0-9._-]+", "-")
+                .replaceAll("-{2,}", "-")
+                .replaceAll("^[.-]+|[.-]+$", "");
+        if (sanitized.isBlank()) {
+            return fallback;
+        }
+        if (sanitized.length() > 80) {
+            sanitized = sanitized.substring(0, 80).replaceAll("[.-]+$", "");
+        }
+        return sanitized + "." + extension;
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)

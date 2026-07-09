@@ -171,18 +171,35 @@
                     <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
             </button>
-            <a id="nav-export"
-               class="nav-dropdown-toggle export-toolbar-btn"
-               th:href="@{/project/export(id=${viewModel.id})}"
-               hx-boost="false"
-               aria-label="Export script"
-               title="Export as Fountain">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-            </a>
+            <div class="nav-dropdown export-dropdown" id="project-export-dropdown">
+                <button id="nav-export"
+                        type="button"
+                        class="nav-dropdown-toggle export-toolbar-btn"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-label="Export script"
+                        title="Export script">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </button>
+                <div class="nav-dropdown-menu export-menu" role="menu" aria-label="Export formats">
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=pdf)}"
+                       hx-boost="false">PDF</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=docx)}"
+                       hx-boost="false">Word (.docx)</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=fountain)}"
+                       hx-boost="false">Fountain</a>
+                </div>
+            </div>
             <form id="project-import-form"
                   th:action="@{/project/import(id=${viewModel.id})}"
                   method="post"
@@ -488,6 +505,41 @@
         window.addEventListener('beforeprint', performSearch);
         window.addEventListener('afterprint', performSearch);
         window.addEventListener('scripty:project-script-refreshed', performSearch);
+    })();
+    </script>
+    <script>
+    (function() {
+        const exportDropdown = document.getElementById('project-export-dropdown');
+        const exportToggle = exportDropdown ? exportDropdown.querySelector('.export-toolbar-btn') : null;
+        if (!exportDropdown || !exportToggle) return;
+
+        function setExportOpen(isOpen) {
+            exportDropdown.classList.toggle('open', isOpen);
+            exportToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+
+        exportToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isOpen = exportDropdown.classList.contains('open');
+            document.querySelectorAll('.nav-dropdown').forEach(function(d) {
+                d.classList.remove('open');
+                const toggle = d.querySelector('.nav-dropdown-toggle');
+                if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            });
+            setExportOpen(!isOpen);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!exportDropdown.contains(e.target)) {
+                setExportOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                setExportOpen(false);
+            }
+        });
     })();
     </script>
     <script th:inline="javascript">

@@ -92,6 +92,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- PDF export -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+
         <!-- Word document import -->
         <dependency>
             <groupId>org.apache.poi</groupId>

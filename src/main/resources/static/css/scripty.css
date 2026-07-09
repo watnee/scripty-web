@@ -2295,6 +2295,30 @@ input.project-list-search:focus-visible {
     display: block;
 }
 
+.export-dropdown {
+    display: inline-block;
+    position: relative;
+}
+
+.export-dropdown .nav-dropdown-menu.export-menu {
+    display: none;
+    right: 0;
+    left: auto;
+    min-width: 8.5rem;
+    padding: 0.35rem;
+    transform-origin: top right;
+    z-index: 1100;
+}
+
+.export-dropdown.open .nav-dropdown-menu.export-menu {
+    display: block;
+}
+
+.export-menu .nav-dropdown-item {
+    font-size: 0.84rem;
+    font-weight: 500;
+}
+
 .project-share-intro {
     margin: 0 0 0.65rem;
     font-size: 0.85rem;

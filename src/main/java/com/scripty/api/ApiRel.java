@@ -19,6 +19,8 @@ public final class ApiRel {
     public static final String TOGGLE_BOOKMARK = "toggleBookmark";
     public static final String TOGGLE_PINNED = "togglePinned";
     public static final String EXPORT = "export";
+    public static final String EXPORT_PDF = "exportPdf";
+    public static final String EXPORT_DOCX = "exportDocx";
     public static final String HEADSHOT = "headshot";
 
     private ApiRel() {

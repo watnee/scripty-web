@@ -93,7 +93,9 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(ActorRestController.class).list(id)).withRel(ApiRel.ACTORS),
                 linkTo(methodOn(ProjectController.class).syncStatus(id, null)).withRel(ApiRel.SYNC_STATUS),
                 linkTo(methodOn(ProjectController.class).undoRedoStatus(id)).withRel(ApiRel.UNDO_REDO_STATUS),
-                linkTo(methodOn(ProjectController.class).exportScript(id)).withRel(ApiRel.EXPORT)
+                linkTo(methodOn(ProjectController.class).exportScript(id, "fountain")).withRel(ApiRel.EXPORT),
+                linkTo(methodOn(ProjectController.class).exportScript(id, "pdf")).withRel(ApiRel.EXPORT_PDF),
+                linkTo(methodOn(ProjectController.class).exportScript(id, "docx")).withRel(ApiRel.EXPORT_DOCX)
         };
     }
 }

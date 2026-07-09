@@ -1033,6 +1033,14 @@
             syncOutlineTabs();
             refreshOutline();
         }
+        // Outline padding shifts script layout; keep the test caret aligned.
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                if (typeof window.scriptyRepositionBlockCaretPreview === 'function') {
+                    window.scriptyRepositionBlockCaretPreview();
+                }
+            });
+        });
     }
 
     function toggleOutline() {
@@ -1221,6 +1229,11 @@
     function initOutlineButton() {
         var btn = document.getElementById('nav-outline-toggle');
         if (!btn) return;
+        // Prevent focus steal so the script caret / test caret stays put.
+        btn.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+        });
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             toggleOutline();

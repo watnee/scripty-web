@@ -2711,6 +2711,14 @@
             preview.style.height = Math.max(caretRect.height, 1) + 'px';
         }
 
+        function repositionActiveBlockCaretPreview() {
+            var active = window.scriptyBlockCaretPreviewActive;
+            if (active && active.blockContent && active.blockContent.isConnected) {
+                positionBlockCaretPreview(active.blockContent);
+            }
+        }
+        window.scriptyRepositionBlockCaretPreview = repositionActiveBlockCaretPreview;
+
         function showBlockCaretPreview(blockContent, row, clickOffset) {
             if (!blockContent || !row || !isBlockContentViewMode(blockContent)) return;
 
@@ -2869,6 +2877,15 @@
             document.body.addEventListener('mousedown', function(e) {
                 if (e.button !== 0 || !isGloballyHidden()) return;
                 if (e.target.closest('a, .block-tag')) return;
+
+                // Keep the test caret when interacting with chrome (outline, toolbars, etc.)
+                if (e.target.closest(
+                    '#nav-outline-toggle, #fountain-outline, .project-script-toolbar, ' +
+                    '.text-size-control, .bulk-type-btn, .bulk-align-btn, .bulk-style-btn, ' +
+                    '.header-actions-group, .nav-dropdown'
+                )) {
+                    return;
+                }
 
                 var blockContent = e.target.closest('.block-content');
                 if (blockContent) {

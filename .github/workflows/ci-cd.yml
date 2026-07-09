@@ -1,0 +1,50 @@
+# CI on PRs and main; deploy to Railway from main after CI passes.
+#
+# Required GitHub Actions secrets:
+#   RAILWAY_TOKEN       — Railway project token (Project → Settings → Tokens),
+#                         scoped to the production environment
+#   RAILWAY_SERVICE_ID  — Railway service ID for the Scripty web service
+#
+# Prerequisite: disable Railway's automatic GitHub deploys for this service
+# so pushes do not trigger a double deploy (Railway + Actions).
+
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Verify
+        run: mvn -B verify
+
+  deploy:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@5.2.0
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service "${{ secrets.RAILWAY_SERVICE_ID }}" --detach

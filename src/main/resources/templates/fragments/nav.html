@@ -3960,11 +3960,16 @@
                 menuBtn.setAttribute('data-bookmarked', bookmarked ? 'true' : 'false');
             }
             var sideLink = row.querySelector('.block-action-bookmark');
-            if (!sideLink) return;
-            sideLink.title = bookmarked ? 'Remove bookmark' : 'Bookmark block';
-            sideLink.setAttribute('aria-label', bookmarked ? 'Remove bookmark' : 'Bookmark block');
-            if (swapMarkerIcon(sideLink, bookmarked, 'bookmark')) return;
-            sideLink.textContent = bookmarked ? '★' : '☆';
+            if (sideLink) {
+                sideLink.title = bookmarked ? 'Remove bookmark' : 'Bookmark block';
+                sideLink.setAttribute('aria-label', bookmarked ? 'Remove bookmark' : 'Bookmark block');
+                if (!swapMarkerIcon(sideLink, bookmarked, 'bookmark')) {
+                    sideLink.textContent = bookmarked ? '★' : '☆';
+                }
+            }
+            if (typeof window.scriptyRefreshFountainOutline === 'function') {
+                window.scriptyRefreshFountainOutline();
+            }
         }
 
         function toggleBookmarkFromDragMenu(row) {

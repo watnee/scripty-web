@@ -7,13 +7,21 @@
  * - Scene heading autocomplete from prior scenes
  * - Scene location autocomplete (reuse places from prior headings)
  * - Scene time-of-day autocomplete (DAY, NIGHT, …)
- * - Scene / section outline navigator
+ * - Scene / section / bookmark outline navigator
  */
 (function() {
     'use strict';
 
     if (window._scriptyFountainPowerInit) return;
     window._scriptyFountainPowerInit = true;
+
+    var OUTLINE_TABS = ['combined', 'scenes', 'bookmarks'];
+    var OUTLINE_TAB_STORAGE = 'scripty-fountain-outline-tab';
+    var OUTLINE_BOOKMARK_MARK =
+        '<span class="fountain-outline-bookmark-mark" aria-hidden="true" title="Bookmarked">' +
+        '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>' +
+        '</svg></span>';
 
     var TAB_CYCLE = [
         'SCENE', 'ACTION', 'CHARACTER', 'DIALOGUE', 'PARENTHETICAL',
@@ -796,44 +804,184 @@
 
     // --- Outline navigator ---
 
+    var outlineActiveTab = 'combined';
+
+    function blockRowText(row) {
+        var textEl = row.querySelector('.script-block-text, textarea[name="content"]');
+        var text = textEl
+            ? (textEl.value != null ? textEl.value : textEl.textContent)
+            : '';
+        text = String(text || '').replace(/\u00a0/g, ' ').trim() || '(Untitled)';
+        return text.length > 80 ? text.slice(0, 77) + '…' : text;
+    }
+
+    function normalizeOutlineTab(tab) {
+        return OUTLINE_TABS.indexOf(tab) >= 0 ? tab : 'combined';
+    }
+
+    function readOutlineTab() {
+        try {
+            return normalizeOutlineTab(localStorage.getItem(OUTLINE_TAB_STORAGE));
+        } catch (err) {
+            return 'combined';
+        }
+    }
+
+    function persistOutlineTab(tab) {
+        try {
+            localStorage.setItem(OUTLINE_TAB_STORAGE, tab);
+        } catch (err) { /* ignore */ }
+    }
+
     function collectOutlineItems() {
         var items = [];
         document.querySelectorAll('.project-script .block-row[data-block-id]').forEach(function(row) {
             var type = rowType(row);
             if (type !== 'SCENE' && type !== 'SECTION') return;
-            var textEl = row.querySelector('.script-block-text, textarea[name="content"]');
-            var text = textEl
-                ? (textEl.value != null ? textEl.value : textEl.textContent)
-                : '';
-            text = String(text || '').replace(/\u00a0/g, ' ').trim() || '(Untitled)';
             items.push({
                 id: row.getAttribute('data-block-id'),
                 type: type,
-                text: text.length > 80 ? text.slice(0, 77) + '…' : text
+                text: blockRowText(row),
+                scene: true,
+                bookmarked: row.getAttribute('data-bookmarked') === 'true'
             });
         });
         return items;
     }
 
+    function collectBookmarkItems() {
+        var items = [];
+        document.querySelectorAll('.project-script .block-row[data-block-id][data-bookmarked="true"]').forEach(function(row) {
+            var type = rowType(row) || 'ACTION';
+            items.push({
+                id: row.getAttribute('data-block-id'),
+                type: type,
+                text: blockRowText(row),
+                scene: type === 'SCENE' || type === 'SECTION',
+                bookmarked: true
+            });
+        });
+        return items;
+    }
+
+    function collectCombinedItems() {
+        var items = [];
+        document.querySelectorAll('.project-script .block-row[data-block-id]').forEach(function(row) {
+            var type = rowType(row) || 'ACTION';
+            var isScene = type === 'SCENE' || type === 'SECTION';
+            var bookmarked = row.getAttribute('data-bookmarked') === 'true';
+            if (!isScene && !bookmarked) return;
+            items.push({
+                id: row.getAttribute('data-block-id'),
+                type: type,
+                text: blockRowText(row),
+                scene: isScene,
+                bookmarked: bookmarked
+            });
+        });
+        return items;
+    }
+
+    function outlineItemHtml(item, sceneNum) {
+        var classes = ['fountain-outline-item'];
+        if (item.scene) {
+            classes.push('fountain-outline-item--' + String(item.type || '').toLowerCase());
+        } else {
+            classes.push('fountain-outline-item--bookmark');
+        }
+        if (item.bookmarked) classes.push('is-bookmarked');
+
+        var num = '';
+        if (item.scene && item.type === 'SCENE' && sceneNum != null) {
+            num = sceneNum + '. ';
+        }
+
+        var typeHint = '';
+        if (!item.scene) {
+            typeHint = '<span class="fountain-outline-type">' +
+                escapeHtml(typeLabel(item.type)) + '</span>';
+        }
+
+        var mark = item.bookmarked ? OUTLINE_BOOKMARK_MARK : '';
+
+        return '<li class="' + classes.join(' ') + '">' +
+            '<a href="#block-' + escapeHtml(item.id) + '" data-outline-block-id="' +
+            escapeHtml(item.id) + '">' +
+            '<span class="fountain-outline-num">' + escapeHtml(num) + '</span>' +
+            '<span class="fountain-outline-text">' + escapeHtml(item.text) + '</span>' +
+            typeHint +
+            mark +
+            '</a></li>';
+    }
+
+    function renderOutlineItems(items, emptyMessage) {
+        var list = outlineEl.querySelector('.fountain-outline-list');
+        var empty = outlineEl.querySelector('.fountain-outline-empty');
+        if (!items.length) {
+            list.innerHTML = '';
+            empty.textContent = emptyMessage;
+            empty.hidden = false;
+            return;
+        }
+        empty.hidden = true;
+        var sceneCount = 0;
+        list.innerHTML = items.map(function(item) {
+            var sceneNum = null;
+            if (item.scene && item.type === 'SCENE') {
+                sceneCount += 1;
+                sceneNum = sceneCount;
+            }
+            return outlineItemHtml(item, sceneNum);
+        }).join('');
+    }
+
+    function syncOutlineTabs() {
+        if (!outlineEl) return;
+        outlineEl.querySelectorAll('[data-outline-tab]').forEach(function(btn) {
+            var active = btn.getAttribute('data-outline-tab') === outlineActiveTab;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+    }
+
+    function setOutlineTab(tab) {
+        outlineActiveTab = normalizeOutlineTab(tab);
+        persistOutlineTab(outlineActiveTab);
+        syncOutlineTabs();
+        refreshOutline();
+    }
+
     function ensureOutline() {
         if (outlineEl) return outlineEl;
+        outlineActiveTab = readOutlineTab();
         outlineEl = document.createElement('aside');
         outlineEl.id = 'fountain-outline';
         outlineEl.className = 'fountain-outline hide-in-reader-view sidebar menu';
-        outlineEl.setAttribute('aria-label', 'Scene outline');
+        outlineEl.setAttribute('aria-label', 'Script outline');
         outlineEl.innerHTML =
             '<div class="fountain-outline-header">' +
             '<strong>Outline</strong>' +
             '<button type="button" class="fountain-outline-close" aria-label="Close outline" title="Close outline">×</button>' +
             '</div>' +
+            '<div class="fountain-outline-tabs" role="tablist" aria-label="Outline views">' +
+            '<button type="button" class="fountain-outline-tab" role="tab" data-outline-tab="combined" aria-selected="true">Combined</button>' +
+            '<button type="button" class="fountain-outline-tab" role="tab" data-outline-tab="scenes" aria-selected="false">Scenes</button>' +
+            '<button type="button" class="fountain-outline-tab" role="tab" data-outline-tab="bookmarks" aria-selected="false">Bookmarks</button>' +
+            '</div>' +
             '<ol class="fountain-outline-list"></ol>' +
-            '<p class="fountain-outline-empty muted">No scenes or sections yet.</p>';
+            '<p class="fountain-outline-empty muted">No scenes or bookmarks yet.</p>';
         document.body.appendChild(outlineEl);
 
         outlineEl.querySelector('.fountain-outline-close').addEventListener('click', function() {
             setOutlineOpen(false);
         });
         outlineEl.addEventListener('click', function(e) {
+            var tabBtn = e.target.closest('[data-outline-tab]');
+            if (tabBtn && outlineEl.contains(tabBtn)) {
+                e.preventDefault();
+                setOutlineTab(tabBtn.getAttribute('data-outline-tab'));
+                return;
+            }
             var link = e.target.closest('[data-outline-block-id]');
             if (!link) return;
             e.preventDefault();
@@ -850,30 +998,22 @@
                 content.click();
             }
         });
+        syncOutlineTabs();
         return outlineEl;
     }
 
     function refreshOutline() {
         if (!outlineEl || outlineEl.hidden) return;
-        var list = outlineEl.querySelector('.fountain-outline-list');
-        var empty = outlineEl.querySelector('.fountain-outline-empty');
-        var items = collectOutlineItems();
-        if (!items.length) {
-            list.innerHTML = '';
-            empty.hidden = false;
+        var tab = normalizeOutlineTab(outlineActiveTab);
+        if (tab === 'bookmarks') {
+            renderOutlineItems(collectBookmarkItems(), 'No bookmarks yet.');
             return;
         }
-        empty.hidden = true;
-        list.innerHTML = items.map(function(item, i) {
-            var num = item.type === 'SCENE' ? (i + 1) + '. ' : '';
-            return '<li class="fountain-outline-item fountain-outline-item--' +
-                item.type.toLowerCase() + '">' +
-                '<a href="#block-' + escapeHtml(item.id) + '" data-outline-block-id="' +
-                escapeHtml(item.id) + '">' +
-                '<span class="fountain-outline-num">' + num + '</span>' +
-                '<span class="fountain-outline-text">' + escapeHtml(item.text) + '</span>' +
-                '</a></li>';
-        }).join('');
+        if (tab === 'scenes') {
+            renderOutlineItems(collectOutlineItems(), 'No scenes or sections yet.');
+            return;
+        }
+        renderOutlineItems(collectCombinedItems(), 'No scenes or bookmarks yet.');
     }
     window.scriptyRefreshFountainOutline = refreshOutline;
 
@@ -889,7 +1029,10 @@
         try {
             localStorage.setItem('scripty-fountain-outline', open ? 'true' : 'false');
         } catch (err) { /* ignore */ }
-        if (open) refreshOutline();
+        if (open) {
+            syncOutlineTabs();
+            refreshOutline();
+        }
     }
 
     function toggleOutline() {

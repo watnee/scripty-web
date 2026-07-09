@@ -6668,7 +6668,7 @@ html.scripty-offline .scripty-offline-banner {
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.5rem;
     font-size: 0.8rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -6689,6 +6689,40 @@ html.scripty-offline .scripty-offline-banner {
     opacity: 1;
 }
 
+.fountain-outline-tabs {
+    display: flex;
+    gap: 0.15rem;
+    margin-bottom: 0.65rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--fg, #111) 12%, transparent);
+    padding-bottom: 0.35rem;
+}
+
+.fountain-outline-tab {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+    padding: 0.3rem 0.2rem;
+    border-radius: 2px;
+    opacity: 0.65;
+}
+
+.fountain-outline-tab:hover {
+    opacity: 1;
+    background: color-mix(in srgb, var(--accent, #145591) 8%, transparent);
+}
+
+.fountain-outline-tab.is-active {
+    opacity: 1;
+    color: var(--accent, #145591);
+    background: color-mix(in srgb, var(--accent, #145591) 12%, transparent);
+    font-weight: 600;
+}
+
 .fountain-outline-list {
     list-style: none;
     margin: 0;
@@ -6699,6 +6733,7 @@ html.scripty-offline .scripty-offline-banner {
 
 .fountain-outline-item a {
     display: flex;
+    align-items: baseline;
     gap: 0.35rem;
     padding: 0.4rem 0.35rem;
     text-decoration: none;
@@ -6719,6 +6754,10 @@ html.scripty-offline .scripty-offline-banner {
     padding-left: 0.85rem;
 }
 
+.fountain-outline-item--bookmark a {
+    padding-left: 0.5rem;
+}
+
 .fountain-outline-num {
     flex-shrink: 0;
     opacity: 0.55;
@@ -6727,8 +6766,27 @@ html.scripty-offline .scripty-offline-banner {
 
 .fountain-outline-text {
     min-width: 0;
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fountain-outline-type {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.5;
+}
+
+.fountain-outline-bookmark-mark {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    color: color-mix(in srgb, var(--accent, #145591) 70%, #92400e);
+    opacity: 0.9;
+    transform: translateY(1px);
 }
 
 .fountain-outline-empty {

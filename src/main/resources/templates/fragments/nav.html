@@ -4356,8 +4356,31 @@
             updateBulkBar();
         };
 
+        function closeBlockDragSubmenus(dropdown) {
+            var root = dropdown || document;
+            root.querySelectorAll('.block-drag-submenu.open').forEach(function(submenu) {
+                submenu.classList.remove('open');
+                var submenuToggle = submenu.querySelector('.block-drag-submenu-toggle');
+                if (submenuToggle) submenuToggle.setAttribute('aria-expanded', 'false');
+                var submenuMenu = submenu.querySelector('.block-drag-submenu-menu');
+                if (submenuMenu) submenuMenu.classList.remove('block-drag-submenu-menu--flip-left');
+            });
+        }
+
+        function positionBlockDragSubmenu(submenu) {
+            if (!submenu) return;
+            var submenuMenu = submenu.querySelector('.block-drag-submenu-menu');
+            if (!submenuMenu) return;
+            submenuMenu.classList.remove('block-drag-submenu-menu--flip-left');
+            var rect = submenuMenu.getBoundingClientRect();
+            if (rect.right > window.innerWidth - 8) {
+                submenuMenu.classList.add('block-drag-submenu-menu--flip-left');
+            }
+        }
+
         function closeAllBlockDragMenus() {
             document.querySelectorAll('.block-drag-menu-dropdown.open').forEach(function(dropdown) {
+                closeBlockDragSubmenus(dropdown);
                 dropdown.classList.remove('open');
                 var toggle = dropdown.querySelector('.block-drag-menu-toggle');
                 if (toggle) toggle.setAttribute('aria-expanded', 'false');
@@ -4794,6 +4817,22 @@
                         }
                     });
                 }
+
+                dropdown.querySelectorAll('.block-drag-submenu-toggle').forEach(function(submenuToggle) {
+                    submenuToggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var submenu = submenuToggle.closest('.block-drag-submenu');
+                        if (!submenu) return;
+                        var isOpen = submenu.classList.contains('open');
+                        closeBlockDragSubmenus(dropdown);
+                        if (!isOpen) {
+                            submenu.classList.add('open');
+                            submenuToggle.setAttribute('aria-expanded', 'true');
+                            positionBlockDragSubmenu(submenu);
+                        }
+                    });
+                });
 
                 dropdown.querySelectorAll('[data-block-drag-action="set-type"]').forEach(function(typeBtn) {
                     typeBtn.addEventListener('click', function(e) {

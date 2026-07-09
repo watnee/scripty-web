@@ -8,22 +8,31 @@
                 title="Drag to reorder; click for options"
                 aria-label="Block options">&#8942;&#8942;</button>
         <div class="nav-dropdown-menu block-drag-menu" role="menu" aria-label="Block options">
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SCENE">Scene</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="ACTION">Action</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="TEXT">Text</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="CHARACTER">Character</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="DIALOGUE">Dialogue</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="DUAL_DIALOGUE">Dual</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="PARENTHETICAL">(Paren)</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="TRANSITION">Transition</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SHOT">Shot</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="LYRICS">Lyrics</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="CENTERED">Centered</button>
-            <hr class="nav-dropdown-divider" />
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SECTION">Section</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SYNOPSIS">Synopsis</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="NOTE">Note</button>
-            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="PAGE_BREAK">Page Break</button>
+            <div class="block-drag-submenu" data-block-drag-submenu="elements">
+                <button type="button"
+                        class="nav-dropdown-item block-drag-submenu-toggle"
+                        role="menuitem"
+                        aria-haspopup="true"
+                        aria-expanded="false">Elements<span class="block-drag-submenu-caret" aria-hidden="true">›</span></button>
+                <div class="nav-dropdown-menu block-drag-submenu-menu" role="menu" aria-label="Element types">
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SCENE">Scene</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="ACTION">Action</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="TEXT">Text</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="CHARACTER">Character</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="DIALOGUE">Dialogue</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="DUAL_DIALOGUE">Dual</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="PARENTHETICAL">(Paren)</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="TRANSITION">Transition</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SHOT">Shot</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="LYRICS">Lyrics</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="CENTERED">Centered</button>
+                    <hr class="nav-dropdown-divider" />
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SECTION">Section</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SYNOPSIS">Synopsis</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="NOTE">Note</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="PAGE_BREAK">Page Break</button>
+                </div>
+            </div>
             <hr th:if="${saved}" class="nav-dropdown-divider" />
             <button th:if="${saved}"
                     type="button"

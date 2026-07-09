@@ -4795,6 +4795,29 @@
                     });
                 }
 
+                dropdown.querySelectorAll('[data-block-drag-action="set-type"]').forEach(function(typeBtn) {
+                    typeBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        closeAllBlockDragMenus();
+                        var type = typeBtn.getAttribute('data-set-type');
+                        if (!type) return;
+                        var row = findAnyBlockRow(dropdown);
+                        if (!row) return;
+                        if (!row.hasAttribute('data-block-id')) {
+                            if (typeof window.scriptySetCreateRowType === 'function') {
+                                window.scriptySetCreateRowType(row, type);
+                            } else if (typeof window.scriptyApplyElementType === 'function') {
+                                window.scriptyApplyElementType(type, null);
+                            }
+                            return;
+                        }
+                        if (typeof window.scriptyApplyElementType === 'function') {
+                            window.scriptyApplyElementType(type, row.getAttribute('data-block-id'));
+                        }
+                    });
+                });
+
                 if (bookmarkBtn) {
                     bookmarkBtn.addEventListener('click', function(e) {
                         e.preventDefault();

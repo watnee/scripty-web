@@ -1098,7 +1098,9 @@ button.block-drag-menu-toggle.nav-dropdown-toggle:active {
 .block-drag-menu-dropdown .nav-dropdown-menu.block-drag-menu {
     left: 0;
     right: auto;
-    min-width: 11rem;
+    min-width: 11.5rem;
+    max-height: min(22rem, 70vh);
+    overflow-y: auto;
     padding: 0.4rem;
     transform-origin: top left;
     z-index: 1100;

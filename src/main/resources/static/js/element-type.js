@@ -205,7 +205,9 @@
 
     function captureTarget(preferredId) {
         var ids = selectedIds();
-        if (ids.length > 1) {
+        // When a specific block is requested (Tab cycle, Fountain detect, drag menu),
+        // always target that block — ignore multi-select bulk mode.
+        if (!preferredId && ids.length > 1) {
             return {
                 mode: 'bulk',
                 ids: ids,
@@ -226,7 +228,7 @@
             }
         }
 
-        var blockId = ids.length === 1 ? ids[0] : (preferredId || activeBlockId());
+        var blockId = preferredId || (ids.length === 1 ? ids[0] : activeBlockId());
         if (!blockId) {
             return null;
         }

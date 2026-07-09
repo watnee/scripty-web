@@ -153,6 +153,13 @@ public class BlockServiceImpl implements BlockService {
         block.setBookmarked(false);
         block.setPinned(false);
         block.setType(normalizeBlockType(cmd.getType()));
+        if (Block.isCharacterCueType(block.getType())) {
+            String characterName = normalizeCharacterCue(content);
+            if (characterName != null) {
+                block.setContent(characterName);
+                block.setPerson(findOrCreatePerson(characterName, project));
+            }
+        }
 
         int order = blockRepository.countByProjectId(project.getId()) + 1;
         block.setOrder(order);
@@ -186,6 +193,13 @@ public class BlockServiceImpl implements BlockService {
                 existingBlock.setPerson(person);
             }
             existingBlock.setType(normalizeBlockType(cmd.getType()));
+            if (Block.isCharacterCueType(existingBlock.getType())) {
+                String characterName = normalizeCharacterCue(content);
+                if (characterName != null) {
+                    existingBlock.setContent(characterName);
+                    existingBlock.setPerson(findOrCreatePerson(characterName, project));
+                }
+            }
             return blockRepository.save(existingBlock);
         }
 
@@ -196,6 +210,13 @@ public class BlockServiceImpl implements BlockService {
         block.setBookmarked(false);
         block.setPinned(false);
         block.setType(normalizeBlockType(cmd.getType()));
+        if (Block.isCharacterCueType(block.getType())) {
+            String characterName = normalizeCharacterCue(content);
+            if (characterName != null) {
+                block.setContent(characterName);
+                block.setPerson(findOrCreatePerson(characterName, project));
+            }
+        }
 
         int newOrder = existingBlock.getOrder() + 1;
         blockRepository.incrementOrdersAbove(existingBlock.getOrder(), project.getId());
@@ -213,7 +234,16 @@ public class BlockServiceImpl implements BlockService {
         }
         String content = cmd.getContent();
 
-        if (person == null && !block.isScene()) {
+        if (Block.isCharacterCueType(block.getType())) {
+            String characterName = normalizeCharacterCue(content);
+            if (characterName != null) {
+                person = findOrCreatePerson(characterName, block.getProject());
+                content = characterName;
+            } else {
+                person = null;
+                content = content != null ? content.trim() : "";
+            }
+        } else if (person == null && !block.isScene()) {
             String characterName = extractCharacterName(content);
             if (characterName != null) {
                 person = findOrCreatePerson(characterName, block.getProject());
@@ -238,6 +268,7 @@ public class BlockServiceImpl implements BlockService {
             return null;
         }
 
+        String previousType = block.getType();
         String normalized = type != null && Block.ELEMENT_TYPES.contains(type.toUpperCase())
                 ? type.toUpperCase() : Block.TYPE_ACTION;
         block.setType(normalized);
@@ -251,6 +282,35 @@ public class BlockServiceImpl implements BlockService {
         if (Block.TYPE_SCENE.equals(normalized)) {
             block.setPerson(null);
             block.setSceneDelimiter(false);
+        } else if (Block.isCharacterCueType(normalized)) {
+            Person person = personId != null ? personRepository.findById(personId).orElse(null) : null;
+            if (person == null) {
+                person = block.getPerson();
+            }
+            String characterName = person != null ? normalizeCharacterCue(person.getName()) : null;
+            if (characterName == null) {
+                characterName = normalizeCharacterCue(content != null ? content : block.getContent());
+            }
+            if (characterName != null) {
+                block.setContent(characterName);
+                block.setPerson(findOrCreatePerson(characterName, block.getProject()));
+            } else {
+                block.setPerson(null);
+            }
+        } else if (Block.TYPE_DIALOGUE.equals(normalized) && Block.isCharacterCueType(previousType)) {
+            // Cue text becomes the speaker; clear content so it isn't duplicated as dialogue.
+            Person person = personId != null ? personRepository.findById(personId).orElse(null) : null;
+            if (person == null) {
+                person = block.getPerson();
+            }
+            String characterName = person != null ? normalizeCharacterCue(person.getName()) : null;
+            if (characterName == null) {
+                characterName = normalizeCharacterCue(block.getContent());
+            }
+            if (characterName != null) {
+                block.setPerson(findOrCreatePerson(characterName, block.getProject()));
+            }
+            block.setContent("");
         } else {
             Person person = personId != null ? personRepository.findById(personId).orElse(null) : null;
             block.setPerson(person);
@@ -304,7 +364,11 @@ public class BlockServiceImpl implements BlockService {
             return block;
         }
 
-        block.setPerson(findOrCreatePerson(trimmed, block.getProject()));
+        Person person = findOrCreatePerson(trimmed, block.getProject());
+        block.setPerson(person);
+        if (Block.isCharacterCueType(block.getType())) {
+            block.setContent(trimmed);
+        }
         return blockRepository.save(block);
     }
 
@@ -429,6 +493,27 @@ public class BlockServiceImpl implements BlockService {
         return trimmed;
     }
 
+    private String normalizeCharacterCue(String content) {
+        if (content == null) {
+            return null;
+        }
+        String trimmed = content.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (trimmed.startsWith("@")) {
+            trimmed = trimmed.substring(1).trim();
+        }
+        trimmed = trimmed.replaceAll("\\^(\\*)?", "").trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (trimmed.length() > 60) {
+            trimmed = trimmed.substring(0, 60).trim();
+        }
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     private String extractCharacterName(String content) {
         if (content == null) return null;
         String[] lines = content.split("\n", -1);
@@ -532,12 +617,37 @@ public class BlockServiceImpl implements BlockService {
         for (Integer id : ids) {
             Block block = blockRepository.findById(id).orElse(null);
             if (block != null && !normalized.equals(block.getType())) {
+                String previousType = block.getType();
                 block.setType(normalized);
                 if (Block.TYPE_SCENE.equals(normalized)) {
                     // Inline scene headings keep their row position; only created/imported
                     // scene delimiters open a new scene section in the editor.
                     block.setPerson(null);
                     block.setSceneDelimiter(false);
+                } else if (Block.isCharacterCueType(normalized)) {
+                    String characterName = null;
+                    if (block.getPerson() != null) {
+                        characterName = normalizeCharacterCue(block.getPerson().getName());
+                    }
+                    if (characterName == null) {
+                        characterName = normalizeCharacterCue(block.getContent());
+                    }
+                    if (characterName != null) {
+                        block.setContent(characterName);
+                        block.setPerson(findOrCreatePerson(characterName, block.getProject()));
+                    }
+                } else if (Block.TYPE_DIALOGUE.equals(normalized) && Block.isCharacterCueType(previousType)) {
+                    String characterName = null;
+                    if (block.getPerson() != null) {
+                        characterName = normalizeCharacterCue(block.getPerson().getName());
+                    }
+                    if (characterName == null) {
+                        characterName = normalizeCharacterCue(block.getContent());
+                    }
+                    if (characterName != null) {
+                        block.setPerson(findOrCreatePerson(characterName, block.getProject()));
+                    }
+                    block.setContent("");
                 }
                 blockRepository.save(block);
             }

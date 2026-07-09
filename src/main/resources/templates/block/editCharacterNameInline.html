@@ -1,5 +1,5 @@
 <form xmlns:th="http://www.thymeleaf.org"
-      th:if="${block != null and not #strings.isEmpty(block.personName)}"
+      th:if="${block != null and not #strings.isEmpty(block.personName) and block.type != 'CHARACTER' and block.type != 'DUAL_DIALOGUE'}"
       class="script-character-name hide-in-reader-view"
       th:attr="hx-post=@{/block/editCharacterNameInline}"
       hx-target="closest .script-character-name"

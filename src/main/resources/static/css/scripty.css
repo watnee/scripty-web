@@ -6335,6 +6335,31 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     letter-spacing: 0.03em;
 }
 
+.block-content.block-type-character .script-block-text,
+.block-content.block-type-dual_dialogue .script-block-text {
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+}
+
+.block-content.block-type-character .reader-visible-text,
+.block-content.block-type-character .block-input-textarea,
+.block-content.block-type-character textarea,
+.block-content.block-type-dual_dialogue .reader-visible-text,
+.block-content.block-type-dual_dialogue .block-input-textarea,
+.block-content.block-type-dual_dialogue textarea {
+    text-align: center;
+}
+
+.block-content.block-type-dual_dialogue .script-block-text:not(textarea)::after,
+.block-content.block-type-dual_dialogue .reader-visible-text::after {
+    content: " ^";
+    opacity: 0.55;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
 .block-content.block-type-dialogue {
     padding-left: 15%;
     padding-right: 15%;
@@ -6359,6 +6384,11 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
 .block-content.block-type-transition {
     text-align: right;
     text-transform: uppercase;
+}
+
+.block-content.block-type-shot .script-block-text {
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
 }
 
 .block-content.block-type-lyrics {

@@ -1,6 +1,6 @@
 <p xmlns:th="http://www.thymeleaf.org"
    th:fragment="characterName(block)"
-   th:if="${block != null and not #strings.isEmpty(block.personName)}"
+   th:if="${block != null and not #strings.isEmpty(block.personName) and block.type != 'CHARACTER' and block.type != 'DUAL_DIALOGUE'}"
    class="script-character-name">
     <strong class="reader-visible-character-name" th:text="${#strings.toUpperCase(block.personName)}"></strong>
     <a th:href="@{/character/show(id=${block.personId})}"

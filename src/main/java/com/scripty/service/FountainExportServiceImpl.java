@@ -16,6 +16,11 @@ public class FountainExportServiceImpl implements FountainExportService {
             "^(?:INT\\.?|EXT\\.?|EST\\.?|INT\\.?/EXT\\.?|I/E\\.?)\\s+.+",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern TRANSITION = Pattern.compile("^[A-Z][A-Z0-9 ]+ TO:$");
+    private static final Pattern SHOT = Pattern.compile(
+            "^(?:ANGLE ON|ANOTHER ANGLE|CLOSE ON|CLOSE UP|CLOSEUP|C\\.U\\.?|CU|POV|INSERT|"
+                    + "BACK TO SCENE|BACK TO|TIGHT ON|WIDER(?: SHOT)?|TRACKING|CRANE|"
+                    + "AERIAL|ESTABLISHING|FAVOR ON|REVERSE ANGLE)\\b.*",
+            Pattern.CASE_INSENSITIVE);
 
     @Autowired
     private BlockRepository blockRepository;
@@ -42,6 +47,22 @@ public class FountainExportServiceImpl implements FountainExportService {
                     appendBlankLine(sb);
                     appendLine(sb, content);
                 }
+                case Block.TYPE_CHARACTER -> {
+                    String characterName = block.getPerson() != null ? block.getPerson().getName() : content;
+                    if (characterName != null && !characterName.isBlank()) {
+                        appendBlankLine(sb);
+                        appendLine(sb, characterName.toUpperCase(Locale.ROOT));
+                        activeCharacter = characterName;
+                    }
+                }
+                case Block.TYPE_DUAL_DIALOGUE -> {
+                    String characterName = block.getPerson() != null ? block.getPerson().getName() : content;
+                    if (characterName != null && !characterName.isBlank()) {
+                        appendBlankLine(sb);
+                        appendLine(sb, characterName.toUpperCase(Locale.ROOT) + " ^");
+                        activeCharacter = characterName;
+                    }
+                }
                 case Block.TYPE_DIALOGUE -> {
                     String characterName = block.getPerson() != null ? block.getPerson().getName() : activeCharacter;
                     if (characterName != null && !characterName.equalsIgnoreCase(activeCharacter)) {
@@ -60,6 +81,11 @@ public class FountainExportServiceImpl implements FountainExportService {
                     activeCharacter = null;
                     appendBlankLine(sb);
                     appendTransition(sb, content);
+                }
+                case Block.TYPE_SHOT -> {
+                    activeCharacter = null;
+                    appendBlankLine(sb);
+                    appendShot(sb, content);
                 }
                 case Block.TYPE_LYRICS -> {
                     activeCharacter = null;
@@ -120,6 +146,20 @@ public class FountainExportServiceImpl implements FountainExportService {
             appendLine(sb, trimmed);
         } else {
             appendLine(sb, ">" + trimmed);
+        }
+    }
+
+    private static void appendShot(StringBuilder sb, String content) {
+        String trimmed = content.trim();
+        if (trimmed.isEmpty()) {
+            appendLine(sb, "CLOSE ON");
+            return;
+        }
+        if (SHOT.matcher(trimmed).matches()) {
+            appendLine(sb, trimmed.toUpperCase(Locale.ROOT));
+        } else {
+            // Fountain has no forced-shot marker; export as uppercase action so it reads as a shot.
+            appendLine(sb, trimmed.toUpperCase(Locale.ROOT));
         }
     }
 

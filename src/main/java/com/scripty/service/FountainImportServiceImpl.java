@@ -26,6 +26,11 @@ public class FountainImportServiceImpl implements FountainImportService {
             "^(?:INT\\.?|EXT\\.?|EST\\.?|INT\\.?/EXT\\.?|I/E\\.?)\\s+.+",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern TRANSITION = Pattern.compile("^[A-Z][A-Z0-9 ]+ TO:$");
+    private static final Pattern SHOT = Pattern.compile(
+            "^(?:ANGLE ON|ANOTHER ANGLE|CLOSE ON|CLOSE UP|CLOSEUP|C\\.U\\.?|CU|POV|INSERT|"
+                    + "BACK TO SCENE|BACK TO|TIGHT ON|WIDER(?: SHOT)?|TRACKING|CRANE|"
+                    + "AERIAL|ESTABLISHING|FAVOR ON|REVERSE ANGLE)\\b.*",
+            Pattern.CASE_INSENSITIVE);
 
     @Autowired
     private BlockRepository blockRepository;
@@ -92,7 +97,8 @@ public class FountainImportServiceImpl implements FountainImportService {
             block.setPinned(false);
             block.setSceneDelimiter(false);
 
-            if (Block.TYPE_DIALOGUE.equals(parsedBlock.type()) && parsedBlock.characterName() != null) {
+            if ((Block.isCharacterCueType(parsedBlock.type()) || Block.TYPE_DIALOGUE.equals(parsedBlock.type()))
+                    && parsedBlock.characterName() != null) {
                 block.setPerson(findOrCreatePerson(project, parsedBlock.characterName(), characterCache));
             }
 
@@ -130,7 +136,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             }
 
             if (trimmed.startsWith("[[") && trimmed.endsWith("]]")) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 mode = ParseMode.ACTION;
                 pendingCharacter = null;
                 blocks.add(new ParsedBlock(Block.TYPE_NOTE, trimmed.substring(2, trimmed.length() - 2).trim()));
@@ -138,14 +144,14 @@ public class FountainImportServiceImpl implements FountainImportService {
             }
 
             if (trimmed.isEmpty()) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 mode = ParseMode.ACTION;
                 pendingCharacter = null;
                 continue;
             }
 
             if (trimmed.matches("^={3,}$")) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 mode = ParseMode.ACTION;
                 pendingCharacter = null;
                 blocks.add(new ParsedBlock(Block.TYPE_PAGE_BREAK, "==="));
@@ -153,7 +159,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             }
 
             if (trimmed.startsWith("#")) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 mode = ParseMode.ACTION;
                 pendingCharacter = null;
                 blocks.add(new ParsedBlock(Block.TYPE_SECTION, trimmed.replaceFirst("^#+", "").trim()));
@@ -161,7 +167,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             }
 
             if (trimmed.startsWith("=") && !trimmed.startsWith("==")) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 mode = ParseMode.ACTION;
                 pendingCharacter = null;
                 blocks.add(new ParsedBlock(Block.TYPE_SYNOPSIS, trimmed.substring(1).trim()));
@@ -169,7 +175,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             }
 
             if (trimmed.startsWith("~")) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 mode = ParseMode.ACTION;
                 pendingCharacter = null;
                 blocks.add(new ParsedBlock(Block.TYPE_LYRICS, trimmed.substring(1).trim()));
@@ -177,7 +183,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             }
 
             if (trimmed.startsWith(".") && !trimmed.startsWith("..")) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 mode = ParseMode.ACTION;
                 pendingCharacter = null;
                 blocks.add(new ParsedBlock(Block.TYPE_SCENE, trimmed.substring(1).trim()));
@@ -185,7 +191,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             }
 
             if (SCENE_HEADING.matcher(trimmed).matches()) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 mode = ParseMode.ACTION;
                 pendingCharacter = null;
                 blocks.add(new ParsedBlock(Block.TYPE_SCENE, trimmed));
@@ -193,7 +199,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             }
 
             if (trimmed.startsWith(">") && trimmed.endsWith("<") && trimmed.length() > 2) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 mode = ParseMode.ACTION;
                 pendingCharacter = null;
                 blocks.add(new ParsedBlock(Block.TYPE_CENTERED, trimmed.substring(1, trimmed.length() - 1).trim()));
@@ -201,7 +207,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             }
 
             if (trimmed.startsWith(">")) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 mode = ParseMode.ACTION;
                 pendingCharacter = null;
                 blocks.add(new ParsedBlock(Block.TYPE_TRANSITION, trimmed.substring(1).trim()));
@@ -209,15 +215,23 @@ public class FountainImportServiceImpl implements FountainImportService {
             }
 
             if (TRANSITION.matcher(trimmed).matches()) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 mode = ParseMode.ACTION;
                 pendingCharacter = null;
                 blocks.add(new ParsedBlock(Block.TYPE_TRANSITION, trimmed));
                 continue;
             }
 
+            if (SHOT.matcher(trimmed).matches()) {
+                flushDialogue(blocks, dialogueBuffer);
+                mode = ParseMode.ACTION;
+                pendingCharacter = null;
+                blocks.add(new ParsedBlock(Block.TYPE_SHOT, trimmed));
+                continue;
+            }
+
             if ((mode == ParseMode.CHARACTER || mode == ParseMode.DIALOGUE) && trimmed.startsWith("(")) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 String parenContent = trimmed.endsWith(")")
                         ? trimmed.substring(1, trimmed.length() - 1).trim()
                         : trimmed.substring(1).trim();
@@ -227,8 +241,10 @@ public class FountainImportServiceImpl implements FountainImportService {
             }
 
             if (mode == ParseMode.ACTION && isCharacterLine(trimmed)) {
-                flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+                flushDialogue(blocks, dialogueBuffer);
                 pendingCharacter = normalizeCharacterName(trimmed);
+                String cueType = isDualDialogueCue(trimmed) ? Block.TYPE_DUAL_DIALOGUE : Block.TYPE_CHARACTER;
+                blocks.add(new ParsedBlock(cueType, pendingCharacter, pendingCharacter));
                 mode = ParseMode.CHARACTER;
                 continue;
             }
@@ -242,20 +258,21 @@ public class FountainImportServiceImpl implements FountainImportService {
                 continue;
             }
 
-            flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+            flushDialogue(blocks, dialogueBuffer);
             pendingCharacter = null;
             blocks.add(new ParsedBlock(Block.TYPE_ACTION, trimmed));
             mode = ParseMode.ACTION;
         }
 
-        flushDialogue(blocks, dialogueBuffer, pendingCharacter);
+        flushDialogue(blocks, dialogueBuffer);
 
         return blocks;
     }
 
-    private static void flushDialogue(List<ParsedBlock> blocks, StringBuilder dialogueBuffer, String characterName) {
+    private static void flushDialogue(List<ParsedBlock> blocks, StringBuilder dialogueBuffer) {
         if (dialogueBuffer.length() > 0) {
-            blocks.add(new ParsedBlock(Block.TYPE_DIALOGUE, dialogueBuffer.toString().trim(), characterName));
+            // Character cue is already a separate CHARACTER block; dialogue content stands alone.
+            blocks.add(new ParsedBlock(Block.TYPE_DIALOGUE, dialogueBuffer.toString().trim()));
             dialogueBuffer.setLength(0);
         }
     }
@@ -264,7 +281,8 @@ public class FountainImportServiceImpl implements FountainImportService {
         if (line.isEmpty() || line.length() > 60) {
             return false;
         }
-        if (SCENE_HEADING.matcher(line).matches() || TRANSITION.matcher(line).matches()) {
+        if (SCENE_HEADING.matcher(line).matches() || TRANSITION.matcher(line).matches()
+                || SHOT.matcher(line).matches()) {
             return false;
         }
         String withoutModifiers = line.replaceAll("\\^(\\*)?", "").trim();
@@ -287,6 +305,10 @@ public class FountainImportServiceImpl implements FountainImportService {
             name = name.substring(1).trim();
         }
         return name;
+    }
+
+    private static boolean isDualDialogueCue(String line) {
+        return line != null && line.trim().endsWith("^");
     }
 
     private Person findOrCreatePerson(Project project, String name, Map<String, Person> cache) {

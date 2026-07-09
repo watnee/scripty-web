@@ -11,7 +11,7 @@
         </div>
     </aside>
     <div class="block-content script-block"
-         th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (block.textAlign != null ? ' block-text-align-' + #strings.toLowerCase(block.textAlign) : '') + (block.textBold ? ' block-text-bold' : '') + (block.textItalic ? ' block-text-italic' : '') + (block.textUnderline ? ' block-text-underline' : '') + (not #strings.isEmpty(block.personName) ? ' script-block--dialogue' : ' script-block--action')}"
+         th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (block.textAlign != null ? ' block-text-align-' + #strings.toLowerCase(block.textAlign) : '') + (block.textBold ? ' block-text-bold' : '') + (block.textItalic ? ' block-text-italic' : '') + (block.textUnderline ? ' block-text-underline' : '') + (block.type == 'DIALOGUE' ? ' script-block--dialogue' : ' script-block--action')}"
          th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')&amp;&amp;!window.scriptySuppressBlockEditClick&amp;&amp;!window.scriptyBlockEditLocked]" hx-swap="innerHTML">
         <th:block th:replace="~{block/showCharacterNameInline :: characterName(${block})}"></th:block>
         <p class="script-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></p>

@@ -16,9 +16,12 @@
     var TYPE_LABELS = {
         SCENE: 'Scene',
         ACTION: 'Action',
+        CHARACTER: 'Character',
         DIALOGUE: 'Dialogue',
+        DUAL_DIALOGUE: 'Dual',
         PARENTHETICAL: '(Paren)',
         TRANSITION: 'Transition',
+        SHOT: 'Shot',
         LYRICS: 'Lyrics',
         CENTERED: 'Centered',
         SECTION: 'Section',

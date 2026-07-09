@@ -18,9 +18,12 @@ public class Block {
     // Fountain screenplay element types
     public static final String TYPE_SCENE = "SCENE";
     public static final String TYPE_ACTION = "ACTION";
+    public static final String TYPE_CHARACTER = "CHARACTER";
     public static final String TYPE_DIALOGUE = "DIALOGUE";
+    public static final String TYPE_DUAL_DIALOGUE = "DUAL_DIALOGUE";
     public static final String TYPE_PARENTHETICAL = "PARENTHETICAL";
     public static final String TYPE_TRANSITION = "TRANSITION";
+    public static final String TYPE_SHOT = "SHOT";
     public static final String TYPE_LYRICS = "LYRICS";
     public static final String TYPE_CENTERED = "CENTERED";
     public static final String TYPE_SECTION = "SECTION";
@@ -42,10 +45,18 @@ public class Block {
     public static final java.util.Set<String> TEXT_STYLES = java.util.Set.of(
             STYLE_BOLD, STYLE_ITALIC, STYLE_UNDERLINE);
 
+    /** Character cue types whose content is the speaker name (including dual-dialogue cues). */
+    public static final java.util.Set<String> CHARACTER_CUE_TYPES = java.util.Set.of(
+            TYPE_CHARACTER, TYPE_DUAL_DIALOGUE);
+
     public static final java.util.Set<String> ELEMENT_TYPES = java.util.Set.of(
-            TYPE_SCENE, TYPE_ACTION, TYPE_DIALOGUE, TYPE_PARENTHETICAL,
-            TYPE_TRANSITION, TYPE_LYRICS, TYPE_CENTERED,
+            TYPE_SCENE, TYPE_ACTION, TYPE_CHARACTER, TYPE_DIALOGUE, TYPE_DUAL_DIALOGUE,
+            TYPE_PARENTHETICAL, TYPE_TRANSITION, TYPE_SHOT, TYPE_LYRICS, TYPE_CENTERED,
             TYPE_SECTION, TYPE_SYNOPSIS, TYPE_NOTE, TYPE_PAGE_BREAK);
+
+    public static boolean isCharacterCueType(String type) {
+        return type != null && CHARACTER_CUE_TYPES.contains(type);
+    }
 
     public static String typeLabelFor(String type) {
         if (type == null) {
@@ -54,9 +65,12 @@ public class Block {
         return switch (type) {
             case TYPE_SCENE -> "Scene";
             case TYPE_ACTION -> "Action";
+            case TYPE_CHARACTER -> "Character";
             case TYPE_DIALOGUE -> "Dialogue";
+            case TYPE_DUAL_DIALOGUE -> "Dual";
             case TYPE_PARENTHETICAL -> "(Paren)";
             case TYPE_TRANSITION -> "Transition";
+            case TYPE_SHOT -> "Shot";
             case TYPE_LYRICS -> "Lyrics";
             case TYPE_CENTERED -> "Centered";
             case TYPE_SECTION -> "Section";

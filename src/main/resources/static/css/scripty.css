@@ -1689,7 +1689,8 @@ form[hx-post*="/block/"] textarea,
     line-height: inherit;
     letter-spacing: inherit;
     word-spacing: inherit;
-    padding: 0;
+    /* Room for browser spellcheck underlines on the last line */
+    padding: 0 0 0.2em;
     margin: 0;
     font: inherit;
     color: inherit;
@@ -1750,6 +1751,8 @@ form[hx-post*="/block/"] textarea:focus-visible {
     grid-area: 1 / 1;
     width: 100%;
     margin: 0;
+    /* Match textarea bottom padding so mirror/edit overlay stays aligned */
+    padding: 0 0 0.2em;
 }
 
 .block-content:has(.block-inline-edit-form) .reader-visible-text,

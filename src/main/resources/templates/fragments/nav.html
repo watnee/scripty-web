@@ -116,44 +116,96 @@
         }
 
         // Spellcheck state management
-        function applySpellcheckToElement(el, state) {
-            if (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text')) {
-                el.setAttribute('spellcheck', state ? 'true' : 'false');
-            }
+        function isSpellcheckEnabled() {
+            return localStorage.getItem('spellcheck') !== 'false';
         }
 
-        function updateAllSpellcheckElements() {
-            const state = localStorage.getItem('spellcheck') !== 'false';
-            document.querySelectorAll('textarea, input[type="text"]').forEach(el => {
-                applySpellcheckToElement(el, state);
-            });
+        function updateSpellcheckToggleButton(state) {
+            const btn = document.querySelector('.spellcheck-toggle-btn');
+            if (!btn) return;
+            const title = state ? 'Spellcheck: Enabled (click to disable)' : 'Spellcheck: Disabled (click to enable)';
+            btn.title = title;
+            btn.setAttribute('aria-label', title);
+            btn.setAttribute('aria-pressed', state ? 'true' : 'false');
         }
+
+        function applySpellcheckToElement(el, state) {
+            if (!(el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text'))) {
+                return;
+            }
+            // Set both attribute and property — browsers differ on which they honor for rechecks.
+            el.setAttribute('spellcheck', state ? 'true' : 'false');
+            el.spellcheck = !!state;
+        }
+
+        // Chrome often keeps old underlines until the field is remounted after a toggle.
+        function remountSpellcheckField(el, state) {
+            if (!el || !el.parentNode) return el;
+            const wasFocused = document.activeElement === el;
+            const start = wasFocused ? el.selectionStart : null;
+            const end = wasFocused ? el.selectionEnd : null;
+            const clone = el.cloneNode(true);
+            applySpellcheckToElement(clone, state);
+            if (el.tagName === 'TEXTAREA') {
+                clone.value = el.value;
+            }
+            // Blur during replaceChild would otherwise fire focusout → HTMX save.
+            window.scriptySuppressSpellcheckRemountSave = true;
+            try {
+                el.parentNode.replaceChild(clone, el);
+                if (wasFocused) {
+                    clone.focus();
+                    try {
+                        if (start != null && end != null && typeof clone.setSelectionRange === 'function') {
+                            clone.setSelectionRange(start, end);
+                        }
+                    } catch (err) { /* ignore */ }
+                    if (typeof window.scriptyGrowTextarea === 'function') {
+                        window.scriptyGrowTextarea(clone);
+                    } else if (clone.tagName === 'TEXTAREA') {
+                        clone.style.height = 'auto';
+                        clone.style.height = clone.scrollHeight + 'px';
+                    }
+                }
+            } finally {
+                setTimeout(function() {
+                    window.scriptySuppressSpellcheckRemountSave = false;
+                }, 0);
+            }
+            return clone;
+        }
+
+        function updateAllSpellcheckElements(options) {
+            const state = isSpellcheckEnabled();
+            const remountFocused = !!(options && options.remountFocused);
+            const active = document.activeElement;
+            document.querySelectorAll('textarea, input[type="text"]').forEach(el => {
+                if (remountFocused && el === active) {
+                    remountSpellcheckField(el, state);
+                } else {
+                    applySpellcheckToElement(el, state);
+                }
+            });
+            return state;
+        }
+
+        window.scriptyIsSpellcheckEnabled = isSpellcheckEnabled;
+        window.scriptyApplySpellcheck = applySpellcheckToElement;
+        window.scriptyUpdateAllSpellcheckElements = updateAllSpellcheckElements;
 
         window.toggleSpellcheck = function() {
-            const currentState = localStorage.getItem('spellcheck') !== 'false';
-            const newState = !currentState;
+            const newState = !isSpellcheckEnabled();
             localStorage.setItem('spellcheck', newState ? 'true' : 'false');
             document.documentElement.setAttribute('data-spellcheck', newState ? 'true' : 'false');
-            updateAllSpellcheckElements();
-            
-            const btn = document.querySelector('.spellcheck-toggle-btn');
-            if (btn) {
-                const title = newState ? 'Spellcheck: Enabled (click to disable)' : 'Spellcheck: Disabled (click to enable)';
-                btn.title = title;
-                btn.setAttribute('aria-label', title);
-            }
+            // Remount the focused field so underlines appear/clear immediately.
+            updateAllSpellcheckElements({ remountFocused: true });
+            updateSpellcheckToggleButton(newState);
         };
 
-        // Initialize spellcheck on load
         function initSpellcheck() {
-            const state = localStorage.getItem('spellcheck') !== 'false';
+            const state = isSpellcheckEnabled();
             updateAllSpellcheckElements();
-            const btn = document.querySelector('.spellcheck-toggle-btn');
-            if (btn) {
-                const title = state ? 'Spellcheck: Enabled (click to disable)' : 'Spellcheck: Disabled (click to enable)';
-                btn.title = title;
-                btn.setAttribute('aria-label', title);
-            }
+            updateSpellcheckToggleButton(state);
         }
 
         if (document.readyState === 'loading') {
@@ -162,10 +214,13 @@
             initSpellcheck();
         }
 
-        // Apply on HTMX content swaps
-        document.body.addEventListener('htmx:afterOnLoad', function() {
+        // Apply after HTMX swaps (afterOnLoad alone misses some local/offline paths)
+        function syncSpellcheckAfterHtmx() {
             updateAllSpellcheckElements();
-        });
+        }
+        document.body.addEventListener('htmx:afterOnLoad', syncSpellcheckAfterHtmx);
+        document.body.addEventListener('htmx:afterSwap', syncSpellcheckAfterHtmx);
+        document.body.addEventListener('htmx:afterSettle', syncSpellcheckAfterHtmx);
 
         function rememberActiveBlockRow(row) {
             if (row && row.hasAttribute('data-block-id')) {
@@ -863,6 +918,12 @@
 
             document.body.addEventListener('htmx:beforeRequest', function(e) {
                 const path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
+                if (window.scriptySuppressSpellcheckRemountSave &&
+                    path.indexOf('/block/editInline') !== -1 &&
+                    e.detail.verb === 'post') {
+                    e.preventDefault();
+                    return;
+                }
                 if (window.scriptyBlockTypeChangePending &&
                     path.indexOf('/block/editInline') !== -1 &&
                     e.detail.verb === 'post') {

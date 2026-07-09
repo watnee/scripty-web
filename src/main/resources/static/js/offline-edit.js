@@ -107,7 +107,7 @@
             '<input type="hidden" name="personId" id="block-person-id-' + escAttr(ctx.blockId) + '" value="' + escAttr(ctx.personId) + '" />' +
             '<input type="hidden" name="tags" value="' + escAttr(ctx.tags) + '" />' +
             renderMirrorTextHtml(ctx.content) +
-            '<textarea spellcheck="true" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" ' +
+            '<textarea spellcheck="' + spellcheckAttr() + '" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" ' +
             'onkeydown="' + enterHandler + '">' + escText(ctx.content) + '</textarea>' +
             renderTagsHtml(ctx.tags) +
             '</form>';
@@ -132,7 +132,7 @@
             '<input type="hidden" name="id" value="' + escAttr(anchorBlockId) + '" />' +
             '<input type="hidden" name="surface" value="project" />' +
             '<input type="hidden" name="type" value="ACTION" />' +
-            '<textarea spellcheck="true" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" autofocus ' +
+            '<textarea spellcheck="' + spellcheckAttr() + '" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" autofocus ' +
             'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();event.stopPropagation;' +
             'if(window.scriptyCreateBlockFromCreateRow){window.scriptyCreateBlockFromCreateRow(this);}return false;}"></textarea>' +
             '</form></div>' +
@@ -153,7 +153,7 @@
             '<input type="hidden" name="projectId" value="' + escAttr(projectId) + '" />' +
             '<input type="hidden" name="surface" value="project" />' +
             '<input type="hidden" name="type" value="ACTION" />' +
-            '<textarea spellcheck="true" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" autofocus ' +
+            '<textarea spellcheck="' + spellcheckAttr() + '" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" autofocus ' +
             'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();event.stopPropagation;' +
             'if(window.scriptyCreateBlockFromCreateRow){window.scriptyCreateBlockFromCreateRow(this);}return false;}"></textarea>' +
             '</form></div>' +
@@ -180,10 +180,47 @@
             '</div>';
     }
 
+    function spellcheckAttr() {
+        var enabled = typeof window.scriptyIsSpellcheckEnabled === 'function'
+            ? window.scriptyIsSpellcheckEnabled()
+            : localStorage.getItem('spellcheck') !== 'false';
+        return enabled ? 'true' : 'false';
+    }
+
+    function applySpellcheckPreference(root) {
+        if (!root) return;
+        var enabled = typeof window.scriptyIsSpellcheckEnabled === 'function'
+            ? window.scriptyIsSpellcheckEnabled()
+            : localStorage.getItem('spellcheck') !== 'false';
+        var applyOne = window.scriptyApplySpellcheck;
+        var fields = root.querySelectorAll
+            ? root.querySelectorAll('textarea, input[type="text"]')
+            : [];
+        Array.prototype.forEach.call(fields, function (el) {
+            if (typeof applyOne === 'function') {
+                applyOne(el, enabled);
+            } else {
+                el.setAttribute('spellcheck', enabled ? 'true' : 'false');
+                el.spellcheck = !!enabled;
+            }
+        });
+        if (root.matches && root.matches('textarea, input[type="text"]')) {
+            if (typeof applyOne === 'function') {
+                applyOne(root, enabled);
+            } else {
+                root.setAttribute('spellcheck', enabled ? 'true' : 'false');
+                root.spellcheck = !!enabled;
+            }
+        }
+    }
+
     function processNodes(nodes) {
-        if (!nodes || !nodes.length || typeof htmx === 'undefined') return;
+        if (!nodes || !nodes.length) return;
         nodes.forEach(function (node) {
-            htmx.process(node);
+            if (typeof htmx !== 'undefined') {
+                htmx.process(node);
+            }
+            applySpellcheckPreference(node);
         });
     }
 

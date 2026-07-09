@@ -210,7 +210,7 @@ public class TextDocumentController {
         if (saved == null) {
             redirectAttributes.addFlashAttribute(
                     "documentImportMessage",
-                    "Could not import that file. Check access and try a .txt, .fountain, .docx, or .doc file.");
+                    "Could not import that file. Check access and try a .txt, .fountain, .docx, .doc, .fdx, or .pdf file.");
             return "redirect:" + listUrl(projectId, isSong);
         }
         redirectAttributes.addFlashAttribute(

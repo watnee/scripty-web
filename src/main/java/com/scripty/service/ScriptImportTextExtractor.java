@@ -26,6 +26,9 @@ public class ScriptImportTextExtractor {
         if (isFdx(lowerName, contentType)) {
             return FdxToFountainConverter.convert(file.getInputStream());
         }
+        if (isPdf(lowerName, contentType)) {
+            return PdfToFountainConverter.convert(file.getInputStream());
+        }
         if (isDocx(lowerName, contentType)) {
             return extractDocx(file.getInputStream());
         }
@@ -51,6 +54,9 @@ public class ScriptImportTextExtractor {
         if (isFdx(lowerName, contentType)) {
             return FdxToFountainConverter.convertPlain(file.getInputStream());
         }
+        if (isPdf(lowerName, contentType)) {
+            return PdfToFountainConverter.convertPlain(file.getInputStream());
+        }
         if (isDocx(lowerName, contentType)) {
             try (XWPFDocument document = new XWPFDocument(file.getInputStream())) {
                 return extractDocxPlain(document);
@@ -65,6 +71,10 @@ public class ScriptImportTextExtractor {
 
     private static boolean isFdx(String lowerName, String contentType) {
         return FdxToFountainConverter.looksLikeFdx(lowerName, contentType);
+    }
+
+    private static boolean isPdf(String lowerName, String contentType) {
+        return PdfToFountainConverter.looksLikePdf(lowerName, contentType);
     }
 
     private static boolean isDocx(String lowerName, String contentType) {

@@ -1025,7 +1025,7 @@ button.block-select-menu-toggle.nav-dropdown-toggle:focus-visible,
 button.block-select-menu-toggle.nav-dropdown-toggle:hover {
     background: var(--accent-bg, rgba(0, 0, 0, 0.08));
     transform: scale(1.06);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    box-shadow: none;
 }
 
 button.block-select-menu-toggle.nav-dropdown-toggle:active {
@@ -1350,7 +1350,7 @@ button.create-below.create-below-menu-toggle:hover {
     opacity: 1;
     background: var(--accent-bg, rgba(0, 0, 0, 0.08));
     transform: scale(1.06);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    box-shadow: none;
 }
 
 a.create-below[role="button"]:active,
@@ -1633,6 +1633,7 @@ h1:hover > small .project-delete-btn,
 .text-size-control .nav-dropdown-toggle:focus {
     filter: brightness(1.1);
     background-color: var(--interactive-bg);
+    box-shadow: none;
 }
 
 .text-size-control .nav-dropdown-toggle[aria-expanded="true"] {
@@ -1682,12 +1683,15 @@ body.htmx-swapping {
     gap: 0.25rem;
     transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
     border-radius: 4px;
+    box-shadow: none;
 }
 
 .nav-dropdown-toggle:hover,
 .nav-dropdown-toggle:focus-visible {
     background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
     outline: none;
+    box-shadow: none;
+    filter: none;
 }
 
 .nav-dropdown.open > .nav-dropdown-toggle,
@@ -1718,7 +1722,8 @@ body.htmx-swapping {
     background-color: var(--box-bg, #ffffff);
     border: 1px solid var(--border, #e0e0e0);
     border-radius: 0.65rem;
-    box-shadow: none;
+    box-shadow: none !important;
+    filter: none;
     z-index: 1000;
     transform-origin: top right;
 }
@@ -1753,6 +1758,8 @@ body.htmx-swapping {
     cursor: pointer;
     transition: background-color 0.12s ease, color 0.12s ease;
     box-sizing: border-box;
+    box-shadow: none;
+    filter: none;
 }
 
 .nav-dropdown-item:hover,
@@ -1760,16 +1767,20 @@ body.htmx-swapping {
     background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
     color: var(--accent, inherit);
     outline: none;
+    box-shadow: none;
+    filter: none;
 }
 
 .nav-dropdown-item.active {
     background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
     color: var(--accent, inherit);
     font-weight: 600;
+    box-shadow: none;
 }
 
 .nav-dropdown-item:active {
     transform: scale(0.985);
+    box-shadow: none;
 }
 
 /* Dropdown divider */
@@ -6576,9 +6587,7 @@ main h3 {
     border: 1px solid var(--border, #cbd5e1);
     border-radius: calc(var(--border-radius, 6px) + 4px);
     background: var(--box-bg, #fff);
-    box-shadow:
-        0 1px 2px rgba(15, 23, 42, 0.06),
-        0 10px 28px rgba(15, 23, 42, 0.14);
+    box-shadow: none;
     user-select: none;
     -webkit-user-select: none;
     animation: blockSelectionMenuIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
@@ -7753,7 +7762,7 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
     background: var(--bg, #fff);
     color: var(--fg, #111);
     border: 1px solid color-mix(in srgb, var(--fg, #111) 18%, transparent);
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--fg, #111) 12%, transparent);
+    box-shadow: none;
     max-height: 14rem;
     overflow-y: auto;
     font-size: 0.85rem;
@@ -7791,7 +7800,7 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
     background: var(--bg, #fff);
     color: var(--fg, #111);
     border: 1px solid color-mix(in srgb, var(--fg, #111) 18%, transparent);
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--fg, #111) 12%, transparent);
+    box-shadow: none;
     max-height: 12rem;
     overflow-y: auto;
     font-size: 0.85rem;

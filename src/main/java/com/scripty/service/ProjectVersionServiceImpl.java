@@ -8,6 +8,7 @@ import com.scripty.dto.Person;
 import com.scripty.dto.Project;
 import com.scripty.dto.ProjectActivity;
 import com.scripty.dto.ProjectVersion;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.repository.ActorRepository;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
@@ -43,6 +44,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     private final ActorRepository actorRepository;
     private final ObjectMapper objectMapper;
     private final ProjectActivityService projectActivityService;
+    private final ScriptEditionService scriptEditionService;
 
     @Autowired
     public ProjectVersionServiceImpl(ProjectRepository projectRepository,
@@ -51,7 +53,8 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
                                      PersonRepository personRepository,
                                      ActorRepository actorRepository,
                                      ObjectMapper objectMapper,
-                                     ProjectActivityService projectActivityService) {
+                                     ProjectActivityService projectActivityService,
+                                     ScriptEditionService scriptEditionService) {
         this.projectRepository = projectRepository;
         this.projectVersionRepository = projectVersionRepository;
         this.blockRepository = blockRepository;
@@ -59,10 +62,16 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         this.actorRepository = actorRepository;
         this.objectMapper = objectMapper;
         this.projectActivityService = projectActivityService;
+        this.scriptEditionService = scriptEditionService;
     }
 
     @Override
     public VersionHistoryViewModel getVersionHistoryViewModel(Integer projectId) {
+        return getVersionHistoryViewModel(projectId, null);
+    }
+
+    @Override
+    public VersionHistoryViewModel getVersionHistoryViewModel(Integer projectId, Integer editionId) {
         Project project = projectRepository.findById(projectId).orElse(null);
         if (project == null) {
             VersionHistoryViewModel empty = new VersionHistoryViewModel();
@@ -72,11 +81,18 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             return empty;
         }
 
-        List<ProjectVersion> versions = projectVersionRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
+        ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
+        List<ProjectVersion> versions = edition != null
+                ? projectVersionRepository.findByScriptEditionIdOrderByCreatedAtDesc(edition.getId())
+                : projectVersionRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
 
         VersionHistoryViewModel vm = new VersionHistoryViewModel();
         vm.setProjectId(project.getId());
         vm.setProjectTitle(project.getTitle());
+        if (edition != null) {
+            vm.setEditionId(edition.getId());
+            vm.setEditionName(edition.getName());
+        }
 
         List<VersionViewModel> versionVMs = new ArrayList<>();
         for (int i = 0; i < versions.size(); i++) {
@@ -148,7 +164,14 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Override
     @Transactional
     public ProjectVersion createVersion(Integer projectId, String label) {
-        ProjectVersion version = createVersionFromSnapshot(projectId, label, buildSnapshotJson(projectId));
+        return createVersion(projectId, null, label);
+    }
+
+    @Override
+    @Transactional
+    public ProjectVersion createVersion(Integer projectId, Integer editionId, String label) {
+        ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
+        ProjectVersion version = createVersionFromSnapshot(projectId, edition, label, buildSnapshotJson(projectId, edition != null ? edition.getId() : null));
         if (version != null && label != null && !isAutoSaveLabel(label)) {
             projectActivityService.recordForCurrentUser(
                     projectId,
@@ -160,13 +183,17 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         return version;
     }
 
-    private ProjectVersion createVersionFromSnapshot(Integer projectId, String label, String snapshotJson) {
+    private ProjectVersion createVersionFromSnapshot(Integer projectId, ScriptEdition edition, String label, String snapshotJson) {
         Project project = projectRepository.findById(projectId).orElse(null);
         if (project == null) {
             return null;
         }
+        if (edition == null) {
+            edition = scriptEditionService.ensureDefaultEdition(projectId);
+        }
         ProjectVersion version = new ProjectVersion();
         version.setProject(project);
+        version.setScriptEdition(edition);
         version.setLabel(label);
         version.setCreatedAt(LocalDateTime.now());
         version.setSnapshotJson(snapshotJson);
@@ -176,9 +203,20 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public String buildSnapshotJson(Integer projectId) {
+        return buildSnapshotJson(projectId, null);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public String buildSnapshotJson(Integer projectId, Integer editionId) {
         Project project = projectRepository.findById(projectId).orElse(null);
-        List<Block> blocks = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
-        List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(projectId);
+        ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
+        List<Block> blocks = edition != null
+                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+        List<Person> persons = edition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+                : personRepository.findByProjectIdOrderByNameAsc(projectId);
 
         Map<String, Object> snapshot = new HashMap<>();
         snapshot.put("title", project.getTitle());
@@ -227,26 +265,40 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Override
     @Transactional
     public void applySnapshotJson(Integer projectId, String snapshotJson) {
+        applySnapshotJson(projectId, null, snapshotJson);
+    }
+
+    @Override
+    @Transactional
+    public void applySnapshotJson(Integer projectId, Integer editionId, String snapshotJson) {
         Map<String, Object> snapshot;
         try {
             snapshot = objectMapper.readValue(snapshotJson, Map.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to deserialize project snapshot", e);
         }
-        applySnapshot(projectId, snapshot);
+        applySnapshot(projectId, editionId, snapshot);
     }
 
     @SuppressWarnings("unchecked")
-    private void applySnapshot(Integer projectId, Map<String, Object> snapshot) {
+    private void applySnapshot(Integer projectId, Integer editionId, Map<String, Object> snapshot) {
         Project project = projectRepository.findById(projectId).orElse(null);
         if (project == null) {
             return;
         }
+        ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
+        if (edition == null) {
+            edition = scriptEditionService.ensureDefaultEdition(projectId);
+        }
 
-        List<Block> existingBlocks = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+        List<Block> existingBlocks = edition != null
+                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
         blockRepository.deleteAll(existingBlocks);
 
-        List<Person> existingPersons = personRepository.findByProjectIdOrderByNameAsc(projectId);
+        List<Person> existingPersons = edition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+                : personRepository.findByProjectIdOrderByNameAsc(projectId);
         personRepository.deleteAll(existingPersons);
 
         project.setTitle(PlainTextSanitizer.sanitizeSingleLine((String) snapshot.get("title")));
@@ -272,6 +324,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
                 person.setName(PlainTextSanitizer.sanitizeSingleLine((String) ps.get("name")));
                 person.setFullName(PlainTextSanitizer.sanitizeSingleLine((String) ps.get("fullName")));
                 person.setProject(project);
+                person.setScriptEdition(edition);
                 Integer actorId = toInteger(ps.get("actorId"));
                 if (actorId != null) {
                     Actor actor = actorRepository.findById(actorId).orElse(null);
@@ -290,7 +343,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         List<Map<String, Object>> blockSnapshots = (List<Map<String, Object>>) snapshot.get("blocks");
         if (blockSnapshots != null) {
             for (Map<String, Object> bs : blockSnapshots) {
-                restoreBlock(project, toInteger(bs.get("order")), (String) bs.get("content"),
+                restoreBlock(project, edition, toInteger(bs.get("order")), (String) bs.get("content"),
                         (String) bs.get("type"), toInteger(bs.get("personOriginalId")), originalIdToNewPerson,
                         (Boolean) bs.get("bookmarked"), (Boolean) bs.get("pinned"), (String) bs.get("tags"),
                         (Boolean) bs.get("sceneDelimiter"), (String) bs.get("textAlign"),
@@ -301,11 +354,11 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             if (sceneSnapshots != null) {
                 int order = 1;
                 for (Map<String, Object> ss : sceneSnapshots) {
-                    restoreBlock(project, order++, (String) ss.get("name"), Block.TYPE_SCENE, null, originalIdToNewPerson, false, false, null, false, null, false, false, false);
+                    restoreBlock(project, edition, order++, (String) ss.get("name"), Block.TYPE_SCENE, null, originalIdToNewPerson, false, false, null, false, null, false, false, false);
                     List<Map<String, Object>> sceneBlocks = (List<Map<String, Object>>) ss.get("blocks");
                     if (sceneBlocks != null) {
                         for (Map<String, Object> bs : sceneBlocks) {
-                            restoreBlock(project, order++, (String) bs.get("content"), Block.TYPE_ACTION,
+                            restoreBlock(project, edition, order++, (String) bs.get("content"), Block.TYPE_ACTION,
                                     toInteger(bs.get("personOriginalId")), originalIdToNewPerson,
                                     (Boolean) bs.get("bookmarked"), (Boolean) bs.get("pinned"), (String) bs.get("tags"),
                                     false, null, false, false, false);
@@ -319,8 +372,18 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Override
     @Transactional
     public void autoSaveVersion(Integer projectId) {
-        ProjectVersion latest = projectVersionRepository.findFirstByProjectIdOrderByCreatedAtDesc(projectId);
-        String snapshotJson = buildSnapshotJson(projectId);
+        autoSaveVersion(projectId, null);
+    }
+
+    @Override
+    @Transactional
+    public void autoSaveVersion(Integer projectId, Integer editionId) {
+        ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
+        Integer resolvedEditionId = edition != null ? edition.getId() : null;
+        ProjectVersion latest = resolvedEditionId != null
+                ? projectVersionRepository.findFirstByScriptEditionIdOrderByCreatedAtDesc(resolvedEditionId)
+                : projectVersionRepository.findFirstByProjectIdOrderByCreatedAtDesc(projectId);
+        String snapshotJson = buildSnapshotJson(projectId, resolvedEditionId);
         if (latest != null && snapshotJson.equals(latest.getSnapshotJson())) {
             return;
         }
@@ -334,15 +397,16 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             return;
         }
         String label = "Auto-save " + LocalDateTime.now().format(AUTO_SAVE_LABEL_FORMAT);
-        createVersionFromSnapshot(projectId, label, snapshotJson);
+        createVersionFromSnapshot(projectId, edition, label, snapshotJson);
     }
 
     @Override
     @Transactional
     public void autoSaveVersionForBlock(Integer blockId) {
         Block block = blockRepository.findById(blockId).orElse(null);
-        if (block != null) {
-            autoSaveVersion(block.getProject().getId());
+        if (block != null && block.getProject() != null) {
+            Integer editionId = block.getScriptEdition() != null ? block.getScriptEdition().getId() : null;
+            autoSaveVersion(block.getProject().getId(), editionId);
         }
     }
 
@@ -350,8 +414,9 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Transactional
     public void autoSaveVersionForPerson(Integer personId) {
         Person person = personRepository.findById(personId).orElse(null);
-        if (person != null) {
-            autoSaveVersion(person.getProject().getId());
+        if (person != null && person.getProject() != null) {
+            Integer editionId = person.getScriptEdition() != null ? person.getScriptEdition().getId() : null;
+            autoSaveVersion(person.getProject().getId(), editionId);
         }
     }
 
@@ -363,6 +428,8 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             return;
         }
         Integer projectId = version.getProject().getId();
+        Integer editionId = version.getScriptEdition() != null ? version.getScriptEdition().getId() : null;
+        ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         Map<String, Object> snapshot;
         try {
             snapshot = objectMapper.readValue(version.getSnapshotJson(), Map.class);
@@ -371,9 +438,9 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         }
 
         String beforeLabel = "Before restore " + LocalDateTime.now().format(AUTO_SAVE_LABEL_FORMAT);
-        createVersionFromSnapshot(projectId, beforeLabel, buildSnapshotJson(projectId));
+        createVersionFromSnapshot(projectId, edition, beforeLabel, buildSnapshotJson(projectId, editionId));
 
-        applySnapshot(projectId, snapshot);
+        applySnapshot(projectId, editionId, snapshot);
         projectActivityService.recordForCurrentUser(
                 projectId,
                 ProjectActivity.ACTION_VERSION_RESTORED,
@@ -394,7 +461,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         return true;
     }
 
-    private void restoreBlock(Project project, Integer order, String content, String type,
+    private void restoreBlock(Project project, ScriptEdition edition, Integer order, String content, String type,
                               Integer personOriginalId, Map<Integer, Person> originalIdToNewPerson,
                               Boolean bookmarked, Boolean pinned, String tags, Boolean sceneDelimiter,
                               String textAlign, Boolean textBold, Boolean textItalic, Boolean textUnderline) {
@@ -418,6 +485,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         block.setTextItalic(Boolean.TRUE.equals(textItalic));
         block.setTextUnderline(Boolean.TRUE.equals(textUnderline));
         block.setProject(project);
+        block.setScriptEdition(edition);
         if (personOriginalId != null) {
             Person restoredPerson = originalIdToNewPerson.get(personOriginalId);
             if (restoredPerson != null) {

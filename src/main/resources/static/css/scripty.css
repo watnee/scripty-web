@@ -1582,6 +1582,78 @@ h1 > small a[role="button"].versions-btn {
     margin-bottom: 1.25rem;
 }
 
+.script-edition-dropdown {
+    display: inline-flex;
+    align-items: center;
+}
+
+.script-edition-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 12rem;
+}
+
+.script-edition-toggle-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.script-edition-menu {
+    min-width: 12rem;
+}
+
+.script-edition-menu-label {
+    padding: 0.4rem 0.75rem 0.2rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+}
+
+.script-edition-menu .nav-dropdown-item.active {
+    font-weight: 700;
+}
+
+.script-edition-dialog {
+    border: 1px solid var(--line, #ccc);
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    max-width: 24rem;
+    width: calc(100% - 2rem);
+    background: var(--bg, #fff);
+    color: inherit;
+}
+
+.script-edition-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.script-edition-create-form h2 {
+    margin-top: 0;
+    font-size: 1.15rem;
+}
+
+.script-edition-create-form label {
+    display: block;
+    margin: 1rem 0;
+}
+
+.script-edition-create-form input[type="text"] {
+    width: 100%;
+    margin-top: 0.35rem;
+}
+
+.script-edition-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
 .version-save-form {
     margin-bottom: 2rem;
     display: flex;

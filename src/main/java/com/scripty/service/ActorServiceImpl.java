@@ -7,6 +7,7 @@ import com.scripty.dto.Audition;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
 import com.scripty.dto.ProjectActivity;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.repository.ActorRepository;
 import com.scripty.repository.AuditionRepository;
 import com.scripty.repository.PersonRepository;
@@ -42,6 +43,7 @@ public class ActorServiceImpl implements ActorService {
     private final AuditionRepository auditionRepository;
     private final ActorHeadshotService actorHeadshotService;
     private final ProjectActivityService projectActivityService;
+    private final ScriptEditionService scriptEditionService;
 
     @Autowired
     public ActorServiceImpl(ActorRepository actorRepository,
@@ -49,13 +51,15 @@ public class ActorServiceImpl implements ActorService {
                             ProjectRepository projectRepository,
                             AuditionRepository auditionRepository,
                             ActorHeadshotService actorHeadshotService,
-                            ProjectActivityService projectActivityService) {
+                            ProjectActivityService projectActivityService,
+                            ScriptEditionService scriptEditionService) {
         this.actorRepository = actorRepository;
         this.personRepository = personRepository;
         this.projectRepository = projectRepository;
         this.auditionRepository = auditionRepository;
         this.actorHeadshotService = actorHeadshotService;
         this.projectActivityService = projectActivityService;
+        this.scriptEditionService = scriptEditionService;
     }
 
     @Override
@@ -141,7 +145,10 @@ public class ActorServiceImpl implements ActorService {
         }
 
         vm.setCharacterProjectTitle(project.getTitle());
-        List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(projectId);
+        ScriptEdition edition = scriptEditionService.getDefaultForProject(projectId);
+        List<Person> persons = edition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+                : personRepository.findByProjectIdOrderByNameAsc(projectId);
         for (Person person : persons) {
             CastingCharacterViewModel castingCharacter = new CastingCharacterViewModel();
             castingCharacter.setId(person.getId());

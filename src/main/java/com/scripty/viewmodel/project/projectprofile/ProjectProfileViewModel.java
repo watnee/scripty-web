@@ -5,6 +5,7 @@
  */
 package com.scripty.viewmodel.project.projectprofile;
 
+import com.scripty.viewmodel.project.edition.ScriptEditionViewModel;
 import java.util.List;
 
 /**
@@ -21,6 +22,9 @@ public class ProjectProfileViewModel {
     private String writers;
     private String contactInfo;
     private String screenplayVersion;
+    private Integer editionId;
+    private String editionName;
+    private List<ScriptEditionViewModel> editions;
     private List<SceneViewModel> scenes;
     private List<PersonViewModel> persons;
 
@@ -102,5 +106,29 @@ public class ProjectProfileViewModel {
 
     public void setScreenplayVersion(String screenplayVersion) {
         this.screenplayVersion = screenplayVersion;
+    }
+
+    public Integer getEditionId() {
+        return editionId;
+    }
+
+    public void setEditionId(Integer editionId) {
+        this.editionId = editionId;
+    }
+
+    public String getEditionName() {
+        return editionName;
+    }
+
+    public void setEditionName(String editionName) {
+        this.editionName = editionName;
+    }
+
+    public List<ScriptEditionViewModel> getEditions() {
+        return editions;
+    }
+
+    public void setEditions(List<ScriptEditionViewModel> editions) {
+        this.editions = editions;
     }
 }

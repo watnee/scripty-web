@@ -106,9 +106,13 @@
         </section>
 
         <div class="help-card-grid production-card-grid">
-            <a th:href="@{/project/show(id=${viewModel.id})}" class="help-card production-card-link">
+            <a th:href="@{/project/show(id=${viewModel.id}, editionId=${viewModel.editionId})}" class="help-card production-card-link">
                 <h3>Script</h3>
-                <p>Edit scenes and blocks for this production.</p>
+                <p th:if="${viewModel.editionName != null}">
+                    Edit <span th:text="${viewModel.editionName}">Main</span>
+                    — scenes and blocks for this production.
+                </p>
+                <p th:unless="${viewModel.editionName != null}">Edit scenes and blocks for this production.</p>
             </a>
             <a th:href="@{/actor/list(projectId=${viewModel.id})}" class="help-card production-card-link">
                 <h3>Casting</h3>
@@ -126,9 +130,9 @@
                 <h3>Drafts</h3>
                 <p>Keep notes and scratch text outside the screenplay, then insert them when ready.</p>
             </a>
-            <a th:href="@{/project/version/list(projectId=${viewModel.id})}" class="help-card production-card-link">
-                <h3>Version History</h3>
-                <p>Review saved versions and restore earlier drafts.</p>
+            <a th:href="@{/project/version/list(projectId=${viewModel.id}, editionId=${viewModel.editionId})}" class="help-card production-card-link">
+                <h3>Snapshot History</h3>
+                <p>Review saved snapshots and restore earlier drafts of the current screenplay version.</p>
             </a>
         </div>
     </main>

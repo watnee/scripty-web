@@ -90,11 +90,11 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(ProjectRestController.class).list(null)).withRel(ApiRel.PROJECTS),
                 linkTo(methodOn(ProjectRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE),
                 linkTo(methodOn(ProjectRestController.class).delete(id, null)).withRel(ApiRel.DELETE),
-                linkTo(methodOn(BlockRestController.class).list(id, null)).withRel(ApiRel.BLOCKS),
+                linkTo(methodOn(BlockRestController.class).list(id, null, null)).withRel(ApiRel.BLOCKS),
                 linkTo(methodOn(PersonRestController.class).list(id, null)).withRel(ApiRel.CHARACTERS),
                 linkTo(methodOn(ActorRestController.class).list(id)).withRel(ApiRel.ACTORS),
                 linkTo(methodOn(ProjectController.class).syncStatus(id, null, null)).withRel(ApiRel.SYNC_STATUS),
-                linkTo(methodOn(ProjectController.class).undoRedoStatus(id, null)).withRel(ApiRel.UNDO_REDO_STATUS),
+                linkTo(methodOn(ProjectController.class).undoRedoStatus(id, null, null)).withRel(ApiRel.UNDO_REDO_STATUS),
                 linkTo(methodOn(ProjectController.class).exportScript(id, "fountain", null)).withRel(ApiRel.EXPORT),
                 linkTo(methodOn(ProjectController.class).exportScript(id, "pdf", null)).withRel(ApiRel.EXPORT_PDF),
                 linkTo(methodOn(ProjectController.class).exportScript(id, "docx", null)).withRel(ApiRel.EXPORT_DOCX)

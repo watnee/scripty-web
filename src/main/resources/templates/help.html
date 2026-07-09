@@ -72,9 +72,9 @@
                     <h3>✍️ Inline Editing &amp; Auto-Save</h3>
                     <p>Simply click on the text area of any block to edit its dialogue or action description inline. Your changes are automatically saved in the background after you stop typing (500ms delay).</p>
                 </div>
-                <div class="help-card" data-keywords="offline block text edit cached sync disconnected airplane mode pwa">
+                <div class="help-card" data-keywords="offline block text edit cached sync disconnected airplane mode pwa service worker">
                     <h3>📴 Offline Editing</h3>
-                    <p>After visiting a project online, you can keep writing offline. Edit block text, press <kbd>Enter</kbd> to add blocks below, or use the <kbd>+</kbd> button. Changes save locally, survive reloads, and sync automatically when you reconnect (with retries if the network is flaky). Unsynced blocks show a small dot indicator. Delete, reorder, and bulk actions still need a connection.</p>
+                    <p>Visit a project once while online so Scripty can cache it. Then you can reopen it offline (from the offline project list, a PWA install, or by revisiting the project URL). Edit block text, press <kbd>Enter</kbd> to add blocks below, or use the <kbd>+</kbd> button. Changes save locally, survive reloads and closed tabs, and sync automatically when you reconnect (with retries if the network is flaky). Unsynced blocks show a small dot indicator. Delete, reorder, and bulk actions still need a connection.</p>
                 </div>
                 <div class="help-card" data-keywords="add new block insert create below plus icon block controls">
                     <h3>➕ Adding Blocks</h3>
@@ -131,13 +131,13 @@
             </p>
             <div th:replace="~{fragments/shortcuts :: shortcutsContent}"></div>
             <div class="help-card-grid" style="margin-top: 1.5rem;">
-                <div class="help-card" data-keywords="history undo redo version history project version list restore clock">
-                    <h3>🕒 Undo, Redo &amp; Version History</h3>
-                    <p>Use the undo and redo buttons in the project toolbar for recent edits in this session. Open <strong>Version History</strong> from the clock icon to browse saved snapshots, compare what changed, and restore an earlier draft.</p>
+                <div class="help-card" data-keywords="history undo redo version history project version list restore clock snapshot">
+                    <h3>🕒 Undo, Redo &amp; Snapshot History</h3>
+                    <p>Use the undo and redo buttons in the project toolbar for recent edits in this session. Open <strong>Snapshot History</strong> from the clock icon to browse saved snapshots, compare what changed, and restore an earlier draft of the current screenplay version.</p>
                 </div>
-                <div class="help-card" data-keywords="version history list list-versions backup revision timestamp restore auto-save block edit add delete move">
-                    <h3>💾 Version History</h3>
-                    <p>Block edits, adds, deletes, moves, and tag changes trigger auto-saves (updated in place about every 10 minutes when content changes). Each entry shows what changed since the previous save — block edits with previews, plus scene and character changes. Restoring saves a “Before restore” snapshot first so you can undo a mistaken restore.</p>
+                <div class="help-card" data-keywords="version history list list-versions backup revision timestamp restore auto-save block edit add delete move snapshot">
+                    <h3>💾 Snapshot History</h3>
+                    <p>Block edits, adds, deletes, moves, and tag changes trigger auto-saves (updated in place about every 10 minutes when content changes). Each entry shows what changed since the previous save — block edits with previews, plus scene and character changes. Restoring saves a “Before restore” snapshot first so you can undo a mistaken restore. Use the version menu in the script toolbar to create parallel editable screenplay versions.</p>
                 </div>
             </div>
         </div>

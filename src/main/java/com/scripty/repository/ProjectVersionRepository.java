@@ -8,5 +8,9 @@ public interface ProjectVersionRepository extends JpaRepository<ProjectVersion, 
 
     List<ProjectVersion> findByProjectIdOrderByCreatedAtDesc(Integer projectId);
 
+    List<ProjectVersion> findByScriptEditionIdOrderByCreatedAtDesc(Integer scriptEditionId);
+
     ProjectVersion findFirstByProjectIdOrderByCreatedAtDesc(Integer projectId);
+
+    ProjectVersion findFirstByScriptEditionIdOrderByCreatedAtDesc(Integer scriptEditionId);
 }

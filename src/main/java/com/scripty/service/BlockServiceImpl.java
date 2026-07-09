@@ -6,6 +6,7 @@ import com.scripty.commandmodel.block.editblock.EditBlockCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.dto.ProjectActivity;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
@@ -31,18 +32,21 @@ public class BlockServiceImpl implements BlockService {
     private final ProjectRepository projectRepository;
     private final ProjectActivityService projectActivityService;
     private final ProjectUndoRedoService projectUndoRedoService;
+    private final ScriptEditionService scriptEditionService;
 
     @Autowired
     public BlockServiceImpl(BlockRepository blockRepository,
                             PersonRepository personRepository,
                             ProjectRepository projectRepository,
                             ProjectActivityService projectActivityService,
-                            @org.springframework.context.annotation.Lazy ProjectUndoRedoService projectUndoRedoService) {
+                            @org.springframework.context.annotation.Lazy ProjectUndoRedoService projectUndoRedoService,
+                            ScriptEditionService scriptEditionService) {
         this.blockRepository = blockRepository;
         this.personRepository = personRepository;
         this.projectRepository = projectRepository;
         this.projectActivityService = projectActivityService;
         this.projectUndoRedoService = projectUndoRedoService;
+        this.scriptEditionService = scriptEditionService;
     }
 
     @Override
@@ -59,7 +63,10 @@ public class BlockServiceImpl implements BlockService {
         commandModel.setProjectId(project.getId());
         vm.setCreateBlockCommandModel(commandModel);
 
-        List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(project.getId());
+        ScriptEdition edition = resolveEdition(project);
+        List<Person> persons = edition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+                : personRepository.findByProjectIdOrderByNameAsc(project.getId());
         vm.setProjectId(project.getId());
         vm.setPersons(translateCreatePersonViewModel(persons));
         return vm;
@@ -75,7 +82,10 @@ public class BlockServiceImpl implements BlockService {
         commandModel.setId(existingBlock.getId());
         vm.setCreateBlockBelowCommandModel(commandModel);
 
-        List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(project.getId());
+        ScriptEdition edition = resolveEdition(existingBlock);
+        List<Person> persons = edition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+                : personRepository.findByProjectIdOrderByNameAsc(project.getId());
         vm.setProjectId(project.getId());
         vm.setPersons(translateCreatePersonViewModel(persons));
         return vm;
@@ -89,7 +99,10 @@ public class BlockServiceImpl implements BlockService {
 
         vm.setProjectId(project.getId());
 
-        List<Person> allPersons = personRepository.findAll();
+        ScriptEdition edition = resolveEdition(existingBlock);
+        List<Person> allPersons = edition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+                : personRepository.findByProjectIdOrderByNameAsc(project.getId());
         List<EditPersonViewModel> editPersonViewModels = new ArrayList<>();
         for (Person person : allPersons) {
             EditPersonViewModel epvm = new EditPersonViewModel();
@@ -145,12 +158,13 @@ public class BlockServiceImpl implements BlockService {
             person = personRepository.findById(cmd.getPersonId()).orElse(null);
         }
         Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
+        ScriptEdition edition = resolveEdition(project);
         String content = PlainTextSanitizer.sanitize(cmd.getContent());
 
         if (person == null) {
             String characterName = extractCharacterName(content);
             if (characterName != null) {
-                person = findOrCreatePerson(characterName, project);
+                person = findOrCreatePerson(characterName, project, edition);
                 content = stripCharacterName(content);
             }
         }
@@ -158,6 +172,7 @@ public class BlockServiceImpl implements BlockService {
         block.setContent(content);
         if (person != null) block.setPerson(person);
         block.setProject(project);
+        block.setScriptEdition(edition);
         block.setBookmarked(false);
         block.setPinned(false);
         block.setType(normalizeBlockType(cmd.getType()));
@@ -165,14 +180,16 @@ public class BlockServiceImpl implements BlockService {
             String characterName = normalizeCharacterCue(content);
             if (characterName != null) {
                 block.setContent(characterName);
-                block.setPerson(findOrCreatePerson(characterName, project));
+                block.setPerson(findOrCreatePerson(characterName, project, edition));
             }
         }
 
-        int order = blockRepository.countByProjectId(project.getId()) + 1;
+        int order = (edition != null
+                ? blockRepository.countByScriptEditionId(edition.getId())
+                : blockRepository.countByProjectId(project.getId())) + 1;
         block.setOrder(order);
         Block saved = blockRepository.save(block);
-        recordScriptEdited(project);
+        recordScriptEdited(project, edition);
         return saved;
     }
 
@@ -185,12 +202,13 @@ public class BlockServiceImpl implements BlockService {
             person = personRepository.findById(cmd.getPersonId()).orElse(null);
         }
         Project project = existingBlock.getProject();
+        ScriptEdition edition = resolveEdition(existingBlock);
         String content = PlainTextSanitizer.sanitize(cmd.getContent());
 
         if (person == null) {
             String characterName = extractCharacterName(content);
             if (characterName != null) {
-                person = findOrCreatePerson(characterName, project);
+                person = findOrCreatePerson(characterName, project, edition);
                 content = stripCharacterName(content);
             }
         }
@@ -202,6 +220,7 @@ public class BlockServiceImpl implements BlockService {
         block.setContent(content);
         if (person != null) block.setPerson(person);
         block.setProject(project);
+        block.setScriptEdition(edition);
         block.setBookmarked(false);
         block.setPinned(false);
         block.setType(normalizeBlockType(cmd.getType()));
@@ -209,15 +228,22 @@ public class BlockServiceImpl implements BlockService {
             String characterName = normalizeCharacterCue(content);
             if (characterName != null) {
                 block.setContent(characterName);
-                block.setPerson(findOrCreatePerson(characterName, project));
+                block.setPerson(findOrCreatePerson(characterName, project, edition));
             }
         }
 
         int newOrder = existingBlock.getOrder() + 1;
-        blockRepository.incrementOrdersAbove(existingBlock.getOrder(), project.getId());
+        if (edition == null) {
+            edition = scriptEditionService.ensureDefaultEdition(project.getId());
+            block.setScriptEdition(edition);
+        }
+        if (edition == null) {
+            return existingBlock;
+        }
+        blockRepository.incrementOrdersAbove(existingBlock.getOrder(), edition.getId());
         block.setOrder(newOrder);
         Block saved = blockRepository.save(block);
-        recordScriptEdited(project);
+        recordScriptEdited(project, edition);
         return saved;
     }
 
@@ -238,11 +264,15 @@ public class BlockServiceImpl implements BlockService {
         if (project == null) {
             return created;
         }
+        ScriptEdition edition = resolveEdition(afterBlock);
+        if (edition == null) {
+            return created;
+        }
 
         // If the only block is empty, fill it with the first line then insert the rest below.
         String existingContent = afterBlock.getContent();
         boolean fillEmptyOnlyBlock = (existingContent == null || existingContent.trim().isEmpty())
-                && blockRepository.countByProjectId(project.getId()) == 1;
+                && blockRepository.countByScriptEditionId(edition.getId()) == 1;
 
         List<CreateBlockBelowCommandModel> remaining = blocks;
         if (fillEmptyOnlyBlock) {
@@ -256,20 +286,20 @@ public class BlockServiceImpl implements BlockService {
                 String characterName = normalizeCharacterCue(afterBlock.getContent());
                 if (characterName != null) {
                     afterBlock.setContent(characterName);
-                    afterBlock.setPerson(findOrCreatePerson(characterName, project));
+                    afterBlock.setPerson(findOrCreatePerson(characterName, project, edition));
                 }
             }
             created.add(blockRepository.save(afterBlock));
             remaining = blocks.subList(1, blocks.size());
             if (remaining.isEmpty()) {
-                recordScriptEdited(project);
+                recordScriptEdited(project, edition);
                 return created;
             }
         }
 
         int insertCount = remaining.size();
         int baseOrder = afterBlock.getOrder();
-        blockRepository.incrementOrdersAboveBy(baseOrder, project.getId(), insertCount);
+        blockRepository.incrementOrdersAboveBy(baseOrder, edition.getId(), insertCount);
 
         int nextOrder = baseOrder + 1;
         for (CreateBlockBelowCommandModel cmd : remaining) {
@@ -277,6 +307,7 @@ public class BlockServiceImpl implements BlockService {
             String content = PlainTextSanitizer.sanitize(cmd.getContent() != null ? cmd.getContent() : "");
             block.setContent(content);
             block.setProject(project);
+            block.setScriptEdition(edition);
             block.setBookmarked(false);
             block.setPinned(false);
             block.setType(normalizeBlockType(cmd.getType()));
@@ -285,14 +316,14 @@ public class BlockServiceImpl implements BlockService {
                 String characterName = normalizeCharacterCue(content);
                 if (characterName != null) {
                     block.setContent(characterName);
-                    block.setPerson(findOrCreatePerson(characterName, project));
+                    block.setPerson(findOrCreatePerson(characterName, project, edition));
                 }
             }
             block.setOrder(nextOrder++);
             created.add(blockRepository.save(block));
         }
         if (!created.isEmpty()) {
-            recordScriptEdited(project);
+            recordScriptEdited(project, edition);
         }
         return created;
     }
@@ -423,7 +454,7 @@ public class BlockServiceImpl implements BlockService {
         if (Block.isCharacterCueType(block.getType())) {
             String characterName = normalizeCharacterCue(content);
             if (characterName != null) {
-                person = findOrCreatePerson(characterName, block.getProject());
+                person = findOrCreatePerson(characterName, block.getProject(), resolveEdition(block));
                 content = characterName;
             } else {
                 person = null;
@@ -432,7 +463,7 @@ public class BlockServiceImpl implements BlockService {
         } else if (person == null && !block.isScene()) {
             String characterName = extractCharacterName(content);
             if (characterName != null) {
-                person = findOrCreatePerson(characterName, block.getProject());
+                person = findOrCreatePerson(characterName, block.getProject(), resolveEdition(block));
                 content = stripCharacterName(content);
             }
         }
@@ -443,7 +474,7 @@ public class BlockServiceImpl implements BlockService {
             block.setTags(PlainTextSanitizer.sanitizeSingleLine(cmd.getTags()));
         }
         blockRepository.save(block);
-        recordScriptEdited(block.getProject());
+        recordScriptEdited(block.getProject(), resolveEdition(block));
         return block;
     }
 
@@ -480,7 +511,7 @@ public class BlockServiceImpl implements BlockService {
             }
             if (characterName != null) {
                 block.setContent(characterName);
-                block.setPerson(findOrCreatePerson(characterName, block.getProject()));
+                block.setPerson(findOrCreatePerson(characterName, block.getProject(), resolveEdition(block)));
             } else {
                 block.setPerson(null);
             }
@@ -495,7 +526,7 @@ public class BlockServiceImpl implements BlockService {
                 characterName = normalizeCharacterCue(block.getContent());
             }
             if (characterName != null) {
-                block.setPerson(findOrCreatePerson(characterName, block.getProject()));
+                block.setPerson(findOrCreatePerson(characterName, block.getProject(), resolveEdition(block)));
             }
             block.setContent("");
         } else {
@@ -504,7 +535,7 @@ public class BlockServiceImpl implements BlockService {
         }
 
         Block saved = blockRepository.save(block);
-        recordScriptEdited(block.getProject());
+        recordScriptEdited(block.getProject(), resolveEdition(block));
         return saved;
     }
 
@@ -512,7 +543,11 @@ public class BlockServiceImpl implements BlockService {
     @Transactional
     public Block createInitialBlock(Integer projectId) {
         Project project = projectRepository.findById(projectId).orElse(null);
-        if (project == null || blockRepository.countByProjectId(projectId) > 0) {
+        if (project == null) {
+            return null;
+        }
+        ScriptEdition edition = scriptEditionService.ensureDefaultEdition(projectId);
+        if (edition == null || blockRepository.countByScriptEditionId(edition.getId()) > 0) {
             return null;
         }
         Block block = new Block();
@@ -520,6 +555,7 @@ public class BlockServiceImpl implements BlockService {
         block.setType(Block.TYPE_ACTION);
         block.setSceneDelimiter(false);
         block.setProject(project);
+        block.setScriptEdition(edition);
         block.setBookmarked(false);
         block.setPinned(false);
         block.setOrder(1);
@@ -532,7 +568,7 @@ public class BlockServiceImpl implements BlockService {
         Block block = blockRepository.findById(id).orElse(null);
         block.setContent(PlainTextSanitizer.sanitizeSingleLine(name));
         Block saved = blockRepository.save(block);
-        recordScriptEdited(block.getProject());
+        recordScriptEdited(block.getProject(), resolveEdition(block));
         return saved;
     }
 
@@ -555,13 +591,13 @@ public class BlockServiceImpl implements BlockService {
             return block;
         }
 
-        Person person = findOrCreatePerson(trimmed, block.getProject());
+        Person person = findOrCreatePerson(trimmed, block.getProject(), resolveEdition(block));
         block.setPerson(person);
         if (Block.isCharacterCueType(block.getType())) {
             block.setContent(trimmed);
         }
         Block saved = blockRepository.save(block);
-        recordScriptEdited(block.getProject());
+        recordScriptEdited(block.getProject(), resolveEdition(block));
         return saved;
     }
 
@@ -570,9 +606,12 @@ public class BlockServiceImpl implements BlockService {
     public Block deleteBlock(Integer id) {
         Block block = blockRepository.findById(id).orElse(null);
         Project project = block.getProject();
+        ScriptEdition edition = resolveEdition(block);
         blockRepository.delete(block);
-        blockRepository.decrementOrdersAbove(block.getOrder(), project.getId());
-        recordScriptEdited(project);
+        if (edition != null) {
+            blockRepository.decrementOrdersAbove(block.getOrder(), edition.getId());
+        }
+        recordScriptEdited(project, edition);
         return block;
     }
 
@@ -581,7 +620,7 @@ public class BlockServiceImpl implements BlockService {
     public Block moveBlockUp(Integer id) {
         Block block = blockRepository.findById(id).orElse(null);
         Block blockAbove = blockRepository
-            .findByProjectIdAndOrder(block.getProject().getId(), block.getOrder() - 1)
+            .findByScriptEditionIdAndOrder(editionId(block), block.getOrder() - 1)
             .orElse(null);
         if (blockAbove != null) {
             int tempOrder = blockAbove.getOrder();
@@ -589,7 +628,7 @@ public class BlockServiceImpl implements BlockService {
             block.setOrder(tempOrder);
             blockRepository.save(blockAbove);
             blockRepository.save(block);
-            recordScriptEdited(block.getProject());
+            recordScriptEdited(block.getProject(), resolveEdition(block));
         }
         return block;
     }
@@ -599,7 +638,7 @@ public class BlockServiceImpl implements BlockService {
     public Block moveBlockDown(Integer id) {
         Block block = blockRepository.findById(id).orElse(null);
         Block blockBelow = blockRepository
-            .findByProjectIdAndOrder(block.getProject().getId(), block.getOrder() + 1)
+            .findByScriptEditionIdAndOrder(editionId(block), block.getOrder() + 1)
             .orElse(null);
         if (blockBelow != null) {
             int tempOrder = blockBelow.getOrder();
@@ -607,7 +646,7 @@ public class BlockServiceImpl implements BlockService {
             block.setOrder(tempOrder);
             blockRepository.save(blockBelow);
             blockRepository.save(block);
-            recordScriptEdited(block.getProject());
+            recordScriptEdited(block.getProject(), resolveEdition(block));
         }
         return block;
     }
@@ -617,17 +656,17 @@ public class BlockServiceImpl implements BlockService {
     public Block moveBlockTo(Integer id, int newOrder) {
         Block block = blockRepository.findById(id).orElse(null);
         int currentOrder = block.getOrder();
-        int projectId = block.getProject().getId();
-        if (newOrder == currentOrder) return block;
+        Integer scriptEditionId = editionId(block);
+        if (newOrder == currentOrder || scriptEditionId == null) return block;
 
         if (newOrder < currentOrder) {
-            blockRepository.incrementOrdersInRange(newOrder, currentOrder, projectId);
+            blockRepository.incrementOrdersInRange(newOrder, currentOrder, scriptEditionId);
         } else {
-            blockRepository.decrementOrdersInRange(currentOrder, newOrder, projectId);
+            blockRepository.decrementOrdersInRange(currentOrder, newOrder, scriptEditionId);
         }
         block.setOrder(newOrder);
         blockRepository.save(block);
-        recordScriptEdited(block.getProject());
+        recordScriptEdited(block.getProject(), resolveEdition(block));
         return block;
     }
 
@@ -640,7 +679,7 @@ public class BlockServiceImpl implements BlockService {
         }
         block.setBookmarked(!block.isBookmarked());
         Block saved = blockRepository.save(block);
-        recordScriptEdited(block.getProject());
+        recordScriptEdited(block.getProject(), resolveEdition(block));
         return saved;
     }
 
@@ -653,7 +692,7 @@ public class BlockServiceImpl implements BlockService {
         }
         block.setPinned(!block.isPinned());
         Block saved = blockRepository.save(block);
-        recordScriptEdited(block.getProject());
+        recordScriptEdited(block.getProject(), resolveEdition(block));
         return saved;
     }
 
@@ -740,8 +779,40 @@ public class BlockServiceImpl implements BlockService {
         return sb.toString().trim();
     }
 
+
+    private ScriptEdition resolveEdition(Block block) {
+        if (block != null && block.getScriptEdition() != null) {
+            return block.getScriptEdition();
+        }
+        if (block != null && block.getProject() != null) {
+            return scriptEditionService.getDefaultForProject(block.getProject().getId());
+        }
+        return null;
+    }
+
+    private ScriptEdition resolveEdition(Project project) {
+        if (project == null) {
+            return null;
+        }
+        return scriptEditionService.getDefaultForProject(project.getId());
+    }
+
+    private Integer editionId(Block block) {
+        ScriptEdition edition = resolveEdition(block);
+        return edition != null ? edition.getId() : null;
+    }
+
     private Person findOrCreatePerson(String characterName, Project project) {
-        List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(project.getId());
+        return findOrCreatePerson(characterName, project, resolveEdition(project));
+    }
+
+    private Person findOrCreatePerson(String characterName, Project project, ScriptEdition edition) {
+        if (edition == null) {
+            edition = resolveEdition(project);
+        }
+        List<Person> persons = edition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+                : personRepository.findByProjectIdOrderByNameAsc(project.getId());
         for (Person person : persons) {
             if (person.getName().equalsIgnoreCase(characterName)) {
                 return person;
@@ -751,6 +822,7 @@ public class BlockServiceImpl implements BlockService {
         newPerson.setName(PlainTextSanitizer.sanitizeSingleLine(characterName));
         newPerson.setFullName(PlainTextSanitizer.sanitizeSingleLine(characterName));
         newPerson.setProject(project);
+        newPerson.setScriptEdition(edition);
         return personRepository.save(newPerson);
     }
 
@@ -844,7 +916,7 @@ public class BlockServiceImpl implements BlockService {
                     }
                     if (characterName != null) {
                         block.setContent(characterName);
-                        block.setPerson(findOrCreatePerson(characterName, block.getProject()));
+                        block.setPerson(findOrCreatePerson(characterName, block.getProject(), resolveEdition(block)));
                     }
                 } else if (Block.TYPE_DIALOGUE.equals(normalized) && Block.isCharacterCueType(previousType)) {
                     String characterName = null;
@@ -855,7 +927,7 @@ public class BlockServiceImpl implements BlockService {
                         characterName = normalizeCharacterCue(block.getContent());
                     }
                     if (characterName != null) {
-                        block.setPerson(findOrCreatePerson(characterName, block.getProject()));
+                        block.setPerson(findOrCreatePerson(characterName, block.getProject(), resolveEdition(block)));
                     }
                     block.setContent("");
                 }
@@ -933,29 +1005,49 @@ public class BlockServiceImpl implements BlockService {
             return;
         }
         java.util.Set<Integer> projectIds = new java.util.HashSet<>();
+        java.util.Set<Integer> editionIds = new java.util.HashSet<>();
         for (Integer id : ids) {
             blockRepository.findById(id).ifPresent(block -> {
-                projectIds.add(block.getProject().getId());
+                if (block.getProject() != null) {
+                    projectIds.add(block.getProject().getId());
+                }
+                if (block.getScriptEdition() != null) {
+                    editionIds.add(block.getScriptEdition().getId());
+                }
             });
         }
         blockRepository.deleteAllById(ids);
-        for (Integer projectId : projectIds) {
-            List<Block> remainingBlocks = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+        for (Integer editionId : editionIds) {
+            List<Block> remainingBlocks = blockRepository.findByScriptEditionIdOrderByOrderAsc(editionId);
             int order = 1;
             for (Block b : remainingBlocks) {
                 b.setOrder(order++);
                 blockRepository.save(b);
             }
+        }
+        for (Integer projectId : projectIds) {
             projectRepository.findById(projectId).ifPresent(this::recordScriptEdited);
         }
     }
 
     private void recordScriptEdited(Project project) {
+        recordScriptEdited(project, null);
+    }
+
+    private void recordScriptEdited(Project project, ScriptEdition edition) {
         if (project == null || project.getId() == null) {
             return;
         }
         if (projectUndoRedoService.isRecordingSuppressed()) {
             return;
+        }
+        if (edition != null) {
+            scriptEditionService.touchEdition(edition);
+        } else {
+            ScriptEdition defaultEdition = scriptEditionService.getDefaultForProject(project.getId());
+            if (defaultEdition != null) {
+                scriptEditionService.touchEdition(defaultEdition);
+            }
         }
         projectActivityService.recordForCurrentUser(
                 project.getId(),

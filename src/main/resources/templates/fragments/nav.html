@@ -3589,6 +3589,25 @@
             return null;
         }
         window.scriptyResolveProjectId = resolveProjectId;
+
+        function resolveEditionId() {
+            if (window.scriptyEditionId) {
+                return String(window.scriptyEditionId);
+            }
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('editionId')) {
+                return params.get('editionId');
+            }
+            const projectId = resolveProjectId();
+            if (projectId) {
+                try {
+                    const stored = localStorage.getItem('scripty-edition-project-' + projectId);
+                    if (stored) return stored;
+                } catch (e) {}
+            }
+            return null;
+        }
+        window.scriptyResolveEditionId = resolveEditionId;
         window.scriptyFlushOpenBlockEdits = flushOpenBlockEdits;
 
         function abortUndoStatusFetch() {
@@ -5715,7 +5734,8 @@
                 if (refreshInProgress) return;
                 refreshInProgress = true;
                 var scrollY = window.scrollY;
-                fetch('/project/showScript?id=' + encodeURIComponent(projectId), {
+                fetch('/project/showScript?id=' + encodeURIComponent(projectId)
+                        + (window.scriptyEditionId ? ('&editionId=' + encodeURIComponent(window.scriptyEditionId)) : ''), {
                     credentials: 'same-origin',
                     cache: 'no-store',
                     headers: { 'Accept': 'text/html' }
@@ -5797,7 +5817,13 @@
             const controller = new AbortController();
             window._undoStatusAbort = controller;
 
-            fetch('/project/undoRedoStatus?projectId=' + projectId, {
+            var statusUrl = '/project/undoRedoStatus?projectId=' + projectId;
+            var editionId = resolveEditionId();
+            if (editionId) {
+                statusUrl += '&editionId=' + encodeURIComponent(editionId);
+            }
+
+            fetch(statusUrl, {
                 cache: 'no-store',
                 credentials: 'same-origin',
                 signal: controller.signal
@@ -5837,8 +5863,13 @@
 
             const projectId = resolveProjectId();
             if (!projectId) return;
+            var editionId = resolveEditionId();
+            var actionUrl = '/project/' + action + '?projectId=' + projectId;
+            if (editionId) {
+                actionUrl += '&editionId=' + encodeURIComponent(editionId);
+            }
 
-            fetch('/project/' + action + '?projectId=' + projectId, {
+            fetch(actionUrl, {
                 method: 'POST',
                 credentials: 'same-origin',
                 cache: 'no-store',
@@ -5849,7 +5880,11 @@
                       if (data.moveOnly) {
                           window.location.reload();
                       } else {
-                          window.location.href = '/project/show?id=' + projectId;
+                          var showUrl = '/project/show?id=' + projectId;
+                          if (editionId) {
+                              showUrl += '&editionId=' + encodeURIComponent(editionId);
+                          }
+                          window.location.href = showUrl;
                       }
                   } else {
                       updateUndoRedoButtons(projectId);

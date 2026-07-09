@@ -3,6 +3,7 @@ package com.scripty.service;
 import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.dto.ProjectActivity;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
@@ -55,6 +56,9 @@ public class FountainImportServiceImpl implements FountainImportService {
     @Autowired
     private ProjectActivityService projectActivityService;
 
+    @Autowired
+    private ScriptEditionService scriptEditionService;
+
     private enum ParseMode {
         ACTION, CHARACTER, DIALOGUE
     }
@@ -104,7 +108,10 @@ public class FountainImportServiceImpl implements FountainImportService {
             return;
         }
 
-        List<Block> existing = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+        ScriptEdition edition = scriptEditionService.ensureDefaultEdition(projectId);
+        List<Block> existing = edition != null
+                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
         if (!existing.isEmpty()) {
             blockRepository.deleteAll(existing);
         }
@@ -114,6 +121,7 @@ public class FountainImportServiceImpl implements FountainImportService {
         for (ParsedBlock parsedBlock : parsed) {
             Block block = new Block();
             block.setProject(project);
+            block.setScriptEdition(edition);
             block.setOrder(order++);
             block.setContent(PlainTextSanitizer.sanitize(parsedBlock.content()));
             block.setType(parsedBlock.type());
@@ -466,7 +474,11 @@ public class FountainImportServiceImpl implements FountainImportService {
             return cached;
         }
 
-        for (Person person : personRepository.findByProjectIdOrderByNameAsc(project.getId())) {
+        ScriptEdition edition = scriptEditionService.getDefaultForProject(project.getId());
+        List<Person> persons = edition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+                : personRepository.findByProjectIdOrderByNameAsc(project.getId());
+        for (Person person : persons) {
             if (person.getName() != null && person.getName().equalsIgnoreCase(name)) {
                 cache.put(key, person);
                 return person;
@@ -477,6 +489,7 @@ public class FountainImportServiceImpl implements FountainImportService {
         person.setName(PlainTextSanitizer.sanitizeSingleLine(name));
         person.setFullName(PlainTextSanitizer.sanitizeSingleLine(name));
         person.setProject(project);
+        person.setScriptEdition(edition != null ? edition : scriptEditionService.ensureDefaultEdition(project.getId()));
         person = personRepository.save(person);
         cache.put(key, person);
         return person;

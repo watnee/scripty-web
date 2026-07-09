@@ -49,7 +49,7 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
         Integer projectId = block.getProject() != null ? block.getProject().getId() : null;
         if (projectId != null) {
             return EntityModel.of(resource,
-                    linkTo(methodOn(BlockRestController.class).list(projectId, null)).withRel(ApiRel.BLOCKS),
+                    linkTo(methodOn(BlockRestController.class).list(projectId, null, null)).withRel(ApiRel.BLOCKS),
                     linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
         return EntityModel.of(resource,
@@ -62,7 +62,7 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
             resources.add(toModel(block, projectId));
         }
         return CollectionModel.of(resources)
-                .add(linkTo(methodOn(BlockRestController.class).list(projectId, null)).withSelfRel())
+                .add(linkTo(methodOn(BlockRestController.class).list(projectId, null, null)).withSelfRel())
                 .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
     }
 
@@ -121,7 +121,7 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
             links.add(linkTo(methodOn(BlockRestController.class).togglePinned(id, null)).withRel(ApiRel.TOGGLE_PINNED));
         }
         if (projectId != null) {
-            links.add(linkTo(methodOn(BlockRestController.class).list(projectId, null)).withRel(ApiRel.BLOCKS));
+            links.add(linkTo(methodOn(BlockRestController.class).list(projectId, null, null)).withRel(ApiRel.BLOCKS));
             links.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
         return links.toArray(org.springframework.hateoas.Link[]::new);

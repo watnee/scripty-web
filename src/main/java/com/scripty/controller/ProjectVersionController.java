@@ -22,11 +22,14 @@ public class ProjectVersionController {
     ProjectAccessSupport projectAccess;
 
     @RequestMapping(value = "/list")
-    public String list(@RequestParam Integer projectId, Model model, Principal principal) {
+    public String list(@RequestParam Integer projectId,
+                       @RequestParam(required = false) Integer editionId,
+                       Model model,
+                       Principal principal) {
         if (!projectAccess.canAccessProject(projectId, principal)) {
             return "redirect:/project/list";
         }
-        VersionHistoryViewModel viewModel = projectVersionService.getVersionHistoryViewModel(projectId);
+        VersionHistoryViewModel viewModel = projectVersionService.getVersionHistoryViewModel(projectId, editionId);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
         return "project/versionHistory";
@@ -34,6 +37,7 @@ public class ProjectVersionController {
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public String create(@RequestParam Integer projectId,
+                         @RequestParam(required = false) Integer editionId,
                          @RequestParam(defaultValue = "") String label,
                          Principal principal) {
         if (!projectAccess.canEditScript(projectId, principal)) {
@@ -42,29 +46,45 @@ public class ProjectVersionController {
         if (label == null || label.isBlank()) {
             label = "Version";
         }
-        projectVersionService.createVersion(projectId, label);
-        return "redirect:/project/version/list?projectId=" + projectId;
+        projectVersionService.createVersion(projectId, editionId, label);
+        String redirect = "redirect:/project/version/list?projectId=" + projectId;
+        if (editionId != null) {
+            redirect += "&editionId=" + editionId;
+        }
+        return redirect;
     }
 
     @RequestMapping(value = "/restore", method = RequestMethod.POST)
-    public String restore(@RequestParam Integer id, @RequestParam Integer projectId, Principal principal) {
+    public String restore(@RequestParam Integer id, @RequestParam Integer projectId,
+                          @RequestParam(required = false) Integer editionId,
+                          Principal principal) {
         if (!projectAccess.canEditScript(projectId, principal)) {
             return "redirect:/project/list";
         }
         if (!projectVersionService.restoreVersionForProject(id, projectId)) {
             return "redirect:/project/list";
         }
-        return "redirect:/project/show?id=" + projectId;
+        String redirect = "redirect:/project/show?id=" + projectId;
+        if (editionId != null) {
+            redirect += "&editionId=" + editionId;
+        }
+        return redirect;
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String delete(@RequestParam Integer id, @RequestParam Integer projectId, Principal principal) {
+    public String delete(@RequestParam Integer id, @RequestParam Integer projectId,
+                         @RequestParam(required = false) Integer editionId,
+                         Principal principal) {
         if (!projectAccess.canEditScript(projectId, principal)) {
             return "redirect:/project/list";
         }
         if (!projectVersionService.deleteVersionForProject(id, projectId)) {
             return "redirect:/project/list";
         }
-        return "redirect:/project/version/list?projectId=" + projectId;
+        String redirect = "redirect:/project/version/list?projectId=" + projectId;
+        if (editionId != null) {
+            redirect += "&editionId=" + editionId;
+        }
+        return redirect;
     }
 }

@@ -12,6 +12,7 @@ import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfWriter;
 import com.scripty.dto.Block;
 import com.scripty.dto.Project;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.ProjectRepository;
 import java.io.ByteArrayOutputStream;
@@ -47,11 +48,17 @@ public class PdfExportServiceImpl implements PdfExportService {
     @Autowired
     private ProjectRepository projectRepository;
 
+    @Autowired
+    private ScriptEditionService scriptEditionService;
+
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId) {
         Project project = projectRepository.findById(projectId).orElse(null);
-        List<Block> blocks = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+        ScriptEdition edition = scriptEditionService.getDefaultForProject(projectId);
+        List<Block> blocks = edition != null
+                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.LETTER, LEFT_MARGIN, RIGHT_MARGIN, TOP_MARGIN, BOTTOM_MARGIN);

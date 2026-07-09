@@ -6,6 +6,7 @@ import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.dto.ProjectActivity;
 import com.scripty.dto.Team;
 import com.scripty.dto.User;
@@ -41,6 +42,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final TeamRepository teamRepository;
     private final UserService userService;
     private final ProjectActivityService projectActivityService;
+    private final ScriptEditionService scriptEditionService;
 
     @Autowired
     public ProjectServiceImpl(ProjectRepository projectRepository,
@@ -48,13 +50,15 @@ public class ProjectServiceImpl implements ProjectService {
                               BlockRepository blockRepository,
                               TeamRepository teamRepository,
                               UserService userService,
-                              ProjectActivityService projectActivityService) {
+                              ProjectActivityService projectActivityService,
+                              ScriptEditionService scriptEditionService) {
         this.projectRepository = projectRepository;
         this.personRepository = personRepository;
         this.blockRepository = blockRepository;
         this.teamRepository = teamRepository;
         this.userService = userService;
         this.projectActivityService = projectActivityService;
+        this.scriptEditionService = scriptEditionService;
     }
 
     @Override
@@ -250,23 +254,44 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public ProjectProfileViewModel getProjectProfileViewModel(Integer id) {
+        return getProjectProfileViewModel(id, null);
+    }
+
+    @Override
+    public ProjectProfileViewModel getProjectProfileViewModel(Integer id, Integer editionId) {
         Project project = projectRepository.findWithTeamsById(id).orElse(null);
         if (project == null) {
             return null;
         }
 
+        ScriptEdition edition = scriptEditionService.requireForProject(project.getId(), editionId);
+        if (edition == null) {
+            edition = scriptEditionService.ensureDefaultEdition(project.getId());
+        }
+
         ProjectProfileViewModel vm = new ProjectProfileViewModel();
-        List<Block> blocks = blockRepository.findByProjectIdOrderByOrderAsc(project.getId());
-        List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(project.getId());
+        List<Block> blocks = edition != null
+                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAsc(project.getId());
+        List<Person> persons = edition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+                : personRepository.findByProjectIdOrderByNameAsc(project.getId());
 
         vm.setId(project.getId());
         vm.setTitle(project.getTitle());
         vm.setTeams(project.getTeamNames());
-        vm.setLastEdited(project.getLastEdited());
+        vm.setLastEdited(edition != null && edition.getLastEdited() != null
+                ? edition.getLastEdited()
+                : project.getLastEdited());
         vm.setScreenplayTitle(project.getScreenplayTitle());
         vm.setWriters(project.getWriters());
         vm.setContactInfo(project.getContactInfo());
         vm.setScreenplayVersion(project.getScreenplayVersion());
+        if (edition != null) {
+            vm.setEditionId(edition.getId());
+            vm.setEditionName(edition.getName());
+        }
+        vm.setEditions(scriptEditionService.getEditionViewModels(project.getId()));
 
         List<BlockViewModel> blockViewModels = new ArrayList<>();
         Integer lastBlockId = null;
@@ -338,6 +363,7 @@ public class ProjectServiceImpl implements ProjectService {
         project.setTitle(PlainTextSanitizer.sanitizeSingleLine(cmd.getTitle()));
         project.setLastEdited(java.time.LocalDateTime.now());
         projectRepository.save(project);
+        scriptEditionService.ensureDefaultEdition(project.getId());
         if (cmd.getTeamIds() != null && !cmd.getTeamIds().isEmpty()) {
             applyTeams(project, cmd.getTeamIds());
         }

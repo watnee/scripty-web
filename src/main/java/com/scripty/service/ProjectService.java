@@ -29,6 +29,7 @@ public interface ProjectService {
     ProjectListViewModel getProjectListViewModel();
     ProjectListViewModel getProjectListViewModel(String userTeam);
     ProjectProfileViewModel getProjectProfileViewModel(Integer id);
+    ProjectProfileViewModel getProjectProfileViewModel(Integer id, Integer editionId);
 
     CreateProjectViewModel getCreateProjectViewModel();
     EditProjectViewModel getEditProjectViewModel(Integer id);

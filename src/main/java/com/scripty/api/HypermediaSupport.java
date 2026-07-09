@@ -21,14 +21,14 @@ public final class HypermediaSupport {
 
     public static EntityModel<Map<String, Object>> projectUndoRedo(Map<String, Object> body, Integer projectId, boolean undo) {
         Link self = undo
-                ? linkTo(methodOn(ProjectController.class).undo(projectId, null)).withSelfRel()
-                : linkTo(methodOn(ProjectController.class).redo(projectId, null)).withSelfRel();
+                ? linkTo(methodOn(ProjectController.class).undo(projectId, null, null)).withSelfRel()
+                : linkTo(methodOn(ProjectController.class).redo(projectId, null, null)).withSelfRel();
         return EntityModel.of(body).add(self).add(projectActionLinks(projectId));
     }
 
     public static EntityModel<Map<String, Object>> projectUndoRedoStatus(Map<String, Object> body, Integer projectId) {
         return EntityModel.of(body)
-                .add(linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null)).withSelfRel())
+                .add(linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null, null)).withSelfRel())
                 .add(projectActionLinks(projectId));
     }
 
@@ -46,16 +46,16 @@ public final class HypermediaSupport {
         return new Link[]{
                 linkTo(methodOn(ProjectController.class).syncStatus(projectId, since, null)).withSelfRel(),
                 linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT),
-                linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null)).withRel(ApiRel.UNDO_REDO_STATUS)
+                linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null, null)).withRel(ApiRel.UNDO_REDO_STATUS)
         };
     }
 
     private static Link[] projectActionLinks(Integer projectId) {
         return new Link[]{
                 linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT),
-                linkTo(methodOn(ProjectController.class).undo(projectId, null)).withRel(ApiRel.UNDO),
-                linkTo(methodOn(ProjectController.class).redo(projectId, null)).withRel(ApiRel.REDO),
-                linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null)).withRel(ApiRel.UNDO_REDO_STATUS),
+                linkTo(methodOn(ProjectController.class).undo(projectId, null, null)).withRel(ApiRel.UNDO),
+                linkTo(methodOn(ProjectController.class).redo(projectId, null, null)).withRel(ApiRel.REDO),
+                linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null, null)).withRel(ApiRel.UNDO_REDO_STATUS),
                 linkTo(methodOn(ProjectController.class).syncStatus(projectId, null, null)).withRel(ApiRel.SYNC_STATUS)
         };
     }

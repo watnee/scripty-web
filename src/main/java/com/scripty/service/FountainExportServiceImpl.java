@@ -2,6 +2,7 @@ package com.scripty.service;
 
 import com.scripty.dto.Block;
 import com.scripty.dto.Project;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.ProjectRepository;
 import java.util.List;
@@ -33,11 +34,17 @@ public class FountainExportServiceImpl implements FountainExportService {
     @Autowired
     private ProjectRepository projectRepository;
 
+    @Autowired
+    private ScriptEditionService scriptEditionService;
+
     @Override
     @Transactional(readOnly = true)
     public String exportProject(Integer projectId) {
         Project project = projectRepository.findById(projectId).orElse(null);
-        List<Block> blocks = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+        ScriptEdition edition = scriptEditionService.getDefaultForProject(projectId);
+        List<Block> blocks = edition != null
+                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
         StringBuilder sb = new StringBuilder();
 
         if (project != null) {

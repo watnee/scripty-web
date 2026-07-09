@@ -4,6 +4,7 @@ import com.scripty.commandmodel.block.createblockbelow.CreateBlockBelowCommandMo
 import com.scripty.commandmodel.textdocument.TextDocumentCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.dto.Project;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.dto.ProjectActivity;
 import com.scripty.dto.TextDocument;
 import com.scripty.dto.User;
@@ -30,6 +31,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     private final ProjectService projectService;
     private final ScriptImportTextExtractor scriptImportTextExtractor;
     private final ProjectActivityService projectActivityService;
+    private final ScriptEditionService scriptEditionService;
 
     @Autowired
     public TextDocumentServiceImpl(TextDocumentRepository textDocumentRepository,
@@ -38,7 +40,8 @@ public class TextDocumentServiceImpl implements TextDocumentService {
                                     BlockService blockService,
                                     ProjectService projectService,
                                     ScriptImportTextExtractor scriptImportTextExtractor,
-                                    ProjectActivityService projectActivityService) {
+                                    ProjectActivityService projectActivityService,
+                                    ScriptEditionService scriptEditionService) {
         this.textDocumentRepository = textDocumentRepository;
         this.projectRepository = projectRepository;
         this.blockRepository = blockRepository;
@@ -46,6 +49,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         this.projectService = projectService;
         this.scriptImportTextExtractor = scriptImportTextExtractor;
         this.projectActivityService = projectActivityService;
+        this.scriptEditionService = scriptEditionService;
     }
 
     @Override
@@ -238,8 +242,11 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             return List.of();
         }
 
-        // Ensure the project has at least one block to insert after.
-        if (blockRepository.countByProjectId(projectId) == 0) {
+        ScriptEdition edition = scriptEditionService.ensureDefaultEdition(projectId);
+        // Ensure the active edition has at least one block to insert after.
+        if (edition != null && blockRepository.countByScriptEditionId(edition.getId()) == 0) {
+            blockService.createInitialBlock(projectId);
+        } else if (edition == null && blockRepository.countByProjectId(projectId) == 0) {
             blockService.createInitialBlock(projectId);
         }
 
@@ -251,7 +258,9 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             }
         }
         if (afterBlock == null) {
-            List<Block> existing = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+            List<Block> existing = edition != null
+                    ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
+                    : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
             if (existing.isEmpty()) {
                 return List.of();
             }

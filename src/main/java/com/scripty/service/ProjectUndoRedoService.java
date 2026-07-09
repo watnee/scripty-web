@@ -26,7 +26,11 @@ public interface ProjectUndoRedoService {
 
     UndoRedoResult undoWithDetails(Integer projectId);
 
+    UndoRedoResult undoWithDetails(Integer projectId, Integer editionId);
+
     UndoRedoResult redoWithDetails(Integer projectId);
+
+    UndoRedoResult redoWithDetails(Integer projectId, Integer editionId);
 
     boolean undo(Integer projectId);
 
@@ -34,7 +38,11 @@ public interface ProjectUndoRedoService {
 
     boolean canUndo(Integer projectId);
 
+    boolean canUndo(Integer projectId, Integer editionId);
+
     boolean canRedo(Integer projectId);
+
+    boolean canRedo(Integer projectId, Integer editionId);
 
     /** True while undo/redo is applying changes (skip duplicate script-edit activity). */
     boolean isRecordingSuppressed();

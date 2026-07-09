@@ -23,6 +23,10 @@ public class ProjectVersion {
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "script_edition_id")
+    private ScriptEdition scriptEdition;
+
     @Column(nullable = false)
     private String label;
 
@@ -46,6 +50,14 @@ public class ProjectVersion {
 
     public void setProject(Project project) {
         this.project = project;
+    }
+
+    public ScriptEdition getScriptEdition() {
+        return scriptEdition;
+    }
+
+    public void setScriptEdition(ScriptEdition scriptEdition) {
+        this.scriptEdition = scriptEdition;
     }
 
     public String getLabel() {

@@ -9,6 +9,8 @@ import com.scripty.dto.Block;
 import com.scripty.repository.BlockRepository;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.BlockService;
+import com.scripty.service.ScriptEditionService;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.viewmodel.block.BlockViewModel;
 import jakarta.validation.Valid;
 import java.security.Principal;
@@ -45,13 +47,21 @@ public class BlockRestController {
     @Autowired
     ProjectAccessSupport projectAccess;
 
+    @Autowired
+    ScriptEditionService scriptEditionService;
+
     @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<CollectionModel<EntityModel<BlockResource>>> list(
-            @RequestParam Integer projectId, Principal principal) {
+            @RequestParam Integer projectId,
+            @RequestParam(required = false) Integer editionId,
+            Principal principal) {
         if (!projectAccess.canAccessProject(projectId, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        List<Block> blocks = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+        ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
+        List<Block> blocks = edition != null
+                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
         List<BlockViewModel> viewModels = new ArrayList<>();
         for (Block block : blocks) {
             viewModels.add(blockService.getBlockViewModel(block.getId()));

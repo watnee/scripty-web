@@ -16,20 +16,26 @@
         <nav aria-label="Breadcrumb">
             <ol>
                 <li><a th:href="@{/project/list}">Projects</a></li>
-                <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}"></a></li>
-                <li aria-current="page">Version History</li>
+                <li><a th:href="@{/project/show(id=${viewModel.projectId}, editionId=${viewModel.editionId})}" th:text="${viewModel.projectTitle}"></a></li>
+                <li aria-current="page">Snapshot History</li>
             </ol>
         </nav>
-        <h1>Version History</h1>
-        <p class="version-history-intro">Snapshots of this screenplay. Auto-saves update in place about every 10 minutes when content changes. Restoring creates a “Before restore” snapshot first.</p>
+        <h1>Snapshot History</h1>
+        <p class="version-history-intro">
+            Snapshots of
+            <strong th:if="${viewModel.editionName != null}" th:text="${viewModel.editionName}">Main</strong>
+            <span th:unless="${viewModel.editionName != null}">this screenplay</span>.
+            Auto-saves update in place about every 10 minutes when content changes. Restoring creates a “Before restore” snapshot first.
+        </p>
         <form th:if="${canEditScript == null or canEditScript}"
               th:action="@{/project/version/create}" method="POST" hx-boost="false" class="version-save-form">
             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+            <input type="hidden" name="editionId" th:value="${viewModel.editionId}" />
             <label>
                 Label
                 <input type="text" name="label" placeholder="e.g. Draft 2, Before rewrite..." style="min-width: 300px">
             </label>
-            <button type="submit">Save Current Version</button>
+            <button type="submit">Save Current Snapshot</button>
         </form>
         <th:block th:if="${#lists.isEmpty(viewModel.versions)}">
             <p th:if="${canEditScript == null or canEditScript}">No versions saved yet. Save a version to create a snapshot you can restore later.</p>
@@ -69,12 +75,14 @@
                         <form th:action="@{/project/version/restore}" method="POST" hx-boost="false" style="display: inline">
                             <input type="hidden" name="id" th:value="${version.id}" />
                             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
-                            <button type="submit" role="button" _="on click if not confirm('Restore this version? Current content will be replaced. A “Before restore” snapshot will be saved first.') halt">Restore</button>
+                            <input type="hidden" name="editionId" th:value="${viewModel.editionId}" />
+                            <button type="submit" role="button" _="on click if not confirm('Restore this snapshot? Current content will be replaced. A “Before restore” snapshot will be saved first.') halt">Restore</button>
                         </form>
                         <form th:action="@{/project/version/delete}" method="POST" hx-boost="false" style="display: inline">
                             <input type="hidden" name="id" th:value="${version.id}" />
                             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
-                            <button type="submit" role="button" _="on click if not confirm('Delete this version?') halt">Delete</button>
+                            <input type="hidden" name="editionId" th:value="${viewModel.editionId}" />
+                            <button type="submit" role="button" _="on click if not confirm('Delete this snapshot?') halt">Delete</button>
                         </form>
                     </td>
                     <td class="nowrap" th:unless="${canEditScript == null or canEditScript}"></td>

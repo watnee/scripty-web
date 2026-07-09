@@ -24,6 +24,10 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
 
     private static final int MAX_STACK_SIZE = 50;
     private static final String SESSION_KEY_PREFIX = "undoRedo_";
+
+    private String sessionKey(Integer projectId, Integer editionId) {
+        return SESSION_KEY_PREFIX + projectId + (editionId != null ? ("_e" + editionId) : "");
+    }
     private static final String ENTRY_TYPE_MOVE = "move";
 
     private final ProjectVersionService projectVersionService;
@@ -53,15 +57,19 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     @Override
     @Transactional(readOnly = true)
     public void recordCheckpoint(Integer projectId) {
+        recordCheckpoint(projectId, null);
+    }
+
+    public void recordCheckpoint(Integer projectId, Integer editionId) {
         if (projectId == null || suppressRecording.get()) {
             return;
         }
-        UndoRedoState state = getState(projectId);
-        String snapshot = projectVersionService.buildSnapshotJson(projectId);
+        UndoRedoState state = getState(projectId, editionId);
+        String snapshot = projectVersionService.buildSnapshotJson(projectId, editionId);
         state.undoStack.push(snapshot);
         state.redoStack.clear();
         trimUndoStack(state);
-        saveState(projectId, state);
+        saveState(projectId, editionId, state);
     }
 
     @Override
@@ -74,7 +82,8 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
         if (block == null || block.getProject() == null) {
             return;
         }
-        recordCheckpoint(block.getProject().getId());
+        Integer editionId = block.getScriptEdition() != null ? block.getScriptEdition().getId() : null;
+        recordCheckpoint(block.getProject().getId(), editionId);
     }
 
     @Override
@@ -87,7 +96,8 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
         if (block == null || block.getProject() == null) {
             return;
         }
-        recordCheckpoint(block.getProject().getId());
+        Integer editionId = block.getScriptEdition() != null ? block.getScriptEdition().getId() : null;
+        recordCheckpoint(block.getProject().getId(), editionId);
     }
 
     @Override
@@ -100,11 +110,12 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
             return;
         }
         Integer projectId = block.getProject().getId();
-        UndoRedoState state = getState(projectId);
+        Integer editionId = block.getScriptEdition() != null ? block.getScriptEdition().getId() : null;
+        UndoRedoState state = getState(projectId, editionId);
         state.undoStack.push(encodeMoveEntry(blockId, fromOrder, toOrder));
         state.redoStack.clear();
         trimUndoStack(state);
-        saveState(projectId, state);
+        saveState(projectId, editionId, state);
     }
 
     @Override
@@ -122,20 +133,32 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     @Override
     @Transactional
     public UndoRedoResult undoWithDetails(Integer projectId) {
-        return undoInternal(projectId);
+        return undoWithDetails(projectId, null);
+    }
+
+    @Override
+    @Transactional
+    public UndoRedoResult undoWithDetails(Integer projectId, Integer editionId) {
+        return undoInternal(projectId, editionId);
     }
 
     @Override
     @Transactional
     public UndoRedoResult redoWithDetails(Integer projectId) {
-        return redoInternal(projectId);
+        return redoWithDetails(projectId, null);
     }
 
-    private UndoRedoResult undoInternal(Integer projectId) {
+    @Override
+    @Transactional
+    public UndoRedoResult redoWithDetails(Integer projectId, Integer editionId) {
+        return redoInternal(projectId, editionId);
+    }
+
+    private UndoRedoResult undoInternal(Integer projectId, Integer editionId) {
         if (projectId == null) {
             return UndoRedoResult.failed();
         }
-        UndoRedoState state = getState(projectId);
+        UndoRedoState state = getState(projectId, editionId);
         if (state.undoStack.isEmpty()) {
             return UndoRedoResult.failed();
         }
@@ -150,17 +173,17 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
                 if (moved == null || moved.getOrder() != move.fromOrder()) {
                     state.undoStack.push(entry);
                     state.redoStack.pop();
-                    saveState(projectId, state);
+                    saveState(projectId, editionId, state);
                     return UndoRedoResult.failed();
                 }
-                saveState(projectId, state);
+                saveState(projectId, editionId, state);
                 recordUndoRedo(projectId, true);
                 return UndoRedoResult.moveSuccess();
             }
 
-            state.redoStack.push(projectVersionService.buildSnapshotJson(projectId));
-            projectVersionService.applySnapshotJson(projectId, entry);
-            saveState(projectId, state);
+            state.redoStack.push(projectVersionService.buildSnapshotJson(projectId, editionId));
+            projectVersionService.applySnapshotJson(projectId, editionId, entry);
+            saveState(projectId, editionId, state);
             recordUndoRedo(projectId, true);
             return UndoRedoResult.snapshotSuccess();
         } finally {
@@ -168,11 +191,11 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
         }
     }
 
-    private UndoRedoResult redoInternal(Integer projectId) {
+    private UndoRedoResult redoInternal(Integer projectId, Integer editionId) {
         if (projectId == null) {
             return UndoRedoResult.failed();
         }
-        UndoRedoState state = getState(projectId);
+        UndoRedoState state = getState(projectId, editionId);
         if (state.redoStack.isEmpty()) {
             return UndoRedoResult.failed();
         }
@@ -187,17 +210,17 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
                 if (moved == null || moved.getOrder() != move.fromOrder()) {
                     state.redoStack.push(entry);
                     state.undoStack.pop();
-                    saveState(projectId, state);
+                    saveState(projectId, editionId, state);
                     return UndoRedoResult.failed();
                 }
-                saveState(projectId, state);
+                saveState(projectId, editionId, state);
                 recordUndoRedo(projectId, false);
                 return UndoRedoResult.moveSuccess();
             }
 
-            state.undoStack.push(projectVersionService.buildSnapshotJson(projectId));
-            projectVersionService.applySnapshotJson(projectId, entry);
-            saveState(projectId, state);
+            state.undoStack.push(projectVersionService.buildSnapshotJson(projectId, editionId));
+            projectVersionService.applySnapshotJson(projectId, editionId, entry);
+            saveState(projectId, editionId, state);
             recordUndoRedo(projectId, false);
             return UndoRedoResult.snapshotSuccess();
         } finally {
@@ -216,12 +239,22 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
 
     @Override
     public boolean canUndo(Integer projectId) {
-        return projectId != null && !getState(projectId).undoStack.isEmpty();
+        return canUndo(projectId, null);
+    }
+
+    @Override
+    public boolean canUndo(Integer projectId, Integer editionId) {
+        return projectId != null && !getState(projectId, editionId).undoStack.isEmpty();
     }
 
     @Override
     public boolean canRedo(Integer projectId) {
-        return projectId != null && !getState(projectId).redoStack.isEmpty();
+        return canRedo(projectId, null);
+    }
+
+    @Override
+    public boolean canRedo(Integer projectId, Integer editionId) {
+        return projectId != null && !getState(projectId, editionId).redoStack.isEmpty();
     }
 
     @Override
@@ -288,11 +321,15 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     }
 
     private UndoRedoState getState(Integer projectId) {
+        return getState(projectId, null);
+    }
+
+    private UndoRedoState getState(Integer projectId, Integer editionId) {
         HttpSession session = getSession();
         if (session == null) {
             return new UndoRedoState();
         }
-        String key = SESSION_KEY_PREFIX + projectId;
+        String key = sessionKey(projectId, editionId);
         UndoRedoState state = (UndoRedoState) session.getAttribute(key);
         if (state == null) {
             state = new UndoRedoState();
@@ -302,9 +339,13 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     }
 
     private void saveState(Integer projectId, UndoRedoState state) {
+        saveState(projectId, null, state);
+    }
+
+    private void saveState(Integer projectId, Integer editionId, UndoRedoState state) {
         HttpSession session = getSession();
         if (session != null) {
-            session.setAttribute(SESSION_KEY_PREFIX + projectId, state);
+            session.setAttribute(sessionKey(projectId, editionId), state);
         }
     }
 

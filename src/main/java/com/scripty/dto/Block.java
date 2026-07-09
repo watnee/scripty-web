@@ -144,6 +144,10 @@ public class Block {
     @JoinColumn(name = "project_id")
     private Project project;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "script_edition_id")
+    private ScriptEdition scriptEdition;
+
     /** When set, this block was inserted from a song/draft and stays linked for sync. */
     @Column(name = "source_document_id")
     private Integer sourceDocumentId;
@@ -239,6 +243,14 @@ public class Block {
 
     public void setProject(Project project) {
         this.project = project;
+    }
+
+    public ScriptEdition getScriptEdition() {
+        return scriptEdition;
+    }
+
+    public void setScriptEdition(ScriptEdition scriptEdition) {
+        this.scriptEdition = scriptEdition;
     }
 
     public boolean isBookmarked() {

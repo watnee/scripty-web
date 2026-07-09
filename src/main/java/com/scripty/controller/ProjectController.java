@@ -131,7 +131,10 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/show")
-    public String show(@RequestParam(required = false) Integer id, Model model, Principal principal) {
+    public String show(@RequestParam(required = false) Integer id,
+                       @RequestParam(required = false) Integer editionId,
+                       Model model,
+                       Principal principal) {
         if (id == null) {
             if (principal != null) {
                 User currentUser = userService.readByUsername(principal.getName());
@@ -142,7 +145,7 @@ public class ProjectController {
             return "redirect:/project/list";
         }
 
-        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id, editionId);
         if (viewModel == null) {
             return "redirect:/project/list";
         }
@@ -212,11 +215,14 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/showScript")
-    public String showScript(@RequestParam Integer id, Model model, Principal principal) {
+    public String showScript(@RequestParam Integer id,
+                             @RequestParam(required = false) Integer editionId,
+                             Model model,
+                             Principal principal) {
         if (denyProjectAccess(id, principal)) {
             return "redirect:/project/list";
         }
-        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id, editionId);
         if (viewModel == null) {
             return "redirect:/project/list";
         }
@@ -235,33 +241,39 @@ public class ProjectController {
 
     @RequestMapping(value = "/undo", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<EntityModel<Map<String, Object>>> undo(@RequestParam Integer projectId, Principal principal) {
+    public ResponseEntity<EntityModel<Map<String, Object>>> undo(@RequestParam Integer projectId,
+                                                                 @RequestParam(required = false) Integer editionId,
+                                                                 Principal principal) {
         if (denyScriptEdit(projectId, principal)) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
-        ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.undoWithDetails(projectId);
+        ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.undoWithDetails(projectId, editionId);
         return ResponseEntity.ok(HypermediaSupport.projectUndoRedo(buildUndoRedoResponse(result, projectId), projectId, true));
     }
 
     @RequestMapping(value = "/redo", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<EntityModel<Map<String, Object>>> redo(@RequestParam Integer projectId, Principal principal) {
+    public ResponseEntity<EntityModel<Map<String, Object>>> redo(@RequestParam Integer projectId,
+                                                                 @RequestParam(required = false) Integer editionId,
+                                                                 Principal principal) {
         if (denyScriptEdit(projectId, principal)) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
-        ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.redoWithDetails(projectId);
+        ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.redoWithDetails(projectId, editionId);
         return ResponseEntity.ok(HypermediaSupport.projectUndoRedo(buildUndoRedoResponse(result, projectId), projectId, false));
     }
 
     @RequestMapping(value = "/undoRedoStatus", produces = MediaTypes.HAL_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<EntityModel<Map<String, Object>>> undoRedoStatus(@RequestParam Integer projectId, Principal principal) {
+    public ResponseEntity<EntityModel<Map<String, Object>>> undoRedoStatus(@RequestParam Integer projectId,
+                                                                           @RequestParam(required = false) Integer editionId,
+                                                                           Principal principal) {
         if (denyProjectAccess(projectId, principal)) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
         Map<String, Object> status = new HashMap<>();
-        status.put("canUndo", projectUndoRedoService.canUndo(projectId));
-        status.put("canRedo", projectUndoRedoService.canRedo(projectId));
+        status.put("canUndo", projectUndoRedoService.canUndo(projectId, editionId));
+        status.put("canRedo", projectUndoRedoService.canRedo(projectId, editionId));
         return ResponseEntity.ok(HypermediaSupport.projectUndoRedoStatus(status, projectId));
     }
 

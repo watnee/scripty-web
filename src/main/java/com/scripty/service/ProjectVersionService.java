@@ -7,9 +7,15 @@ public interface ProjectVersionService {
 
     VersionHistoryViewModel getVersionHistoryViewModel(Integer projectId);
 
+    VersionHistoryViewModel getVersionHistoryViewModel(Integer projectId, Integer editionId);
+
     ProjectVersion createVersion(Integer projectId, String label);
 
+    ProjectVersion createVersion(Integer projectId, Integer editionId, String label);
+
     void autoSaveVersion(Integer projectId);
+
+    void autoSaveVersion(Integer projectId, Integer editionId);
 
     void autoSaveVersionForBlock(Integer blockId);
 
@@ -33,5 +39,9 @@ public interface ProjectVersionService {
 
     String buildSnapshotJson(Integer projectId);
 
+    String buildSnapshotJson(Integer projectId, Integer editionId);
+
     void applySnapshotJson(Integer projectId, String snapshotJson);
+
+    void applySnapshotJson(Integer projectId, Integer editionId, String snapshotJson);
 }

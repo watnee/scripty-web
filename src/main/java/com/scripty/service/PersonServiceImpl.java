@@ -5,6 +5,7 @@ import com.scripty.commandmodel.person.editperson.EditPersonCommandModel;
 import com.scripty.dto.Actor;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.dto.ProjectActivity;
 import com.scripty.repository.ActorRepository;
 import com.scripty.repository.PersonRepository;
@@ -29,16 +30,19 @@ public class PersonServiceImpl implements PersonService {
     private final ActorRepository actorRepository;
     private final ProjectRepository projectRepository;
     private final ProjectActivityService projectActivityService;
+    private final ScriptEditionService scriptEditionService;
 
     @Autowired
     public PersonServiceImpl(PersonRepository personRepository,
                              ActorRepository actorRepository,
                              ProjectRepository projectRepository,
-                             ProjectActivityService projectActivityService) {
+                             ProjectActivityService projectActivityService,
+                             ScriptEditionService scriptEditionService) {
         this.personRepository = personRepository;
         this.actorRepository = actorRepository;
         this.projectRepository = projectRepository;
         this.projectActivityService = projectActivityService;
+        this.scriptEditionService = scriptEditionService;
     }
 
     @Override
@@ -63,6 +67,10 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     public List<Person> getPersonsByProject(Project project) {
+        ScriptEdition edition = scriptEditionService.getDefaultForProject(project.getId());
+        if (edition != null) {
+            return personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId());
+        }
         return personRepository.findByProjectIdOrderByNameAsc(project.getId());
     }
 
@@ -70,7 +78,10 @@ public class PersonServiceImpl implements PersonService {
     public PersonListViewModel getPersonListViewModel(Integer projectId) {
         PersonListViewModel vm = new PersonListViewModel();
         Project project = projectRepository.findById(projectId).orElse(null);
-        List<Person> persons = personRepository.findByProjectIdOrderByNameAsc(projectId);
+        ScriptEdition edition = scriptEditionService.getDefaultForProject(projectId);
+        List<Person> persons = edition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+                : personRepository.findByProjectIdOrderByNameAsc(projectId);
 
         vm.setProjectId(project.getId());
         vm.setProjectTitle(project.getTitle());

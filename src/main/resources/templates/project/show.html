@@ -35,6 +35,8 @@
         root.classList.toggle('scripty-script-readonly', !canEditScript);
         var toolbarHidden = localStorage.getItem('scripty-toolbar-hidden') === 'true';
         root.classList.toggle('scripty-toolbar-hidden', toolbarHidden);
+        var fullWidth = localStorage.getItem('scripty-screenplay-full-width') === 'true';
+        root.classList.toggle('scripty-screenplay-full-width', fullWidth);
     })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -295,6 +297,25 @@
                     <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
                 </svg>
             </button>
+            <button id="nav-full-width-toggle"
+                    type="button"
+                    class="nav-dropdown-toggle full-width-toolbar-btn"
+                    aria-pressed="false"
+                    aria-label="Use full page width"
+                    title="Use full page width">
+                <svg class="full-width-icon full-width-icon--expand" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <polyline points="9 21 3 21 3 15"></polyline>
+                    <line x1="21" y1="3" x2="14" y2="10"></line>
+                    <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+                <svg class="full-width-icon full-width-icon--compress" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="4 14 10 14 10 20"></polyline>
+                    <polyline points="20 10 14 10 14 4"></polyline>
+                    <line x1="14" y1="10" x2="21" y2="3"></line>
+                    <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+            </button>
             <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
             <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
             <span class="text-size-control-row-break" aria-hidden="true"></span>
@@ -417,6 +438,7 @@
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:src="@{/js/text-size.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/focus-mode.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/full-width-toggle.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/toolbar-toggle.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/import-script.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/block-empty-guard.js(v=${assetVersion})}"></script>

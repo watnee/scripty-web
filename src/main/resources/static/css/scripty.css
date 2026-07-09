@@ -7043,8 +7043,40 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
 .text-size-control .lists-toolbar-btn svg,
 .text-size-control .view-toolbar-btn svg,
 .text-size-control .focus-toolbar-btn svg,
+.text-size-control .full-width-toolbar-btn svg,
 .text-size-control .toolbar-visibility-toggle svg {
     display: block;
+}
+
+.text-size-control .full-width-toolbar-btn .full-width-icon--compress {
+    display: none;
+}
+
+html.scripty-screenplay-full-width .text-size-control .full-width-toolbar-btn .full-width-icon--expand {
+    display: none;
+}
+
+html.scripty-screenplay-full-width .text-size-control .full-width-toolbar-btn .full-width-icon--compress {
+    display: block;
+}
+
+.text-size-control .full-width-toolbar-btn.is-active {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.08));
+}
+
+html.scripty-screenplay-full-width .project-script,
+html.scripty-screenplay-full-width .script-content.entry-content {
+    --screenplay-action-width: 100%;
+    --screenplay-dialogue-width: 58.333%;
+}
+
+html.scripty-screenplay-full-width .project-toolbar-row,
+html.scripty-screenplay-full-width .project-script .script-scene {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+html.scripty-screenplay-full-width body.focus-mode .project-script {
+    max-width: none;
 }
 
 .text-size-control .toolbar-visibility-icon--hidden {
@@ -7089,7 +7121,7 @@ html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
 
 body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb,
-body.focus-mode .text-size-control > :not(#focus-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
+body.focus-mode .text-size-control > :not(#focus-toggle):not(#nav-full-width-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
 body.focus-mode .project-script-toolbar,
 body.focus-mode .project-header-row,
 body.focus-mode .project-create-scene,

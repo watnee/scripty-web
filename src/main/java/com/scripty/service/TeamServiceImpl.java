@@ -6,6 +6,7 @@ import com.scripty.dto.User;
 import com.scripty.repository.TeamRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.UserRepository;
+import com.scripty.util.PlainTextSanitizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +40,10 @@ public class TeamServiceImpl implements TeamService {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Team name cannot be empty");
         }
-        String trimmed = name.trim();
+        String trimmed = PlainTextSanitizer.sanitizeSingleLine(name);
+        if (trimmed == null || trimmed.isEmpty()) {
+            throw new IllegalArgumentException("Team name cannot be empty");
+        }
         if (teamRepository.findByName(trimmed).isPresent()) {
             throw new IllegalArgumentException("Team with this name already exists");
         }
@@ -55,9 +59,9 @@ public class TeamServiceImpl implements TeamService {
             return;
         }
         String oldName = team.getName();
-        String newName = name.trim();
+        String newName = PlainTextSanitizer.sanitizeSingleLine(name);
 
-        if (newName.isEmpty()) {
+        if (newName == null || newName.isEmpty()) {
             throw new IllegalArgumentException("Team name cannot be empty");
         }
 

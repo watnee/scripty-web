@@ -7,6 +7,7 @@ import com.scripty.dto.ProjectActivity;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
+import com.scripty.util.PlainTextSanitizer;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -85,13 +86,13 @@ public class FountainImportServiceImpl implements FountainImportService {
         TitlePageParseResult titlePage = extractTitlePage(fountainText);
         if (titlePage.hasAny()) {
             if (titlePage.title() != null) {
-                project.setScreenplayTitle(titlePage.title());
+                project.setScreenplayTitle(PlainTextSanitizer.sanitizeSingleLine(titlePage.title()));
             }
             if (titlePage.writers() != null) {
-                project.setWriters(titlePage.writers());
+                project.setWriters(PlainTextSanitizer.sanitizeSingleLine(titlePage.writers()));
             }
             if (titlePage.contact() != null) {
-                project.setContactInfo(titlePage.contact());
+                project.setContactInfo(PlainTextSanitizer.sanitize(titlePage.contact()));
             }
         }
 
@@ -111,7 +112,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             Block block = new Block();
             block.setProject(project);
             block.setOrder(order++);
-            block.setContent(parsedBlock.content());
+            block.setContent(PlainTextSanitizer.sanitize(parsedBlock.content()));
             block.setType(parsedBlock.type());
             block.setBookmarked(false);
             block.setPinned(false);
@@ -466,8 +467,8 @@ public class FountainImportServiceImpl implements FountainImportService {
         }
 
         Person person = new Person();
-        person.setName(name);
-        person.setFullName(name);
+        person.setName(PlainTextSanitizer.sanitizeSingleLine(name));
+        person.setFullName(PlainTextSanitizer.sanitizeSingleLine(name));
         person.setProject(project);
         person = personRepository.save(person);
         cache.put(key, person);

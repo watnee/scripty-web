@@ -11,6 +11,7 @@ import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.ProjectVersionRepository;
+import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.project.versionhistory.VersionHistoryViewModel;
 import com.scripty.viewmodel.project.versionhistory.VersionViewModel;
 import java.time.LocalDateTime;
@@ -206,15 +207,15 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         List<Person> existingPersons = personRepository.findByProjectIdOrderByNameAsc(projectId);
         personRepository.deleteAll(existingPersons);
 
-        project.setTitle((String) snapshot.get("title"));
+        project.setTitle(PlainTextSanitizer.sanitizeSingleLine((String) snapshot.get("title")));
         if (snapshot.containsKey("screenplayTitle")) {
-            project.setScreenplayTitle((String) snapshot.get("screenplayTitle"));
+            project.setScreenplayTitle(PlainTextSanitizer.sanitizeSingleLine((String) snapshot.get("screenplayTitle")));
         }
         if (snapshot.containsKey("writers")) {
-            project.setWriters((String) snapshot.get("writers"));
+            project.setWriters(PlainTextSanitizer.sanitizeSingleLine((String) snapshot.get("writers")));
         }
         if (snapshot.containsKey("contactInfo")) {
-            project.setContactInfo((String) snapshot.get("contactInfo"));
+            project.setContactInfo(PlainTextSanitizer.sanitize((String) snapshot.get("contactInfo")));
         }
         projectRepository.save(project);
 
@@ -223,8 +224,8 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         if (personSnapshots != null) {
             for (Map<String, Object> ps : personSnapshots) {
                 Person person = new Person();
-                person.setName((String) ps.get("name"));
-                person.setFullName((String) ps.get("fullName"));
+                person.setName(PlainTextSanitizer.sanitizeSingleLine((String) ps.get("name")));
+                person.setFullName(PlainTextSanitizer.sanitizeSingleLine((String) ps.get("fullName")));
                 person.setProject(project);
                 person = personRepository.save(person);
                 Integer originalId = (Integer) ps.get("originalId");
@@ -334,7 +335,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
                               String textAlign, Boolean textBold, Boolean textItalic, Boolean textUnderline) {
         Block block = new Block();
         block.setOrder(order);
-        block.setContent(content != null ? content : "");
+        block.setContent(PlainTextSanitizer.sanitize(content != null ? content : ""));
         String normalizedType = type != null && Block.ELEMENT_TYPES.contains(type) ? type : Block.TYPE_ACTION;
         block.setType(normalizedType);
         boolean delimiter = Boolean.TRUE.equals(sceneDelimiter);
@@ -344,7 +345,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         block.setSceneDelimiter(delimiter);
         block.setBookmarked(Boolean.TRUE.equals(bookmarked));
         block.setPinned(Boolean.TRUE.equals(pinned));
-        block.setTags(tags);
+        block.setTags(PlainTextSanitizer.sanitizeSingleLine(tags));
         if (textAlign != null && Block.TEXT_ALIGNS.contains(textAlign.toUpperCase())) {
             block.setTextAlign(textAlign.toUpperCase());
         }

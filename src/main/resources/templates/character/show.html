@@ -25,6 +25,7 @@
         <p th:if="${not #strings.isEmpty(viewModel.actorName)}">Actor: <a th:href="@{/actor/show(id=${viewModel.actorId})}" th:text="${viewModel.actorName}"></a></p>
     </main>
     <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
 </body>
 </html>

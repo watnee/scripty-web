@@ -9,6 +9,7 @@ import com.scripty.dto.ProjectActivity;
 import com.scripty.repository.ActorRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
+import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.person.createperson.CreateActorViewModel;
 import com.scripty.viewmodel.person.createperson.CreatePersonViewModel;
 import com.scripty.viewmodel.person.editperson.EditActorViewModel;
@@ -170,8 +171,8 @@ public class PersonServiceImpl implements PersonService {
                 : null;
         Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
 
-        person.setName(cmd.getName());
-        person.setFullName(cmd.getFullName());
+        person.setName(PlainTextSanitizer.sanitizeSingleLine(cmd.getName()));
+        person.setFullName(PlainTextSanitizer.sanitizeSingleLine(cmd.getFullName()));
         if (actor != null && actorBelongsToProject(actor, project)) {
             person.setActor(actor);
         }
@@ -197,8 +198,8 @@ public class PersonServiceImpl implements PersonService {
                 : null;
         Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
 
-        person.setName(cmd.getName());
-        person.setFullName(cmd.getFullName());
+        person.setName(PlainTextSanitizer.sanitizeSingleLine(cmd.getName()));
+        person.setFullName(PlainTextSanitizer.sanitizeSingleLine(cmd.getFullName()));
         Actor previousActor = person.getActor();
         person.setActor(actor != null && actorBelongsToProject(actor, project) ? actor : null);
         person.setProject(project);

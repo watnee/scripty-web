@@ -13,6 +13,7 @@ import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.TeamRepository;
+import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
@@ -333,7 +334,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public Project saveCreateProjectCommandModel(CreateProjectCommandModel cmd) {
         Project project = new Project();
-        project.setTitle(cmd.getTitle());
+        project.setTitle(PlainTextSanitizer.sanitizeSingleLine(cmd.getTitle()));
         project.setLastEdited(java.time.LocalDateTime.now());
         projectRepository.save(project);
         if (cmd.getTeamIds() != null && !cmd.getTeamIds().isEmpty()) {
@@ -352,7 +353,7 @@ public class ProjectServiceImpl implements ProjectService {
     public Project saveEditProjectCommandModel(EditProjectCommandModel cmd) {
         Project project = projectRepository.findWithTeamsById(cmd.getId()).orElse(null);
         String previousTitle = project.getTitle();
-        project.setTitle(cmd.getTitle());
+        project.setTitle(PlainTextSanitizer.sanitizeSingleLine(cmd.getTitle()));
         if (cmd.getTeamIds() != null) {
             applyTeams(project, cmd.getTeamIds());
         }
@@ -433,9 +434,9 @@ public class ProjectServiceImpl implements ProjectService {
     public Project saveTitlePageCommandModel(TitlePageCommandModel cmd) {
         Project project = projectRepository.findById(cmd.getId()).orElse(null);
         if (project != null) {
-            project.setScreenplayTitle(cmd.getScreenplayTitle());
-            project.setWriters(cmd.getWriters());
-            project.setContactInfo(cmd.getContactInfo());
+            project.setScreenplayTitle(PlainTextSanitizer.sanitizeSingleLine(cmd.getScreenplayTitle()));
+            project.setWriters(PlainTextSanitizer.sanitizeSingleLine(cmd.getWriters()));
+            project.setContactInfo(PlainTextSanitizer.sanitize(cmd.getContactInfo()));
             project.setLastEdited(java.time.LocalDateTime.now());
             projectRepository.save(project);
             projectActivityService.recordForCurrentUser(

@@ -10,6 +10,7 @@ import com.scripty.dto.User;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.TextDocumentRepository;
+import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
 import java.time.LocalDateTime;
@@ -156,13 +157,15 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             doc.setSortOrder(textDocumentRepository.countByProjectId(project.getId()));
         }
 
-        String title = commandModel.getTitle() != null ? commandModel.getTitle().trim() : "";
-        if (title.isEmpty()) {
+        String title = PlainTextSanitizer.sanitizeSingleLine(
+                commandModel.getTitle() != null ? commandModel.getTitle() : "");
+        if (title == null || title.isEmpty()) {
             title = "Untitled";
         }
         doc.setTitle(title);
         doc.setDocumentType(normalizeDocumentType(commandModel.getDocumentType()));
-        doc.setContent(commandModel.getContent() != null ? commandModel.getContent() : "");
+        doc.setContent(PlainTextSanitizer.sanitize(
+                commandModel.getContent() != null ? commandModel.getContent() : ""));
         doc.setUpdatedAt(now);
 
         project.setLastEdited(now);

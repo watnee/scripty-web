@@ -14,6 +14,7 @@ import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.block.createblock.CreateBlockViewModel;
 import com.scripty.viewmodel.block.createblock.CreatePersonViewModel;
 import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
+import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 import com.scripty.viewmodel.block.editblock.EditPersonViewModel;
 import java.util.ArrayList;
@@ -144,7 +145,7 @@ public class BlockServiceImpl implements BlockService {
             person = personRepository.findById(cmd.getPersonId()).orElse(null);
         }
         Project project = projectRepository.findById(cmd.getProjectId()).orElse(null);
-        String content = cmd.getContent();
+        String content = PlainTextSanitizer.sanitize(cmd.getContent());
 
         if (person == null) {
             String characterName = extractCharacterName(content);
@@ -184,7 +185,7 @@ public class BlockServiceImpl implements BlockService {
             person = personRepository.findById(cmd.getPersonId()).orElse(null);
         }
         Project project = existingBlock.getProject();
-        String content = cmd.getContent();
+        String content = PlainTextSanitizer.sanitize(cmd.getContent());
 
         if (person == null) {
             String characterName = extractCharacterName(content);
@@ -263,7 +264,8 @@ public class BlockServiceImpl implements BlockService {
         List<CreateBlockBelowCommandModel> remaining = blocks;
         if (fillEmptyOnlyBlock) {
             CreateBlockBelowCommandModel first = blocks.get(0);
-            afterBlock.setContent(first.getContent() != null ? first.getContent() : "");
+            afterBlock.setContent(PlainTextSanitizer.sanitize(
+                    first.getContent() != null ? first.getContent() : ""));
             afterBlock.setType(normalizeBlockType(first.getType()));
             afterBlock.setPerson(null);
             if (Block.isCharacterCueType(afterBlock.getType())) {
@@ -288,7 +290,7 @@ public class BlockServiceImpl implements BlockService {
         int nextOrder = baseOrder + 1;
         for (CreateBlockBelowCommandModel cmd : remaining) {
             Block block = new Block();
-            String content = cmd.getContent() != null ? cmd.getContent() : "";
+            String content = PlainTextSanitizer.sanitize(cmd.getContent() != null ? cmd.getContent() : "");
             block.setContent(content);
             block.setProject(project);
             block.setBookmarked(false);
@@ -318,7 +320,7 @@ public class BlockServiceImpl implements BlockService {
         if (cmd.getPersonId() != null) {
             person = personRepository.findById(cmd.getPersonId()).orElse(null);
         }
-        String content = cmd.getContent();
+        String content = PlainTextSanitizer.sanitize(cmd.getContent());
 
         if (Block.isCharacterCueType(block.getType())) {
             String characterName = normalizeCharacterCue(content);
@@ -340,7 +342,7 @@ public class BlockServiceImpl implements BlockService {
         block.setContent(content);
         block.setPerson(person);
         if (cmd.getTags() != null) {
-            block.setTags(cmd.getTags());
+            block.setTags(PlainTextSanitizer.sanitizeSingleLine(cmd.getTags()));
         }
         blockRepository.save(block);
         recordScriptEdited(block.getProject());
@@ -360,10 +362,10 @@ public class BlockServiceImpl implements BlockService {
                 ? type.toUpperCase() : Block.TYPE_ACTION;
         block.setType(normalized);
         if (content != null) {
-            block.setContent(content);
+            block.setContent(PlainTextSanitizer.sanitize(content));
         }
         if (tags != null) {
-            block.setTags(tags);
+            block.setTags(PlainTextSanitizer.sanitizeSingleLine(tags));
         }
 
         if (Block.TYPE_SCENE.equals(normalized)) {
@@ -430,7 +432,7 @@ public class BlockServiceImpl implements BlockService {
     @Transactional
     public Block updateSceneName(Integer id, String name) {
         Block block = blockRepository.findById(id).orElse(null);
-        block.setContent(name);
+        block.setContent(PlainTextSanitizer.sanitizeSingleLine(name));
         Block saved = blockRepository.save(block);
         recordScriptEdited(block.getProject());
         return saved;
@@ -444,8 +446,8 @@ public class BlockServiceImpl implements BlockService {
             return block;
         }
 
-        String trimmed = name != null ? name.trim() : "";
-        if (trimmed.isEmpty()) {
+        String trimmed = PlainTextSanitizer.sanitizeSingleLine(name);
+        if (trimmed == null || trimmed.isEmpty()) {
             return block;
         }
         if (trimmed.length() > 60) {
@@ -648,8 +650,8 @@ public class BlockServiceImpl implements BlockService {
             }
         }
         Person newPerson = new Person();
-        newPerson.setName(characterName);
-        newPerson.setFullName(characterName);
+        newPerson.setName(PlainTextSanitizer.sanitizeSingleLine(characterName));
+        newPerson.setFullName(PlainTextSanitizer.sanitizeSingleLine(characterName));
         newPerson.setProject(project);
         return personRepository.save(newPerson);
     }
@@ -663,9 +665,9 @@ public class BlockServiceImpl implements BlockService {
 
         String[] newTagsArray = tagsToAdd.split(",");
         List<String> newTagsList = new ArrayList<>();
-        for (String t : newTagsArray) {
-            String trimmed = t.trim();
-            if (!trimmed.isEmpty()) {
+                for (String t : newTagsArray) {
+            String trimmed = PlainTextSanitizer.sanitizeSingleLine(t);
+            if (trimmed != null && !trimmed.isEmpty()) {
                 newTagsList.add(trimmed);
             }
         }

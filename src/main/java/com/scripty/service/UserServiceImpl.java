@@ -6,6 +6,7 @@ import com.scripty.dto.Authority;
 import com.scripty.dto.User;
 import com.scripty.repository.AuthorityRepository;
 import com.scripty.repository.UserRepository;
+import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.user.createuser.CreateUserViewModel;
 import com.scripty.viewmodel.user.edituser.EditUserViewModel;
 import com.scripty.viewmodel.user.userprofile.UserProfileViewModel;
@@ -197,11 +198,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public User saveCreateUserCommandModel(CreateUserCommandModel cmd) {
         User user = new User();
-        user.setUsername(cmd.getUsername());
+        user.setUsername(PlainTextSanitizer.sanitizeSingleLine(cmd.getUsername()));
         user.setPassword(cmd.getPassword());
-        user.setFirstName(cmd.getFirstName());
-        user.setLastName(cmd.getLastName());
-        user.setTeam(cmd.getTeam());
+        user.setFirstName(PlainTextSanitizer.sanitizeSingleLine(cmd.getFirstName()));
+        user.setLastName(PlainTextSanitizer.sanitizeSingleLine(cmd.getLastName()));
+        user.setTeam(PlainTextSanitizer.sanitizeSingleLine(cmd.getTeam()));
         user.setEnabled(true);
         user.setAdmin(cmd.isAdmin());
         user.setDirector(cmd.isDirector());
@@ -216,11 +217,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public User saveEditUserCommandModel(EditUserCommandModel cmd) {
         User user = read(cmd.getId());
-        user.setUsername(cmd.getUsername());
+        user.setUsername(PlainTextSanitizer.sanitizeSingleLine(cmd.getUsername()));
         user.setPassword(cmd.getPassword());
-        user.setFirstName(cmd.getFirstName());
-        user.setLastName(cmd.getLastName());
-        user.setTeam(cmd.getTeam());
+        user.setFirstName(PlainTextSanitizer.sanitizeSingleLine(cmd.getFirstName()));
+        user.setLastName(PlainTextSanitizer.sanitizeSingleLine(cmd.getLastName()));
+        user.setTeam(PlainTextSanitizer.sanitizeSingleLine(cmd.getTeam()));
         user.setAdmin(cmd.isAdmin());
         user.setDirector(cmd.isDirector());
         user.setProducer(cmd.isProducer());

@@ -11,6 +11,7 @@ import com.scripty.repository.ActorRepository;
 import com.scripty.repository.AuditionRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
+import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.actor.actorlist.ActorListViewModel;
 import com.scripty.viewmodel.actor.actorlist.ActorViewModel;
 import com.scripty.viewmodel.actor.actorlist.AuditionActorViewModel;
@@ -277,10 +278,10 @@ public class ActorServiceImpl implements ActorService {
     @Override
     public Actor saveCreateActorCommandModel(CreateActorCommandModel cmd) {
         Actor actor = new Actor();
-        actor.setFirstName(cmd.getFirst());
-        actor.setLastName(cmd.getLast());
-        actor.setPhone(cmd.getPhone());
-        actor.setEmail(cmd.getEmail());
+        actor.setFirstName(PlainTextSanitizer.sanitizeSingleLine(cmd.getFirst()));
+        actor.setLastName(PlainTextSanitizer.sanitizeSingleLine(cmd.getLast()));
+        actor.setPhone(PlainTextSanitizer.sanitizeSingleLine(cmd.getPhone()));
+        actor.setEmail(PlainTextSanitizer.sanitizeSingleLine(cmd.getEmail()));
         actor.setProjects(resolveProjects(cmd.getProjectIds()));
         Actor saved = actorRepository.save(actor);
         String name = formatActorName(saved);
@@ -299,10 +300,10 @@ public class ActorServiceImpl implements ActorService {
     public Actor saveEditActorCommandModel(EditActorCommandModel cmd) {
         Actor actor = actorRepository.findById(cmd.getId()).orElse(null);
         Set<Integer> previousProjectIds = projectIds(actor);
-        actor.setFirstName(cmd.getFirst());
-        actor.setLastName(cmd.getLast());
-        actor.setPhone(cmd.getPhone());
-        actor.setEmail(cmd.getEmail());
+        actor.setFirstName(PlainTextSanitizer.sanitizeSingleLine(cmd.getFirst()));
+        actor.setLastName(PlainTextSanitizer.sanitizeSingleLine(cmd.getLast()));
+        actor.setPhone(PlainTextSanitizer.sanitizeSingleLine(cmd.getPhone()));
+        actor.setEmail(PlainTextSanitizer.sanitizeSingleLine(cmd.getEmail()));
         actor.setProjects(resolveProjects(cmd.getProjectIds()));
         actorRepository.save(actor);
 

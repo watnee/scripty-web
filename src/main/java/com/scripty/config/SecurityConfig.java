@@ -13,11 +13,28 @@ import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 @Configuration
 @EnableWebSecurity
 @Lazy(false)
 public class SecurityConfig {
+
+    /**
+     * CSP allows inline scripts used by Thymeleaf templates and HTMX, while blocking
+     * unexpected script sources. Combined with th:text escaping and PlainTextSanitizer.
+     */
+    private static final String CONTENT_SECURITY_POLICY =
+            "default-src 'self'; "
+                    + "script-src 'self' 'unsafe-inline'; "
+                    + "style-src 'self' 'unsafe-inline'; "
+                    + "img-src 'self' data: blob:; "
+                    + "font-src 'self' data:; "
+                    + "connect-src 'self'; "
+                    + "object-src 'none'; "
+                    + "base-uri 'self'; "
+                    + "form-action 'self'; "
+                    + "frame-ancestors 'none'";
 
     @Bean
     @Profile("!dev")
@@ -37,6 +54,11 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                 .permitAll()
+            )
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
+                .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .frameOptions(frame -> frame.deny())
             )
             .csrf(csrf -> csrf.disable());
 
@@ -60,6 +82,11 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                 .permitAll()
+            )
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
+                .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .frameOptions(frame -> frame.deny())
             )
             .csrf(csrf -> csrf.disable());
 

@@ -368,6 +368,16 @@
                             aria-pressed="false">Location list</button>
                 </div>
             </div>
+            <div class="project-script-stats project-script-stats--top-bar"
+                 id="project-script-stats"
+                 th:if="${canEditScript != null and !canEditScript}"
+                 role="status"
+                 aria-live="polite"
+                 title="Word count and estimated pages (≈250 words/page)">
+                <span data-stat="words">0</span> words
+                <span class="project-script-stats-sep" aria-hidden="true">·</span>
+                ~<span data-stat="pages">0</span> pages
+            </div>
         </div>
     </aside>
     <aside class="project-script-toolbar hide-in-reader-view sidebar menu" th:if="${canEditScript == null or canEditScript}">
@@ -428,7 +438,17 @@
                     </span>
                 </div>
             </div>
-            <div class="project-toolbar-right" aria-hidden="true"></div>
+            <div class="project-toolbar-right">
+                <div id="project-script-stats"
+                     class="project-script-stats"
+                     role="status"
+                     aria-live="polite"
+                     title="Word count and estimated pages (≈250 words/page)">
+                    <span data-stat="words">0</span> words
+                    <span class="project-script-stats-sep" aria-hidden="true">·</span>
+                    ~<span data-stat="pages">0</span> pages
+                </div>
+            </div>
         </div>
     </aside>
     <main role="main">

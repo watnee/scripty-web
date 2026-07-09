@@ -33,6 +33,30 @@ public class ScriptImportTextExtractor {
         return new String(file.getBytes(), StandardCharsets.UTF_8);
     }
 
+    /**
+     * Extract plain text for songs/drafts (never Fountain-converts DOCX screenplay layout).
+     */
+    public String extractPlain(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            return "";
+        }
+
+        String filename = file.getOriginalFilename();
+        String lowerName = filename != null ? filename.toLowerCase(Locale.ROOT) : "";
+        String contentType = file.getContentType() != null ? file.getContentType().toLowerCase(Locale.ROOT) : "";
+
+        if (isDocx(lowerName, contentType)) {
+            try (XWPFDocument document = new XWPFDocument(file.getInputStream())) {
+                return extractDocxPlain(document);
+            }
+        }
+        if (isDoc(lowerName, contentType)) {
+            return extractDoc(file.getInputStream());
+        }
+
+        return normalizeLineEndings(new String(file.getBytes(), StandardCharsets.UTF_8));
+    }
+
     private static boolean isDocx(String lowerName, String contentType) {
         return lowerName.endsWith(".docx")
                 || contentType.contains("wordprocessingml.document");

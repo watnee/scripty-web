@@ -47,8 +47,9 @@ public class InvitationController {
 
         try {
             invitationService.sendInvitation(command, currentUser());
+            // Generic success — do not reveal whether the email already had an account.
             redirectAttributes.addFlashAttribute("inviteSuccess",
-                    "Invitation sent to " + command.getEmail().trim().toLowerCase() + ".");
+                    "If that address is eligible, an invitation will be sent.");
         } catch (IllegalArgumentException | IllegalStateException e) {
             redirectAttributes.addFlashAttribute("inviteError", e.getMessage());
         }
@@ -60,8 +61,12 @@ public class InvitationController {
                          @RequestParam Integer projectId,
                          @RequestParam(defaultValue = "production") String returnTo,
                          RedirectAttributes redirectAttributes) {
-        invitationService.revoke(id);
-        redirectAttributes.addFlashAttribute("inviteSuccess", "Invitation revoked.");
+        try {
+            invitationService.revoke(id, projectId, currentUser());
+            redirectAttributes.addFlashAttribute("inviteSuccess", "Invitation revoked.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("inviteError", e.getMessage());
+        }
         return redirectForProject(projectId, returnTo);
     }
 

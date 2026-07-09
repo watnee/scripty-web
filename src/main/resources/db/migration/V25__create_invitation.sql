@@ -1,7 +1,7 @@
 ALTER TABLE `user`
     ADD COLUMN email VARCHAR(100) NULL;
 
-CREATE INDEX idx_user_email ON `user` (email);
+CREATE UNIQUE INDEX uk_user_email ON `user` (email);
 
 CREATE TABLE invitation (
     id INT NOT NULL AUTO_INCREMENT,

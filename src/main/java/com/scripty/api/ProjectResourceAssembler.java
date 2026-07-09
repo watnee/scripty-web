@@ -57,7 +57,7 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         resource.setId(project.getId());
         resource.setTitle(project.getTitle());
         return EntityModel.of(resource,
-                linkTo(methodOn(ProjectRestController.class).list()).withRel(ApiRel.PROJECTS));
+                linkTo(methodOn(ProjectRestController.class).list(null)).withRel(ApiRel.PROJECTS));
     }
 
     public CollectionModel<EntityModel<ProjectResource>> toProjectCollection(Iterable<ProjectViewModel> projects) {
@@ -66,7 +66,7 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
             resources.add(toModel(project));
         }
         return CollectionModel.of(resources)
-                .add(linkTo(methodOn(ProjectRestController.class).list()).withSelfRel());
+                .add(linkTo(methodOn(ProjectRestController.class).list(null)).withSelfRel());
     }
 
     private ProjectResource toResource(ProjectViewModel project) {
@@ -84,18 +84,18 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
 
     private org.springframework.hateoas.Link[] projectLinks(int id) {
         return new org.springframework.hateoas.Link[]{
-                linkTo(methodOn(ProjectRestController.class).show(id)).withSelfRel(),
-                linkTo(methodOn(ProjectRestController.class).list()).withRel(ApiRel.PROJECTS),
-                linkTo(methodOn(ProjectRestController.class).update(id, null, null)).withRel(ApiRel.UPDATE),
-                linkTo(methodOn(ProjectRestController.class).delete(id)).withRel(ApiRel.DELETE),
-                linkTo(methodOn(BlockRestController.class).list(id)).withRel(ApiRel.BLOCKS),
-                linkTo(methodOn(PersonRestController.class).list(id)).withRel(ApiRel.CHARACTERS),
+                linkTo(methodOn(ProjectRestController.class).show(id, null)).withSelfRel(),
+                linkTo(methodOn(ProjectRestController.class).list(null)).withRel(ApiRel.PROJECTS),
+                linkTo(methodOn(ProjectRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE),
+                linkTo(methodOn(ProjectRestController.class).delete(id, null)).withRel(ApiRel.DELETE),
+                linkTo(methodOn(BlockRestController.class).list(id, null)).withRel(ApiRel.BLOCKS),
+                linkTo(methodOn(PersonRestController.class).list(id, null)).withRel(ApiRel.CHARACTERS),
                 linkTo(methodOn(ActorRestController.class).list(id)).withRel(ApiRel.ACTORS),
-                linkTo(methodOn(ProjectController.class).syncStatus(id, null)).withRel(ApiRel.SYNC_STATUS),
-                linkTo(methodOn(ProjectController.class).undoRedoStatus(id)).withRel(ApiRel.UNDO_REDO_STATUS),
-                linkTo(methodOn(ProjectController.class).exportScript(id, "fountain")).withRel(ApiRel.EXPORT),
-                linkTo(methodOn(ProjectController.class).exportScript(id, "pdf")).withRel(ApiRel.EXPORT_PDF),
-                linkTo(methodOn(ProjectController.class).exportScript(id, "docx")).withRel(ApiRel.EXPORT_DOCX)
+                linkTo(methodOn(ProjectController.class).syncStatus(id, null, null)).withRel(ApiRel.SYNC_STATUS),
+                linkTo(methodOn(ProjectController.class).undoRedoStatus(id, null)).withRel(ApiRel.UNDO_REDO_STATUS),
+                linkTo(methodOn(ProjectController.class).exportScript(id, "fountain", null)).withRel(ApiRel.EXPORT),
+                linkTo(methodOn(ProjectController.class).exportScript(id, "pdf", null)).withRel(ApiRel.EXPORT_PDF),
+                linkTo(methodOn(ProjectController.class).exportScript(id, "docx", null)).withRel(ApiRel.EXPORT_DOCX)
         };
     }
 }

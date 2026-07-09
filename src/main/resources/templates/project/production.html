@@ -84,6 +84,27 @@
             </div>
         </section>
 
+        <section class="production-activity-section actor-profile-card">
+            <div class="production-activity-header">
+                <h2>Recent activity</h2>
+            </div>
+            <p class="muted production-activity-empty" th:if="${#lists.isEmpty(recentActivity)}">
+                No activity yet.
+            </p>
+            <ul class="production-activity-list" th:if="${!#lists.isEmpty(recentActivity)}">
+                <li class="production-activity-item" th:each="activity : ${recentActivity}">
+                    <div class="production-activity-body">
+                        <span class="production-activity-actor" th:text="${activity.actorDisplayName}">Someone</span>
+                        <span class="production-activity-summary" th:text="${activity.summary}">edited the script</span>
+                    </div>
+                    <span class="production-activity-time muted"
+                          th:if="${activity.createdAt != null}">
+                        <span th:replace="~{fragments/lastEditedTime :: relativeTime(${activity.createdAt})}"></span>
+                    </span>
+                </li>
+            </ul>
+        </section>
+
         <div class="help-card-grid production-card-grid">
             <a th:href="@{/project/show(id=${viewModel.id})}" class="help-card production-card-link">
                 <h3>Script</h3>
@@ -96,6 +117,10 @@
             <a th:href="@{/project/titlePage(id=${viewModel.id})}" class="help-card production-card-link">
                 <h3>Title Page</h3>
                 <p>Set the screenplay title, writers, and contact information.</p>
+            </a>
+            <a th:href="@{/project/documents/list(projectId=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Songs &amp; Drafts</h3>
+                <p>Write songs in one place and notes/drafts in another, then insert them into the screenplay.</p>
             </a>
             <a th:href="@{/project/version/list(projectId=${viewModel.id})}" class="help-card production-card-link">
                 <h3>Version History</h3>

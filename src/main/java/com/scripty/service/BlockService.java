@@ -20,6 +20,7 @@ public interface BlockService {
 
     Block saveCreateBlockCommandModel(CreateBlockCommandModel createBlockCommandModel);
     Block saveCreateBlockBelowCommandModel(CreateBlockBelowCommandModel createBlockBelowCommandModel);
+    java.util.List<Block> insertBlocksAfter(Integer afterBlockId, java.util.List<CreateBlockBelowCommandModel> blocks);
     Block saveEditBlockCommandModel(EditBlockCommandModel editBlockCommandModel);
     Block updateBlockTypeAndContent(Integer id, String type, String content, Integer personId, String tags);
 

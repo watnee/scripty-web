@@ -5,6 +5,7 @@ import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.dto.Project;
+import com.scripty.dto.User;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
 import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
@@ -17,6 +18,13 @@ public interface ProjectService {
     Project read(Integer id);
     Project readWithTeams(Integer id);
     Project getProjectByBlock(Block block);
+
+    /**
+     * Whether the user may access the project (privileged roles, matching team, or unassigned project).
+     */
+    boolean canUserAccessProject(Integer projectId, User user);
+
+    boolean canUserAccessProject(Project project, User user);
 
     ProjectListViewModel getProjectListViewModel();
     ProjectListViewModel getProjectListViewModel(String userTeam);

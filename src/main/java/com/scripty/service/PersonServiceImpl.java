@@ -5,6 +5,7 @@ import com.scripty.commandmodel.person.editperson.EditPersonCommandModel;
 import com.scripty.dto.Actor;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
+import com.scripty.dto.ProjectActivity;
 import com.scripty.repository.ActorRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
@@ -26,14 +27,17 @@ public class PersonServiceImpl implements PersonService {
     private final PersonRepository personRepository;
     private final ActorRepository actorRepository;
     private final ProjectRepository projectRepository;
+    private final ProjectActivityService projectActivityService;
 
     @Autowired
     public PersonServiceImpl(PersonRepository personRepository,
                              ActorRepository actorRepository,
-                             ProjectRepository projectRepository) {
+                             ProjectRepository projectRepository,
+                             ProjectActivityService projectActivityService) {
         this.personRepository = personRepository;
         this.actorRepository = actorRepository;
         this.projectRepository = projectRepository;
+        this.projectActivityService = projectActivityService;
     }
 
     @Override
@@ -41,6 +45,12 @@ public class PersonServiceImpl implements PersonService {
         Person saved = personRepository.save(person);
         if (saved.getProject() != null) {
             updateProjectLastEdited(saved.getProject().getId());
+            projectActivityService.recordForCurrentUser(
+                    saved.getProject().getId(),
+                    ProjectActivity.ACTION_CHARACTER_CREATED,
+                    "added character \"" + saved.getName() + "\"",
+                    ProjectActivity.ENTITY_PERSON,
+                    saved.getId());
         }
         return saved;
     }
@@ -169,6 +179,12 @@ public class PersonServiceImpl implements PersonService {
         Person saved = personRepository.save(person);
         if (project != null) {
             updateProjectLastEdited(project.getId());
+            projectActivityService.recordForCurrentUser(
+                    project.getId(),
+                    ProjectActivity.ACTION_CHARACTER_CREATED,
+                    "added character \"" + saved.getName() + "\"",
+                    ProjectActivity.ENTITY_PERSON,
+                    saved.getId());
         }
         return saved;
     }
@@ -183,11 +199,24 @@ public class PersonServiceImpl implements PersonService {
 
         person.setName(cmd.getName());
         person.setFullName(cmd.getFullName());
+        Actor previousActor = person.getActor();
         person.setActor(actor != null && actorBelongsToProject(actor, project) ? actor : null);
         person.setProject(project);
         personRepository.save(person);
         if (project != null) {
             updateProjectLastEdited(project.getId());
+            Integer previousActorId = previousActor != null ? previousActor.getId() : null;
+            Integer newActorId = person.getActor() != null ? person.getActor().getId() : null;
+            if (previousActorId == null ? newActorId != null : !previousActorId.equals(newActorId)) {
+                if (person.getActor() != null) {
+                    projectActivityService.recordForCurrentUser(
+                            project.getId(),
+                            ProjectActivity.ACTION_ACTOR_ASSIGNED,
+                            "assigned " + actorDisplayName(person.getActor()) + " to \"" + person.getName() + "\"",
+                            ProjectActivity.ENTITY_PERSON,
+                            person.getId());
+                }
+            }
         }
         return person;
     }
@@ -209,6 +238,14 @@ public class PersonServiceImpl implements PersonService {
         personRepository.save(person);
         if (project != null) {
             updateProjectLastEdited(project.getId());
+            if (person.getActor() != null) {
+                projectActivityService.recordForCurrentUser(
+                        project.getId(),
+                        ProjectActivity.ACTION_ACTOR_ASSIGNED,
+                        "assigned " + actorDisplayName(person.getActor()) + " to \"" + person.getName() + "\"",
+                        ProjectActivity.ENTITY_PERSON,
+                        person.getId());
+            }
         }
         return person;
     }
@@ -218,8 +255,17 @@ public class PersonServiceImpl implements PersonService {
         Person person = personRepository.findById(id).orElse(null);
         if (person != null) {
             Integer projectId = person.getProject() != null ? person.getProject().getId() : null;
+            String name = person.getName();
             personRepository.delete(person);
             updateProjectLastEdited(projectId);
+            if (projectId != null) {
+                projectActivityService.recordForCurrentUser(
+                        projectId,
+                        ProjectActivity.ACTION_CHARACTER_DELETED,
+                        "deleted character \"" + name + "\"",
+                        ProjectActivity.ENTITY_PERSON,
+                        id);
+            }
         }
         return person;
     }
@@ -243,5 +289,15 @@ public class PersonServiceImpl implements PersonService {
             }
         }
         return false;
+    }
+
+    private static String actorDisplayName(Actor actor) {
+        if (actor == null) {
+            return "an actor";
+        }
+        String first = actor.getFirstName() != null ? actor.getFirstName().trim() : "";
+        String last = actor.getLastName() != null ? actor.getLastName().trim() : "";
+        String full = (first + " " + last).trim();
+        return full.isEmpty() ? "an actor" : full;
     }
 }

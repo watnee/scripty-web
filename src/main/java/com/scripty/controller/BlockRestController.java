@@ -7,9 +7,11 @@ import com.scripty.commandmodel.block.createblock.CreateBlockCommandModel;
 import com.scripty.commandmodel.block.editblock.EditBlockCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.repository.BlockRepository;
+import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.BlockService;
 import com.scripty.viewmodel.block.BlockViewModel;
 import jakarta.validation.Valid;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +42,15 @@ public class BlockRestController {
     @Autowired
     BlockResourceAssembler blockResourceAssembler;
 
+    @Autowired
+    ProjectAccessSupport projectAccess;
+
     @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<CollectionModel<EntityModel<BlockResource>>> list(@RequestParam Integer projectId) {
+    public ResponseEntity<CollectionModel<EntityModel<BlockResource>>> list(
+            @RequestParam Integer projectId, Principal principal) {
+        if (!projectAccess.canAccessProject(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         List<Block> blocks = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
         List<BlockViewModel> viewModels = new ArrayList<>();
         for (Block block : blocks) {
@@ -52,9 +61,14 @@ public class BlockRestController {
 
     @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<?> create(
-            @Valid @RequestBody CreateBlockCommandModel commandModel, BindingResult bindingResult) {
+            @Valid @RequestBody CreateBlockCommandModel commandModel,
+            BindingResult bindingResult,
+            Principal principal) {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
+        }
+        if (!projectAccess.canAccessProject(commandModel.getProjectId(), principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Block block = blockService.saveCreateBlockCommandModel(commandModel);
         EntityModel<BlockResource> resource = blockResourceAssembler.toModel(block);
@@ -64,8 +78,14 @@ public class BlockRestController {
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<BlockResource>> show(@PathVariable Integer id) {
+    public ResponseEntity<EntityModel<BlockResource>> show(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canAccessBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         Block block = blockService.read(id);
+        if (block == null) {
+            return ResponseEntity.notFound().build();
+        }
         BlockViewModel viewModel = blockService.getBlockViewModel(id);
         Integer projectId = block.getProject() != null ? block.getProject().getId() : null;
         return ResponseEntity.ok(blockResourceAssembler.toModel(viewModel, projectId));
@@ -75,9 +95,13 @@ public class BlockRestController {
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody EditBlockCommandModel commandModel,
-            BindingResult bindingResult) {
+            BindingResult bindingResult,
+            Principal principal) {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
+        }
+        if (!projectAccess.canAccessBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         commandModel.setId(id);
         Block block = blockService.saveEditBlockCommandModel(commandModel);
@@ -85,19 +109,28 @@ public class BlockRestController {
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<BlockResource>> delete(@PathVariable Integer id) {
+    public ResponseEntity<EntityModel<BlockResource>> delete(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canAccessBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         Block block = blockService.deleteBlock(id);
         return ResponseEntity.ok(blockResourceAssembler.toDeleteModel(block));
     }
 
     @RequestMapping(value = "/{id}/bookmark", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<BlockResource>> toggleBookmark(@PathVariable Integer id) {
+    public ResponseEntity<EntityModel<BlockResource>> toggleBookmark(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canAccessBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         Block block = blockService.toggleBookmark(id);
         return ResponseEntity.ok(blockResourceAssembler.toModel(block));
     }
 
     @RequestMapping(value = "/{id}/pinned", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<BlockResource>> togglePinned(@PathVariable Integer id) {
+    public ResponseEntity<EntityModel<BlockResource>> togglePinned(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canAccessBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         Block block = blockService.togglePinned(id);
         return ResponseEntity.ok(blockResourceAssembler.toModel(block));
     }

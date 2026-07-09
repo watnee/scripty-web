@@ -12,11 +12,11 @@ public interface InvitationService {
 
     Invitation sendInvitation(SendInvitationCommandModel command, User invitedBy);
 
-    List<PendingInvitationViewModel> getPendingInvitationsForProject(Integer projectId);
+    List<PendingInvitationViewModel> getPendingInvitationsForProject(Integer projectId, User currentUser);
 
     AcceptInvitationViewModel getAcceptViewModel(String token);
 
     User acceptInvitation(AcceptInvitationCommandModel command);
 
-    void revoke(Integer invitationId);
+    void revoke(Integer invitationId, Integer projectId, User currentUser);
 }

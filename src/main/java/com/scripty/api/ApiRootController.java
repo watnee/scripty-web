@@ -23,7 +23,7 @@ public class ApiRootController {
         root.add(
                 linkTo(methodOn(ApiRootController.class).root()).withSelfRel(),
                 linkTo(methodOn(UserRestController.class).list()).withRel(ApiRel.USERS),
-                linkTo(methodOn(ProjectRestController.class).list()).withRel(ApiRel.PROJECTS),
+                linkTo(methodOn(ProjectRestController.class).list(null)).withRel(ApiRel.PROJECTS),
                 linkTo(methodOn(ActorRestController.class).list(null)).withRel(ApiRel.ACTORS),
                 linkTo(methodOn(TeamRestController.class).list()).withRel(ApiRel.TEAMS)
         );

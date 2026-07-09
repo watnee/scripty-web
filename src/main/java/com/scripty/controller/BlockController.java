@@ -5,15 +5,22 @@ import com.scripty.commandmodel.block.createblock.CreateBlockCommandModel;
 import com.scripty.commandmodel.block.createblockbelow.CreateBlockBelowCommandModel;
 import com.scripty.commandmodel.block.editblock.EditBlockCommandModel;
 import com.scripty.dto.Block;
+import com.scripty.dto.User;
+import com.scripty.security.ProjectAccessSupport;
 import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.block.createblock.CreateBlockViewModel;
 import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 import com.scripty.service.BlockService;
 import com.scripty.service.ProjectVersionService;
+import java.security.Principal;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,8 +41,27 @@ public class BlockController {
     @Autowired
     ProjectVersionService projectVersionService;
 
+    @Autowired
+    ProjectAccessSupport projectAccess;
+
     private String redirectToProject(Block block) {
         return "redirect:/project/show?id=" + block.getProject().getId();
+    }
+
+    private String denyRedirect() {
+        return "redirect:/project/list";
+    }
+
+    private boolean denyProject(Integer projectId, Principal principal) {
+        return !projectAccess.canAccessProject(projectId, principal);
+    }
+
+    private boolean denyBlock(Integer blockId, Principal principal) {
+        return !projectAccess.canAccessBlock(blockId, principal);
+    }
+
+    private ResponseEntity<?> forbiddenJson() {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     private String resolveProjectSurface(String surface, HttpServletRequest request) {
@@ -52,7 +78,10 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/delete")
-    public String delete(@RequestParam Integer id) {
+    public String delete(@RequestParam Integer id, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
 
         Block block = blockService.deleteBlock(id);
         projectVersionService.autoSaveVersion(block.getProject().getId());
@@ -62,16 +91,22 @@ public class BlockController {
 
     @RequestMapping(value = "/deleteInline", method = RequestMethod.POST)
     @org.springframework.web.bind.annotation.ResponseBody
-    public String deleteInline(@RequestParam Integer id) {
+    public ResponseEntity<String> deleteInline(@RequestParam Integer id, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
+        }
 
         Block block = blockService.deleteBlock(id);
         projectVersionService.autoSaveVersion(block.getProject().getId());
 
-        return "";
+        return ResponseEntity.ok("");
     }
 
     @RequestMapping(value = "/moveUp")
-    public String moveUp(@RequestParam Integer id) {
+    public String moveUp(@RequestParam Integer id, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
 
         Block block = blockService.moveBlockUp(id);
         projectVersionService.autoSaveVersionForBlock(block.getId());
@@ -80,7 +115,10 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/moveDown")
-    public String moveDown(@RequestParam Integer id) {
+    public String moveDown(@RequestParam Integer id, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
 
         Block block = blockService.moveBlockDown(id);
         projectVersionService.autoSaveVersionForBlock(block.getId());
@@ -89,40 +127,58 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/moveTo", method = RequestMethod.POST)
-    public String moveTo(@RequestParam Integer id, @RequestParam int position) {
+    public String moveTo(@RequestParam Integer id, @RequestParam int position, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         Block block = blockService.moveBlockTo(id, position);
         projectVersionService.autoSaveVersionForBlock(block.getId());
         return redirectToProject(block);
     }
 
     @RequestMapping(value = "/toggleBookmark")
-    public String toggleBookmark(@RequestParam Integer id) {
+    public String toggleBookmark(@RequestParam Integer id, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         Block block = blockService.toggleBookmark(id);
         return redirectToProject(block);
     }
 
     @RequestMapping(value = "/toggleBookmarkInline", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @org.springframework.web.bind.annotation.ResponseBody
-    public EntityModel<java.util.Map<String, Boolean>> toggleBookmarkInline(@RequestParam Integer id) {
+    public ResponseEntity<EntityModel<Map<String, Boolean>>> toggleBookmarkInline(@RequestParam Integer id, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         Block block = blockService.toggleBookmark(id);
-        return HypermediaSupport.blockToggle(java.util.Map.of("bookmarked", block.isBookmarked()), id, true);
+        return ResponseEntity.ok(HypermediaSupport.blockToggle(Map.of("bookmarked", block.isBookmarked()), id, true));
     }
 
     @RequestMapping(value = "/togglePinned")
-    public String togglePinned(@RequestParam Integer id) {
+    public String togglePinned(@RequestParam Integer id, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         Block block = blockService.togglePinned(id);
         return redirectToProject(block);
     }
 
     @RequestMapping(value = "/togglePinnedInline", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @org.springframework.web.bind.annotation.ResponseBody
-    public EntityModel<java.util.Map<String, Boolean>> togglePinnedInline(@RequestParam Integer id) {
+    public ResponseEntity<EntityModel<Map<String, Boolean>>> togglePinnedInline(@RequestParam Integer id, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         Block block = blockService.togglePinned(id);
-        return HypermediaSupport.blockToggle(java.util.Map.of("pinned", block.isPinned()), id, false);
+        return ResponseEntity.ok(HypermediaSupport.blockToggle(Map.of("pinned", block.isPinned()), id, false));
     }
 
     @RequestMapping(value = "/editInline")
-    public String editInline(@RequestParam Integer id, Model model) {
+    public String editInline(@RequestParam Integer id, Model model, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         EditBlockViewModel viewModel = blockService.getEditBlockViewModel(id);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("commandModel", viewModel.getEditBlockCommandModel());
@@ -131,7 +187,10 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/editInline", method = RequestMethod.POST)
-    public String saveEditInline(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model) {
+    public String saveEditInline(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
+        if (denyBlock(commandModel.getId(), principal)) {
+            return denyRedirect();
+        }
         if (bindingResult.hasErrors()) {
             EditBlockViewModel viewModel = blockService.getEditBlockViewModel(commandModel.getId());
             model.addAttribute("viewModel", viewModel);
@@ -147,7 +206,10 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/showInline")
-    public String showInline(@RequestParam Integer id, Model model) {
+    public String showInline(@RequestParam Integer id, Model model, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         BlockViewModel vm = blockService.getBlockViewModel(id);
         model.addAttribute("block", vm);
         return "block/showInline";
@@ -155,7 +217,10 @@ public class BlockController {
 
     // Show Form
     @RequestMapping(value = "/edit")
-    public String edit(@RequestParam Integer id, Model model) {
+    public String edit(@RequestParam Integer id, Model model, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
 
         EditBlockViewModel viewModel = blockService.getEditBlockViewModel(id);
 
@@ -167,7 +232,10 @@ public class BlockController {
 
     // Handle Form Submission
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
-    public String saveEdit(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model) {
+    public String saveEdit(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
+        if (denyBlock(commandModel.getId(), principal)) {
+            return denyRedirect();
+        }
 
         if (bindingResult.hasErrors()) {
             EditBlockViewModel viewModel = blockService.getEditBlockViewModel(commandModel.getId());
@@ -186,7 +254,10 @@ public class BlockController {
 
     // Show Form
     @RequestMapping(value = "/create")
-    public String create(@RequestParam Integer projectId, Model model) {
+    public String create(@RequestParam Integer projectId, Model model, Principal principal) {
+        if (denyProject(projectId, principal)) {
+            return denyRedirect();
+        }
 
         CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(projectId);
 
@@ -198,7 +269,10 @@ public class BlockController {
 
     // Handle Form Submission
     @RequestMapping(value = "/create", method = RequestMethod.POST)
-    public String saveCreate(@Valid @ModelAttribute("commandModel") CreateBlockCommandModel commandModel, BindingResult bindingResult, Model model) {
+    public String saveCreate(@Valid @ModelAttribute("commandModel") CreateBlockCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
+        if (denyProject(commandModel.getProjectId(), principal)) {
+            return denyRedirect();
+        }
 
         if (bindingResult.hasErrors()) {
             CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(commandModel.getProjectId());
@@ -219,7 +293,11 @@ public class BlockController {
     public String createInline(@RequestParam Integer projectId,
                                @RequestParam(required = false) String surface,
                                HttpServletRequest request,
-                               Model model) {
+                               Model model,
+                               Principal principal) {
+        if (denyProject(projectId, principal)) {
+            return denyRedirect();
+        }
         surface = resolveProjectSurface(surface, request);
         CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(projectId);
         model.addAttribute("viewModel", viewModel);
@@ -237,7 +315,11 @@ public class BlockController {
                                    @RequestParam(required = false) String type,
                                    @RequestParam(required = false) String surface,
                                    HttpServletRequest request,
-                                   Model model) {
+                                   Model model,
+                                   Principal principal) {
+        if (denyProject(projectId, principal)) {
+            return denyRedirect();
+        }
         surface = resolveProjectSurface(surface, request);
         if (!"project".equals(surface) && (content == null || content.trim().isEmpty())) {
             CreateBlockViewModel viewModel = blockService.getCreateBlockViewModel(projectId);
@@ -270,7 +352,10 @@ public class BlockController {
 
     // Show Form
     @RequestMapping(value = "/createBelow")
-    public String createBelow(@RequestParam Integer id, Model model) {
+    public String createBelow(@RequestParam Integer id, Model model, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
 
         CreateBlockBelowViewModel viewModel = blockService.getCreateBlockBelowViewModel(id);
 
@@ -282,7 +367,10 @@ public class BlockController {
 
     // Handle Form Submission
     @RequestMapping(value = "/createBelow", method = RequestMethod.POST)
-    public String saveCreateBelow(@Valid @ModelAttribute("commandModel") CreateBlockBelowCommandModel commandModel, BindingResult bindingResult, Model model) {
+    public String saveCreateBelow(@Valid @ModelAttribute("commandModel") CreateBlockBelowCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
+        if (denyBlock(commandModel.getId(), principal)) {
+            return denyRedirect();
+        }
 
         if (bindingResult.hasErrors()) {
             CreateBlockBelowViewModel viewModel = blockService.getCreateBlockBelowViewModel(commandModel.getId());
@@ -303,7 +391,11 @@ public class BlockController {
     public String createBelowInline(@RequestParam Integer id,
                                     @RequestParam(required = false) String surface,
                                     HttpServletRequest request,
-                                    Model model) {
+                                    Model model,
+                                    Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         surface = resolveProjectSurface(surface, request);
         CreateBlockBelowViewModel viewModel = blockService.getCreateBlockBelowViewModel(id);
         model.addAttribute("viewModel", viewModel);
@@ -321,7 +413,11 @@ public class BlockController {
                                         @RequestParam(required = false) String type,
                                         @RequestParam(required = false) String surface,
                                         HttpServletRequest request,
-                                        Model model) {
+                                        Model model,
+                                        Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         surface = resolveProjectSurface(surface, request);
         if (!"project".equals(surface) && (content == null || content.trim().isEmpty())) {
             model.addAttribute("blockId", id);
@@ -348,14 +444,20 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/editSceneNameInline")
-    public String editSceneNameInline(@RequestParam Integer id, Model model) {
+    public String editSceneNameInline(@RequestParam Integer id, Model model, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         BlockViewModel vm = blockService.getBlockViewModel(id);
         model.addAttribute("scene", vm);
         return "block/editSceneNameInline";
     }
 
     @RequestMapping(value = "/editSceneNameInline", method = RequestMethod.POST)
-    public String saveEditSceneNameInline(@RequestParam Integer id, @RequestParam(defaultValue = "") String name, Model model) {
+    public String saveEditSceneNameInline(@RequestParam Integer id, @RequestParam(defaultValue = "") String name, Model model, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         Block block = blockService.updateSceneName(id, name);
         projectVersionService.autoSaveVersionForBlock(block.getId());
         BlockViewModel vm = blockService.getBlockViewModel(block.getId());
@@ -364,14 +466,20 @@ public class BlockController {
     }
 
     @RequestMapping(value = "/editCharacterNameInline")
-    public String editCharacterNameInline(@RequestParam Integer id, Model model) {
+    public String editCharacterNameInline(@RequestParam Integer id, Model model, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         BlockViewModel vm = blockService.getBlockViewModel(id);
         model.addAttribute("block", vm);
         return "block/editCharacterNameInline";
     }
 
     @RequestMapping(value = "/editCharacterNameInline", method = RequestMethod.POST)
-    public String saveEditCharacterNameInline(@RequestParam Integer id, @RequestParam(defaultValue = "") String name, Model model) {
+    public String saveEditCharacterNameInline(@RequestParam Integer id, @RequestParam(defaultValue = "") String name, Model model, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         Block block = blockService.updateCharacterName(id, name);
         projectVersionService.autoSaveVersionForBlock(block.getId());
         BlockViewModel vm = blockService.getBlockViewModel(block.getId());
@@ -380,8 +488,8 @@ public class BlockController {
         return "block/showCharacterNameInline";
     }
 
-    private java.util.List<Integer> parseBlockIds(String ids) {
-        java.util.List<Integer> blockIds = new java.util.ArrayList<>();
+    private List<Integer> parseBlockIds(String ids) {
+        List<Integer> blockIds = new java.util.ArrayList<>();
         if (ids == null || ids.trim().isEmpty()) {
             return blockIds;
         }
@@ -395,7 +503,7 @@ public class BlockController {
         return blockIds;
     }
 
-    private Integer resolveProjectId(Integer projectId, java.util.List<Integer> blockIds) {
+    private Integer resolveProjectId(Integer projectId, List<Integer> blockIds) {
         if (projectId != null) {
             return projectId;
         }
@@ -406,38 +514,47 @@ public class BlockController {
         return block != null ? block.getProject().getId() : null;
     }
 
-    private String redirectAfterBulkAction(Integer projectId, java.util.List<Integer> blockIds) {
+    private String redirectAfterBulkAction(Integer projectId, List<Integer> blockIds) {
         Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
         if (resolvedProjectId == null) {
-            return "redirect:/project/list";
+            return denyRedirect();
         }
         return "redirect:/project/show?id=" + resolvedProjectId;
     }
 
+    private boolean denyBulk(List<Integer> blockIds, Integer projectId, Principal principal) {
+        User user = projectAccess.currentUser(principal);
+        return !projectAccess.canAccessBlocks(blockIds, projectId, user);
+    }
+
     @RequestMapping(value = "/bulkAddTags", method = RequestMethod.POST)
     public String bulkAddTags(@RequestParam String ids, @RequestParam String tags,
-                              @RequestParam(required = false) Integer projectId) {
-        java.util.List<Integer> blockIds = parseBlockIds(ids);
-        if (!blockIds.isEmpty()) {
-            blockService.addTagsToBlocks(blockIds, tags);
-            Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
-            if (resolvedProjectId != null) {
-                projectVersionService.autoSaveVersion(resolvedProjectId);
-            }
+                              @RequestParam(required = false) Integer projectId,
+                              Principal principal) {
+        List<Integer> blockIds = parseBlockIds(ids);
+        if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
+            return denyRedirect();
+        }
+        blockService.addTagsToBlocks(blockIds, tags);
+        Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectVersionService.autoSaveVersion(resolvedProjectId);
         }
         return redirectAfterBulkAction(projectId, blockIds);
     }
 
     @RequestMapping(value = "/bulkSetType", method = RequestMethod.POST)
     public String bulkSetType(@RequestParam String ids, @RequestParam String type,
-                              @RequestParam(required = false) Integer projectId) {
-        java.util.List<Integer> blockIds = parseBlockIds(ids);
-        if (!blockIds.isEmpty()) {
-            blockService.setBlockTypes(blockIds, type);
-            Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
-            if (resolvedProjectId != null) {
-                projectVersionService.autoSaveVersion(resolvedProjectId);
-            }
+                              @RequestParam(required = false) Integer projectId,
+                              Principal principal) {
+        List<Integer> blockIds = parseBlockIds(ids);
+        if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
+            return denyRedirect();
+        }
+        blockService.setBlockTypes(blockIds, type);
+        Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectVersionService.autoSaveVersion(resolvedProjectId);
         }
         return redirectAfterBulkAction(projectId, blockIds);
     }
@@ -450,7 +567,11 @@ public class BlockController {
                                     @RequestParam(required = false) String tags,
                                     @RequestParam(required = false) Integer projectId,
                                     @RequestParam(required = false) String partial,
-                                    Model model) {
+                                    Model model,
+                                    Principal principal) {
+        if (denyBlock(id, principal)) {
+            return denyRedirect();
+        }
         Block block = blockService.updateBlockTypeAndContent(id, type, content, personId, tags);
         if (block != null) {
             projectVersionService.autoSaveVersionForBlock(block.getId());
@@ -462,46 +583,52 @@ public class BlockController {
             model.addAttribute("block", blockService.getBlockViewModel(id));
             return "block/editInline";
         }
-        return redirectAfterBulkAction(projectId, java.util.List.of(id));
+        return redirectAfterBulkAction(projectId, List.of(id));
     }
 
     @RequestMapping(value = "/bulkSetAlign", method = RequestMethod.POST)
     public String bulkSetAlign(@RequestParam String ids, @RequestParam String align,
-                               @RequestParam(required = false) Integer projectId) {
-        java.util.List<Integer> blockIds = parseBlockIds(ids);
-        if (!blockIds.isEmpty()) {
-            blockService.setBlockAlignments(blockIds, align);
-            Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
-            if (resolvedProjectId != null) {
-                projectVersionService.autoSaveVersion(resolvedProjectId);
-            }
+                               @RequestParam(required = false) Integer projectId,
+                               Principal principal) {
+        List<Integer> blockIds = parseBlockIds(ids);
+        if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
+            return denyRedirect();
+        }
+        blockService.setBlockAlignments(blockIds, align);
+        Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectVersionService.autoSaveVersion(resolvedProjectId);
         }
         return redirectAfterBulkAction(projectId, blockIds);
     }
 
     @RequestMapping(value = "/bulkToggleStyle", method = RequestMethod.POST)
     public String bulkToggleStyle(@RequestParam String ids, @RequestParam String style,
-                                  @RequestParam(required = false) Integer projectId) {
-        java.util.List<Integer> blockIds = parseBlockIds(ids);
-        if (!blockIds.isEmpty()) {
-            blockService.toggleBlockTextStyles(blockIds, style);
-            Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
-            if (resolvedProjectId != null) {
-                projectVersionService.autoSaveVersion(resolvedProjectId);
-            }
+                                  @RequestParam(required = false) Integer projectId,
+                                  Principal principal) {
+        List<Integer> blockIds = parseBlockIds(ids);
+        if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
+            return denyRedirect();
+        }
+        blockService.toggleBlockTextStyles(blockIds, style);
+        Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectVersionService.autoSaveVersion(resolvedProjectId);
         }
         return redirectAfterBulkAction(projectId, blockIds);
     }
 
     @RequestMapping(value = "/bulkDelete", method = RequestMethod.POST)
-    public String bulkDelete(@RequestParam String ids, @RequestParam(required = false) Integer projectId) {
-        java.util.List<Integer> blockIds = parseBlockIds(ids);
-        if (!blockIds.isEmpty()) {
-            blockService.deleteBlocks(blockIds);
-            Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
-            if (resolvedProjectId != null) {
-                projectVersionService.autoSaveVersion(resolvedProjectId);
-            }
+    public String bulkDelete(@RequestParam String ids, @RequestParam(required = false) Integer projectId,
+                             Principal principal) {
+        List<Integer> blockIds = parseBlockIds(ids);
+        if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
+            return denyRedirect();
+        }
+        blockService.deleteBlocks(blockIds);
+        Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectVersionService.autoSaveVersion(resolvedProjectId);
         }
         return redirectAfterBulkAction(projectId, blockIds);
     }

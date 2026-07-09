@@ -6,6 +6,7 @@ import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
+import com.scripty.dto.ProjectActivity;
 import com.scripty.dto.Team;
 import com.scripty.dto.User;
 import com.scripty.repository.BlockRepository;
@@ -38,18 +39,21 @@ public class ProjectServiceImpl implements ProjectService {
     private final BlockRepository blockRepository;
     private final TeamRepository teamRepository;
     private final UserService userService;
+    private final ProjectActivityService projectActivityService;
 
     @Autowired
     public ProjectServiceImpl(ProjectRepository projectRepository,
                               PersonRepository personRepository,
                               BlockRepository blockRepository,
                               TeamRepository teamRepository,
-                              UserService userService) {
+                              UserService userService,
+                              ProjectActivityService projectActivityService) {
         this.projectRepository = projectRepository;
         this.personRepository = personRepository;
         this.blockRepository = blockRepository;
         this.teamRepository = teamRepository;
         this.userService = userService;
+        this.projectActivityService = projectActivityService;
     }
 
     @Override
@@ -85,7 +89,7 @@ public class ProjectServiceImpl implements ProjectService {
         if (userTeam != null && !userTeam.isEmpty()) {
             List<Project> filtered = new ArrayList<>();
             for (Project project : projects) {
-                if (canUserAccessProject(project, userTeam)) {
+                if (canUserAccessProjectByTeam(project, userTeam)) {
                     filtered.add(project);
                 }
             }
@@ -96,8 +100,32 @@ public class ProjectServiceImpl implements ProjectService {
         return vm;
     }
 
-    private boolean canUserAccessProject(Project project, String userTeam) {
-        if (project.getTeams().isEmpty()) {
+    @Override
+    public boolean canUserAccessProject(Integer projectId, User user) {
+        if (projectId == null || user == null) {
+            return false;
+        }
+        Project project = projectRepository.findWithTeamsById(projectId).orElse(null);
+        return canUserAccessProject(project, user);
+    }
+
+    @Override
+    public boolean canUserAccessProject(Project project, User user) {
+        if (project == null || user == null || !user.isEnabled()) {
+            return false;
+        }
+        if (user.isAdmin() || user.isDirector() || user.isProducer() || user.isWriter() || user.isActor() || user.isCrew() || user.isDirectorOfPhotography()) {
+            return true;
+        }
+        String userTeam = user.getTeam();
+        if (userTeam == null || userTeam.isEmpty()) {
+            return project.getTeams() == null || project.getTeams().isEmpty();
+        }
+        return canUserAccessProjectByTeam(project, userTeam);
+    }
+
+    private boolean canUserAccessProjectByTeam(Project project, String userTeam) {
+        if (project.getTeams() == null || project.getTeams().isEmpty()) {
             return true;
         }
         for (Team team : project.getTeams()) {
@@ -106,20 +134,6 @@ public class ProjectServiceImpl implements ProjectService {
             }
         }
         return false;
-    }
-
-    private boolean canUserAccessProject(Project project, User user) {
-        if (!user.isEnabled()) {
-            return false;
-        }
-        if (user.isAdmin() || user.isDirector() || user.isProducer() || user.isWriter() || user.isActor() || user.isCrew() || user.isDirectorOfPhotography()) {
-            return true;
-        }
-        String userTeam = user.getTeam();
-        if (userTeam == null || userTeam.isEmpty()) {
-            return project.getTeams().isEmpty();
-        }
-        return canUserAccessProject(project, userTeam);
     }
 
     @Override
@@ -325,18 +339,40 @@ public class ProjectServiceImpl implements ProjectService {
         if (cmd.getTeamIds() != null && !cmd.getTeamIds().isEmpty()) {
             applyTeams(project, cmd.getTeamIds());
         }
+        projectActivityService.recordForCurrentUser(
+                project.getId(),
+                ProjectActivity.ACTION_PROJECT_CREATED,
+                "created the project",
+                ProjectActivity.ENTITY_PROJECT,
+                project.getId());
         return project;
     }
 
     @Override
     public Project saveEditProjectCommandModel(EditProjectCommandModel cmd) {
         Project project = projectRepository.findWithTeamsById(cmd.getId()).orElse(null);
+        String previousTitle = project.getTitle();
         project.setTitle(cmd.getTitle());
         if (cmd.getTeamIds() != null) {
             applyTeams(project, cmd.getTeamIds());
         }
         project.setLastEdited(java.time.LocalDateTime.now());
         projectRepository.save(project);
+        if (previousTitle == null || !previousTitle.equals(cmd.getTitle())) {
+            projectActivityService.recordForCurrentUser(
+                    project.getId(),
+                    ProjectActivity.ACTION_PROJECT_RENAMED,
+                    "renamed the project to \"" + cmd.getTitle() + "\"",
+                    ProjectActivity.ENTITY_PROJECT,
+                    project.getId());
+        } else if (cmd.getTeamIds() != null) {
+            projectActivityService.recordForCurrentUser(
+                    project.getId(),
+                    ProjectActivity.ACTION_TEAMS_UPDATED,
+                    "updated project teams",
+                    ProjectActivity.ENTITY_PROJECT,
+                    project.getId());
+        }
         return project;
     }
 
@@ -350,6 +386,12 @@ public class ProjectServiceImpl implements ProjectService {
         applyTeams(project, teamIds != null ? teamIds : List.of());
         project.setLastEdited(java.time.LocalDateTime.now());
         projectRepository.save(project);
+        projectActivityService.recordForCurrentUser(
+                projectId,
+                ProjectActivity.ACTION_TEAMS_UPDATED,
+                "updated project teams",
+                ProjectActivity.ENTITY_PROJECT,
+                projectId);
     }
 
     private void applyTeams(Project project, List<Integer> teamIds) {
@@ -396,6 +438,12 @@ public class ProjectServiceImpl implements ProjectService {
             project.setContactInfo(cmd.getContactInfo());
             project.setLastEdited(java.time.LocalDateTime.now());
             projectRepository.save(project);
+            projectActivityService.recordForCurrentUser(
+                    project.getId(),
+                    ProjectActivity.ACTION_TITLE_PAGE_UPDATED,
+                    "updated the title page",
+                    ProjectActivity.ENTITY_PROJECT,
+                    project.getId());
         }
         return project;
     }

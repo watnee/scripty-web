@@ -1,7 +1,9 @@
 package com.scripty.controller;
 
+import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.viewmodel.project.versionhistory.VersionHistoryViewModel;
+import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,8 +18,14 @@ public class ProjectVersionController {
     @Autowired
     ProjectVersionService projectVersionService;
 
+    @Autowired
+    ProjectAccessSupport projectAccess;
+
     @RequestMapping(value = "/list")
-    public String list(@RequestParam Integer projectId, Model model) {
+    public String list(@RequestParam Integer projectId, Model model, Principal principal) {
+        if (!projectAccess.canAccessProject(projectId, principal)) {
+            return "redirect:/project/list";
+        }
         VersionHistoryViewModel viewModel = projectVersionService.getVersionHistoryViewModel(projectId);
         model.addAttribute("viewModel", viewModel);
         return "project/versionHistory";
@@ -25,7 +33,11 @@ public class ProjectVersionController {
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public String create(@RequestParam Integer projectId,
-                         @RequestParam(defaultValue = "") String label) {
+                         @RequestParam(defaultValue = "") String label,
+                         Principal principal) {
+        if (!projectAccess.canAccessProject(projectId, principal)) {
+            return "redirect:/project/list";
+        }
         if (label == null || label.isBlank()) {
             label = "Version";
         }
@@ -34,14 +46,24 @@ public class ProjectVersionController {
     }
 
     @RequestMapping(value = "/restore", method = RequestMethod.POST)
-    public String restore(@RequestParam Integer id, @RequestParam Integer projectId) {
-        projectVersionService.restoreVersion(id);
+    public String restore(@RequestParam Integer id, @RequestParam Integer projectId, Principal principal) {
+        if (!projectAccess.canAccessProject(projectId, principal)) {
+            return "redirect:/project/list";
+        }
+        if (!projectVersionService.restoreVersionForProject(id, projectId)) {
+            return "redirect:/project/list";
+        }
         return "redirect:/project/show?id=" + projectId;
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String delete(@RequestParam Integer id, @RequestParam Integer projectId) {
-        projectVersionService.deleteVersion(id);
+    public String delete(@RequestParam Integer id, @RequestParam Integer projectId, Principal principal) {
+        if (!projectAccess.canAccessProject(projectId, principal)) {
+            return "redirect:/project/list";
+        }
+        if (!projectVersionService.deleteVersionForProject(id, projectId)) {
+            return "redirect:/project/list";
+        }
         return "redirect:/project/version/list?projectId=" + projectId;
     }
 }

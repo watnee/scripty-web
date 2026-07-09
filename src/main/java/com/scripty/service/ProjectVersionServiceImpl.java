@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
+import com.scripty.dto.ProjectActivity;
 import com.scripty.dto.ProjectVersion;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
@@ -31,18 +32,21 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     private final BlockRepository blockRepository;
     private final PersonRepository personRepository;
     private final ObjectMapper objectMapper;
+    private final ProjectActivityService projectActivityService;
 
     @Autowired
     public ProjectVersionServiceImpl(ProjectRepository projectRepository,
                                      ProjectVersionRepository projectVersionRepository,
                                      BlockRepository blockRepository,
                                      PersonRepository personRepository,
-                                     ObjectMapper objectMapper) {
+                                     ObjectMapper objectMapper,
+                                     ProjectActivityService projectActivityService) {
         this.projectRepository = projectRepository;
         this.projectVersionRepository = projectVersionRepository;
         this.blockRepository = blockRepository;
         this.personRepository = personRepository;
         this.objectMapper = objectMapper;
+        this.projectActivityService = projectActivityService;
     }
 
     @Override
@@ -108,7 +112,16 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Override
     @Transactional
     public ProjectVersion createVersion(Integer projectId, String label) {
-        return createVersionFromSnapshot(projectId, label, buildSnapshotJson(projectId));
+        ProjectVersion version = createVersionFromSnapshot(projectId, label, buildSnapshotJson(projectId));
+        if (version != null && label != null && !label.startsWith("Auto-save ")) {
+            projectActivityService.recordForCurrentUser(
+                    projectId,
+                    ProjectActivity.ACTION_VERSION_SAVED,
+                    "saved a version" + (label.isBlank() ? "" : " (\"" + label + "\")"),
+                    ProjectActivity.ENTITY_VERSION,
+                    version.getId());
+        }
+        return version;
     }
 
     private ProjectVersion createVersionFromSnapshot(Integer projectId, String label, String snapshotJson) {
@@ -285,6 +298,9 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Transactional
     public void restoreVersion(Integer versionId) {
         ProjectVersion version = projectVersionRepository.findById(versionId).orElse(null);
+        if (version == null || version.getProject() == null) {
+            return;
+        }
         Map<String, Object> snapshot;
         try {
             snapshot = objectMapper.readValue(version.getSnapshotJson(), Map.class);
@@ -292,6 +308,24 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             throw new RuntimeException("Failed to deserialize project snapshot", e);
         }
         applySnapshot(version.getProject().getId(), snapshot);
+        projectActivityService.recordForCurrentUser(
+                version.getProject().getId(),
+                ProjectActivity.ACTION_VERSION_RESTORED,
+                "restored a previous version",
+                ProjectActivity.ENTITY_VERSION,
+                versionId);
+    }
+
+    @Override
+    @Transactional
+    public boolean restoreVersionForProject(Integer versionId, Integer projectId) {
+        ProjectVersion version = projectVersionRepository.findById(versionId).orElse(null);
+        if (version == null || version.getProject() == null || projectId == null
+                || !projectId.equals(version.getProject().getId())) {
+            return false;
+        }
+        restoreVersion(versionId);
+        return true;
     }
 
     private void restoreBlock(Project project, Integer order, String content, String type,
@@ -331,5 +365,17 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     @Transactional
     public void deleteVersion(Integer versionId) {
         projectVersionRepository.deleteById(versionId);
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteVersionForProject(Integer versionId, Integer projectId) {
+        ProjectVersion version = projectVersionRepository.findById(versionId).orElse(null);
+        if (version == null || version.getProject() == null || projectId == null
+                || !projectId.equals(version.getProject().getId())) {
+            return false;
+        }
+        projectVersionRepository.deleteById(versionId);
+        return true;
     }
 }

@@ -32,7 +32,8 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void send(String to, String subject, String htmlBody) {
         if (!mailEnabled) {
-            log.info("Mail disabled. Invitation email to={} subject={} body=\n{}", to, subject, htmlBody);
+            // Never log the body — invitation emails contain one-time accept tokens.
+            log.info("Mail disabled. Skipped email to={} subject={}", to, subject);
             return;
         }
         try {

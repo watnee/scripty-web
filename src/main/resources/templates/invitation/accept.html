@@ -3,6 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#111111">
+    <meta name="referrer" content="no-referrer">
     <link rel="manifest" th:href="@{/manifest.json}">
     <meta charset="UTF-8">
     <title>Scripty - Accept Invitation</title>
@@ -65,7 +66,7 @@
                 <label class="login-field">
                     <span class="login-label">Password</span>
                     <span class="login-input-wrap">
-                        <input type="password" th:field="*{password}" autocomplete="new-password" required />
+                        <input type="password" th:field="*{password}" autocomplete="new-password" minlength="8" required />
                     </span>
                     <span class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
                 </label>

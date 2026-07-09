@@ -77,11 +77,11 @@ public class PersonResourceAssembler implements RepresentationModelAssembler<Cha
         Integer projectId = person.getProject() != null ? person.getProject().getId() : null;
         if (projectId != null) {
             return EntityModel.of(resource,
-                    linkTo(methodOn(PersonRestController.class).list(projectId)).withRel(ApiRel.CHARACTERS),
-                    linkTo(methodOn(ProjectRestController.class).show(projectId)).withRel(ApiRel.PROJECT));
+                    linkTo(methodOn(PersonRestController.class).list(projectId, null)).withRel(ApiRel.CHARACTERS),
+                    linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
         return EntityModel.of(resource,
-                linkTo(methodOn(ProjectRestController.class).list()).withRel(ApiRel.PROJECTS));
+                linkTo(methodOn(ProjectRestController.class).list(null)).withRel(ApiRel.PROJECTS));
     }
 
     public CollectionModel<EntityModel<PersonResource>> toCharacterCollection(
@@ -91,18 +91,18 @@ public class PersonResourceAssembler implements RepresentationModelAssembler<Cha
             resources.add(toModel(character, projectId));
         }
         return CollectionModel.of(resources)
-                .add(linkTo(methodOn(PersonRestController.class).list(projectId)).withSelfRel())
-                .add(linkTo(methodOn(ProjectRestController.class).show(projectId)).withRel(ApiRel.PROJECT));
+                .add(linkTo(methodOn(PersonRestController.class).list(projectId, null)).withSelfRel())
+                .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
     }
 
     private org.springframework.hateoas.Link[] characterLinks(int id, Integer projectId, Integer actorId) {
         List<org.springframework.hateoas.Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(PersonRestController.class).show(id)).withSelfRel());
-        links.add(linkTo(methodOn(PersonRestController.class).update(id, null, null)).withRel(ApiRel.UPDATE));
-        links.add(linkTo(methodOn(PersonRestController.class).delete(id)).withRel(ApiRel.DELETE));
+        links.add(linkTo(methodOn(PersonRestController.class).show(id, null)).withSelfRel());
+        links.add(linkTo(methodOn(PersonRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE));
+        links.add(linkTo(methodOn(PersonRestController.class).delete(id, null)).withRel(ApiRel.DELETE));
         if (projectId != null) {
-            links.add(linkTo(methodOn(PersonRestController.class).list(projectId)).withRel(ApiRel.CHARACTERS));
-            links.add(linkTo(methodOn(ProjectRestController.class).show(projectId)).withRel(ApiRel.PROJECT));
+            links.add(linkTo(methodOn(PersonRestController.class).list(projectId, null)).withRel(ApiRel.CHARACTERS));
+            links.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
         if (actorId != null) {
             links.add(linkTo(methodOn(ActorRestController.class).show(actorId)).withRel(ApiRel.ACTOR));

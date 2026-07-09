@@ -80,7 +80,7 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
         CollectionModel<EntityModel<ActorResource>> collection = CollectionModel.of(resources)
                 .add(linkTo(methodOn(ActorRestController.class).list(projectId)).withSelfRel());
         if (projectId != null) {
-            collection.add(linkTo(methodOn(ProjectRestController.class).show(projectId)).withRel(ApiRel.PROJECT));
+            collection.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
         return collection;
     }
@@ -115,7 +115,7 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
             links.add(linkTo(methodOn(ActorController.class).headshot(id)).withRel(ApiRel.HEADSHOT));
         }
         if (projectId != null) {
-            links.add(linkTo(methodOn(ProjectRestController.class).show(projectId)).withRel(ApiRel.PROJECT));
+            links.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
         return links.toArray(org.springframework.hateoas.Link[]::new);
     }

@@ -3866,7 +3866,47 @@ html:not(.safari-reader-view) .project-script-header .project-header-title {
 }
 
 .text-documents-empty {
-    margin: 1.5rem 0;
+    margin: 0.75rem 0 0;
+}
+
+.text-documents-section {
+    margin: 0 0 2.25rem;
+}
+
+.text-documents-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid var(--line, #d6d3d1);
+}
+
+.text-documents-section-header h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.2rem;
+}
+
+.text-documents-section-header p {
+    margin: 0;
+    max-width: 28rem;
+}
+
+.text-documents-section-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.text-document-import-banner {
+    margin: 0 0 1.25rem;
+    padding: 0.65rem 1rem;
+    background: color-mix(in srgb, var(--accent, #1e293b) 8%, transparent);
+    border: 1px solid var(--line, #d6d3d1);
+    font-size: 0.92rem;
 }
 
 .text-documents-list {
@@ -3876,6 +3916,13 @@ html:not(.safari-reader-view) .project-script-header .project-header-title {
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
+}
+
+.text-document-title-full {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0 0 1rem;
 }
 
 .text-document-card {
@@ -4030,6 +4077,63 @@ html:not(.safari-reader-view) .project-script-header .project-header-title {
 
 .production-team-section {
     margin-bottom: 1.5rem;
+}
+
+.production-activity-section {
+    margin-bottom: 1.5rem;
+}
+
+.production-activity-header {
+    margin-bottom: 0.75rem;
+}
+
+.production-activity-header h2 {
+    margin: 0;
+}
+
+.production-activity-empty {
+    margin: 0;
+}
+
+.production-activity-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.production-activity-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--line, #d6d3d1);
+}
+
+.production-activity-item:last-child {
+    border-bottom: none;
+}
+
+.production-activity-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    min-width: 0;
+    font-size: 0.95rem;
+}
+
+.production-activity-actor {
+    font-weight: 600;
+}
+
+.production-activity-summary {
+    color: var(--fg, #1c1917);
+}
+
+.production-activity-time {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    white-space: nowrap;
 }
 
 .production-team-header {

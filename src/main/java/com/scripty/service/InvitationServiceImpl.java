@@ -4,6 +4,7 @@ import com.scripty.commandmodel.invitation.AcceptInvitationCommandModel;
 import com.scripty.commandmodel.invitation.SendInvitationCommandModel;
 import com.scripty.dto.Invitation;
 import com.scripty.dto.Project;
+import com.scripty.dto.ProjectActivity;
 import com.scripty.dto.Team;
 import com.scripty.dto.User;
 import com.scripty.repository.InvitationRepository;
@@ -34,6 +35,8 @@ public class InvitationServiceImpl implements InvitationService {
     private final UserRepository userRepository;
     private final UserService userService;
     private final EmailService emailService;
+    private final ProjectService projectService;
+    private final ProjectActivityService projectActivityService;
     private final String baseUrl;
 
     @Autowired
@@ -43,6 +46,8 @@ public class InvitationServiceImpl implements InvitationService {
                                  UserRepository userRepository,
                                  UserService userService,
                                  EmailService emailService,
+                                 ProjectService projectService,
+                                 ProjectActivityService projectActivityService,
                                  @Value("${app.base-url:}") String baseUrl) {
         this.invitationRepository = invitationRepository;
         this.teamRepository = teamRepository;
@@ -50,12 +55,18 @@ public class InvitationServiceImpl implements InvitationService {
         this.userRepository = userRepository;
         this.userService = userService;
         this.emailService = emailService;
+        this.projectService = projectService;
+        this.projectActivityService = projectActivityService;
         this.baseUrl = baseUrl;
     }
 
     @Override
     @Transactional
     public Invitation sendInvitation(SendInvitationCommandModel command, User invitedBy) {
+        if (invitedBy == null) {
+            throw new IllegalStateException("You must be signed in to send invitations.");
+        }
+
         String email = normalizeEmail(command.getEmail());
         if (!StringUtils.hasText(email)) {
             throw new IllegalArgumentException("Email is required.");
@@ -72,13 +83,19 @@ public class InvitationServiceImpl implements InvitationService {
             if (project == null) {
                 throw new IllegalArgumentException("Project not found.");
             }
+            if (!projectService.canUserAccessProject(project, invitedBy)) {
+                throw new IllegalArgumentException("You do not have access to this project.");
+            }
             if (!project.isAssignedToTeam(team)) {
                 throw new IllegalArgumentException("That team is not assigned to this project.");
             }
+        } else {
+            throw new IllegalArgumentException("Project is required.");
         }
 
+        // Avoid revealing whether the email already has an account.
         if (userRepository.findByEmailIgnoreCase(email).isPresent()) {
-            throw new IllegalArgumentException("A user with that email already has an account. Add them to the team instead.");
+            return null;
         }
 
         invitationRepository.findFirstByEmailIgnoreCaseAndTeamIdAndStatus(
@@ -101,11 +118,22 @@ public class InvitationServiceImpl implements InvitationService {
         Invitation saved = invitationRepository.save(invitation);
 
         sendInviteEmail(saved, invitedBy);
+        projectActivityService.record(
+                project.getId(),
+                invitedBy.getId(),
+                ProjectActivity.ACTION_INVITATION_SENT,
+                "invited " + email + " to " + team.getName(),
+                ProjectActivity.ENTITY_INVITATION,
+                saved.getId());
         return saved;
     }
 
     @Override
-    public List<PendingInvitationViewModel> getPendingInvitationsForProject(Integer projectId) {
+    public List<PendingInvitationViewModel> getPendingInvitationsForProject(Integer projectId, User currentUser) {
+        if (projectId == null || currentUser == null
+                || !projectService.canUserAccessProject(projectId, currentUser)) {
+            return List.of();
+        }
         List<Invitation> invitations = invitationRepository.findByProjectIdAndStatus(
                 projectId, Invitation.STATUS_PENDING);
         List<PendingInvitationViewModel> result = new ArrayList<>();
@@ -150,9 +178,24 @@ public class InvitationServiceImpl implements InvitationService {
             throw new IllegalArgumentException("This invitation link is invalid or has expired.");
         }
 
+        // Claim the invite atomically before creating the user (prevents double-accept races).
+        int claimed = invitationRepository.claimPendingInvitation(
+                invitation.getId(), Invitation.STATUS_ACCEPTED, LocalDateTime.now());
+        if (claimed != 1) {
+            throw new IllegalArgumentException("This invitation link is invalid or has expired.");
+        }
+
         String username = command.getUsername() != null ? command.getUsername().trim() : "";
         if (userRepository.findByUsername(username).isPresent()) {
+            restorePendingInvitation(invitation);
             throw new IllegalArgumentException("That username is already taken.");
+        }
+
+        if (userRepository.findByEmailIgnoreCase(invitation.getEmail()).isPresent()) {
+            invitation.setStatus(Invitation.STATUS_REVOKED);
+            invitation.setAcceptedAt(null);
+            invitationRepository.save(invitation);
+            throw new IllegalArgumentException("This invitation link is invalid or has expired.");
         }
 
         User user = new User();
@@ -167,24 +210,57 @@ public class InvitationServiceImpl implements InvitationService {
             user.setDefaultProjectId(invitation.getProject().getId());
         }
 
-        User saved = userService.create(user);
+        try {
+            User created = userService.create(user);
+            if (invitation.getProject() != null) {
+                projectActivityService.record(
+                        invitation.getProject().getId(),
+                        created.getId(),
+                        ProjectActivity.ACTION_INVITATION_ACCEPTED,
+                        "joined the project",
+                        ProjectActivity.ENTITY_INVITATION,
+                        invitation.getId());
+            }
+            return created;
+        } catch (RuntimeException e) {
+            restorePendingInvitation(invitation);
+            throw e;
+        }
+    }
 
-        invitation.setStatus(Invitation.STATUS_ACCEPTED);
-        invitation.setAcceptedAt(LocalDateTime.now());
+    private void restorePendingInvitation(Invitation invitation) {
+        invitation.setStatus(Invitation.STATUS_PENDING);
+        invitation.setAcceptedAt(null);
         invitationRepository.save(invitation);
-
-        return saved;
     }
 
     @Override
     @Transactional
-    public void revoke(Integer invitationId) {
+    public void revoke(Integer invitationId, Integer projectId, User currentUser) {
+        if (currentUser == null || invitationId == null || projectId == null) {
+            throw new IllegalArgumentException("You do not have access to this invitation.");
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            throw new IllegalArgumentException("You do not have access to this project.");
+        }
+
         Invitation invitation = invitationRepository.findById(invitationId).orElse(null);
         if (invitation == null || !invitation.isPending()) {
             return;
         }
+        if (invitation.getProject() == null || !projectId.equals(invitation.getProject().getId())) {
+            throw new IllegalArgumentException("You do not have access to this invitation.");
+        }
+
         invitation.setStatus(Invitation.STATUS_REVOKED);
         invitationRepository.save(invitation);
+        projectActivityService.record(
+                projectId,
+                currentUser.getId(),
+                ProjectActivity.ACTION_INVITATION_REVOKED,
+                "revoked invitation for " + invitation.getEmail(),
+                ProjectActivity.ENTITY_INVITATION,
+                invitationId);
     }
 
     private Invitation findUsableInvitation(String token) {

@@ -3,6 +3,7 @@ package com.scripty.service;
 import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
+import com.scripty.dto.ProjectActivity;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
@@ -49,6 +50,9 @@ public class FountainImportServiceImpl implements FountainImportService {
 
     @Autowired
     private ScriptImportTextExtractor scriptImportTextExtractor;
+
+    @Autowired
+    private ProjectActivityService projectActivityService;
 
     private enum ParseMode {
         ACTION, CHARACTER, DIALOGUE
@@ -124,6 +128,12 @@ public class FountainImportServiceImpl implements FountainImportService {
         project.setLastEdited(LocalDateTime.now());
         projectRepository.save(project);
         projectVersionService.autoSaveVersion(projectId);
+        projectActivityService.recordForCurrentUser(
+                projectId,
+                ProjectActivity.ACTION_SCRIPT_IMPORTED,
+                "imported a script",
+                ProjectActivity.ENTITY_PROJECT,
+                projectId);
     }
 
     /**

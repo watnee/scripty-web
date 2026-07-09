@@ -6,10 +6,13 @@ import com.scripty.api.RestErrors;
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.dto.Project;
+import com.scripty.dto.User;
+import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ProjectService;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import jakarta.validation.Valid;
+import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -34,9 +37,21 @@ public class ProjectRestController {
     @Autowired
     ProjectResourceAssembler projectResourceAssembler;
 
+    @Autowired
+    ProjectAccessSupport projectAccess;
+
     @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> list() {
-        ProjectListViewModel viewModel = projectService.getProjectListViewModel();
+    public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> list(Principal principal) {
+        User user = projectAccess.currentUser(principal);
+        ProjectListViewModel viewModel;
+        if (user != null
+                && !user.isAdmin() && !user.isDirector() && !user.isProducer()
+                && !user.isWriter() && !user.isActor() && !user.isCrew()
+                && !user.isDirectorOfPhotography()) {
+            viewModel = projectService.getProjectListViewModel(user.getTeam());
+        } else {
+            viewModel = projectService.getProjectListViewModel();
+        }
         return ResponseEntity.ok(projectResourceAssembler.toProjectCollection(viewModel.getProjects()));
     }
 
@@ -54,8 +69,14 @@ public class ProjectRestController {
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<ProjectResource>> show(@PathVariable Integer id) {
+    public ResponseEntity<EntityModel<ProjectResource>> show(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canAccessProject(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+        if (viewModel == null) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(projectResourceAssembler.toModel(viewModel));
     }
 
@@ -63,9 +84,13 @@ public class ProjectRestController {
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody EditProjectCommandModel commandModel,
-            BindingResult bindingResult) {
+            BindingResult bindingResult,
+            Principal principal) {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
+        }
+        if (!projectAccess.canAccessProject(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         commandModel.setId(id);
         Project project = projectService.saveEditProjectCommandModel(commandModel);
@@ -73,7 +98,10 @@ public class ProjectRestController {
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<ProjectResource>> delete(@PathVariable Integer id) {
+    public ResponseEntity<EntityModel<ProjectResource>> delete(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canAccessProject(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         Project project = projectService.deleteProject(id);
         return ResponseEntity.ok(projectResourceAssembler.toDeleteModel(project));
     }

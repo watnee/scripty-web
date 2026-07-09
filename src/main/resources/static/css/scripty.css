@@ -1429,9 +1429,20 @@ h1:hover > small .project-delete-btn,
 .text-size-control {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.4rem;
     justify-content: flex-end;
     margin-bottom: 1rem;
+}
+
+.text-size-control-row-break {
+    flex-basis: 100%;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
 }
 
 .text-size-control button {
@@ -2715,10 +2726,50 @@ html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/bl
     flex-shrink: 0;
 }
 
+.project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-right: 2.75rem;
+}
+
+.project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol {
+    width: 100%;
+    align-items: center;
+}
+
+.project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol > li {
+    align-items: center;
+}
+
 .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol > li:last-child {
     overflow: visible;
     white-space: normal;
-    max-width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+}
+
+.project-top-bar-breadcrumb .breadcrumb-name-meta {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    min-height: 1.75rem;
+}
+
+.project-top-bar-breadcrumb .breadcrumb-name-meta .project-breadcrumb-name-wrap,
+.project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+}
+
+.project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line {
+    margin-left: auto;
+    padding-left: 1rem;
+}
+
+.project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited {
+    line-height: 1;
 }
 
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-breadcrumb-name-display {
@@ -5075,6 +5126,42 @@ aside.block-actions {
     min-height: 2.1rem;
 }
 
+.has-toolbar-brand .project-top-bar-breadcrumb .project-share-dropdown {
+    position: absolute;
+    top: var(--toolbar-brand-top-space, 0.5rem);
+    right: calc(var(--toolbar-brand-header-actions-space, 6.5rem) + 0.35rem);
+    z-index: 1001;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn {
+    background: var(--interactive-bg);
+    border: 1px solid var(--muted-fg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 4px -2px var(--fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg);
+    font-size: 0.85rem;
+    padding: 0.15em 0.5em;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn:hover,
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn:focus {
+    filter: brightness(1.1);
+    box-shadow: 0 3px 6px -2px var(--fg);
+    background-color: var(--interactive-bg);
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn[aria-expanded="true"] {
+    box-shadow: 0 2px 4px -1px var(--fg) inset;
+    background: var(--pressed-interactive-bg);
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn svg {
+    display: block;
+}
+
 .project-top-bar-breadcrumb {
     display: flex;
     justify-content: flex-start;
@@ -5998,6 +6085,9 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
 .text-size-control .import-toolbar-btn svg,
 .text-size-control .export-toolbar-btn svg,
 .text-size-control .share-toolbar-btn svg,
+.text-size-control .outline-toolbar-btn svg,
+.text-size-control .character-list-toolbar-btn svg,
+.text-size-control .location-list-toolbar-btn svg,
 .text-size-control .focus-toolbar-btn svg,
 .text-size-control .toolbar-visibility-toggle svg {
     display: block;
@@ -6870,7 +6960,10 @@ html.scripty-offline .scripty-offline-banner {
 
 html.fountain-outline-open .project-script,
 html.fountain-character-list-open .project-script,
-html.fountain-location-list-open .project-script {
+html.fountain-location-list-open .project-script,
+html.fountain-outline-open .project-script-toolbar,
+html.fountain-character-list-open .project-script-toolbar,
+html.fountain-location-list-open .project-script-toolbar {
     padding-right: min(17rem, 44vw);
 }
 
@@ -6888,7 +6981,10 @@ html.fountain-location-list-open .project-script {
 
     html.fountain-outline-open .project-script,
     html.fountain-character-list-open .project-script,
-    html.fountain-location-list-open .project-script {
+    html.fountain-location-list-open .project-script,
+    html.fountain-outline-open .project-script-toolbar,
+    html.fountain-character-list-open .project-script-toolbar,
+    html.fountain-location-list-open .project-script-toolbar {
         padding-right: 0;
     }
 }

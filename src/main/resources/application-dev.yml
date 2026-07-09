@@ -40,7 +40,7 @@ ADMIN_USERNAME: admin
 ADMIN_PASSWORD: admin
 
 app:
-  asset-version: 93
+  asset-version: 98
   service-worker-enabled: false
   uploads-dir: ./uploads
   headshot-max-bytes: 5242880

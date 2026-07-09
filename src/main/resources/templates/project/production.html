@@ -118,9 +118,13 @@
                 <h3>Title Page</h3>
                 <p>Set the screenplay title, writers, and contact information.</p>
             </a>
-            <a th:href="@{/project/documents/list(projectId=${viewModel.id})}" class="help-card production-card-link">
-                <h3>Songs &amp; Drafts</h3>
-                <p>Write songs in one place and notes/drafts in another, then insert them into the screenplay.</p>
+            <a th:href="@{/project/documents/songs(projectId=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Songs</h3>
+                <p>Write lyrics and musical numbers outside the screenplay, then insert them as Lyrics blocks.</p>
+            </a>
+            <a th:href="@{/project/documents/drafts(projectId=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Drafts</h3>
+                <p>Keep notes and scratch text outside the screenplay, then insert them when ready.</p>
             </a>
             <a th:href="@{/project/version/list(projectId=${viewModel.id})}" class="help-card production-card-link">
                 <h3>Version History</h3>

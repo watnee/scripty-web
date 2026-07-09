@@ -2547,12 +2547,12 @@
 
                 const blockContent = e.target.closest('.block-content');
                 const onSelectableText = blockContent && isSelectableTextTarget(e.target);
-                if (onSelectableText) {
-                    window.scriptySuppressBlockEditClick = true;
-                    setBlockTextSelecting(true);
-                } else {
-                    setBlockTextSelecting(false);
+                // Do not suppress HTMX edit until the pointer actually drags to select text.
+                // Suppressing on every mousedown left click-to-edit stuck after song/draft insert.
+                if (!window.scriptySuppressBlockEditForPreview) {
+                    clearSuppressFlag();
                 }
+                setBlockTextSelecting(!!onSelectableText);
 
                 pointerState = blockContent ? {
                     blockContent: blockContent,
@@ -2564,9 +2564,6 @@
                     moved: false,
                     selectionStart: (window.getSelection && window.getSelection().toString()) || ''
                 } : null;
-                if (!window.scriptySuppressBlockEditForPreview && !onSelectableText) {
-                    clearSuppressFlag();
-                }
             }, true);
 
             document.body.addEventListener('click', function(e) {
@@ -5756,6 +5753,10 @@
             syncBodyPageClasses();
             prepareBreadcrumbLinks();
             syncStylesheetVersion();
+            // Insert redirects land with #block-…; clear any leftover click-suppress from prior page.
+            window.scriptySuppressBlockEditClick = false;
+            window.scriptyBlockTextSelectionClickSuppress = false;
+            window.scriptySuppressBlockEditForPreview = false;
             initBlockEmptyBackspace();
             initBlockEditGuards();
             initBlockTextSelection();

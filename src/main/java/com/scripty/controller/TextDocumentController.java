@@ -42,12 +42,37 @@ public class TextDocumentController {
     ProjectAccessSupport projectAccess;
 
     @RequestMapping(value = "/list")
-    public String list(@RequestParam Integer projectId, Model model, Principal principal) {
+    public String list(@RequestParam Integer projectId,
+                       @RequestParam(required = false) String type,
+                       Model model,
+                       Principal principal) {
+        String listType = normalizeListType(type);
+        if (type == null || type.isBlank()) {
+            return "redirect:/project/documents/songs?projectId=" + projectId;
+        }
+        return renderList(projectId, listType, model, principal);
+    }
+
+    @RequestMapping(value = "/songs")
+    public String songs(@RequestParam Integer projectId, Model model, Principal principal) {
+        return renderList(projectId, TextDocument.TYPE_SONG, model, principal);
+    }
+
+    @RequestMapping(value = "/drafts")
+    public String drafts(@RequestParam Integer projectId, Model model, Principal principal) {
+        return renderList(projectId, TextDocument.TYPE_NOTES, model, principal);
+    }
+
+    private String renderList(Integer projectId, String listType, Model model, Principal principal) {
         TextDocumentListViewModel viewModel = textDocumentService.getListViewModel(projectId, currentUser(principal));
         if (viewModel == null) {
             return "redirect:/project/list";
         }
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(listType);
         model.addAttribute("viewModel", viewModel);
+        model.addAttribute("listType", isSong ? TextDocument.TYPE_SONG : TextDocument.TYPE_NOTES);
+        model.addAttribute("isSongList", isSong);
+        model.addAttribute("documents", isSong ? viewModel.getSongs() : viewModel.getDrafts());
         model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
         return "project/documents/list";
     }
@@ -62,11 +87,13 @@ public class TextDocumentController {
             return "redirect:/project/list";
         }
         TextDocumentCommandModel commandModel = textDocumentService.getNewCommandModel(projectId, type);
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(commandModel.getDocumentType());
         model.addAttribute("projectId", projectId);
         model.addAttribute("projectTitle", listVm.getProjectTitle());
         model.addAttribute("commandModel", commandModel);
         model.addAttribute("isNew", true);
-        model.addAttribute("isSong", "SONG".equalsIgnoreCase(commandModel.getDocumentType()));
+        model.addAttribute("isSong", isSong);
+        model.addAttribute("listPath", listPath(isSong));
         model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
         return "project/documents/edit";
     }
@@ -79,11 +106,13 @@ public class TextDocumentController {
         if (commandModel == null || viewModel == null) {
             return "redirect:/project/list";
         }
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(commandModel.getDocumentType());
         model.addAttribute("projectId", viewModel.getProjectId());
         model.addAttribute("projectTitle", viewModel.getProjectTitle());
         model.addAttribute("commandModel", commandModel);
         model.addAttribute("isNew", false);
-        model.addAttribute("isSong", "SONG".equalsIgnoreCase(commandModel.getDocumentType()));
+        model.addAttribute("isSong", isSong);
+        model.addAttribute("listPath", listPath(isSong));
         model.addAttribute("canEditScript", projectAccess.canEditScript(viewModel.getProjectId(), user));
         return "project/documents/edit";
     }
@@ -95,6 +124,7 @@ public class TextDocumentController {
                        Model model,
                        Principal principal) {
         User user = currentUser(principal);
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(commandModel.getDocumentType());
         if (bindingResult.hasErrors()) {
             TextDocumentListViewModel listVm = textDocumentService.getListViewModel(commandModel.getProjectId(), user);
             if (listVm == null) {
@@ -104,7 +134,8 @@ public class TextDocumentController {
             model.addAttribute("projectTitle", listVm.getProjectTitle());
             model.addAttribute("commandModel", commandModel);
             model.addAttribute("isNew", commandModel.getId() == null);
-            model.addAttribute("isSong", "SONG".equalsIgnoreCase(commandModel.getDocumentType()));
+            model.addAttribute("isSong", isSong);
+            model.addAttribute("listPath", listPath(isSong));
             return "project/documents/edit";
         }
 
@@ -115,13 +146,16 @@ public class TextDocumentController {
         if (stay) {
             return "redirect:/project/documents/edit?id=" + saved.getId();
         }
-        return "redirect:/project/documents/list?projectId=" + commandModel.getProjectId();
+        return "redirect:" + listUrl(commandModel.getProjectId(), isSong);
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String delete(@RequestParam Integer id, @RequestParam Integer projectId, Principal principal) {
+    public String delete(@RequestParam Integer id,
+                         @RequestParam Integer projectId,
+                         @RequestParam(required = false) String type,
+                         Principal principal) {
         textDocumentService.delete(id, projectId, currentUser(principal));
-        return "redirect:/project/documents/list?projectId=" + projectId;
+        return "redirect:" + listUrl(projectId, TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type)));
     }
 
     @RequestMapping(value = "/insert", method = RequestMethod.POST)
@@ -135,8 +169,9 @@ public class TextDocumentController {
         if (viewModel == null) {
             return "redirect:/project/list";
         }
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(viewModel.getDocumentType());
         if (!projectAccess.canEditScript(viewModel.getProjectId(), user)) {
-            return "redirect:/project/documents/list?projectId=" + viewModel.getProjectId();
+            return "redirect:" + listUrl(viewModel.getProjectId(), isSong);
         }
 
         List<Block> created = textDocumentService.insertIntoScript(id, afterBlockId, asType, user);
@@ -166,17 +201,39 @@ public class TextDocumentController {
                              Principal principal,
                              RedirectAttributes redirectAttributes) throws IOException {
         User user = currentUser(principal);
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
         TextDocument saved = textDocumentService.importFile(projectId, type, file, user);
         if (saved == null) {
             redirectAttributes.addFlashAttribute(
                     "documentImportMessage",
                     "Could not import that file. Check access and try a .txt, .fountain, .docx, or .doc file.");
-            return "redirect:/project/documents/list?projectId=" + projectId;
+            return "redirect:" + listUrl(projectId, isSong);
         }
         redirectAttributes.addFlashAttribute(
                 "documentImportMessage",
                 "Imported \"" + saved.getTitle() + "\".");
         return "redirect:/project/documents/edit?id=" + saved.getId();
+    }
+
+    private static String normalizeListType(String type) {
+        if (type == null || type.isBlank()) {
+            return TextDocument.TYPE_SONG;
+        }
+        if ("DRAFT".equalsIgnoreCase(type)
+                || "DRAFTS".equalsIgnoreCase(type)
+                || TextDocument.TYPE_NOTES.equalsIgnoreCase(type)
+                || TextDocument.TYPE_OTHER.equalsIgnoreCase(type)) {
+            return TextDocument.TYPE_NOTES;
+        }
+        return TextDocument.TYPE_SONG;
+    }
+
+    private static String listPath(boolean isSong) {
+        return isSong ? "/project/documents/songs" : "/project/documents/drafts";
+    }
+
+    private static String listUrl(Integer projectId, boolean isSong) {
+        return listPath(isSong) + "?projectId=" + projectId;
     }
 
     private User currentUser(Principal principal) {

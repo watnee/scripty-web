@@ -5,178 +5,159 @@
     <meta name="theme-color" content="#111111">
     <link rel="manifest" th:href="@{/manifest.json}">
     <meta charset="UTF-8">
-    <title th:text="'Scripty - Songs &amp; Drafts — ' + ${viewModel.projectTitle}">Scripty - Songs &amp; Drafts</title>
+    <title th:text="${isSongList} ? ('Scripty - Songs — ' + ${viewModel.projectTitle}) : ('Scripty - Drafts — ' + ${viewModel.projectTitle})">Scripty - Documents</title>
     <link rel="stylesheet" href="/css/missing.min.css">
     <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('')}"></div>
-    <main class="text-documents-page">
+    <main class="text-documents-page"
+          th:classappend="${isSongList} ? ' text-documents-page--songs' : ' text-documents-page--drafts'">
         <div class="top-bar">
             <nav aria-label="Breadcrumb">
                 <ol>
                     <li><a th:href="@{/project/list}">Projects</a></li>
                     <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}">Project</a></li>
-                    <li aria-current="page">Songs &amp; Drafts</li>
+                    <li aria-current="page" th:text="${isSongList} ? 'Songs' : 'Drafts'">Documents</li>
                 </ol>
             </nav>
         </div>
 
-        <div class="text-documents-header">
+        <header class="text-documents-header"
+                th:classappend="${isSongList} ? ' text-documents-header--song' : ' text-documents-header--draft'">
             <div class="text-documents-header-text">
-                <h1>Songs &amp; Drafts</h1>
-                <p class="muted">Write songs and other text outside the screenplay, then insert them when ready.</p>
+                <p class="text-documents-kicker">Outside the screenplay</p>
+                <h1 th:text="${isSongList} ? 'Songs' : 'Drafts'">Documents</h1>
+                <p class="muted"
+                   th:text="${isSongList} ? 'Write lyrics and musical numbers here, then insert them into the script as Lyrics blocks.' : 'Write notes and scratch text here, then insert them into the script as Notes by default.'">
+                    Write outside the screenplay.
+                </p>
             </div>
             <div class="text-documents-header-actions">
-                <a th:href="@{/project/show(id=${viewModel.projectId})}" role="button" class="text-documents-secondary-btn">Open Script</a>
+                <a th:if="${isSongList}"
+                   th:href="@{/project/documents/drafts(projectId=${viewModel.projectId})}"
+                   class="project-list-action-btn project-list-action-btn--secondary">Drafts</a>
+                <a th:unless="${isSongList}"
+                   th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}"
+                   class="project-list-action-btn project-list-action-btn--secondary">Songs</a>
+                <a th:href="@{/project/show(id=${viewModel.projectId})}"
+                   class="project-list-action-btn project-list-action-btn--secondary">Open Script</a>
             </div>
-        </div>
+        </header>
 
         <p class="text-document-import-banner"
            th:if="${documentImportMessage != null}"
            th:text="${documentImportMessage}"
            role="status"></p>
 
-        <section class="text-documents-section" aria-labelledby="songs-heading">
+        <section class="text-documents-section"
+                 th:classappend="${isSongList} ? ' text-documents-section--songs' : ' text-documents-section--drafts'"
+                 th:attr="aria-labelledby=${isSongList} ? 'songs-heading' : 'drafts-heading'">
             <div class="text-documents-section-header">
-                <div>
-                    <h2 id="songs-heading">Songs</h2>
-                    <p class="muted">Lyrics and musical numbers. Inserts into the script as Lyrics.</p>
+                <div class="text-documents-section-intro">
+                    <span class="text-documents-section-mark"
+                          th:classappend="${!isSongList} ? ' text-documents-section-mark--draft'"
+                          th:text="${isSongList} ? '♪' : '¶'"
+                          aria-hidden="true">♪</span>
+                    <div>
+                        <h2 th:id="${isSongList} ? 'songs-heading' : 'drafts-heading'"
+                            th:text="${isSongList} ? 'Your songs' : 'Your drafts'">Documents</h2>
+                        <p class="muted"
+                           th:text="${isSongList} ? 'Import a file or start a new song.' : 'Import a file or start a new draft.'">
+                            Manage documents.
+                        </p>
+                    </div>
                 </div>
                 <div class="text-documents-section-actions">
                     <button type="button"
-                            class="text-documents-secondary-btn"
-                            id="import-song-btn"
-                            title="Import a song from a text or Word file">Import</button>
-                    <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=SONG)}"
-                       role="button"
-                       class="good">New Song</a>
+                            class="project-list-action-btn project-list-action-btn--secondary"
+                            id="import-doc-btn"
+                            th:title="${isSongList} ? 'Import a song from a text or Word file' : 'Import a draft from a text or Word file'">Import</button>
+                    <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
+                       class="project-list-action-btn project-list-action-btn--primary"
+                       th:text="${isSongList} ? 'New Song' : 'New Draft'">New</a>
                 </div>
             </div>
 
-            <form id="import-song-form"
-                  th:action="@{/project/documents/import(projectId=${viewModel.projectId}, type=SONG)}"
+            <form id="import-doc-form"
+                  th:action="@{/project/documents/import(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
                   method="post"
                   enctype="multipart/form-data"
                   hx-boost="false"
                   hidden>
                 <input type="file"
-                       id="import-song-file"
+                       id="import-doc-file"
                        name="file"
                        accept=".txt,.fountain,.docx,.doc,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                        aria-hidden="true"
                        tabindex="-1" />
             </form>
 
-            <p class="muted text-documents-empty" th:if="${#lists.isEmpty(viewModel.songs)}">
-                No songs yet.
-            </p>
-
-            <ul class="text-documents-list" th:if="${!#lists.isEmpty(viewModel.songs)}">
-                <li th:each="doc : ${viewModel.songs}" class="text-document-card">
-                    <div class="text-document-card-main">
-                        <a class="text-document-card-title"
-                           th:href="@{/project/documents/edit(id=${doc.id})}"
-                           th:text="${doc.title}">Untitled</a>
-                        <div class="text-document-card-meta">
-                            <span class="muted"
-                                  th:if="${doc.updatedAt != null}"
-                                  th:text="${#temporals.format(doc.updatedAt, 'MMM d, yyyy h:mm a')}">Updated</span>
-                        </div>
-                        <p class="text-document-preview muted" th:if="${!#strings.isEmpty(doc.preview)}" th:text="${doc.preview}"></p>
-                        <p class="text-document-preview muted" th:if="${#strings.isEmpty(doc.preview)}">Empty</p>
-                    </div>
-                    <div class="text-document-card-actions">
-                        <a th:href="@{/project/documents/edit(id=${doc.id})}" role="button">Edit</a>
-                        <form th:if="${canEditScript == null or canEditScript}"
-                              th:action="@{/project/documents/insert}" method="post" class="text-document-insert-form" hx-boost="false">
-                            <input type="hidden" name="id" th:value="${doc.id}" />
-                            <button type="submit" class="good" title="Insert as Lyrics blocks at end of script">
-                                Insert into Script
-                            </button>
-                        </form>
-                        <form th:action="@{/project/documents/delete}"
-                              method="post"
-                              class="text-document-delete-form"
-                              hx-boost="false"
-                              onsubmit="return confirm('Delete this song? This cannot be undone.');">
-                            <input type="hidden" name="id" th:value="${doc.id}" />
-                            <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
-                            <button type="submit" class="bad">Delete</button>
-                        </form>
-                    </div>
-                </li>
-            </ul>
-        </section>
-
-        <section class="text-documents-section" aria-labelledby="drafts-heading">
-            <div class="text-documents-section-header">
-                <div>
-                    <h2 id="drafts-heading">Drafts</h2>
-                    <p class="muted">Notes and scratch text. Inserts into the script as Notes by default.</p>
-                </div>
-                <div class="text-documents-section-actions">
+            <div class="text-documents-empty-state" th:if="${#lists.isEmpty(documents)}">
+                <p class="text-documents-empty-title"
+                   th:text="${isSongList} ? 'No songs yet' : 'No drafts yet'">Empty</p>
+                <p class="muted"
+                   th:text="${isSongList} ? 'Start a lyric draft here, or import a text or Word file.' : 'Keep scene notes, dialogue scraps, or research here until you need them in the script.'">
+                    Empty state help.
+                </p>
+                <div class="text-documents-empty-actions">
                     <button type="button"
-                            class="text-documents-secondary-btn"
-                            id="import-draft-btn"
-                            title="Import a draft from a text or Word file">Import</button>
-                    <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=NOTES)}"
-                       role="button"
-                       class="good">New Draft</a>
+                            class="project-list-action-btn project-list-action-btn--secondary"
+                            onclick="document.getElementById('import-doc-file').click()"
+                            th:text="${isSongList} ? 'Import Song' : 'Import Draft'">Import</button>
+                    <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
+                       class="project-list-action-btn project-list-action-btn--primary"
+                       th:text="${isSongList} ? 'New Song' : 'New Draft'">New</a>
                 </div>
             </div>
 
-            <form id="import-draft-form"
-                  th:action="@{/project/documents/import(projectId=${viewModel.projectId}, type=NOTES)}"
-                  method="post"
-                  enctype="multipart/form-data"
-                  hx-boost="false"
-                  hidden>
-                <input type="file"
-                       id="import-draft-file"
-                       name="file"
-                       accept=".txt,.fountain,.docx,.doc,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                       aria-hidden="true"
-                       tabindex="-1" />
-            </form>
-
-            <p class="muted text-documents-empty" th:if="${#lists.isEmpty(viewModel.drafts)}">
-                No drafts yet.
-            </p>
-
-            <ul class="text-documents-list" th:if="${!#lists.isEmpty(viewModel.drafts)}">
-                <li th:each="doc : ${viewModel.drafts}" class="text-document-card">
+            <ul class="text-documents-list" th:if="${!#lists.isEmpty(documents)}">
+                <li th:each="doc, iter : ${documents}"
+                    class="text-document-card"
+                    th:classappend="${isSongList} ? ' text-document-card--song' : ' text-document-card--draft'"
+                    th:style="'--card-i:' + ${iter.index}">
                     <div class="text-document-card-main">
                         <a class="text-document-card-title"
                            th:href="@{/project/documents/edit(id=${doc.id})}"
                            th:text="${doc.title}">Untitled</a>
                         <div class="text-document-card-meta">
-                            <span class="text-document-type-badge" th:text="${doc.documentTypeLabel}">Notes</span>
+                            <span class="text-document-type-badge"
+                                  th:classappend="${isSongList} ? ' text-document-type-badge--song'"
+                                  th:text="${isSongList} ? 'Song' : ${doc.documentTypeLabel}">Type</span>
                             <span class="muted"
                                   th:if="${doc.updatedAt != null}"
                                   th:text="${#temporals.format(doc.updatedAt, 'MMM d, yyyy h:mm a')}">Updated</span>
                         </div>
-                        <p class="text-document-preview muted" th:if="${!#strings.isEmpty(doc.preview)}" th:text="${doc.preview}"></p>
-                        <p class="text-document-preview muted" th:if="${#strings.isEmpty(doc.preview)}">Empty</p>
+                        <p class="text-document-preview"
+                           th:if="${!#strings.isEmpty(doc.preview)}"
+                           th:text="${doc.preview}"></p>
+                        <p class="text-document-preview text-document-preview--empty" th:if="${#strings.isEmpty(doc.preview)}">Empty</p>
                     </div>
                     <div class="text-document-card-actions">
-                        <a th:href="@{/project/documents/edit(id=${doc.id})}" role="button">Edit</a>
-                        <form th:if="${canEditScript == null or canEditScript}"
-                              th:action="@{/project/documents/insert}" method="post" class="text-document-insert-form" hx-boost="false">
+                        <a th:href="@{/project/documents/edit(id=${doc.id})}"
+                           class="project-list-action-btn project-list-action-btn--secondary">Edit</a>
+                        <form th:if="${canEditScript}"
+                              th:action="@{/project/documents/insert}"
+                              method="post"
+                              class="text-document-insert-form"
+                              hx-boost="false">
                             <input type="hidden" name="id" th:value="${doc.id}" />
-                            <button type="submit" class="good" title="Insert as Note blocks at end of script">
-                                Insert into Script
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--primary"
+                                    th:title="${isSongList} ? 'Insert as Lyrics blocks at end of script' : 'Insert as Note blocks at end of script'">
+                                Insert
                             </button>
                         </form>
                         <form th:action="@{/project/documents/delete}"
                               method="post"
                               class="text-document-delete-form"
                               hx-boost="false"
-                              onsubmit="return confirm('Delete this draft? This cannot be undone.');">
+                              th:attr="onsubmit=${isSongList} ? 'return confirm(\'Delete this song? This cannot be undone.\');' : 'return confirm(\'Delete this draft? This cannot be undone.\');'">
                             <input type="hidden" name="id" th:value="${doc.id}" />
                             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
-                            <button type="submit" class="bad">Delete</button>
+                            <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                            <button type="submit" class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn">Delete</button>
                         </form>
                     </div>
                 </li>
@@ -187,19 +168,15 @@
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script>
         (function() {
-            function wireImport(btnId, fileId, formId) {
-                var btn = document.getElementById(btnId);
-                var file = document.getElementById(fileId);
-                var form = document.getElementById(formId);
-                if (!btn || !file || !form) return;
-                btn.addEventListener('click', function() { file.click(); });
-                file.addEventListener('change', function() {
-                    if (!file.files || !file.files.length) return;
-                    form.submit();
-                });
-            }
-            wireImport('import-song-btn', 'import-song-file', 'import-song-form');
-            wireImport('import-draft-btn', 'import-draft-file', 'import-draft-form');
+            var btn = document.getElementById('import-doc-btn');
+            var file = document.getElementById('import-doc-file');
+            var form = document.getElementById('import-doc-form');
+            if (!btn || !file || !form) return;
+            btn.addEventListener('click', function() { file.click(); });
+            file.addEventListener('change', function() {
+                if (!file.files || !file.files.length) return;
+                form.submit();
+            });
         })();
     </script>
 </body>

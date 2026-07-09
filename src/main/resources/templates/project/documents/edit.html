@@ -12,28 +12,40 @@
 </head>
 <body hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('')}"></div>
-    <main class="text-documents-page text-document-edit-page">
+    <main class="text-documents-page text-document-edit-page"
+          th:classappend="${isSong} ? ' text-document-edit-page--song' : ' text-document-edit-page--draft'">
         <div class="top-bar">
             <nav aria-label="Breadcrumb">
                 <ol>
                     <li><a th:href="@{/project/list}">Projects</a></li>
                     <li><a th:href="@{/project/show(id=${projectId})}" th:text="${projectTitle}">Project</a></li>
-                    <li><a th:href="@{/project/documents/list(projectId=${projectId})}">Songs &amp; Drafts</a></li>
+                    <li>
+                        <a th:href="@{${listPath}(projectId=${projectId})}"
+                           th:text="${isSong} ? 'Songs' : 'Drafts'">Documents</a>
+                    </li>
                     <li aria-current="page"
                         th:text="${isNew} ? (${isSong} ? 'New Song' : 'New Draft') : ${commandModel.title}">Document</li>
                 </ol>
             </nav>
         </div>
 
-        <div class="text-documents-header">
+        <header class="text-documents-header"
+                th:classappend="${isSong} ? ' text-documents-header--song' : ' text-documents-header--draft'">
             <div class="text-documents-header-text">
+                <p class="text-documents-kicker"
+                   th:text="${isSong} ? 'Song' : 'Draft'">Document</p>
                 <h1 th:text="${isNew} ? (${isSong} ? 'New Song' : 'New Draft') : (${isSong} ? 'Edit Song' : 'Edit Draft')">Edit</h1>
                 <p class="muted"
                    th:text="${isSong} ? 'Write lyrics freely. Each line becomes a Lyrics block when you insert into the screenplay.' : 'Write notes or scratch text freely. Each line becomes a Note block when you insert into the screenplay.'">
                     Write freely here.
                 </p>
             </div>
-        </div>
+            <div class="text-documents-header-actions">
+                <a th:href="@{${listPath}(projectId=${projectId})}"
+                   class="project-list-action-btn project-list-action-btn--secondary"
+                   th:text="${isSong} ? 'Back to Songs' : 'Back to Drafts'">Back</a>
+            </div>
+        </header>
 
         <p class="text-document-import-banner"
            th:if="${documentImportMessage != null}"
@@ -50,42 +62,55 @@
             <input type="hidden" th:field="*{projectId}" />
             <input type="hidden" th:field="*{documentType}" />
 
-            <label class="text-document-title-label text-document-title-full">
-                Title
-                <input type="text"
-                       th:field="*{title}"
-                       th:placeholder="${isSong} ? 'e.g. Opening Theme' : 'e.g. Scene notes'"
-                       autocomplete="off"
-                       spellcheck="true"
-                       maxlength="200"
-                       required />
-                <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="field-error"></span>
-            </label>
+            <div class="text-document-editor-shell">
+                <label class="text-document-title-label text-document-title-full">
+                    Title
+                    <input type="text"
+                           th:field="*{title}"
+                           th:placeholder="${isSong} ? 'e.g. Opening Theme' : 'e.g. Scene notes'"
+                           autocomplete="off"
+                           spellcheck="true"
+                           maxlength="200"
+                           required />
+                    <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="field-error"></span>
+                </label>
 
-            <label class="text-document-content-label">
-                <span th:text="${isSong} ? 'Lyrics' : 'Content'">Content</span>
-                <textarea th:field="*{content}"
-                          id="text-document-content"
-                          class="text-document-content"
-                          rows="18"
-                          th:placeholder="${isSong} ? 'Write your song lyrics here…&#10;&#10;Each line will become a Lyrics block when inserted.' : 'Write notes or draft text here…&#10;&#10;Each line will become a Note block when inserted.'"
-                          autocomplete="off"
-                          spellcheck="true"></textarea>
-            </label>
+                <label class="text-document-content-label">
+                    <span class="text-document-content-heading">
+                        <span th:text="${isSong} ? 'Lyrics' : 'Content'">Content</span>
+                        <span class="muted text-document-content-hint">Tab inserts four spaces</span>
+                    </span>
+                    <textarea th:field="*{content}"
+                              id="text-document-content"
+                              class="text-document-content"
+                              rows="18"
+                              th:placeholder="${isSong} ? 'Write your song lyrics here…&#10;&#10;Each line will become a Lyrics block when inserted.' : 'Write notes or draft text here…&#10;&#10;Each line will become a Note block when inserted.'"
+                              autocomplete="off"
+                              spellcheck="true"></textarea>
+                </label>
+            </div>
 
             <p class="form-actions text-document-form-actions">
-                <a th:href="@{/project/documents/list(projectId=${projectId})}" role="button" class="bad">Cancel</a>
-                <button type="submit" name="stay" value="true" class="text-documents-secondary-btn">Save</button>
-                <button type="submit" class="good">Save &amp; Close</button>
+                <a th:href="@{${listPath}(projectId=${projectId})}"
+                   class="project-list-action-btn project-list-action-btn--ghost">Cancel</a>
+                <button type="submit"
+                        name="stay"
+                        value="true"
+                        class="project-list-action-btn project-list-action-btn--secondary">Save</button>
+                <button type="submit"
+                        class="project-list-action-btn project-list-action-btn--primary">Save &amp; Close</button>
             </p>
         </form>
 
-        <div class="text-document-insert-panel" th:if="${!isNew and commandModel.id != null and (canEditScript == null or canEditScript)}">
-            <h2>Insert into Screenplay</h2>
-            <p class="muted"
-               th:text="${isSong} ? 'Adds this song at the end of the script as Lyrics blocks.' : 'Adds this draft at the end of the script as Note blocks (or choose another type).'">
-                Adds this at the end of the script.
-            </p>
+        <aside class="text-document-insert-panel"
+               th:if="${!isNew and commandModel.id != null and canEditScript}">
+            <div class="text-document-insert-panel-text">
+                <h2>Insert into Screenplay</h2>
+                <p class="muted"
+                   th:text="${isSong} ? 'Adds this song at the end of the script as Lyrics blocks.' : 'Adds this draft at the end of the script as Note blocks (or choose another type).'">
+                    Adds this at the end of the script.
+                </p>
+            </div>
             <form th:action="@{/project/documents/insert}" method="post" class="text-document-insert-form" hx-boost="false">
                 <input type="hidden" name="id" th:value="${commandModel.id}" />
                 <label class="text-document-insert-type-label" th:if="${!isSong}">
@@ -99,12 +124,13 @@
                         <option value="CENTERED">Centered</option>
                     </select>
                 </label>
-                <button type="submit" class="good"
+                <button type="submit"
+                        class="project-list-action-btn project-list-action-btn--primary"
                         th:text="${isSong} ? 'Insert Song into Script' : 'Insert Draft into Script'">
                     Insert into Script
                 </button>
             </form>
-        </div>
+        </aside>
     </main>
     <script src="/js/htmx.min.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>

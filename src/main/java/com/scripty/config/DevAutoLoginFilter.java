@@ -24,7 +24,8 @@ public class DevAutoLoginFilter implements Filter {
                 "",
                 List.of(
                     new SimpleGrantedAuthority("ROLE_USER"),
-                    new SimpleGrantedAuthority("ROLE_ADMIN")
+                    new SimpleGrantedAuthority("ROLE_ADMIN"),
+                    new SimpleGrantedAuthority("ROLE_WRITER")
                 )
             );
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(

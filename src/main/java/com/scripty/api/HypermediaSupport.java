@@ -2,6 +2,7 @@ package com.scripty.api;
 
 import com.scripty.controller.BlockController;
 import com.scripty.controller.ProjectController;
+import com.scripty.controller.ProjectRestController;
 import java.util.Map;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
@@ -44,14 +45,14 @@ public final class HypermediaSupport {
     private static Link[] projectSyncLinks(Integer projectId, Long since) {
         return new Link[]{
                 linkTo(methodOn(ProjectController.class).syncStatus(projectId, since, null)).withSelfRel(),
-                linkTo(methodOn(ProjectController.class).show(projectId, null, null)).withRel(ApiRel.PROJECT),
+                linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT),
                 linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null)).withRel(ApiRel.UNDO_REDO_STATUS)
         };
     }
 
     private static Link[] projectActionLinks(Integer projectId) {
         return new Link[]{
-                linkTo(methodOn(ProjectController.class).show(projectId, null, null)).withRel(ApiRel.PROJECT),
+                linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT),
                 linkTo(methodOn(ProjectController.class).undo(projectId, null)).withRel(ApiRel.UNDO),
                 linkTo(methodOn(ProjectController.class).redo(projectId, null)).withRel(ApiRel.REDO),
                 linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null)).withRel(ApiRel.UNDO_REDO_STATUS),

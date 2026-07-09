@@ -65,10 +65,10 @@ public class ProjectAccessSupport {
     }
 
     /**
-     * Screenplay edits require project access and the writer role.
+     * Screenplay edits require project access and writer (or admin) permission.
      */
     public boolean canEditScript(Integer projectId, User user) {
-        return canAccessProject(projectId, user) && user != null && user.isWriter();
+        return canAccessProject(projectId, user) && canEditScreenplay(user);
     }
 
     public boolean canEditScript(Integer projectId, Principal principal) {
@@ -76,7 +76,7 @@ public class ProjectAccessSupport {
     }
 
     public boolean canEditBlock(Integer blockId, User user) {
-        if (blockId == null || user == null || !user.isWriter()) {
+        if (blockId == null || !canEditScreenplay(user)) {
             return false;
         }
         return canAccessBlock(blockId, user);
@@ -126,10 +126,10 @@ public class ProjectAccessSupport {
     }
 
     /**
-     * Same project validation as {@link #canAccessBlocks}, plus writer edit permission.
+     * Same project validation as {@link #canAccessBlocks}, plus writer/admin edit permission.
      */
     public boolean canEditBlocks(List<Integer> blockIds, Integer expectedProjectId, User user) {
-        return canAccessBlocks(blockIds, expectedProjectId, user) && user != null && user.isWriter();
+        return canAccessBlocks(blockIds, expectedProjectId, user) && canEditScreenplay(user);
     }
 
     public Integer projectIdForBlock(Integer blockId) {
@@ -138,5 +138,9 @@ public class ProjectAccessSupport {
         }
         Block block = blockService.read(blockId);
         return block != null && block.getProject() != null ? block.getProject().getId() : null;
+    }
+
+    private static boolean canEditScreenplay(User user) {
+        return user != null && (user.isWriter() || user.isAdmin());
     }
 }

@@ -104,8 +104,10 @@
         var container = row.closest('.scene-blocks, #table-blocks, tbody');
         if (!container) return false;
         var rowSelector = container.matches('tbody') ? 'tr' : '.block-row';
+        // Ignore the select-all chrome row — it is a .block-row but not editable.
+        var editableRows = container.querySelectorAll(rowSelector + ':not(.project-script-select-row)');
         var savedBlocks = container.querySelectorAll(rowSelector + '[data-block-id]').length;
-        if (savedBlocks === 0 && container.querySelectorAll(rowSelector).length <= 1) return false;
+        if (savedBlocks === 0 && editableRows.length <= 1) return false;
         row.remove();
         return true;
     }

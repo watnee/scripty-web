@@ -1397,6 +1397,20 @@ h1 > small a[role="button"].versions-btn {
     opacity: 1;
 }
 
+.version-history-intro {
+    color: var(--muted);
+    max-width: 42rem;
+    margin-bottom: 1.25rem;
+}
+
+.version-save-form {
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
 .version-changes {
     min-width: 14rem;
     max-width: 28rem;
@@ -1417,6 +1431,24 @@ h1 > small a[role="button"].versions-btn {
 
 .version-change-details li + li {
     margin-top: 0.15rem;
+}
+
+.version-row-autosave td {
+    color: var(--muted);
+}
+
+.version-badge {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
+    border-radius: 0.25rem;
+    vertical-align: middle;
 }
 
 h1 > small a[role="button"]:focus,
@@ -7401,11 +7433,14 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
 }
 
 .scripty-offline-banner {
+    --scripty-offline-banner-height: 2.75rem;
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 10000;
+    box-sizing: border-box;
+    min-height: var(--scripty-offline-banner-height);
     padding: 0.55rem 1rem;
     background: #5c3d00;
     color: #fff4d6;
@@ -7417,6 +7452,11 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     justify-content: center;
     gap: 0.75rem;
     flex-wrap: wrap;
+    pointer-events: none;
+}
+
+.scripty-offline-banner .scripty-offline-sync-retry {
+    pointer-events: auto;
 }
 
 .scripty-offline-banner--error {
@@ -7468,12 +7508,25 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     box-shadow: 0 0 0 2px rgba(77, 163, 255, 0.25);
 }
 
-html.scripty-offline body.has-toolbar-brand {
-    padding-top: calc(var(--toolbar-height, 3rem) + 2rem);
+/* Keep chrome/buttons clear of the fixed offline notice */
+body:has(.scripty-offline-banner:not([hidden])) {
+    --scripty-offline-banner-offset: 2.75rem;
+    padding-top: calc(var(--scripty-offline-banner-offset) + 0.4rem);
 }
 
-html.scripty-offline .scripty-offline-banner {
-    display: block;
+body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) {
+    padding-top: calc(var(--scripty-offline-banner-offset) + var(--toolbar-brand-top-space, 0.65rem));
+}
+
+/* Absolute header-actions sit at top:0 on project pages; shift them below the banner */
+body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-actions {
+    top: calc(var(--scripty-offline-banner-offset) + var(--toolbar-brand-top-space, 0.5rem));
+}
+
+@media (max-width: 768px) {
+    body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-actions {
+        top: calc(var(--scripty-offline-banner-offset) + var(--toolbar-brand-top-space, 0.5rem)) !important;
+    }
 }
 
 .scripty-offline [hx-post],

@@ -29,7 +29,7 @@ public class ProjectVersion {
     @Column(name = "snapshot_json", columnDefinition = "LONGTEXT", nullable = false)
     private String snapshotJson;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     public Integer getId() {

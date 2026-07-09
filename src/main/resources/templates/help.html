@@ -126,13 +126,13 @@
             </p>
             <div th:replace="~{fragments/shortcuts :: shortcutsContent}"></div>
             <div class="help-card-grid" style="margin-top: 1.5rem;">
-                <div class="help-card" data-keywords="history dropdown undo redo version history project version list restore 🕒">
-                    <h3>🕒 History Dropdown Menu</h3>
-                    <p>Access the history menu by clicking the clock icon (<kbd>🕒</kbd>) next to the text controls. From here, you can click <strong>Undo</strong>, <strong>Redo</strong>, or select <strong>Version History</strong> to review previous auto-saved stages of the project.</p>
+                <div class="help-card" data-keywords="history undo redo version history project version list restore clock">
+                    <h3>🕒 Undo, Redo &amp; Version History</h3>
+                    <p>Use the undo and redo buttons in the project toolbar for recent edits in this session. Open <strong>Version History</strong> from the clock icon to browse saved snapshots, compare what changed, and restore an earlier draft.</p>
                 </div>
                 <div class="help-card" data-keywords="version history list list-versions backup revision timestamp restore auto-save block edit add delete move">
                     <h3>💾 Version History</h3>
-                    <p>Block edits, adds, deletes, moves, and tag changes trigger auto-saved versions (at most every 10 minutes when content changes). In Version History, each entry shows what changed since the previous save — block edits with previews, plus scene and character changes.</p>
+                    <p>Block edits, adds, deletes, moves, and tag changes trigger auto-saves (updated in place about every 10 minutes when content changes). Each entry shows what changed since the previous save — block edits with previews, plus scene and character changes. Restoring saves a “Before restore” snapshot first so you can undo a mistaken restore.</p>
                 </div>
             </div>
         </div>

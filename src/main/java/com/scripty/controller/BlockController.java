@@ -12,6 +12,7 @@ import com.scripty.viewmodel.block.createblock.CreateBlockViewModel;
 import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 import com.scripty.service.BlockService;
+import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
 import java.security.Principal;
 import java.util.List;
@@ -40,6 +41,9 @@ public class BlockController {
 
     @Autowired
     ProjectVersionService projectVersionService;
+
+    @Autowired
+    ProjectUndoRedoService projectUndoRedoService;
 
     @Autowired
     ProjectAccessSupport projectAccess;
@@ -83,6 +87,7 @@ public class BlockController {
             return denyRedirect();
         }
 
+        projectUndoRedoService.recordCheckpointForBlock(id);
         Block block = blockService.deleteBlock(id);
         projectVersionService.autoSaveVersion(block.getProject().getId());
 
@@ -96,6 +101,7 @@ public class BlockController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
         }
 
+        projectUndoRedoService.recordCheckpointForBlock(id);
         Block block = blockService.deleteBlock(id);
         projectVersionService.autoSaveVersion(block.getProject().getId());
 
@@ -108,8 +114,16 @@ public class BlockController {
             return denyRedirect();
         }
 
+        Block current = blockService.read(id);
+        if (current == null) {
+            return denyRedirect();
+        }
+        int fromOrder = current.getOrder();
         Block block = blockService.moveBlockUp(id);
-        projectVersionService.autoSaveVersionForBlock(block.getId());
+        if (block != null && block.getOrder() != fromOrder) {
+            projectUndoRedoService.recordMoveCheckpoint(id, fromOrder, block.getOrder());
+            projectVersionService.autoSaveVersionForBlock(block.getId());
+        }
 
         return redirectToProject(block);
     }
@@ -120,8 +134,16 @@ public class BlockController {
             return denyRedirect();
         }
 
+        Block current = blockService.read(id);
+        if (current == null) {
+            return denyRedirect();
+        }
+        int fromOrder = current.getOrder();
         Block block = blockService.moveBlockDown(id);
-        projectVersionService.autoSaveVersionForBlock(block.getId());
+        if (block != null && block.getOrder() != fromOrder) {
+            projectUndoRedoService.recordMoveCheckpoint(id, fromOrder, block.getOrder());
+            projectVersionService.autoSaveVersionForBlock(block.getId());
+        }
 
         return redirectToProject(block);
     }
@@ -131,8 +153,16 @@ public class BlockController {
         if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
+        Block current = blockService.read(id);
+        if (current == null) {
+            return denyRedirect();
+        }
+        int fromOrder = current.getOrder();
         Block block = blockService.moveBlockTo(id, position);
-        projectVersionService.autoSaveVersionForBlock(block.getId());
+        if (block != null && block.getOrder() != fromOrder) {
+            projectUndoRedoService.recordMoveCheckpoint(id, fromOrder, block.getOrder());
+            projectVersionService.autoSaveVersionForBlock(block.getId());
+        }
         return redirectToProject(block);
     }
 
@@ -198,6 +228,7 @@ public class BlockController {
             model.addAttribute("block", blockService.getBlockViewModel(commandModel.getId()));
             return "block/editInline";
         }
+        projectUndoRedoService.recordCheckpointForBlock(commandModel.getId());
         Block block = blockService.saveEditBlockCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
         BlockViewModel vm = blockService.getBlockViewModel(block.getId());
@@ -246,6 +277,7 @@ public class BlockController {
             return "block/edit";
         }
 
+        projectUndoRedoService.recordCheckpointForBlock(commandModel.getId());
         Block block = blockService.saveEditBlockCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
 
@@ -283,6 +315,7 @@ public class BlockController {
             return "block/create";
         }
 
+        projectUndoRedoService.recordCheckpoint(commandModel.getProjectId());
         Block block = blockService.saveCreateBlockCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
 
@@ -333,6 +366,7 @@ public class BlockController {
         commandModel.setContent(content);
         commandModel.setPersonId(personId);
         commandModel.setType(type);
+        projectUndoRedoService.recordCheckpoint(projectId);
         Block block = blockService.saveCreateBlockCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
 
@@ -381,6 +415,7 @@ public class BlockController {
             return "block/createBelow";
         }
 
+        projectUndoRedoService.recordCheckpointForBlock(commandModel.getId());
         Block block = blockService.saveCreateBlockBelowCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
 
@@ -429,6 +464,7 @@ public class BlockController {
         commandModel.setContent(content);
         commandModel.setPersonId(personId);
         commandModel.setType(type);
+        projectUndoRedoService.recordCheckpointForBlock(id);
         Block block = blockService.saveCreateBlockBelowCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
         BlockViewModel vm = blockService.getBlockViewModel(block.getId());
@@ -458,6 +494,7 @@ public class BlockController {
         if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
+        projectUndoRedoService.recordCheckpointForBlock(id);
         Block block = blockService.updateSceneName(id, name);
         projectVersionService.autoSaveVersionForBlock(block.getId());
         BlockViewModel vm = blockService.getBlockViewModel(block.getId());
@@ -480,6 +517,7 @@ public class BlockController {
         if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
+        projectUndoRedoService.recordCheckpointForBlock(id);
         Block block = blockService.updateCharacterName(id, name);
         projectVersionService.autoSaveVersionForBlock(block.getId());
         BlockViewModel vm = blockService.getBlockViewModel(block.getId());
@@ -535,8 +573,11 @@ public class BlockController {
         if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
             return denyRedirect();
         }
-        blockService.addTagsToBlocks(blockIds, tags);
         Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectUndoRedoService.recordCheckpoint(resolvedProjectId);
+        }
+        blockService.addTagsToBlocks(blockIds, tags);
         if (resolvedProjectId != null) {
             projectVersionService.autoSaveVersion(resolvedProjectId);
         }
@@ -551,8 +592,11 @@ public class BlockController {
         if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
             return denyRedirect();
         }
-        blockService.setBlockTypes(blockIds, type);
         Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectUndoRedoService.recordCheckpoint(resolvedProjectId);
+        }
+        blockService.setBlockTypes(blockIds, type);
         if (resolvedProjectId != null) {
             projectVersionService.autoSaveVersion(resolvedProjectId);
         }
@@ -572,6 +616,7 @@ public class BlockController {
         if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
+        projectUndoRedoService.recordCheckpointForBlock(id);
         Block block = blockService.updateBlockTypeAndContent(id, type, content, personId, tags);
         if (block != null) {
             projectVersionService.autoSaveVersionForBlock(block.getId());
@@ -594,8 +639,11 @@ public class BlockController {
         if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
             return denyRedirect();
         }
-        blockService.setBlockAlignments(blockIds, align);
         Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectUndoRedoService.recordCheckpoint(resolvedProjectId);
+        }
+        blockService.setBlockAlignments(blockIds, align);
         if (resolvedProjectId != null) {
             projectVersionService.autoSaveVersion(resolvedProjectId);
         }
@@ -610,8 +658,11 @@ public class BlockController {
         if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
             return denyRedirect();
         }
-        blockService.toggleBlockTextStyles(blockIds, style);
         Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectUndoRedoService.recordCheckpoint(resolvedProjectId);
+        }
+        blockService.toggleBlockTextStyles(blockIds, style);
         if (resolvedProjectId != null) {
             projectVersionService.autoSaveVersion(resolvedProjectId);
         }
@@ -625,8 +676,11 @@ public class BlockController {
         if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
             return denyRedirect();
         }
-        blockService.deleteBlocks(blockIds);
         Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectUndoRedoService.recordCheckpoint(resolvedProjectId);
+        }
+        blockService.deleteBlocks(blockIds);
         if (resolvedProjectId != null) {
             projectVersionService.autoSaveVersion(resolvedProjectId);
         }

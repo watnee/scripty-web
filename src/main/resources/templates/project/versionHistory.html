@@ -21,8 +21,9 @@
             </ol>
         </nav>
         <h1>Version History</h1>
+        <p class="version-history-intro">Snapshots of this screenplay. Auto-saves update in place about every 10 minutes when content changes. Restoring creates a “Before restore” snapshot first.</p>
         <form th:if="${canEditScript == null or canEditScript}"
-              th:action="@{/project/version/create}" method="POST" hx-boost="false" style="margin-bottom: 2rem; display: flex; gap: 0.5rem; align-items: end">
+              th:action="@{/project/version/create}" method="POST" hx-boost="false" class="version-save-form">
             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
             <label>
                 Label
@@ -34,7 +35,7 @@
             <p th:if="${canEditScript == null or canEditScript}">No versions saved yet. Save a version to create a snapshot you can restore later.</p>
             <p th:unless="${canEditScript == null or canEditScript}">No versions saved yet.</p>
         </th:block>
-        <table th:if="${not #lists.isEmpty(viewModel.versions)}">
+        <table th:if="${not #lists.isEmpty(viewModel.versions)}" class="version-history-table">
             <thead>
                 <tr>
                     <th>Label</th>
@@ -47,12 +48,17 @@
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="version : ${viewModel.versions}">
-                    <td th:text="${version.label}"></td>
+                <tr th:each="version : ${viewModel.versions}" th:classappend="${version.autoSave} ? 'version-row-autosave'">
+                    <td>
+                        <span th:text="${version.label}"></span>
+                        <span th:if="${version.autoSave}" class="version-badge">auto</span>
+                    </td>
                     <td class="nowrap" th:text="${#temporals.format(version.createdAt, 'MMM d, yyyy h:mm a')}"></td>
                     <td class="version-changes">
-                        <span class="version-change-summary" th:text="${version.changeSummary.compactSummary}"></span>
-                        <ul class="version-change-details" th:if="${not #lists.isEmpty(version.changeSummary.visibleDetails)}">
+                        <span class="version-change-summary"
+                              th:text="${version.changeSummary != null ? version.changeSummary.compactSummary : 'No changes'}"></span>
+                        <ul class="version-change-details"
+                            th:if="${version.changeSummary != null and not #lists.isEmpty(version.changeSummary.visibleDetails)}">
                             <li th:each="detail : ${version.changeSummary.visibleDetails}" th:text="${detail}"></li>
                         </ul>
                     </td>
@@ -63,7 +69,7 @@
                         <form th:action="@{/project/version/restore}" method="POST" hx-boost="false" style="display: inline">
                             <input type="hidden" name="id" th:value="${version.id}" />
                             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
-                            <button type="submit" role="button" _="on click if not confirm('Restore this version? Current content will be replaced.') halt">Restore</button>
+                            <button type="submit" role="button" _="on click if not confirm('Restore this version? Current content will be replaced. A “Before restore” snapshot will be saved first.') halt">Restore</button>
                         </form>
                         <form th:action="@{/project/version/delete}" method="POST" hx-boost="false" style="display: inline">
                             <input type="hidden" name="id" th:value="${version.id}" />

@@ -9,6 +9,7 @@
  * - Scene location autocomplete (reuse places from prior headings)
  * - Scene time-of-day autocomplete (DAY, NIGHT, …)
  * - Scene / section / synopsis / bookmark outline navigator
+ * - Outline mode (filter main script to structural blocks)
  * - Character list sidebar
  * - Location list sidebar
  */
@@ -31,6 +32,12 @@
         'TRANSITION', 'SHOT', 'DUAL_DIALOGUE', 'LYRICS', 'CENTERED',
         'SECTION', 'SYNOPSIS', 'NOTE', 'PAGE_BREAK'
     ];
+    var OUTLINE_MODE_TAB_CYCLE = ['SCENE', 'SECTION', 'SYNOPSIS'];
+
+    function isOutlineModeOn() {
+        return !!(window.scriptyIsOutlineMode && window.scriptyIsOutlineMode())
+            || document.documentElement.classList.contains('scripty-outline-mode');
+    }
 
     var SCENE_HEADING = /^(?:INT\.?|EXT\.?|EST\.?|INT\.?\/EXT\.?|I\/E\.?)\s+.+/i;
     var SCENE_PREFIX = /^(?:INT\.?|EXT\.?|EST\.?|INT\.?\/EXT\.?|I\/E\.?)\b/i;
@@ -114,8 +121,12 @@
         return null;
     }
 
-    /** After Character/Dual cue → Dialogue; otherwise default to Action. */
+    /** After Character/Dual cue → Dialogue; otherwise default to Action.
+     *  In outline mode, new blocks stay structural (Scene). */
     function nextTypeAfter(type) {
+        if (isOutlineModeOn()) {
+            return 'SCENE';
+        }
         var upper = (type || 'ACTION').toUpperCase();
         if (upper === 'CHARACTER' || upper === 'DUAL_DIALOGUE') {
             return 'DIALOGUE';
@@ -125,15 +136,18 @@
     window.scriptyNextFountainType = nextTypeAfter;
 
     function cycleType(current, backward) {
-        var upper = (current || 'ACTION').toUpperCase();
-        var idx = TAB_CYCLE.indexOf(upper);
-        if (idx < 0) idx = TAB_CYCLE.indexOf('ACTION');
+        var cycle = isOutlineModeOn() ? OUTLINE_MODE_TAB_CYCLE : TAB_CYCLE;
+        var fallback = isOutlineModeOn() ? 'SCENE' : 'ACTION';
+        var upper = (current || fallback).toUpperCase();
+        var idx = cycle.indexOf(upper);
+        if (idx < 0) idx = cycle.indexOf(fallback);
+        if (idx < 0) idx = 0;
         if (backward) {
-            idx = (idx - 1 + TAB_CYCLE.length) % TAB_CYCLE.length;
+            idx = (idx - 1 + cycle.length) % cycle.length;
         } else {
-            idx = (idx + 1) % TAB_CYCLE.length;
+            idx = (idx + 1) % cycle.length;
         }
-        return TAB_CYCLE[idx];
+        return cycle[idx];
     }
 
     function setCreateRowType(row, type) {

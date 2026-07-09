@@ -2935,7 +2935,8 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
 }
 
 .text-size-control .project-search-toggle.is-active,
-.text-size-control .lock-filter-toggle.is-active {
+.text-size-control .lock-filter-toggle.is-active,
+.text-size-control .outline-mode-toolbar-btn.is-active {
     color: var(--accent, #475569);
     border-color: var(--accent, #475569);
 }
@@ -7042,10 +7043,17 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
 .text-size-control .share-toolbar-btn svg,
 .text-size-control .lists-toolbar-btn svg,
 .text-size-control .view-toolbar-btn svg,
+.text-size-control .outline-mode-toolbar-btn svg,
 .text-size-control .focus-toolbar-btn svg,
 .text-size-control .full-width-toolbar-btn svg,
 .text-size-control .toolbar-visibility-toggle svg {
     display: block;
+}
+
+.text-size-control #outline-mode-toggle[aria-pressed="true"] {
+    box-shadow: 0 2px 4px -1px var(--fg) inset;
+    background: var(--pressed-interactive-bg);
+    color: var(--accent);
 }
 
 .text-size-control .full-width-toolbar-btn .full-width-icon--compress {
@@ -7121,7 +7129,7 @@ html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
 
 body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb,
-body.focus-mode .text-size-control > :not(#focus-toggle):not(#nav-full-width-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
+body.focus-mode .text-size-control > :not(#focus-toggle):not(#outline-mode-toggle):not(#nav-full-width-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
 body.focus-mode .project-script-toolbar,
 body.focus-mode .project-header-row,
 body.focus-mode .project-create-scene,
@@ -7134,6 +7142,37 @@ body.focus-mode .block-tags-list {
 body.focus-mode .project-script {
     max-width: 46rem;
     margin: 0 auto;
+}
+
+/* Outline mode: show only structural blocks (scene / section / synopsis) */
+html.scripty-outline-mode .project-script .scene-blocks > .block-row[data-block-id]:not([data-block-type="SCENE"]):not([data-block-type="SECTION"]):not([data-block-type="SYNOPSIS"]),
+html.scripty-outline-mode .project-script .scene-blocks > .block-row:not([data-block-id]):not([data-block-type="SCENE"]):not([data-block-type="SECTION"]):not([data-block-type="SYNOPSIS"]) {
+    display: none !important;
+}
+
+html.scripty-outline-mode .project-script .scene-blocks > .block-row[data-block-type="SCENE"],
+html.scripty-outline-mode .project-script .scene-blocks > .block-row[data-block-type="SECTION"],
+html.scripty-outline-mode .project-script .scene-blocks > .block-row[data-block-type="SYNOPSIS"] {
+    margin-block: 0.35rem;
+}
+
+html.scripty-outline-mode .element-type-actions .bulk-type-btn:not([data-bulk-type="SCENE"]):not([data-bulk-type="SECTION"]):not([data-bulk-type="SYNOPSIS"]) {
+    display: none;
+}
+
+html.scripty-outline-mode .project-script::after {
+    content: 'Outline mode — scenes, sections, and synopses only';
+    display: block;
+    margin: 1.25rem 0 0.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted-fg, #64748b);
+}
+
+@media print {
+    html.scripty-outline-mode .project-script::after {
+        display: none !important;
+    }
 }
 
 .text-size-control a.nav-dropdown-toggle {

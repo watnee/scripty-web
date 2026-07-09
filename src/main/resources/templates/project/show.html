@@ -37,6 +37,8 @@
         root.classList.toggle('scripty-toolbar-hidden', toolbarHidden);
         var fullWidth = localStorage.getItem('scripty-screenplay-full-width') === 'true';
         root.classList.toggle('scripty-screenplay-full-width', fullWidth);
+        var outlineMode = localStorage.getItem('scripty-outline-mode') === '1';
+        root.classList.toggle('scripty-outline-mode', outlineMode);
     })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -287,6 +289,18 @@
                     <line x1="10" y1="16" x2="12" y2="16"></line>
                 </svg>
             </a>
+            <button id="outline-mode-toggle"
+                    type="button"
+                    class="nav-dropdown-toggle outline-mode-toolbar-btn"
+                    aria-pressed="false"
+                    aria-label="Show only scenes, sections, and synopses"
+                    title="Show only scenes, sections, and synopses">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 6h16"></path>
+                    <path d="M4 12h10"></path>
+                    <path d="M4 18h6"></path>
+                </svg>
+            </button>
             <button id="focus-toggle"
                     type="button"
                     class="nav-dropdown-toggle focus-toolbar-btn"
@@ -438,6 +452,7 @@
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:src="@{/js/text-size.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/focus-mode.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/outline-mode.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/full-width-toggle.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/toolbar-toggle.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/import-script.js(v=${assetVersion})}"></script>

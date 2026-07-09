@@ -251,6 +251,7 @@ public class BlockServiceImpl implements BlockService {
                     first.getContent() != null ? first.getContent() : ""));
             afterBlock.setType(normalizeBlockType(first.getType()));
             afterBlock.setPerson(null);
+            afterBlock.setSourceDocumentId(first.getSourceDocumentId());
             if (Block.isCharacterCueType(afterBlock.getType())) {
                 String characterName = normalizeCharacterCue(afterBlock.getContent());
                 if (characterName != null) {
@@ -279,6 +280,7 @@ public class BlockServiceImpl implements BlockService {
             block.setBookmarked(false);
             block.setPinned(false);
             block.setType(normalizeBlockType(cmd.getType()));
+            block.setSourceDocumentId(cmd.getSourceDocumentId());
             if (Block.isCharacterCueType(block.getType())) {
                 String characterName = normalizeCharacterCue(content);
                 if (characterName != null) {
@@ -293,6 +295,119 @@ public class BlockServiceImpl implements BlockService {
             recordScriptEdited(project);
         }
         return created;
+    }
+
+    @Override
+    @Transactional
+    public boolean replaceLinkedDocumentBlocks(Integer projectId, Integer sourceDocumentId,
+                                               List<CreateBlockBelowCommandModel> blocks) {
+        if (projectId == null || sourceDocumentId == null) {
+            return false;
+        }
+        List<Block> linked = blockRepository.findBySourceDocumentIdOrderByOrderAsc(sourceDocumentId);
+        if (linked.isEmpty()) {
+            return false;
+        }
+        linked = linked.stream()
+                .filter(b -> b.getProject() != null && projectId.equals(b.getProject().getId()))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        if (linked.isEmpty()) {
+            return false;
+        }
+
+        // Snapshot run membership by id so later deletes/inserts can't stale in-memory orders.
+        List<List<Integer>> runIds = new ArrayList<>();
+        for (List<Block> run : groupContiguousRuns(linked)) {
+            List<Integer> ids = new ArrayList<>(run.size());
+            for (Block block : run) {
+                ids.add(block.getId());
+            }
+            runIds.add(ids);
+        }
+
+        List<CreateBlockBelowCommandModel> lines = blocks != null ? blocks : List.of();
+        boolean changed = false;
+        for (int r = runIds.size() - 1; r >= 0; r--) {
+            if (replaceRunByIds(runIds.get(r), lines)) {
+                changed = true;
+            }
+        }
+        if (changed) {
+            projectRepository.findById(projectId).ifPresent(this::recordScriptEdited);
+        }
+        return changed;
+    }
+
+    private List<List<Block>> groupContiguousRuns(List<Block> linkedOrdered) {
+        List<List<Block>> runs = new ArrayList<>();
+        List<Block> current = null;
+        Integer prevOrder = null;
+        for (Block block : linkedOrdered) {
+            if (current == null || prevOrder == null || block.getOrder() != prevOrder + 1) {
+                current = new ArrayList<>();
+                runs.add(current);
+            }
+            current.add(block);
+            prevOrder = block.getOrder();
+        }
+        return runs;
+    }
+
+    private boolean replaceRunByIds(List<Integer> ids, List<CreateBlockBelowCommandModel> lines) {
+        if (ids == null || ids.isEmpty()) {
+            return false;
+        }
+        if (lines.isEmpty()) {
+            for (int i = ids.size() - 1; i >= 0; i--) {
+                deleteBlock(ids.get(i));
+            }
+            return true;
+        }
+
+        boolean changed = false;
+        int shared = Math.min(ids.size(), lines.size());
+        for (int i = 0; i < shared; i++) {
+            Block block = blockRepository.findById(ids.get(i)).orElse(null);
+            if (block == null) {
+                continue;
+            }
+            CreateBlockBelowCommandModel line = lines.get(i);
+            String content = PlainTextSanitizer.sanitize(line.getContent() != null ? line.getContent() : "");
+            String type = normalizeBlockType(line.getType());
+            boolean blockChanged = false;
+            if (!content.equals(block.getContent() != null ? block.getContent() : "")) {
+                block.setContent(content);
+                blockChanged = true;
+            }
+            if (!type.equals(block.getType())) {
+                block.setType(type);
+                blockChanged = true;
+            }
+            if (block.getSourceDocumentId() == null
+                    || !block.getSourceDocumentId().equals(line.getSourceDocumentId())) {
+                block.setSourceDocumentId(line.getSourceDocumentId());
+                blockChanged = true;
+            }
+            if (blockChanged) {
+                blockRepository.save(block);
+                changed = true;
+            }
+        }
+
+        if (lines.size() > ids.size()) {
+            Integer afterId = ids.get(ids.size() - 1);
+            List<CreateBlockBelowCommandModel> extra = lines.subList(ids.size(), lines.size());
+            List<Block> created = insertBlocksAfter(afterId, extra);
+            if (!created.isEmpty()) {
+                changed = true;
+            }
+        } else if (ids.size() > lines.size()) {
+            for (int i = ids.size() - 1; i >= lines.size(); i--) {
+                deleteBlock(ids.get(i));
+            }
+            changed = true;
+        }
+        return changed;
     }
 
     @Override

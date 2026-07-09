@@ -11,6 +11,7 @@ public class CreateBlockBelowCommandModel {
 
     private Integer personId;
     private String type;
+    private Integer sourceDocumentId;
 
     public Integer getId() {
         return id;
@@ -42,5 +43,13 @@ public class CreateBlockBelowCommandModel {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public Integer getSourceDocumentId() {
+        return sourceDocumentId;
+    }
+
+    public void setSourceDocumentId(Integer sourceDocumentId) {
+        this.sourceDocumentId = sourceDocumentId;
     }
 }

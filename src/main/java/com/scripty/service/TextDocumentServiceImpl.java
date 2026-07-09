@@ -281,6 +281,42 @@ public class TextDocumentServiceImpl implements TextDocumentService {
 
     @Override
     @Transactional
+    public boolean syncInsertedBlocks(Integer documentId, User currentUser) {
+        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        if (doc == null || doc.getProject() == null) {
+            return false;
+        }
+        if (!projectService.canUserAccessProject(doc.getProject().getId(), currentUser)
+                || currentUser == null
+                || !currentUser.isWriter()) {
+            return false;
+        }
+        return syncInsertedBlocks(doc, currentUser);
+    }
+
+    private boolean syncInsertedBlocks(TextDocument doc, User currentUser) {
+        if (doc == null || doc.getId() == null || doc.getProject() == null) {
+            return false;
+        }
+        if (currentUser == null || !currentUser.isWriter()) {
+            return false;
+        }
+        Integer projectId = doc.getProject().getId();
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return false;
+        }
+        String blockType = resolveInsertBlockType(doc.getDocumentType(), null);
+        List<Block> existing = blockRepository.findBySourceDocumentIdOrderByOrderAsc(doc.getId());
+        if (!existing.isEmpty() && existing.get(0).getType() != null) {
+            // Preserve the type used at insert (e.g. draft inserted as Action).
+            blockType = existing.get(0).getType();
+        }
+        List<CreateBlockBelowCommandModel> lines = splitContentIntoBlocks(doc, blockType);
+        return blockService.replaceLinkedDocumentBlocks(projectId, doc.getId(), lines);
+    }
+
+    @Override
+    @Transactional
     public TextDocument importFile(Integer projectId, String type, org.springframework.web.multipart.MultipartFile file, User currentUser)
             throws java.io.IOException {
         Project project = requireAccessibleProject(projectId, currentUser);
@@ -361,6 +397,9 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             CreateBlockBelowCommandModel cmd = new CreateBlockBelowCommandModel();
             cmd.setContent(line != null ? line : "");
             cmd.setType(blockType);
+            if (doc.getId() != null) {
+                cmd.setSourceDocumentId(doc.getId());
+            }
             blocks.add(cmd);
         }
 

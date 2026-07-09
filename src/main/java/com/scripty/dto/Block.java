@@ -60,10 +60,11 @@ public class Block {
     }
 
     public static String typeLabelFor(String type) {
-        if (type == null) {
+        if (type == null || type.isBlank()) {
             return "Action";
         }
-        return switch (type) {
+        String key = type.trim().toUpperCase();
+        return switch (key) {
             case TYPE_SCENE -> "Scene";
             case TYPE_ACTION -> "Action";
             case TYPE_TEXT -> "Text";
@@ -79,8 +80,26 @@ public class Block {
             case TYPE_SYNOPSIS -> "Synopsis";
             case TYPE_NOTE -> "Note";
             case TYPE_PAGE_BREAK -> "Page Break";
-            default -> type;
+            default -> titleCaseTypeKey(key);
         };
+    }
+
+    private static String titleCaseTypeKey(String key) {
+        String[] parts = key.replace('_', ' ').toLowerCase().split("\\s+");
+        StringBuilder out = new StringBuilder();
+        for (String part : parts) {
+            if (part.isEmpty()) {
+                continue;
+            }
+            if (out.length() > 0) {
+                out.append(' ');
+            }
+            out.append(Character.toUpperCase(part.charAt(0)));
+            if (part.length() > 1) {
+                out.append(part.substring(1));
+            }
+        }
+        return out.length() > 0 ? out.toString() : "Action";
     }
 
     @Id
@@ -124,6 +143,10 @@ public class Block {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
+
+    /** When set, this block was inserted from a song/draft and stays linked for sync. */
+    @Column(name = "source_document_id")
+    private Integer sourceDocumentId;
 
     public Integer getId() {
         return id;
@@ -243,5 +266,13 @@ public class Block {
 
     public void setTags(String tags) {
         this.tags = tags;
+    }
+
+    public Integer getSourceDocumentId() {
+        return sourceDocumentId;
+    }
+
+    public void setSourceDocumentId(Integer sourceDocumentId) {
+        this.sourceDocumentId = sourceDocumentId;
     }
 }

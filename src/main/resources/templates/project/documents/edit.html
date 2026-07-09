@@ -36,7 +36,7 @@
                    th:text="${isSong} ? 'Song' : 'Draft'">Document</p>
                 <h1 th:text="${isNew} ? (${isSong} ? 'New Song' : 'New Draft') : (${isSong} ? 'Edit Song' : 'Edit Draft')">Edit</h1>
                 <p class="muted"
-                   th:text="${isSong} ? 'Write lyrics freely. Each line becomes a Lyrics block when you insert into the screenplay.' : 'Write notes or scratch text freely. Each line becomes a Note block when you insert into the screenplay.'">
+                   th:text="${isSong} ? 'Write lyrics freely. Each line becomes a Lyrics block when you insert into the screenplay. Saving updates any places this song is already inserted.' : 'Write notes or scratch text freely. Each line becomes a Note block when you insert into the screenplay. Saving updates any places this draft is already inserted.'">
                     Write freely here.
                 </p>
             </div>
@@ -107,7 +107,7 @@
             <div class="text-document-insert-panel-text">
                 <h2>Insert into Screenplay</h2>
                 <p class="muted"
-                   th:text="${isSong} ? 'Adds this song at the end of the script as Lyrics blocks.' : 'Adds this draft at the end of the script as Note blocks (or choose another type).'">
+                   th:text="${isSong} ? 'Adds this song at the end of the script as Lyrics blocks. Later edits to this song update those blocks.' : 'Adds this draft at the end of the script as Note blocks (or choose another type). Later edits update those blocks.'">
                     Adds this at the end of the script.
                 </p>
             </div>

@@ -143,6 +143,10 @@ public class TextDocumentController {
         if (saved == null) {
             return "redirect:/project/list";
         }
+        if (commandModel.getId() != null
+                && textDocumentService.syncInsertedBlocks(saved.getId(), user)) {
+            projectVersionService.autoSaveVersion(commandModel.getProjectId());
+        }
         if (stay) {
             return "redirect:/project/documents/edit?id=" + saved.getId();
         }

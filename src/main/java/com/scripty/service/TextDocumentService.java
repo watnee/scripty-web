@@ -30,12 +30,19 @@ public interface TextDocumentService {
 
     /**
      * Inserts document content into the screenplay as typed blocks (default LYRICS for songs).
+     * Created blocks are linked to the document so later song/draft edits can sync.
      * @param documentId document to insert
      * @param afterBlockId block to insert after; if null, appends after the last block
      * @param asType Fountain block type override; if null, uses LYRICS for songs and ACTION otherwise
      * @return created blocks
      */
     List<Block> insertIntoScript(Integer documentId, Integer afterBlockId, String asType, User currentUser);
+
+    /**
+     * Updates every script insertion of this document to match its current content.
+     * @return true if any linked script blocks were changed
+     */
+    boolean syncInsertedBlocks(Integer documentId, User currentUser);
 
     /**
      * Import a text/Word file as a new song or draft document.

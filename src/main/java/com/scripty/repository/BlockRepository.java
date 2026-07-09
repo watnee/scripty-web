@@ -15,6 +15,8 @@ public interface BlockRepository extends JpaRepository<Block, Integer> {
 
     Optional<Block> findByProjectIdAndOrder(Integer projectId, Integer order);
 
+    List<Block> findBySourceDocumentIdOrderByOrderAsc(Integer sourceDocumentId);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Block b SET b.order = b.order + 1 WHERE b.order > :order AND b.project.id = :projectId")
     void incrementOrdersAbove(Integer order, Integer projectId);

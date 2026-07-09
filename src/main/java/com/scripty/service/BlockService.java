@@ -21,6 +21,13 @@ public interface BlockService {
     Block saveCreateBlockCommandModel(CreateBlockCommandModel createBlockCommandModel);
     Block saveCreateBlockBelowCommandModel(CreateBlockBelowCommandModel createBlockBelowCommandModel);
     java.util.List<Block> insertBlocksAfter(Integer afterBlockId, java.util.List<CreateBlockBelowCommandModel> blocks);
+    /**
+     * Replaces every contiguous run of blocks linked to {@code sourceDocumentId}
+     * with the given lines (same type/source on each block).
+     * @return true if any linked blocks were updated, inserted, or deleted
+     */
+    boolean replaceLinkedDocumentBlocks(Integer projectId, Integer sourceDocumentId,
+                                        java.util.List<CreateBlockBelowCommandModel> blocks);
     Block saveEditBlockCommandModel(EditBlockCommandModel editBlockCommandModel);
     Block updateBlockTypeAndContent(Integer id, String type, String content, Integer personId, String tags);
 

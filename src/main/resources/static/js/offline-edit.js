@@ -105,7 +105,7 @@
             '<input type="hidden" name="personId" id="block-person-id-' + escAttr(ctx.blockId) + '" value="' + escAttr(ctx.personId) + '" />' +
             '<input type="hidden" name="tags" value="' + escAttr(ctx.tags) + '" />' +
             renderMirrorTextHtml(ctx.content) +
-            '<textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" ' +
+            '<textarea spellcheck="true" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" ' +
             'onkeydown="' + enterHandler + '">' + escText(ctx.content) + '</textarea>' +
             renderTagsHtml(ctx.tags) +
             '</form>';
@@ -130,7 +130,7 @@
             '<input type="hidden" name="id" value="' + escAttr(anchorBlockId) + '" />' +
             '<input type="hidden" name="surface" value="project" />' +
             '<input type="hidden" name="type" value="ACTION" />' +
-            '<textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" autofocus ' +
+            '<textarea spellcheck="true" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" autofocus ' +
             'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();event.stopPropagation;' +
             'if(window.scriptyCreateBlockFromCreateRow){window.scriptyCreateBlockFromCreateRow(this);}return false;}"></textarea>' +
             '</form></div>' +

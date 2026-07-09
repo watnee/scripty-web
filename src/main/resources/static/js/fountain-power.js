@@ -22,9 +22,10 @@
     var TRANSITION = /^[A-Z][A-Z0-9 ]+ TO:$/;
     var SHOT = /^(?:ANGLE ON|ANOTHER ANGLE|CLOSE ON|CLOSE UP|CLOSEUP|C\.U\.?|CU|POV|INSERT|BACK TO SCENE|BACK TO|TIGHT ON|WIDER(?: SHOT)?|TRACKING|CRANE|AERIAL|ESTABLISHING|FAVOR ON|REVERSE ANGLE)\b.*/i;
 
-    var characterCache = { projectId: null, names: [], loadedAt: 0 };
+    var characterCache = { projectId: null, entries: [], loadedAt: 0 };
     var autocompleteEl = null;
     var autocompleteIndex = -1;
+    var autocompleteTextarea = null;
     var outlineEl = null;
 
     function projectId() {
@@ -312,46 +313,83 @@
 
     // --- Character autocomplete ---
 
+    function characterEntries() {
+        return characterCache.entries || [];
+    }
+
+    function isAutocompleteOpen() {
+        return !!(autocompleteEl && !autocompleteEl.hidden);
+    }
+    window.scriptyIsCharacterAutocompleteOpen = isAutocompleteOpen;
+
+    function extractCharacterList(data) {
+        if (!data) return [];
+        if (Array.isArray(data)) return data;
+        if (data._embedded) {
+            return data._embedded.personResourceList
+                || data._embedded.persons
+                || data._embedded.characterViewModels
+                || Object.values(data._embedded)[0]
+                || [];
+        }
+        return [];
+    }
+
+    function entryFromItem(item) {
+        if (!item) return null;
+        var body = item.content && typeof item.content === 'object' ? item.content : item;
+        var name = body.name || body.fullName;
+        if (!name) return null;
+        var id = body.id != null ? body.id : item.id;
+        return { id: id != null ? id : null, name: String(name).trim() };
+    }
+
+    function upsertEntry(entries, entry) {
+        if (!entry || !entry.name) return;
+        var upper = entry.name.toUpperCase();
+        for (var i = 0; i < entries.length; i++) {
+            if (entries[i].name.toUpperCase() === upper) {
+                if (entries[i].id == null && entry.id != null) {
+                    entries[i].id = entry.id;
+                }
+                return;
+            }
+        }
+        entries.push(entry);
+    }
+
     function loadCharacters(force) {
         var pid = projectId();
         if (!pid) return Promise.resolve([]);
         var now = Date.now();
         if (!force && characterCache.projectId === pid && now - characterCache.loadedAt < 60000) {
-            return Promise.resolve(characterCache.names);
+            return Promise.resolve(characterEntries());
         }
         return fetch('/api/character?projectId=' + encodeURIComponent(pid), {
             credentials: 'same-origin',
-            headers: { Accept: 'application/json' }
+            headers: { Accept: 'application/hal+json, application/json' }
         }).then(function(r) {
             if (!r.ok) throw new Error('character list failed');
             return r.json();
         }).then(function(data) {
-            var names = [];
-            var list = data._embedded
-                ? (data._embedded.personResourceList
-                    || data._embedded.persons
-                    || data._embedded.characterViewModels
-                    || Object.values(data._embedded)[0]
-                    || [])
-                : (Array.isArray(data) ? data : []);
-            list.forEach(function(item) {
-                var name = item.name || (item.content && item.content.name);
-                if (name) names.push(String(name));
+            var entries = [];
+            extractCharacterList(data).forEach(function(item) {
+                upsertEntry(entries, entryFromItem(item));
             });
             // Also harvest character cues already in the script
             document.querySelectorAll('.block-row[data-block-type="CHARACTER"], .block-row[data-block-type="DUAL_DIALOGUE"]').forEach(function(row) {
                 var text = row.querySelector('.script-block-text, textarea[name="content"]');
                 var cue = text ? (text.value != null ? text.value : text.textContent) : '';
-                cue = String(cue || '').trim();
-                if (cue && names.indexOf(cue) === -1) names.push(cue);
+                cue = String(cue || '').replace(/\s*\^\s*$/, '').trim();
+                if (cue) upsertEntry(entries, { id: null, name: cue });
             });
-            names.sort(function(a, b) {
-                return a.localeCompare(b, undefined, { sensitivity: 'base' });
+            entries.sort(function(a, b) {
+                return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
             });
-            characterCache = { projectId: pid, names: names, loadedAt: now };
-            return names;
+            characterCache = { projectId: pid, entries: entries, loadedAt: now };
+            return entries;
         }).catch(function() {
-            return characterCache.names || [];
+            return characterEntries();
         });
     }
 
@@ -371,6 +409,7 @@
         autocompleteEl.hidden = true;
         autocompleteEl.innerHTML = '';
         autocompleteIndex = -1;
+        autocompleteTextarea = null;
     }
 
     function showAutocomplete(textarea, matches) {
@@ -379,10 +418,13 @@
             hideAutocomplete();
             return;
         }
-        el.innerHTML = matches.map(function(name, i) {
+        autocompleteTextarea = textarea;
+        el.innerHTML = matches.map(function(entry, i) {
             return '<li role="option" data-index="' + i + '"' +
+                (entry.id != null ? ' data-person-id="' + escapeHtml(String(entry.id)) + '"' : '') +
+                ' data-name="' + escapeHtml(entry.name) + '"' +
                 (i === autocompleteIndex ? ' aria-selected="true" class="is-active"' : '') +
-                '>' + escapeHtml(name) + '</li>';
+                '>' + escapeHtml(entry.name) + '</li>';
         }).join('');
         var rect = textarea.getBoundingClientRect();
         el.style.left = Math.round(rect.left + window.scrollX) + 'px';
@@ -399,12 +441,17 @@
             .replace(/"/g, '&quot;');
     }
 
-    function filterCharacters(query, names) {
+    function filterCharacters(query, entries) {
         var q = (query || '').trim().toUpperCase();
-        if (!q) return names.slice(0, 8);
-        return names.filter(function(n) {
-            return n.toUpperCase().indexOf(q) === 0 || n.toUpperCase().indexOf(q) !== -1;
-        }).slice(0, 8);
+        if (!q) return entries.slice(0, 8);
+        var prefix = [];
+        var contains = [];
+        entries.forEach(function(entry) {
+            var upper = entry.name.toUpperCase();
+            if (upper.indexOf(q) === 0) prefix.push(entry);
+            else if (upper.indexOf(q) !== -1) contains.push(entry);
+        });
+        return prefix.concat(contains).slice(0, 8);
     }
 
     function maybeShowCharacterAutocomplete(textarea) {
@@ -419,17 +466,19 @@
             hideAutocomplete();
             return;
         }
+        var forcedCue = value.trim().charAt(0) === '@';
         var query = value.replace(/^@/, '').replace(/\s*\^\s*$/, '').trim();
-        if (type === 'ACTION' && query.length < 2) {
+        // ACTION: require @ force marker or at least 2 characters of a cue
+        if (type === 'ACTION' && !forcedCue && query.length < 2) {
             hideAutocomplete();
             return;
         }
 
-        loadCharacters(false).then(function(names) {
+        loadCharacters(false).then(function(entries) {
             if (document.activeElement !== textarea) return;
-            var matches = filterCharacters(query, names);
+            var matches = filterCharacters(query, entries);
             // Don't suggest exact current value alone
-            if (matches.length === 1 && matches[0].toUpperCase() === query.toUpperCase()) {
+            if (matches.length === 1 && matches[0].name.toUpperCase() === query.toUpperCase()) {
                 hideAutocomplete();
                 return;
             }
@@ -438,22 +487,41 @@
         });
     }
 
-    function acceptAutocomplete(textarea, name) {
+    function setBlockPersonId(textarea, personId) {
+        if (personId == null || personId === '') return;
+        var form = textarea.closest('form');
+        if (!form) return;
+        var input = form.querySelector('input[name="personId"]');
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'personId';
+            form.appendChild(input);
+        }
+        input.value = String(personId);
+    }
+
+    function acceptAutocomplete(textarea, name, personId) {
         if (!name) return;
         var dual = /\^\s*$/.test(textarea.value);
         textarea.value = dual ? name + ' ^' : name;
         hideAutocomplete();
+        setBlockPersonId(textarea, personId);
         var row = findAnyBlockRow(textarea);
-        if (row && (isCreateRow(row) || rowType(row) === 'ACTION')) {
-            setCreateRowType(row, dual ? 'DUAL_DIALOGUE' : 'CHARACTER');
-            if (!isCreateRow(row)) {
-                applyTypeToActiveBlock(dual ? 'DUAL_DIALOGUE' : 'CHARACTER');
+        if (row && (isCreateRow(row) || rowType(row) === 'ACTION' || rowType(row) === 'CHARACTER' || rowType(row) === 'DUAL_DIALOGUE')) {
+            var nextType = dual ? 'DUAL_DIALOGUE' : 'CHARACTER';
+            if (isCreateRow(row) || rowType(row) === 'ACTION') {
+                setCreateRowType(row, nextType);
+            }
+            if (!isCreateRow(row) && rowType(row) !== nextType) {
+                applyTypeToActiveBlock(nextType);
             }
         }
         if (typeof window.scriptyGrowTextarea === 'function') {
             window.scriptyGrowTextarea(textarea);
         }
         try {
+            textarea.focus({ preventScroll: true });
             textarea.setSelectionRange(textarea.value.length, textarea.value.length);
         } catch (err) { /* ignore */ }
     }
@@ -593,10 +661,17 @@
             if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey && autocompleteIndex >= 0 && options[autocompleteIndex]) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
-                acceptAutocomplete(textarea, options[autocompleteIndex].textContent);
+                var chosen = options[autocompleteIndex];
+                acceptAutocomplete(
+                    textarea,
+                    chosen.getAttribute('data-name') || chosen.textContent,
+                    chosen.getAttribute('data-person-id')
+                );
                 return;
             }
             if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopImmediatePropagation();
                 hideAutocomplete();
                 return;
             }
@@ -655,13 +730,19 @@
         if (!autocompleteEl || autocompleteEl.hidden) return;
         var li = e.target.closest('#fountain-char-autocomplete li');
         if (li) {
-            var textarea = document.activeElement;
+            e.preventDefault();
+            var textarea = autocompleteTextarea || document.activeElement;
             if (!isBlockContentTextarea(textarea)) {
-                // restore last focused if needed
                 textarea = document.querySelector('.block-content textarea[name="content"]:focus')
                     || document.querySelector('.block-row:not([data-block-id]) textarea[name="content"]');
             }
-            if (textarea) acceptAutocomplete(textarea, li.textContent);
+            if (textarea) {
+                acceptAutocomplete(
+                    textarea,
+                    li.getAttribute('data-name') || li.textContent,
+                    li.getAttribute('data-person-id')
+                );
+            }
             return;
         }
         if (!e.target.closest('#fountain-char-autocomplete')) {

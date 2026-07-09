@@ -9,6 +9,10 @@
     }
 
     function isTypingContext(el) {
+        if (typeof window.scriptyIsCharacterAutocompleteOpen === 'function' &&
+            window.scriptyIsCharacterAutocompleteOpen()) {
+            return true;
+        }
         if (!el) return false;
         var tag = el.tagName;
         if (tag === 'TEXTAREA') return true;
@@ -17,6 +21,7 @@
             return type !== 'button' && type !== 'submit' && type !== 'checkbox' &&
                 type !== 'radio' && type !== 'range' && type !== 'file';
         }
+        if (el.closest && el.closest('#fountain-char-autocomplete')) return true;
         return !!el.isContentEditable;
     }
 

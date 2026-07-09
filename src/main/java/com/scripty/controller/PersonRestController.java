@@ -35,7 +35,7 @@ public class PersonRestController {
     @Autowired
     PersonResourceAssembler personResourceAssembler;
 
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     public ResponseEntity<CollectionModel<EntityModel<PersonResource>>> list(@RequestParam Integer projectId) {
         PersonListViewModel viewModel = personService.getPersonListViewModel(projectId);
         return ResponseEntity.ok(

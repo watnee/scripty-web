@@ -6461,6 +6461,12 @@ main h3 {
     word-break: break-word;
 }
 
+.screenplay-preview-version {
+    margin-top: 1.25rem;
+    font-size: 0.95rem;
+    word-break: break-word;
+}
+
 .screenplay-preview-contact {
     margin-top: auto;
     font-size: 0.85rem;

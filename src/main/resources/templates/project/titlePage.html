@@ -40,6 +40,31 @@
                         <span th:if="${#fields.hasErrors('writers')}" th:errors="*{writers}" class="field-error"></span>
                     </label>
                     <label>
+                        Version
+                        <input type="text"
+                               id="input-screenplay-version"
+                               th:field="*{screenplayVersion}"
+                               list="screenplay-version-options"
+                               placeholder="e.g. White Draft, Blue Revision"
+                               autocomplete="off"
+                               spellcheck="true"
+                               th:readonly="${canEditScript != null and !canEditScript}" />
+                        <datalist id="screenplay-version-options">
+                            <option value="White Draft"></option>
+                            <option value="Blue Revision"></option>
+                            <option value="Pink Revision"></option>
+                            <option value="Yellow Revision"></option>
+                            <option value="Green Revision"></option>
+                            <option value="Goldenrod Revision"></option>
+                            <option value="Buff Revision"></option>
+                            <option value="Salmon Revision"></option>
+                            <option value="Cherry Revision"></option>
+                            <option value="Second Blue Revision"></option>
+                            <option value="Second Pink Revision"></option>
+                        </datalist>
+                        <span th:if="${#fields.hasErrors('screenplayVersion')}" th:errors="*{screenplayVersion}" class="field-error"></span>
+                    </label>
+                    <label>
                         Contact Information
                         <textarea id="input-contact-info" th:field="*{contactInfo}" placeholder="e.g. Contact info..." rows="5" autocomplete="off" spellcheck="true" th:readonly="${canEditScript != null and !canEditScript}"></textarea>
                         <span th:if="${#fields.hasErrors('contactInfo')}" th:errors="*{contactInfo}" class="field-error"></span>
@@ -60,6 +85,7 @@
                             <div class="screenplay-preview-title" id="preview-title">UNTITLED SCREENPLAY</div>
                             <div class="screenplay-preview-by">written by</div>
                             <div class="screenplay-preview-writers" id="preview-writers">ANONYMOUS</div>
+                            <div class="screenplay-preview-version" id="preview-version" hidden></div>
                         </div>
                         <div class="screenplay-preview-contact" id="preview-contact"></div>
                     </div>
@@ -74,10 +100,12 @@
         (function() {
             const inputTitle = document.getElementById('input-screenplay-title');
             const inputWriters = document.getElementById('input-writers');
+            const inputVersion = document.getElementById('input-screenplay-version');
             const inputContact = document.getElementById('input-contact-info');
 
             const previewTitle = document.getElementById('preview-title');
             const previewWriters = document.getElementById('preview-writers');
+            const previewVersion = document.getElementById('preview-version');
             const previewContact = document.getElementById('preview-contact');
             const byLabel = document.querySelector('.screenplay-preview-by');
 
@@ -100,12 +128,23 @@
                     previewWriters.style.display = 'none';
                 }
 
+                // Version / draft label
+                const versionVal = inputVersion ? inputVersion.value.trim() : '';
+                if (versionVal) {
+                    previewVersion.textContent = versionVal;
+                    previewVersion.hidden = false;
+                } else {
+                    previewVersion.textContent = '';
+                    previewVersion.hidden = true;
+                }
+
                 // Contact info — textContent + CSS white-space:pre-wrap (never innerHTML)
                 previewContact.textContent = inputContact.value.trim();
             }
 
             if (inputTitle) inputTitle.addEventListener('input', updatePreview);
             if (inputWriters) inputWriters.addEventListener('input', updatePreview);
+            if (inputVersion) inputVersion.addEventListener('input', updatePreview);
             if (inputContact) inputContact.addEventListener('input', updatePreview);
 
             // Initial call

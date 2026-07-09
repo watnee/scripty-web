@@ -14,6 +14,9 @@ public class TitlePageCommandModel {
     @Size(max = 1000, message = "Contact Information must be no more than 1000 characters in length.")
     private String contactInfo;
 
+    @Size(max = 255, message = "Version must be no more than 255 characters in length.")
+    private String screenplayVersion;
+
     public Integer getId() {
         return id;
     }
@@ -44,5 +47,13 @@ public class TitlePageCommandModel {
 
     public void setContactInfo(String contactInfo) {
         this.contactInfo = contactInfo;
+    }
+
+    public String getScreenplayVersion() {
+        return screenplayVersion;
+    }
+
+    public void setScreenplayVersion(String screenplayVersion) {
+        this.screenplayVersion = screenplayVersion;
     }
 }

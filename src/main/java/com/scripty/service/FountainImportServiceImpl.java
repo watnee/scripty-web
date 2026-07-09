@@ -34,7 +34,7 @@ public class FountainImportServiceImpl implements FountainImportService {
                     + "AERIAL|ESTABLISHING|FAVOR ON|REVERSE ANGLE)\\b.*",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern TITLE_PAGE_KEY = Pattern.compile(
-            "^(Title|Credit|Author|Authors|Writer|Writers|Source|Draft date|Contact|Contact Info|Contact Information)\\s*:(.*)$",
+            "^(Title|Credit|Author|Authors|Writer|Writers|Source|Draft date|Draft|Version|Contact|Contact Info|Contact Information)\\s*:(.*)$",
             Pattern.CASE_INSENSITIVE);
 
     @Autowired
@@ -94,6 +94,9 @@ public class FountainImportServiceImpl implements FountainImportService {
             if (titlePage.contact() != null) {
                 project.setContactInfo(PlainTextSanitizer.sanitize(titlePage.contact()));
             }
+            if (titlePage.version() != null) {
+                project.setScreenplayVersion(PlainTextSanitizer.sanitizeSingleLine(titlePage.version()));
+            }
         }
 
         List<ParsedBlock> parsed = parse(titlePage.body());
@@ -140,7 +143,7 @@ public class FountainImportServiceImpl implements FountainImportService {
     /**
      * Fountain title pages are key/value lines before the first blank line that
      * separates metadata from the script body. Supports Title, Credit, Author(s),
-     * Contact, and Draft date keys.
+     * Contact, Draft date / Version, and related keys.
      */
     private static TitlePageParseResult extractTitlePage(String fountainText) {
         String normalized = fountainText.replace("\r\n", "\n").replace('\r', '\n');
@@ -161,12 +164,13 @@ public class FountainImportServiceImpl implements FountainImportService {
         }
 
         if (!looksLikeTitlePage) {
-            return new TitlePageParseResult(null, null, null, normalized);
+            return new TitlePageParseResult(null, null, null, null, normalized);
         }
 
         String title = null;
         String writers = null;
         String contact = null;
+        String version = null;
         StringBuilder contactBuf = new StringBuilder();
         boolean inContact = false;
         int bodyStart = 0;
@@ -202,6 +206,8 @@ public class FountainImportServiceImpl implements FountainImportService {
                             writers = value + (writers != null && !writers.isBlank() ? "\n" + writers : "");
                         }
                     }
+                    case "draft date", "draft", "version" ->
+                            version = value.isEmpty() ? version : value;
                     case "contact", "contact info", "contact information" -> {
                         inContact = true;
                         if (!value.isEmpty()) {
@@ -209,7 +215,7 @@ public class FountainImportServiceImpl implements FountainImportService {
                         }
                     }
                     default -> {
-                        // Ignore Draft date, Source, etc.
+                        // Ignore Source, etc.
                     }
                 }
             } else if (inContact) {
@@ -236,14 +242,15 @@ public class FountainImportServiceImpl implements FountainImportService {
             body.append(lines[i]);
         }
 
-        return new TitlePageParseResult(title, writers, contact, body.toString());
+        return new TitlePageParseResult(title, writers, contact, version, body.toString());
     }
 
-    private record TitlePageParseResult(String title, String writers, String contact, String body) {
+    private record TitlePageParseResult(String title, String writers, String contact, String version, String body) {
         boolean hasAny() {
             return (title != null && !title.isBlank())
                     || (writers != null && !writers.isBlank())
-                    || (contact != null && !contact.isBlank());
+                    || (contact != null && !contact.isBlank())
+                    || (version != null && !version.isBlank());
         }
     }
 

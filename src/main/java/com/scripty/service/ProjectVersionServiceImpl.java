@@ -185,6 +185,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         snapshot.put("screenplayTitle", project.getScreenplayTitle());
         snapshot.put("writers", project.getWriters());
         snapshot.put("contactInfo", project.getContactInfo());
+        snapshot.put("screenplayVersion", project.getScreenplayVersion());
 
         List<Map<String, Object>> personSnapshots = new ArrayList<>();
         for (Person person : persons) {
@@ -257,6 +258,9 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         }
         if (snapshot.containsKey("contactInfo")) {
             project.setContactInfo(PlainTextSanitizer.sanitize((String) snapshot.get("contactInfo")));
+        }
+        if (snapshot.containsKey("screenplayVersion")) {
+            project.setScreenplayVersion(PlainTextSanitizer.sanitizeSingleLine((String) snapshot.get("screenplayVersion")));
         }
         projectRepository.save(project);
 
@@ -452,7 +456,8 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         if (!Objects.equals(newer.get("title"), older.get("title"))
                 || !Objects.equals(newer.get("screenplayTitle"), older.get("screenplayTitle"))
                 || !Objects.equals(newer.get("writers"), older.get("writers"))
-                || !Objects.equals(newer.get("contactInfo"), older.get("contactInfo"))) {
+                || !Objects.equals(newer.get("contactInfo"), older.get("contactInfo"))
+                || !Objects.equals(newer.get("screenplayVersion"), older.get("screenplayVersion"))) {
             summary.setProjectMetadataChanged(true);
             summary.addDetail("Project details changed");
         }

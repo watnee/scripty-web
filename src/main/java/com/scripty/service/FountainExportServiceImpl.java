@@ -161,10 +161,12 @@ public class FountainExportServiceImpl implements FountainExportService {
         }
         String writers = project.getWriters();
         String contact = project.getContactInfo();
+        String version = project.getScreenplayVersion();
         boolean hasTitle = title != null && !title.isBlank();
         boolean hasWriters = writers != null && !writers.isBlank();
         boolean hasContact = contact != null && !contact.isBlank();
-        if (!hasTitle && !hasWriters && !hasContact) {
+        boolean hasVersion = version != null && !version.isBlank();
+        if (!hasTitle && !hasWriters && !hasContact && !hasVersion) {
             return;
         }
 
@@ -173,6 +175,10 @@ public class FountainExportServiceImpl implements FountainExportService {
         }
         if (hasWriters) {
             appendWriters(sb, writers.trim());
+        }
+        if (hasVersion) {
+            // Fountain's conventional key for draft/revision labels
+            appendLine(sb, "Draft date: " + version.trim());
         }
         if (hasContact) {
             String[] contactLines = contact.trim().split("\n", -1);

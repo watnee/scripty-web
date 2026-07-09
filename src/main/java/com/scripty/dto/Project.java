@@ -35,6 +35,9 @@ public class Project {
     @Column(name = "contact_info", length = 1000)
     private String contactInfo;
 
+    @Column(name = "screenplay_version", length = 255)
+    private String screenplayVersion;
+
     @Column(name = "last_edited")
     private LocalDateTime lastEdited;
 
@@ -91,6 +94,14 @@ public class Project {
 
     public void setContactInfo(String contactInfo) {
         this.contactInfo = contactInfo;
+    }
+
+    public String getScreenplayVersion() {
+        return screenplayVersion;
+    }
+
+    public void setScreenplayVersion(String screenplayVersion) {
+        this.screenplayVersion = screenplayVersion;
     }
 
     public List<Team> getTeams() {

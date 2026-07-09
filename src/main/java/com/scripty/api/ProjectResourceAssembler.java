@@ -35,6 +35,7 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         resource.setScreenplayTitle(profile.getScreenplayTitle());
         resource.setWriters(profile.getWriters());
         resource.setContactInfo(profile.getContactInfo());
+        resource.setScreenplayVersion(profile.getScreenplayVersion());
         resource.setLastEdited(profile.getLastEdited());
         resource.setTeams(profile.getTeams());
         return EntityModel.of(resource).add(projectLinks(profile.getId()));
@@ -47,6 +48,7 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         resource.setScreenplayTitle(project.getScreenplayTitle());
         resource.setWriters(project.getWriters());
         resource.setContactInfo(project.getContactInfo());
+        resource.setScreenplayVersion(project.getScreenplayVersion());
         resource.setLastEdited(project.getLastEdited());
         resource.setTeams(project.getTeamNames());
         return EntityModel.of(resource).add(projectLinks(project.getId()));

@@ -20,6 +20,7 @@ public class ProjectProfileViewModel {
     private String screenplayTitle;
     private String writers;
     private String contactInfo;
+    private String screenplayVersion;
     private List<SceneViewModel> scenes;
     private List<PersonViewModel> persons;
 
@@ -93,5 +94,13 @@ public class ProjectProfileViewModel {
 
     public void setContactInfo(String contactInfo) {
         this.contactInfo = contactInfo;
+    }
+
+    public String getScreenplayVersion() {
+        return screenplayVersion;
+    }
+
+    public void setScreenplayVersion(String screenplayVersion) {
+        this.screenplayVersion = screenplayVersion;
     }
 }

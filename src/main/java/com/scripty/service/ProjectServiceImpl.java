@@ -266,6 +266,7 @@ public class ProjectServiceImpl implements ProjectService {
         vm.setScreenplayTitle(project.getScreenplayTitle());
         vm.setWriters(project.getWriters());
         vm.setContactInfo(project.getContactInfo());
+        vm.setScreenplayVersion(project.getScreenplayVersion());
 
         List<BlockViewModel> blockViewModels = new ArrayList<>();
         Integer lastBlockId = null;
@@ -427,6 +428,7 @@ public class ProjectServiceImpl implements ProjectService {
         cmd.setScreenplayTitle(project.getScreenplayTitle());
         cmd.setWriters(project.getWriters());
         cmd.setContactInfo(project.getContactInfo());
+        cmd.setScreenplayVersion(project.getScreenplayVersion());
         return cmd;
     }
 
@@ -437,6 +439,7 @@ public class ProjectServiceImpl implements ProjectService {
             project.setScreenplayTitle(PlainTextSanitizer.sanitizeSingleLine(cmd.getScreenplayTitle()));
             project.setWriters(PlainTextSanitizer.sanitizeSingleLine(cmd.getWriters()));
             project.setContactInfo(PlainTextSanitizer.sanitize(cmd.getContactInfo()));
+            project.setScreenplayVersion(PlainTextSanitizer.sanitizeSingleLine(cmd.getScreenplayVersion()));
             project.setLastEdited(java.time.LocalDateTime.now());
             projectRepository.save(project);
             projectActivityService.recordForCurrentUser(

@@ -89,10 +89,12 @@ public class PdfExportServiceImpl implements PdfExportService {
         String title = firstNonBlank(project.getScreenplayTitle(), project.getTitle());
         String writers = project.getWriters();
         String contact = project.getContactInfo();
+        String version = project.getScreenplayVersion();
         boolean hasTitle = title != null && !title.isBlank();
         boolean hasWriters = writers != null && !writers.isBlank();
         boolean hasContact = contact != null && !contact.isBlank();
-        if (!hasTitle && !hasWriters && !hasContact) {
+        boolean hasVersion = version != null && !version.isBlank();
+        if (!hasTitle && !hasWriters && !hasContact && !hasVersion) {
             return false;
         }
 
@@ -134,6 +136,14 @@ public class PdfExportServiceImpl implements PdfExportService {
                 author.setSpacingAfter(2f);
                 document.add(author);
             }
+        }
+
+        if (hasVersion) {
+            Paragraph versionPara = styledParagraph(version.trim(), Font.NORMAL);
+            versionPara.setAlignment(Element.ALIGN_CENTER);
+            versionPara.setSpacingBefore(hasWriters ? 18f : 0f);
+            versionPara.setSpacingAfter(2f);
+            document.add(versionPara);
         }
 
         if (hasContact) {

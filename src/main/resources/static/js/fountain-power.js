@@ -1,6 +1,6 @@
 /**
  * Fountain screenplay power-user features:
- * - Tab / Shift+Tab element type cycling
+ * - Tab / Shift+Tab next logical screenplay element type
  * - Smart next-element type on Enter
  * - Live Fountain syntax detection (force markers + heuristics)
  * - Parse multi-line Fountain/plain text into typed blocks (external paste)
@@ -27,11 +27,21 @@
         '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>' +
         '</svg></span>';
 
+    /** Classic screenplay Tab order (Final Draft–style “next logical element”). */
     var TAB_CYCLE = [
-        'SCENE', 'ACTION', 'TEXT', 'CHARACTER', 'DIALOGUE', 'PARENTHETICAL',
-        'TRANSITION', 'SHOT', 'DUAL_DIALOGUE', 'LYRICS', 'CENTERED',
-        'SECTION', 'SYNOPSIS', 'NOTE', 'PAGE_BREAK'
+        'SCENE', 'ACTION', 'CHARACTER', 'PARENTHETICAL', 'DIALOGUE', 'TRANSITION', 'SHOT'
     ];
+    /** Map less-common types onto the logical cycle before advancing. */
+    var TAB_CYCLE_ENTRY = {
+        TEXT: 'ACTION',
+        CENTERED: 'ACTION',
+        NOTE: 'ACTION',
+        LYRICS: 'DIALOGUE',
+        DUAL_DIALOGUE: 'CHARACTER',
+        SECTION: 'SCENE',
+        SYNOPSIS: 'SCENE',
+        PAGE_BREAK: 'SCENE'
+    };
     var OUTLINE_MODE_TAB_CYCLE = ['SCENE', 'SECTION', 'SYNOPSIS'];
 
     function isOutlineModeOn() {
@@ -139,6 +149,9 @@
         var cycle = isOutlineModeOn() ? OUTLINE_MODE_TAB_CYCLE : TAB_CYCLE;
         var fallback = isOutlineModeOn() ? 'SCENE' : 'ACTION';
         var upper = (current || fallback).toUpperCase();
+        if (!isOutlineModeOn() && cycle.indexOf(upper) < 0) {
+            upper = TAB_CYCLE_ENTRY[upper] || fallback;
+        }
         var idx = cycle.indexOf(upper);
         if (idx < 0) idx = cycle.indexOf(fallback);
         if (idx < 0) idx = 0;
@@ -1575,7 +1588,7 @@
             }
         }
 
-        // Tab / Shift+Tab: cycle Fountain element types
+        // Tab / Shift+Tab: next / previous logical screenplay element type
         if (e.key === 'Tab' && !e.altKey && !e.metaKey && !e.ctrlKey) {
             e.preventDefault();
             e.stopImmediatePropagation();

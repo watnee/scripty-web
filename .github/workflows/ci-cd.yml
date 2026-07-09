@@ -1,12 +1,17 @@
-# CI on PRs and main; deploy to Railway from main after CI passes.
+# Scripty CI/CD
 #
-# Required GitHub Actions secrets:
-#   RAILWAY_TOKEN       — Railway project token (Project → Settings → Tokens),
-#                         scoped to the production environment
-#   RAILWAY_SERVICE_ID  — Railway service ID for the Scripty web service
+# Flow:
+#   pull_request  →  Verify (Maven)
+#   push to main  →  Verify (Maven)  →  Deploy to Railway
+#   Run workflow  →  Verify (Maven)  →  Deploy to Railway  (manual redeploy)
 #
-# Prerequisite: disable Railway's automatic GitHub deploys for this service
-# so pushes do not trigger a double deploy (Railway + Actions).
+# One-time setup (repo Settings → Secrets and variables → Actions):
+#   RAILWAY_TOKEN       Project token: Railway → Project → Settings → Tokens
+#                       (scope to the production environment)
+#   RAILWAY_SERVICE_ID  Service ID: Railway → service → Settings → copy ID
+#
+# Also disable Railway's automatic GitHub deploys for this service so pushes
+# are not deployed twice (Actions + Railway).
 
 name: CI/CD
 
@@ -15,9 +20,20 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why are you redeploying?"
+        required: false
+        default: "Manual redeploy from Actions"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  ci:
+  verify:
+    name: Verify (Maven)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,16 +46,72 @@ jobs:
           java-version: "17"
           cache: maven
 
-      - name: Verify
+      - name: Run Maven verify
         run: mvn -B verify
 
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "## Verify (Maven)"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Event | \`${{ github.event_name }}\` |"
+            echo "| Ref | \`${{ github.ref_name }}\` |"
+            echo "| Commit | \`${{ github.sha }}\` |"
+            echo "| Result | ${{ job.status }} |"
+            echo ""
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "PRs only run verify. Merge to \`main\` (or use **Run workflow**) to deploy."
+            else
+              echo "Next: **Deploy to Railway** runs only after this job succeeds."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   deploy:
-    needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    name: Deploy to Railway
+    needs: verify
+    if: >
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    environment:
+      name: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Check Railway secrets
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: |
+          missing=0
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::error title=Missing secret::Add RAILWAY_TOKEN (Railway → Project → Settings → Tokens, production environment)."
+            missing=1
+          fi
+          if [ -z "$RAILWAY_SERVICE_ID" ]; then
+            echo "::error title=Missing secret::Add RAILWAY_SERVICE_ID (Railway → service → Settings → copy ID)."
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            {
+              echo "## Deploy blocked — secrets missing"
+              echo ""
+              echo "Add these under **Settings → Secrets and variables → Actions**:"
+              echo ""
+              echo "| Secret | Where to get it |"
+              echo "|--------|-----------------|"
+              echo "| \`RAILWAY_TOKEN\` | Railway → Project → Settings → Tokens (production) |"
+              echo "| \`RAILWAY_SERVICE_ID\` | Railway → service → Settings → copy ID |"
+              echo ""
+              echo "Also turn off Railway auto-deploy from GitHub so deploys only come from this workflow."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Railway secrets are present."
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli@5.2.0
@@ -47,4 +119,37 @@ jobs:
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service "${{ secrets.RAILWAY_SERVICE_ID }}" --detach
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: |
+          message="GitHub ${{ github.sha }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            message="Manual: ${{ inputs.reason }} (${{ github.sha }})"
+          fi
+          echo "Deploying commit ${{ github.sha }} via railway up --detach"
+          railway up \
+            --service "$RAILWAY_SERVICE_ID" \
+            --message "$message" \
+            --detach
+
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "## Deploy to Railway"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Trigger | \`${{ github.event_name }}\` |"
+            echo "| Branch | \`main\` |"
+            echo "| Commit | [\`${GITHUB_SHA:0:7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |"
+            echo "| Result | ${{ job.status }} |"
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "| Reason | ${{ inputs.reason }} |"
+            fi
+            echo ""
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "Build queued on Railway (\`railway up --detach\`). Watch the deployment in the Railway dashboard."
+            else
+              echo "Deploy did not succeed. Check the **Check Railway secrets** and **Deploy to Railway** steps above."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

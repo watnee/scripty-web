@@ -12,6 +12,7 @@
  * - Outline mode (filter main script to structural blocks)
  * - Character list sidebar
  * - Location list sidebar
+ * - Song list sidebar (lyrics runs in the screenplay)
  * - Live word count + estimated page count
  */
 (function() {
@@ -93,6 +94,7 @@
     var outlineEl = null;
     var characterListEl = null;
     var locationListEl = null;
+    var songListEl = null;
 
     function projectId() {
         if (typeof window.scriptyResolveProjectId === 'function') {
@@ -1325,7 +1327,8 @@
         var anyOpen =
             (outlineEl && !outlineEl.hidden) ||
             (characterListEl && !characterListEl.hidden) ||
-            (locationListEl && !locationListEl.hidden);
+            (locationListEl && !locationListEl.hidden) ||
+            (songListEl && !songListEl.hidden);
         listsBtn.classList.toggle('is-active', !!anyOpen);
         listsBtn.setAttribute('aria-pressed', anyOpen ? 'true' : 'false');
     }
@@ -1345,6 +1348,7 @@
         if (open) {
             if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
             if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
+            if (songListEl && !songListEl.hidden) setSongListOpen(false);
             syncOutlineTabs();
             refreshOutline();
         }
@@ -1444,6 +1448,7 @@
             // Avoid stacking both side panels on the right.
             if (outlineEl && !outlineEl.hidden) setOutlineOpen(false);
             if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
+            if (songListEl && !songListEl.hidden) setSongListOpen(false);
             refreshCharacterList();
         }
         syncListsToolbarActive();
@@ -1583,6 +1588,7 @@
         if (open) {
             if (outlineEl && !outlineEl.hidden) setOutlineOpen(false);
             if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
+            if (songListEl && !songListEl.hidden) setSongListOpen(false);
             refreshLocationList();
         }
         syncListsToolbarActive();
@@ -1600,6 +1606,143 @@
         setLocationListOpen(!!el.hidden);
     }
     window.scriptyToggleFountainLocationList = toggleLocationList;
+
+    // --- Song list sidebar (lyrics runs in the screenplay) ---
+
+    function collectSongItems() {
+        var items = [];
+        var run = null;
+        var rows = document.querySelectorAll('.project-script .scene-blocks > .block-row[data-block-id]');
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var type = (row.getAttribute('data-block-type') || '').toUpperCase();
+            if (type !== 'LYRICS') {
+                if (run) {
+                    items.push(run);
+                    run = null;
+                }
+                continue;
+            }
+            var id = row.getAttribute('data-block-id');
+            var text = blockRowText(row);
+            if (!run) {
+                run = { id: id, name: text, count: 1 };
+            } else {
+                run.count += 1;
+            }
+        }
+        if (run) items.push(run);
+        return items;
+    }
+
+    function ensureSongList() {
+        if (songListEl) return songListEl;
+        songListEl = document.createElement('aside');
+        songListEl.id = 'fountain-song-list';
+        songListEl.className = 'fountain-song-list hide-in-reader-view sidebar menu';
+        songListEl.setAttribute('aria-label', 'Song list');
+        songListEl.innerHTML =
+            '<div class="fountain-song-list-header">' +
+            '<strong>Songs</strong>' +
+            '<button type="button" class="fountain-song-list-close" aria-label="Close song list" title="Close song list">×</button>' +
+            '</div>' +
+            '<ol class="fountain-song-list-items"></ol>' +
+            '<p class="fountain-song-list-empty muted">No lyrics in the screenplay yet.</p>';
+        document.body.appendChild(songListEl);
+
+        songListEl.querySelector('.fountain-song-list-close').addEventListener('click', function() {
+            setSongListOpen(false);
+        });
+        songListEl.addEventListener('click', function(e) {
+            var link = e.target.closest('[data-song-block-id]');
+            if (!link || !songListEl.contains(link)) return;
+            e.preventDefault();
+            var id = link.getAttribute('data-song-block-id');
+            var row = document.querySelector('.block-row[data-block-id="' + id + '"]');
+            if (!row) return;
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.classList.add('fountain-outline-flash');
+            setTimeout(function() {
+                row.classList.remove('fountain-outline-flash');
+            }, 1200);
+            var content = row.querySelector('.block-content');
+            if (content && !window.scriptyBlockEditLocked) {
+                content.click();
+            }
+        });
+        return songListEl;
+    }
+
+    function songListItemHtml(entry, index) {
+        var name = escapeHtml(entry.name);
+        var num = '<span class="fountain-outline-num">' + (index + 1) + '.</span>';
+        var count = entry.count > 1
+            ? '<span class="fountain-song-list-count">' + entry.count + '</span>'
+            : '';
+        if (entry.id != null) {
+            return '<li class="fountain-song-list-item">' +
+                '<a href="#block-' + escapeHtml(String(entry.id)) + '" data-song-block-id="' +
+                escapeHtml(String(entry.id)) + '">' +
+                num +
+                '<span class="fountain-song-list-name">' + name + '</span>' +
+                count +
+                '</a></li>';
+        }
+        return '<li class="fountain-song-list-item">' +
+            num +
+            '<span class="fountain-song-list-name">' + name + '</span>' +
+            count +
+            '</li>';
+    }
+
+    function refreshSongList() {
+        if (!songListEl || songListEl.hidden) return;
+        var list = songListEl.querySelector('.fountain-song-list-items');
+        var empty = songListEl.querySelector('.fountain-song-list-empty');
+        var entries = collectSongItems();
+        if (!entries.length) {
+            list.innerHTML = '';
+            empty.hidden = false;
+            return;
+        }
+        empty.hidden = true;
+        list.innerHTML = entries.map(songListItemHtml).join('');
+    }
+    window.scriptyRefreshFountainSongList = refreshSongList;
+
+    function setSongListOpen(open) {
+        var el = ensureSongList();
+        el.hidden = !open;
+        document.documentElement.classList.toggle('fountain-song-list-open', open);
+        var btn = document.getElementById('nav-song-list-toggle');
+        if (btn) {
+            btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+            btn.classList.toggle('is-active', open);
+        }
+        try {
+            localStorage.setItem('scripty-fountain-song-list', open ? 'true' : 'false');
+        } catch (err) { /* ignore */ }
+        if (open) {
+            if (outlineEl && !outlineEl.hidden) setOutlineOpen(false);
+            if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
+            if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
+            refreshSongList();
+        }
+        syncListsToolbarActive();
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                if (typeof window.scriptyRepositionBlockCaretPreview === 'function') {
+                    window.scriptyRepositionBlockCaretPreview();
+                }
+            });
+        });
+    }
+
+    function toggleSongList() {
+        var el = ensureSongList();
+        setSongListOpen(!!el.hidden);
+    }
+    window.scriptyToggleFountainSongList = toggleSongList;
 
     /** Words the custom spellchecker should not flag (cast names, locations, scene tokens). */
     window.scriptyGetSpellAllowlist = function() {
@@ -1748,6 +1891,7 @@
         refreshOutline();
         refreshCharacterList();
         refreshLocationList();
+        refreshSongList();
         refreshScriptStats();
         applyPendingCreateType();
     });
@@ -1828,6 +1972,7 @@
             refreshOutline();
             refreshCharacterList();
             refreshLocationList();
+            refreshSongList();
         }
         if (needsStats) {
             scheduleScriptStatsRefresh();
@@ -1902,6 +2047,25 @@
         else ensureLocationList().hidden = true;
     }
 
+    function initSongListButton() {
+        var btn = document.getElementById('nav-song-list-toggle');
+        if (!btn) return;
+        btn.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+        });
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleSongList();
+        });
+        var preferOpen = false;
+        try {
+            preferOpen = localStorage.getItem('scripty-fountain-song-list') === 'true';
+        } catch (err) { /* ignore */ }
+        if (preferOpen) setSongListOpen(true);
+        else ensureSongList().hidden = true;
+    }
+
     // Expose apply helper used by Tab cycling when element-type.js is present
     window.scriptyApplyFountainType = function(type, preferredBlockId) {
         if (typeof window.scriptyApplyElementType === 'function') {
@@ -1919,6 +2083,7 @@
             initOutlineButton();
             initCharacterListButton();
             initLocationListButton();
+            initSongListButton();
             loadCharacters(true);
             refreshScriptStats();
         });
@@ -1927,6 +2092,7 @@
         initOutlineButton();
         initCharacterListButton();
         initLocationListButton();
+        initSongListButton();
         loadCharacters(true);
         refreshScriptStats();
     }

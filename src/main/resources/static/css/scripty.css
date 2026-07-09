@@ -6045,7 +6045,7 @@ html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
 
 body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb,
-body.focus-mode .text-size-control > :not(#focus-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#nav-outline-toggle),
+body.focus-mode .text-size-control > :not(#focus-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#nav-outline-toggle):not(#nav-character-list-toggle),
 body.focus-mode .project-script-toolbar,
 body.focus-mode .project-header-row,
 body.focus-mode .project-create-scene,
@@ -6642,8 +6642,9 @@ html.scripty-offline .scripty-offline-banner {
     color: var(--accent, #145591);
 }
 
-/* Fountain power-user: scene outline */
-.fountain-outline {
+/* Fountain power-user: scene outline + character list */
+.fountain-outline,
+.fountain-character-list {
     position: fixed;
     top: 5.5rem;
     right: 0.75rem;
@@ -6659,11 +6660,13 @@ html.scripty-offline .scripty-offline-banner {
     overflow: hidden;
 }
 
-.fountain-outline[hidden] {
+.fountain-outline[hidden],
+.fountain-character-list[hidden] {
     display: none !important;
 }
 
-.fountain-outline-header {
+.fountain-outline-header,
+.fountain-character-list-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -6674,7 +6677,8 @@ html.scripty-offline .scripty-offline-banner {
     text-transform: uppercase;
 }
 
-.fountain-outline-close {
+.fountain-outline-close,
+.fountain-character-list-close {
     border: none;
     background: transparent;
     color: inherit;
@@ -6685,7 +6689,8 @@ html.scripty-offline .scripty-offline-banner {
     opacity: 0.7;
 }
 
-.fountain-outline-close:hover {
+.fountain-outline-close:hover,
+.fountain-character-list-close:hover {
     opacity: 1;
 }
 
@@ -6723,7 +6728,8 @@ html.scripty-offline .scripty-offline-banner {
     font-weight: 600;
 }
 
-.fountain-outline-list {
+.fountain-outline-list,
+.fountain-character-list-items {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -6731,7 +6737,8 @@ html.scripty-offline .scripty-offline-banner {
     flex: 1;
 }
 
-.fountain-outline-item a {
+.fountain-outline-item a,
+.fountain-character-list-item a {
     display: flex;
     align-items: baseline;
     gap: 0.35rem;
@@ -6743,9 +6750,43 @@ html.scripty-offline .scripty-offline-banner {
     line-height: 1.35;
 }
 
-.fountain-outline-item a:hover {
+.fountain-outline-item a:hover,
+.fountain-character-list-item a:hover {
     background: color-mix(in srgb, var(--accent, #145591) 12%, transparent);
     color: var(--accent, #145591);
+}
+
+.fountain-character-list-item--cue {
+    display: flex;
+    align-items: baseline;
+    padding: 0.4rem 0.35rem;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    opacity: 0.85;
+}
+
+.fountain-character-list-name {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fountain-character-list-footer {
+    margin: 0.65rem 0 0;
+    padding-top: 0.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--fg, #111) 12%, transparent);
+    font-size: 0.78rem;
+}
+
+.fountain-character-list-manage {
+    color: var(--accent, #145591);
+    text-decoration: none;
+}
+
+.fountain-character-list-manage:hover {
+    text-decoration: underline;
 }
 
 .fountain-outline-item--section a {
@@ -6795,7 +6836,8 @@ html.scripty-offline .scripty-offline-banner {
     transform: translateY(1px);
 }
 
-.fountain-outline-empty {
+.fountain-outline-empty,
+.fountain-character-list-empty {
     font-size: 0.8rem;
     margin: 0.5rem 0 0;
 }
@@ -6809,12 +6851,14 @@ html.scripty-offline .scripty-offline-banner {
     25%, 60% { background-color: color-mix(in srgb, var(--accent, #145591) 14%, transparent); }
 }
 
-html.fountain-outline-open .project-script {
+html.fountain-outline-open .project-script,
+html.fountain-character-list-open .project-script {
     padding-right: min(17rem, 44vw);
 }
 
 @media (max-width: 720px) {
-    .fountain-outline {
+    .fountain-outline,
+    .fountain-character-list {
         top: auto;
         left: 0.5rem;
         right: 0.5rem;
@@ -6823,18 +6867,22 @@ html.fountain-outline-open .project-script {
         max-height: 45vh;
     }
 
-    html.fountain-outline-open .project-script {
+    html.fountain-outline-open .project-script,
+    html.fountain-character-list-open .project-script {
         padding-right: 0;
     }
 }
 
 body.focus-mode .fountain-outline,
-body.focus-mode #nav-outline-toggle {
+body.focus-mode #nav-outline-toggle,
+body.focus-mode .fountain-character-list,
+body.focus-mode #nav-character-list-toggle {
     display: none !important;
 }
 
 @media print {
     .fountain-outline,
+    .fountain-character-list,
     .fountain-char-autocomplete {
         display: none !important;
     }

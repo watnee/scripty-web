@@ -8,6 +8,7 @@
  * - Scene location autocomplete (reuse places from prior headings)
  * - Scene time-of-day autocomplete (DAY, NIGHT, …)
  * - Scene / section / synopsis / bookmark outline navigator
+ * - Character list sidebar
  */
 (function() {
     'use strict';
@@ -62,6 +63,7 @@
     var autocompleteTextarea = null;
     var autocompleteKind = null; // 'character' | 'scene' (includes location + time-of-day)
     var outlineEl = null;
+    var characterListEl = null;
 
     function projectId() {
         if (typeof window.scriptyResolveProjectId === 'function') {
@@ -1034,6 +1036,7 @@
             localStorage.setItem('scripty-fountain-outline', open ? 'true' : 'false');
         } catch (err) { /* ignore */ }
         if (open) {
+            if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
             syncOutlineTabs();
             refreshOutline();
         }
@@ -1052,6 +1055,101 @@
         setOutlineOpen(!!el.hidden);
     }
     window.scriptyToggleFountainOutline = toggleOutline;
+
+    // --- Character list sidebar ---
+
+    function ensureCharacterList() {
+        if (characterListEl) return characterListEl;
+        characterListEl = document.createElement('aside');
+        characterListEl.id = 'fountain-character-list';
+        characterListEl.className = 'fountain-character-list hide-in-reader-view sidebar menu';
+        characterListEl.setAttribute('aria-label', 'Character list');
+        characterListEl.innerHTML =
+            '<div class="fountain-character-list-header">' +
+            '<strong>Characters</strong>' +
+            '<button type="button" class="fountain-character-list-close" aria-label="Close character list" title="Close character list">×</button>' +
+            '</div>' +
+            '<ol class="fountain-character-list-items"></ol>' +
+            '<p class="fountain-character-list-empty muted">No characters yet.</p>' +
+            '<p class="fountain-character-list-footer">' +
+            '<a class="fountain-character-list-manage" href="#">Manage characters</a>' +
+            '</p>';
+        document.body.appendChild(characterListEl);
+
+        characterListEl.querySelector('.fountain-character-list-close').addEventListener('click', function() {
+            setCharacterListOpen(false);
+        });
+        return characterListEl;
+    }
+
+    function characterListItemHtml(entry) {
+        var name = escapeHtml(entry.name);
+        if (entry.id != null) {
+            return '<li class="fountain-character-list-item">' +
+                '<a href="/character/show?id=' + encodeURIComponent(String(entry.id)) + '">' +
+                '<span class="fountain-character-list-name">' + name + '</span>' +
+                '</a></li>';
+        }
+        return '<li class="fountain-character-list-item fountain-character-list-item--cue">' +
+            '<span class="fountain-character-list-name">' + name + '</span>' +
+            '</li>';
+    }
+
+    function refreshCharacterList() {
+        if (!characterListEl || characterListEl.hidden) return;
+        var list = characterListEl.querySelector('.fountain-character-list-items');
+        var empty = characterListEl.querySelector('.fountain-character-list-empty');
+        var manage = characterListEl.querySelector('.fountain-character-list-manage');
+        var pid = projectId();
+        if (manage) {
+            manage.href = pid
+                ? '/character/list?projectId=' + encodeURIComponent(pid)
+                : '/character/list';
+        }
+        loadCharacters(true).then(function(entries) {
+            if (!characterListEl || characterListEl.hidden) return;
+            if (!entries.length) {
+                list.innerHTML = '';
+                empty.hidden = false;
+                return;
+            }
+            empty.hidden = true;
+            list.innerHTML = entries.map(characterListItemHtml).join('');
+        });
+    }
+    window.scriptyRefreshFountainCharacterList = refreshCharacterList;
+
+    function setCharacterListOpen(open) {
+        var el = ensureCharacterList();
+        el.hidden = !open;
+        document.documentElement.classList.toggle('fountain-character-list-open', open);
+        var btn = document.getElementById('nav-character-list-toggle');
+        if (btn) {
+            btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+            btn.classList.toggle('is-active', open);
+        }
+        try {
+            localStorage.setItem('scripty-fountain-character-list', open ? 'true' : 'false');
+        } catch (err) { /* ignore */ }
+        if (open) {
+            // Avoid stacking both side panels on the right.
+            if (outlineEl && !outlineEl.hidden) setOutlineOpen(false);
+            refreshCharacterList();
+        }
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                if (typeof window.scriptyRepositionBlockCaretPreview === 'function') {
+                    window.scriptyRepositionBlockCaretPreview();
+                }
+            });
+        });
+    }
+
+    function toggleCharacterList() {
+        var el = ensureCharacterList();
+        setCharacterListOpen(!!el.hidden);
+    }
+    window.scriptyToggleFountainCharacterList = toggleCharacterList;
 
     // --- Event wiring ---
 
@@ -1173,10 +1271,12 @@
         }
     });
 
-    // After HTMX swaps, refresh outline and apply pending create type
+    // After HTMX swaps, refresh outline / character list and apply pending create type
     document.body.addEventListener('htmx:afterSwap', function() {
         sceneCache.loadedAt = 0;
+        characterCache.loadedAt = 0;
         refreshOutline();
+        refreshCharacterList();
         applyPendingCreateType();
     });
 
@@ -1218,11 +1318,15 @@
                 if (node.matches && (node.matches('.block-row[data-block-id]') || node.querySelector('.block-row[data-block-id]'))) {
                     needsOutline = true;
                     sceneCache.loadedAt = 0;
+                    characterCache.loadedAt = 0;
                 }
             });
             if (m.removedNodes.length) needsOutline = true;
         });
-        if (needsOutline) refreshOutline();
+        if (needsOutline) {
+            refreshOutline();
+            refreshCharacterList();
+        }
     });
 
     function startObserver() {
@@ -1250,6 +1354,25 @@
         else ensureOutline().hidden = true;
     }
 
+    function initCharacterListButton() {
+        var btn = document.getElementById('nav-character-list-toggle');
+        if (!btn) return;
+        btn.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+        });
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleCharacterList();
+        });
+        var preferOpen = false;
+        try {
+            preferOpen = localStorage.getItem('scripty-fountain-character-list') === 'true';
+        } catch (err) { /* ignore */ }
+        if (preferOpen) setCharacterListOpen(true);
+        else ensureCharacterList().hidden = true;
+    }
+
     // Expose apply helper used by Tab cycling when element-type.js is present
     window.scriptyApplyFountainType = function(type, preferredBlockId) {
         if (typeof window.scriptyApplyElementType === 'function') {
@@ -1265,11 +1388,13 @@
         document.addEventListener('DOMContentLoaded', function() {
             startObserver();
             initOutlineButton();
+            initCharacterListButton();
             loadCharacters(true);
         });
     } else {
         startObserver();
         initOutlineButton();
+        initCharacterListButton();
         loadCharacters(true);
     }
 })();

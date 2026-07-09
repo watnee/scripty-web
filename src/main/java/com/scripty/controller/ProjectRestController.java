@@ -1,14 +1,15 @@
 package com.scripty.controller;
 
+import com.scripty.api.ProjectResource;
+import com.scripty.api.ProjectResourceAssembler;
 import com.scripty.api.RestErrors;
-import com.scripty.api.UserResource;
-import com.scripty.api.UserResourceAssembler;
-import com.scripty.commandmodel.user.createuser.CreateUserCommandModel;
-import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
-import com.scripty.dto.User;
-import com.scripty.viewmodel.user.userlist.UserListViewModel;
-import com.scripty.viewmodel.user.userprofile.UserProfileViewModel;
-import com.scripty.service.UserService;
+import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
+import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
+import com.scripty.dto.Project;
+import com.scripty.service.ProjectService;
+import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
+import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -23,59 +24,57 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.validation.Valid;
-
 @RestController
-@RequestMapping(value = "/api/user")
-public class UserRestController {
+@RequestMapping(value = "/api/project")
+public class ProjectRestController {
 
     @Autowired
-    UserService userService;
+    ProjectService projectService;
 
     @Autowired
-    UserResourceAssembler userResourceAssembler;
+    ProjectResourceAssembler projectResourceAssembler;
 
     @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<CollectionModel<EntityModel<UserResource>>> list() {
-        UserListViewModel viewModel = userService.getUserListViewModel();
-        return ResponseEntity.ok(userResourceAssembler.toUserCollection(viewModel.getUsers()));
+    public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> list() {
+        ProjectListViewModel viewModel = projectService.getProjectListViewModel();
+        return ResponseEntity.ok(projectResourceAssembler.toProjectCollection(viewModel.getProjects()));
     }
 
     @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<?> create(
-            @Valid @RequestBody CreateUserCommandModel commandModel, BindingResult bindingResult) {
+            @Valid @RequestBody CreateProjectCommandModel commandModel, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
         }
-        User user = userService.saveCreateUserCommandModel(commandModel);
-        EntityModel<UserResource> resource = userResourceAssembler.toModel(user);
+        Project project = projectService.saveCreateProjectCommandModel(commandModel);
+        EntityModel<ProjectResource> resource = projectResourceAssembler.toModel(project);
         return ResponseEntity
                 .created(resource.getRequiredLink(IanaLinkRelations.SELF).toUri())
                 .body(resource);
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<UserResource>> show(@PathVariable Integer id) {
-        UserProfileViewModel viewModel = userService.getUserProfileViewModel(id);
-        return ResponseEntity.ok(userResourceAssembler.toModel(viewModel));
+    public ResponseEntity<EntityModel<ProjectResource>> show(@PathVariable Integer id) {
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+        return ResponseEntity.ok(projectResourceAssembler.toModel(viewModel));
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<?> update(
             @PathVariable Integer id,
-            @Valid @RequestBody EditUserCommandModel commandModel,
+            @Valid @RequestBody EditProjectCommandModel commandModel,
             BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
         }
         commandModel.setId(id);
-        User user = userService.saveEditUserCommandModel(commandModel);
-        return ResponseEntity.ok(userResourceAssembler.toModel(user));
+        Project project = projectService.saveEditProjectCommandModel(commandModel);
+        return ResponseEntity.ok(projectResourceAssembler.toModel(project));
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<UserResource>> delete(@PathVariable Integer id) {
-        User user = userService.deleteUser(id);
-        return ResponseEntity.ok(userResourceAssembler.toDeleteModel(user));
+    public ResponseEntity<EntityModel<ProjectResource>> delete(@PathVariable Integer id) {
+        Project project = projectService.deleteProject(id);
+        return ResponseEntity.ok(projectResourceAssembler.toDeleteModel(project));
     }
 }

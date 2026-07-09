@@ -77,9 +77,13 @@ public class TeamServiceImpl implements TeamService {
             }
         }
 
+        if (projectIds == null) {
+            return;
+        }
+
         List<Project> allProjects = projectRepository.findAllWithTeams();
         for (Project project : allProjects) {
-            boolean isTarget = projectIds != null && projectIds.contains(project.getId());
+            boolean isTarget = projectIds.contains(project.getId());
             boolean currentlyAssigned = project.isAssignedToTeam(team);
             if (isTarget && !currentlyAssigned) {
                 project.getTeams().add(team);

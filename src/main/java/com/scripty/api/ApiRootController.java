@@ -1,8 +1,11 @@
 package com.scripty.api;
 
+import com.scripty.controller.ActorRestController;
+import com.scripty.controller.ProjectRestController;
+import com.scripty.controller.TeamRestController;
 import com.scripty.controller.UserRestController;
-import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.RepresentationModel;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,7 +22,10 @@ public class ApiRootController {
         RepresentationModel<?> root = new RepresentationModel<>();
         root.add(
                 linkTo(methodOn(ApiRootController.class).root()).withSelfRel(),
-                linkTo(methodOn(UserRestController.class).list()).withRel(ApiRel.USERS)
+                linkTo(methodOn(UserRestController.class).list()).withRel(ApiRel.USERS),
+                linkTo(methodOn(ProjectRestController.class).list()).withRel(ApiRel.PROJECTS),
+                linkTo(methodOn(ActorRestController.class).list(null)).withRel(ApiRel.ACTORS),
+                linkTo(methodOn(TeamRestController.class).list()).withRel(ApiRel.TEAMS)
         );
         return root;
     }

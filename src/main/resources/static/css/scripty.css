@@ -7554,6 +7554,83 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
     pointer-events: auto;
 }
 
+/* Custom spellcheck overlay + suggestion popup */
+.block-content form .scripty-spell-overlay {
+    grid-area: 1 / 1;
+    width: 100%;
+    margin: 0;
+    padding: 0 0 0.2em;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    pointer-events: none;
+    visibility: hidden;
+    z-index: 0;
+    color: inherit;
+    font: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    box-sizing: border-box;
+}
+
+.block-content form.scripty-spell-active .scripty-spell-overlay {
+    visibility: hidden;
+}
+
+.block-content form.scripty-spell-active:focus-within .scripty-spell-overlay {
+    visibility: visible;
+}
+
+.block-content form.scripty-spell-active:focus-within .block-input-textarea.script-block-text {
+    position: relative;
+    z-index: 1;
+    color: transparent;
+    caret-color: var(--fg, #111);
+    -webkit-text-fill-color: transparent;
+}
+
+.scripty-spell-error {
+    border-bottom: 2px solid color-mix(in srgb, var(--bad-fg-color, #e11d48) 85%, transparent);
+    background: color-mix(in srgb, var(--bad-fg-color, #e11d48) 8%, transparent);
+}
+
+.scripty-spell-suggestions {
+    position: absolute;
+    z-index: 1300;
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
+    background: var(--bg, #fff);
+    color: var(--fg, #111);
+    border: 1px solid color-mix(in srgb, var(--fg, #111) 18%, transparent);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--fg, #111) 12%, transparent);
+    max-height: 14rem;
+    overflow-y: auto;
+    font-size: 0.85rem;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+.scripty-spell-suggestions li {
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+}
+
+.scripty-spell-suggestions li.is-active,
+.scripty-spell-suggestions li:hover {
+    background: color-mix(in srgb, var(--accent, #145591) 16%, transparent);
+    color: var(--accent, #145591);
+}
+
+.scripty-spell-suggestions li.scripty-spell-ignore {
+    border-top: 1px solid color-mix(in srgb, var(--fg, #111) 12%, transparent);
+    margin-top: 0.15rem;
+    font-size: 0.8rem;
+    color: color-mix(in srgb, var(--fg, #111) 70%, transparent);
+    text-transform: none;
+    letter-spacing: normal;
+}
+
 /* Fountain power-user: character autocomplete */
 .fountain-char-autocomplete {
     position: absolute;

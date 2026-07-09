@@ -1495,6 +1495,25 @@
     }
     window.scriptyToggleFountainLocationList = toggleLocationList;
 
+    /** Words the custom spellchecker should not flag (cast names, locations, scene tokens). */
+    window.scriptyGetSpellAllowlist = function() {
+        var words = [];
+        characterEntries().forEach(function(entry) {
+            if (entry && entry.name) words.push(entry.name);
+        });
+        collectLocationItems().forEach(function(entry) {
+            if (entry && entry.name) words.push(entry.name);
+        });
+        sceneEntries().forEach(function(entry) {
+            if (entry && entry.name) words.push(entry.name);
+        });
+        document.querySelectorAll('.project-script .script-character-name, .project-script .reader-visible-character-name').forEach(function(el) {
+            var name = (el.textContent || '').trim();
+            if (name) words.push(name);
+        });
+        return words;
+    };
+
     // --- Event wiring ---
 
     document.addEventListener('keydown', function(e) {

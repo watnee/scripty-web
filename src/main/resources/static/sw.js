@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v19';
+const CACHE_NAME = 'scripty-cache-v20';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/css/missing.min.css',
@@ -13,9 +13,13 @@ const ASSETS_TO_CACHE = [
   '/js/toolbar-toggle.js',
   '/js/import-script.js',
   '/js/fountain-power.js',
+  '/js/vendor/typo.js',
+  '/js/spellcheck.js',
   '/js/offline-store.js',
   '/js/offline.js',
   '/js/offline-edit.js',
+  '/dictionaries/en_US/en_US.aff',
+  '/dictionaries/en_US/en_US.dic',
   '/favicon.ico',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -50,6 +54,7 @@ function isCacheableAppRequest(url, request) {
 function isStaticAsset(url) {
   return url.pathname.startsWith('/css/') ||
     url.pathname.startsWith('/js/') ||
+    url.pathname.startsWith('/dictionaries/') ||
     url.pathname.startsWith('/icons/') ||
     url.pathname.startsWith('/fonts/') ||
     url.pathname === '/favicon.ico' ||
@@ -188,7 +193,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.startsWith('/css/') || url.pathname.startsWith('/js/')) {
+  if (url.pathname.startsWith('/css/') || url.pathname.startsWith('/js/') || url.pathname.startsWith('/dictionaries/')) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {

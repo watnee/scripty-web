@@ -89,7 +89,7 @@
                 <p class="muted shortcuts-context">Paste from Scripty keeps element types. Paste from elsewhere (Fountain or plain screenplay text) splits into typed blocks when it looks like a script; short prose stays in the current block.</p>
             </div>
 
-            <div class="help-card" data-keywords="inline editing enter escape shift submit save block scene character autocomplete suggestion">
+            <div class="help-card" data-keywords="inline editing enter escape shift submit save block scene character autocomplete suggestion spellcheck spelling">
                 <h3>✍️ Inline Editing</h3>
                 <p class="muted shortcuts-context">While editing blocks, scenes, or project titles inline:</p>
                 <div class="shortcuts-list">
@@ -108,6 +108,10 @@
                     <div class="help-shortcut-row">
                         <span>Cycle element type backward</span>
                         <span class="shortcut-keys"><kbd>Shift</kbd> + <kbd>Tab</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Spelling suggestions</span>
+                        <kbd class="kb-mod-period">Cmd + .</kbd>
                     </div>
                     <div class="help-shortcut-row">
                         <span>Autocomplete navigate</span>
@@ -190,6 +194,9 @@
         });
         document.querySelectorAll('.kb-mod-minus').forEach(function(el) {
             el.textContent = isMac ? '⌘ −' : 'Ctrl + −';
+        });
+        document.querySelectorAll('.kb-mod-period').forEach(function(el) {
+            el.textContent = isMac ? '⌘ .' : 'Ctrl + .';
         });
         document.querySelectorAll('.kb-ctrl').forEach(function(el) {
             el.textContent = modLabel;

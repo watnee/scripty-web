@@ -560,14 +560,11 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/create")
-    public String create(Model model) {
-
-        CreateProjectViewModel viewModel = projectService.getCreateProjectViewModel();
-
-        model.addAttribute("viewModel", viewModel);
-        model.addAttribute("commandModel", viewModel.getCreateProjectCommandModel());
-
-        return "project/create";
+    public String create() {
+        CreateProjectCommandModel commandModel = new CreateProjectCommandModel();
+        commandModel.setTitle("Untitled Project");
+        Project project = projectService.saveCreateProjectCommandModel(commandModel);
+        return "redirect:/project/show?id=" + project.getId();
     }
 
     @RequestMapping(value = "/import", method = RequestMethod.POST)

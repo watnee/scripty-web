@@ -22,7 +22,7 @@
             </nav>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
                 <h1 style="margin: 0;">Projects</h1>
-                <a href="${pageContext.request.contextPath}/project/create" role="button" style="margin: 0;">Create New Project</a>
+                <a href="${pageContext.request.contextPath}/project/create" role="button" style="margin: 0;">New Project</a>
             </div>
             <table id="table-projects">
                 <c:forEach items="${viewModel.projects}" var="project">

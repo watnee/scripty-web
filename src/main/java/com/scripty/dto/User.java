@@ -44,6 +44,14 @@ public class User {
     private boolean director;
     @Transient
     private boolean producer;
+    @Transient
+    private boolean writer;
+    @Transient
+    private boolean actor;
+    @Transient
+    private boolean crew;
+    @Transient
+    private boolean directorOfPhotography;
 
     public Integer getId() {
         return id;
@@ -123,6 +131,38 @@ public class User {
 
     public void setProducer(boolean producer) {
         this.producer = producer;
+    }
+
+    public boolean isWriter() {
+        return writer;
+    }
+
+    public void setWriter(boolean writer) {
+        this.writer = writer;
+    }
+
+    public boolean isActor() {
+        return actor;
+    }
+
+    public void setActor(boolean actor) {
+        this.actor = actor;
+    }
+
+    public boolean isCrew() {
+        return crew;
+    }
+
+    public void setCrew(boolean crew) {
+        this.crew = crew;
+    }
+
+    public boolean isDirectorOfPhotography() {
+        return directorOfPhotography;
+    }
+
+    public void setDirectorOfPhotography(boolean directorOfPhotography) {
+        this.directorOfPhotography = directorOfPhotography;
     }
 
     public Integer getDefaultProjectId() {

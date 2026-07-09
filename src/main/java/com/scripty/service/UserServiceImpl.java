@@ -49,6 +49,18 @@ public class UserServiceImpl implements UserService {
         if (user.isProducer()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_PRODUCER"));
         }
+        if (user.isWriter()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_WRITER"));
+        }
+        if (user.isActor()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_ACTOR"));
+        }
+        if (user.isCrew()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_CREW"));
+        }
+        if (user.isDirectorOfPhotography()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_DP"));
+        }
         return saved;
     }
 
@@ -56,10 +68,7 @@ public class UserServiceImpl implements UserService {
     public User read(Integer id) {
         User user = userRepository.findById(id).orElse(null);
         if (user != null) {
-            List<Authority> authorities = authorityRepository.findByUsername(user.getUsername());
-            user.setAdmin(authorities.stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())));
-            user.setDirector(authorities.stream().anyMatch(a -> "ROLE_DIRECTOR".equals(a.getAuthority())));
-            user.setProducer(authorities.stream().anyMatch(a -> "ROLE_PRODUCER".equals(a.getAuthority())));
+            applyAuthorities(user);
         }
         return user;
     }
@@ -68,10 +77,7 @@ public class UserServiceImpl implements UserService {
     public User readByUsername(String username) {
         User user = userRepository.findByUsername(username).orElse(null);
         if (user != null) {
-            List<Authority> authorities = authorityRepository.findByUsername(user.getUsername());
-            user.setAdmin(authorities.stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())));
-            user.setDirector(authorities.stream().anyMatch(a -> "ROLE_DIRECTOR".equals(a.getAuthority())));
-            user.setProducer(authorities.stream().anyMatch(a -> "ROLE_PRODUCER".equals(a.getAuthority())));
+            applyAuthorities(user);
         }
         return user;
     }
@@ -102,6 +108,18 @@ public class UserServiceImpl implements UserService {
         if (user.isProducer()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_PRODUCER"));
         }
+        if (user.isWriter()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_WRITER"));
+        }
+        if (user.isActor()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_ACTOR"));
+        }
+        if (user.isCrew()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_CREW"));
+        }
+        if (user.isDirectorOfPhotography()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_DP"));
+        }
     }
 
     @Override
@@ -115,10 +133,7 @@ public class UserServiceImpl implements UserService {
     public List<User> list() {
         List<User> users = userRepository.findAllByOrderByUsernameAsc();
         for (User user : users) {
-            List<Authority> authorities = authorityRepository.findByUsername(user.getUsername());
-            user.setAdmin(authorities.stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())));
-            user.setDirector(authorities.stream().anyMatch(a -> "ROLE_DIRECTOR".equals(a.getAuthority())));
-            user.setProducer(authorities.stream().anyMatch(a -> "ROLE_PRODUCER".equals(a.getAuthority())));
+            applyAuthorities(user);
         }
         return users;
     }
@@ -139,6 +154,10 @@ public class UserServiceImpl implements UserService {
             uvm.setAdmin(user.isAdmin());
             uvm.setDirector(user.isDirector());
             uvm.setProducer(user.isProducer());
+            uvm.setWriter(user.isWriter());
+            uvm.setActor(user.isActor());
+            uvm.setCrew(user.isCrew());
+            uvm.setDirectorOfPhotography(user.isDirectorOfPhotography());
             userViewModels.add(uvm);
         }
         vm.setUsers(userViewModels);
@@ -166,6 +185,10 @@ public class UserServiceImpl implements UserService {
         commandModel.setAdmin(user.isAdmin());
         commandModel.setDirector(user.isDirector());
         commandModel.setProducer(user.isProducer());
+        commandModel.setWriter(user.isWriter());
+        commandModel.setActor(user.isActor());
+        commandModel.setCrew(user.isCrew());
+        commandModel.setDirectorOfPhotography(user.isDirectorOfPhotography());
         vm.setEditUserCommandModel(commandModel);
         return vm;
     }
@@ -182,6 +205,10 @@ public class UserServiceImpl implements UserService {
         user.setAdmin(cmd.isAdmin());
         user.setDirector(cmd.isDirector());
         user.setProducer(cmd.isProducer());
+        user.setWriter(cmd.isWriter());
+        user.setActor(cmd.isActor());
+        user.setCrew(cmd.isCrew());
+        user.setDirectorOfPhotography(cmd.isDirectorOfPhotography());
         return create(user);
     }
 
@@ -196,6 +223,10 @@ public class UserServiceImpl implements UserService {
         user.setAdmin(cmd.isAdmin());
         user.setDirector(cmd.isDirector());
         user.setProducer(cmd.isProducer());
+        user.setWriter(cmd.isWriter());
+        user.setActor(cmd.isActor());
+        user.setCrew(cmd.isCrew());
+        user.setDirectorOfPhotography(cmd.isDirectorOfPhotography());
         update(user);
         return user;
     }
@@ -219,6 +250,23 @@ public class UserServiceImpl implements UserService {
         vm.setTeam(user.getTeam());
         vm.setEnabled(user.isEnabled());
         vm.setAdmin(user.isAdmin());
+        vm.setDirector(user.isDirector());
+        vm.setProducer(user.isProducer());
+        vm.setWriter(user.isWriter());
+        vm.setActor(user.isActor());
+        vm.setCrew(user.isCrew());
+        vm.setDirectorOfPhotography(user.isDirectorOfPhotography());
         return vm;
+    }
+
+    private void applyAuthorities(User user) {
+        List<Authority> authorities = authorityRepository.findByUsername(user.getUsername());
+        user.setAdmin(authorities.stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())));
+        user.setDirector(authorities.stream().anyMatch(a -> "ROLE_DIRECTOR".equals(a.getAuthority())));
+        user.setProducer(authorities.stream().anyMatch(a -> "ROLE_PRODUCER".equals(a.getAuthority())));
+        user.setWriter(authorities.stream().anyMatch(a -> "ROLE_WRITER".equals(a.getAuthority())));
+        user.setActor(authorities.stream().anyMatch(a -> "ROLE_ACTOR".equals(a.getAuthority())));
+        user.setCrew(authorities.stream().anyMatch(a -> "ROLE_CREW".equals(a.getAuthority())));
+        user.setDirectorOfPhotography(authorities.stream().anyMatch(a -> "ROLE_DP".equals(a.getAuthority())));
     }
 }

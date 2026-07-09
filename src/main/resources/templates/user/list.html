@@ -34,7 +34,7 @@
                     <td><a th:href="@{/user/show(id=${user.id})}" th:text="${user.username}"></a></td>
                     <td th:text="${user.firstName} + ' ' + ${user.lastName}"></td>
                     <td th:text="${user.team}"></td>
-                    <td th:text="${user.admin} ? (${user.director} ? (${user.producer} ? 'Admin, Director, Producer' : 'Admin, Director') : (${user.producer} ? 'Admin, Producer' : 'Admin')) : (${user.director} ? (${user.producer} ? 'Director, Producer' : 'Director') : (${user.producer} ? 'Producer' : 'User'))"></td>
+                    <td th:text="${user.rolesLabel}"></td>
                     <td>
                         <a th:href="@{/user/edit(id=${user.id})}" role="button">edit</a>
                         <a th:href="@{/user/delete(id=${user.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this user?') halt">delete</a>

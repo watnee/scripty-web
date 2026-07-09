@@ -52,6 +52,22 @@
                 <input type="checkbox" th:field="*{producer}" />
                 Producer
             </label>
+            <label>
+                <input type="checkbox" th:field="*{writer}" />
+                Writer
+            </label>
+            <label>
+                <input type="checkbox" th:field="*{actor}" />
+                Actor
+            </label>
+            <label>
+                <input type="checkbox" th:field="*{crew}" />
+                Crew
+            </label>
+            <label>
+                <input type="checkbox" th:field="*{directorOfPhotography}" />
+                Director of Photography
+            </label>
             <p>
                 <a th:href="@{/user/list}" role="button">Cancel</a>
                 <button type="submit">Submit</button>

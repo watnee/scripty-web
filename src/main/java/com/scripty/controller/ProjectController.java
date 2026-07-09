@@ -80,7 +80,7 @@ public class ProjectController {
         if (principal != null) {
             User currentUser = userService.readByUsername(principal.getName());
             if (currentUser != null) {
-                if (!currentUser.isAdmin() && !currentUser.isDirector() && !currentUser.isProducer()) {
+                if (!currentUser.isAdmin() && !currentUser.isDirector() && !currentUser.isProducer() && !currentUser.isWriter() && !currentUser.isActor() && !currentUser.isCrew() && !currentUser.isDirectorOfPhotography()) {
                     userTeam = currentUser.getTeam();
                 }
                 defaultProjectId = currentUser.getDefaultProjectId();

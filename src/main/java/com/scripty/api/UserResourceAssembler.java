@@ -30,6 +30,12 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
         resource.setLastName(profile.getLastName());
         resource.setTeam(profile.getTeam());
         resource.setAdmin(profile.isAdmin());
+        resource.setDirector(profile.isDirector());
+        resource.setProducer(profile.isProducer());
+        resource.setWriter(profile.isWriter());
+        resource.setActor(profile.isActor());
+        resource.setCrew(profile.isCrew());
+        resource.setDirectorOfPhotography(profile.isDirectorOfPhotography());
         resource.setEnabled(profile.isEnabled());
         return EntityModel.of(resource).add(userLinks(profile.getId()));
     }
@@ -42,7 +48,12 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
         resource.setLastName(user.getLastName());
         resource.setTeam(user.getTeam());
         resource.setAdmin(user.isAdmin());
+        resource.setDirector(user.isDirector());
         resource.setProducer(user.isProducer());
+        resource.setWriter(user.isWriter());
+        resource.setActor(user.isActor());
+        resource.setCrew(user.isCrew());
+        resource.setDirectorOfPhotography(user.isDirectorOfPhotography());
         return EntityModel.of(resource).add(userLinks(user.getId()));
     }
 
@@ -71,7 +82,12 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
         resource.setLastName(user.getLastName());
         resource.setTeam(user.getTeam());
         resource.setAdmin(user.isAdmin());
+        resource.setDirector(user.isDirector());
         resource.setProducer(user.isProducer());
+        resource.setWriter(user.isWriter());
+        resource.setActor(user.isActor());
+        resource.setCrew(user.isCrew());
+        resource.setDirectorOfPhotography(user.isDirectorOfPhotography());
         resource.setEnabled(user.isEnabled());
         return resource;
     }

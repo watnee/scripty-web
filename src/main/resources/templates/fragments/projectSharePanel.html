@@ -24,7 +24,7 @@
         This project is not restricted to a team, so all users can view it.
     </p>
     <p class="project-share-access-note muted" th:if="${!#lists.isEmpty(teams)}">
-        Users on assigned teams plus admins, directors, and producers can view this project.
+        Users on assigned teams plus admins, directors, producers, writers, actors, crew, and directors of photography can view this project.
     </p>
     <ul class="project-share-user-list" th:if="${!#lists.isEmpty(shareAccessUsers)}">
         <li th:each="user : ${shareAccessUsers}" class="project-share-user">

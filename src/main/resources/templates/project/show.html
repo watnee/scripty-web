@@ -160,32 +160,27 @@
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
             </a>
-            <button id="nav-import"
-                    type="button"
-                    class="nav-dropdown-toggle import-toolbar-btn"
-                    aria-label="Import script"
-                    title="Import Fountain, text, or Word document">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-            </button>
-            <div class="nav-dropdown export-dropdown" id="project-export-dropdown">
-                <button id="nav-export"
+            <div class="nav-dropdown file-dropdown" id="project-file-dropdown">
+                <button id="nav-file"
                         type="button"
-                        class="nav-dropdown-toggle export-toolbar-btn"
+                        class="nav-dropdown-toggle file-toolbar-btn"
                         aria-haspopup="true"
                         aria-expanded="false"
-                        aria-label="Export script"
-                        title="Export script">
+                        aria-label="Import, export, and print"
+                        title="Import, export, and print">
                     <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="7 10 12 15 17 10"></polyline>
                         <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
                 </button>
-                <div class="nav-dropdown-menu export-menu" role="menu" aria-label="Export formats">
+                <div class="nav-dropdown-menu file-menu" role="menu" aria-label="Import, export, and print">
+                    <button id="nav-import"
+                            type="button"
+                            class="nav-dropdown-item"
+                            role="menuitem">Import</button>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <div class="file-menu-label" aria-hidden="true">Export</div>
                     <a class="nav-dropdown-item"
                        role="menuitem"
                        th:href="@{/project/export(id=${viewModel.id}, format=pdf)}"
@@ -198,6 +193,12 @@
                        role="menuitem"
                        th:href="@{/project/export(id=${viewModel.id}, format=fountain)}"
                        hx-boost="false">Fountain</a>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <button id="nav-print"
+                            type="button"
+                            class="nav-dropdown-item"
+                            role="menuitem"
+                            onclick="window.print()">Print</button>
                 </div>
             </div>
             <form id="project-import-form"
@@ -224,18 +225,6 @@
                     <line x1="16" y1="17" x2="8" y2="17"></line>
                 </svg>
             </a>
-            <button id="nav-print"
-                    type="button"
-                    class="nav-dropdown-toggle print-toolbar-btn"
-                    aria-label="Print script"
-                    title="Print script"
-                    onclick="window.print()">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                    <rect x="6" y="14" width="12" height="8"></rect>
-                </svg>
-            </button>
             <button id="focus-toggle"
                     type="button"
                     class="nav-dropdown-toggle focus-toolbar-btn"
@@ -509,35 +498,41 @@
     </script>
     <script>
     (function() {
-        const exportDropdown = document.getElementById('project-export-dropdown');
-        const exportToggle = exportDropdown ? exportDropdown.querySelector('.export-toolbar-btn') : null;
-        if (!exportDropdown || !exportToggle) return;
+        const fileDropdown = document.getElementById('project-file-dropdown');
+        const fileToggle = fileDropdown ? fileDropdown.querySelector('.file-toolbar-btn') : null;
+        if (!fileDropdown || !fileToggle) return;
 
-        function setExportOpen(isOpen) {
-            exportDropdown.classList.toggle('open', isOpen);
-            exportToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        function setFileOpen(isOpen) {
+            fileDropdown.classList.toggle('open', isOpen);
+            fileToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         }
 
-        exportToggle.addEventListener('click', function(e) {
+        fileToggle.addEventListener('click', function(e) {
             e.stopPropagation();
-            const isOpen = exportDropdown.classList.contains('open');
+            const isOpen = fileDropdown.classList.contains('open');
             document.querySelectorAll('.nav-dropdown').forEach(function(d) {
                 d.classList.remove('open');
                 const toggle = d.querySelector('.nav-dropdown-toggle');
                 if (toggle) toggle.setAttribute('aria-expanded', 'false');
             });
-            setExportOpen(!isOpen);
+            setFileOpen(!isOpen);
+        });
+
+        fileDropdown.addEventListener('click', function(e) {
+            const item = e.target.closest('.nav-dropdown-item');
+            if (!item) return;
+            setFileOpen(false);
         });
 
         document.addEventListener('click', function(e) {
-            if (!exportDropdown.contains(e.target)) {
-                setExportOpen(false);
+            if (!fileDropdown.contains(e.target)) {
+                setFileOpen(false);
             }
         });
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                setExportOpen(false);
+                setFileOpen(false);
             }
         });
     })();

@@ -386,7 +386,11 @@ public class FountainImportServiceImpl implements FountainImportService {
 
             flushDialogue(blocks, dialogueBuffer);
             pendingCharacter = null;
-            blocks.add(new ParsedBlock(Block.TYPE_ACTION, trimmed));
+            if (trimmed.startsWith("!")) {
+                blocks.add(new ParsedBlock(Block.TYPE_ACTION, trimmed.substring(1)));
+            } else {
+                blocks.add(new ParsedBlock(Block.TYPE_ACTION, trimmed));
+            }
             mode = ParseMode.ACTION;
         }
 

@@ -45,12 +45,27 @@ public class ScriptImportTextExtractor {
 
     private static String extractDocx(InputStream inputStream) throws IOException {
         try (XWPFDocument document = new XWPFDocument(inputStream)) {
-            StringBuilder text = new StringBuilder();
-            for (XWPFParagraph paragraph : document.getParagraphs()) {
-                appendParagraph(text, paragraph.getText());
+            if (DocxToFountainConverter.looksLikeScreenplayLayout(document)) {
+                return DocxToFountainConverter.convert(document);
             }
-            return text.toString();
+            return extractDocxPlain(document);
         }
+    }
+
+    private static String extractDocxPlain(XWPFDocument document) {
+        StringBuilder text = new StringBuilder();
+        for (XWPFParagraph paragraph : document.getParagraphs()) {
+            String paragraphText = paragraph.getText();
+            if (paragraphText == null) {
+                continue;
+            }
+            String trimmed = paragraphText.stripTrailing();
+            if (text.length() > 0) {
+                text.append('\n');
+            }
+            text.append(trimmed);
+        }
+        return text.toString();
     }
 
     private static String extractDoc(InputStream inputStream) throws IOException {
@@ -58,17 +73,6 @@ public class ScriptImportTextExtractor {
              WordExtractor extractor = new WordExtractor(document)) {
             return normalizeLineEndings(extractor.getText());
         }
-    }
-
-    private static void appendParagraph(StringBuilder text, String paragraphText) {
-        if (paragraphText == null) {
-            return;
-        }
-        String trimmed = paragraphText.stripTrailing();
-        if (text.length() > 0) {
-            text.append('\n');
-        }
-        text.append(trimmed);
     }
 
     private static String normalizeLineEndings(String text) {

@@ -2295,28 +2295,38 @@ input.project-list-search:focus-visible {
     display: block;
 }
 
-.export-dropdown {
+.file-dropdown {
     display: inline-block;
     position: relative;
 }
 
-.export-dropdown .nav-dropdown-menu.export-menu {
+.file-dropdown .nav-dropdown-menu.file-menu {
     display: none;
     right: 0;
     left: auto;
-    min-width: 8.5rem;
+    min-width: 10.5rem;
     padding: 0.35rem;
     transform-origin: top right;
     z-index: 1100;
 }
 
-.export-dropdown.open .nav-dropdown-menu.export-menu {
+.file-dropdown.open .nav-dropdown-menu.file-menu {
     display: block;
 }
 
-.export-menu .nav-dropdown-item {
+.file-menu .nav-dropdown-item {
     font-size: 0.84rem;
     font-weight: 500;
+}
+
+.file-menu-label {
+    padding: 0.35rem 0.65rem 0.15rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted, #888);
+    user-select: none;
 }
 
 .project-share-intro {
@@ -6081,9 +6091,7 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
 .text-size-control .spellcheck-toggle-btn svg,
 .text-size-control .version-history-toolbar-btn svg,
 .text-size-control .title-page-toolbar-btn svg,
-.text-size-control .print-toolbar-btn svg,
-.text-size-control .import-toolbar-btn svg,
-.text-size-control .export-toolbar-btn svg,
+.text-size-control .file-toolbar-btn svg,
 .text-size-control .share-toolbar-btn svg,
 .text-size-control .outline-toolbar-btn svg,
 .text-size-control .character-list-toolbar-btn svg,

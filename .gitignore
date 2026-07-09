@@ -447,3 +447,7 @@ uploads/
 /target/
 /nbproject/
 /db/
+
+# Local test-server process files
+*.pid
+scripty-server*.pid

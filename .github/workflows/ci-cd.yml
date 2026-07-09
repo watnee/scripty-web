@@ -76,6 +76,7 @@ jobs:
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     environment:
       name: production
     steps:
@@ -114,9 +115,10 @@ jobs:
           echo "Railway secrets are present."
 
       - name: Install Railway CLI
-        run: npm install -g @railway/cli@5.2.0
+        run: npm install -g @railway/cli@5.26.0
 
       - name: Deploy to Railway
+        id: deploy
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
@@ -125,14 +127,24 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             message="Manual: ${{ inputs.reason }} (${{ github.sha }})"
           fi
-          echo "Deploying commit ${{ github.sha }} via railway up --detach"
+          echo "Deploying commit ${{ github.sha }} via railway up --ci (waits for healthcheck)"
+          set +e
           railway up \
             --service "$RAILWAY_SERVICE_ID" \
             --message "$message" \
-            --detach
+            --ci
+          status=$?
+          set -e
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          if [ "$status" -ne 0 ]; then
+            echo "::error title=Railway deploy failed::railway up --ci exited $status. Check build/deploy logs in the Railway dashboard."
+            exit "$status"
+          fi
 
       - name: Summarize
         if: always()
+        env:
+          DEPLOY_EXIT: ${{ steps.deploy.outputs.exit_code }}
         run: |
           {
             echo "## Deploy to Railway"
@@ -148,7 +160,9 @@ jobs:
             fi
             echo ""
             if [ "${{ job.status }}" = "success" ]; then
-              echo "Build queued on Railway (\`railway up --detach\`). Watch the deployment in the Railway dashboard."
+              echo "Deploy finished successfully (\`railway up --ci\`). Railway waited for \`/health\` before marking the release live."
+            elif [ -n "${DEPLOY_EXIT:-}" ] && [ "$DEPLOY_EXIT" != "0" ]; then
+              echo "Railway reported a failed deploy (exit \`$DEPLOY_EXIT\`). Open the service’s latest deployment in the Railway dashboard for build/runtime logs."
             else
               echo "Deploy did not succeed. Check the **Check Railway secrets** and **Deploy to Railway** steps above."
             fi

@@ -2,12 +2,12 @@
 
 ## CI/CD
 
-GitHub Actions runs Maven verify on every pull request and on `main`. After verify succeeds on `main` (or a manual **Run workflow**), the app deploys to Railway.
+GitHub Actions runs Maven verify on every pull request and on `main`. After verify succeeds on `main` (or a manual **Run workflow**), the app deploys to Railway and the job **waits until `/health` passes** before succeeding.
 
 ```text
 PR opened/updated  →  Verify (Maven)
-Push to main       →  Verify (Maven)  →  Deploy to Railway
-Actions → Run workflow  →  Verify (Maven)  →  Deploy to Railway
+Push to main       →  Verify (Maven)  →  Deploy to Railway (wait for health)
+Actions → Run workflow  →  Verify (Maven)  →  Deploy to Railway (wait for health)
 ```
 
 ### One-time setup
@@ -26,5 +26,11 @@ Actions → Run workflow  →  Verify (Maven)  →  Deploy to Railway
 ### Reading a run
 
 - **Verify (Maven)** — always runs; PRs stop here.
-- **Deploy to Railway** — only on `main` (push or **Run workflow** from `main`); fails fast with a clear summary if secrets are missing.
+- **Deploy to Railway** — only on `main` (push or **Run workflow** from `main`); fails fast if secrets are missing; uses `railway up --ci` so a red Actions job means the Railway release failed (build or healthcheck), not just “upload queued.”
 - Open the job’s **Summary** tab for a short status table and next-step hints.
+
+### Deploy config
+
+- `railway.json` — Railpack builder, start command, `/health` healthcheck, restart policy
+- `railpack.json` — Java 17 + start command for Railpack
+- `.railwayignore` — keeps `railway up` uploads small (skips `target/`, local DBs, logs, etc.)

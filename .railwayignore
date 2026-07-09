@@ -1,0 +1,15 @@
+# Keep railway up uploads small — Railway builds from source on their side.
+.git/
+.github/
+.agents/
+.claude/
+target/
+tmp/
+uploads/
+db/
+*.log
+*.pid
+*.command
+.reloadtrigger
+hs_err_pid*
+scripty-server*

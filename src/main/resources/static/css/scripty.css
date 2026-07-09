@@ -78,7 +78,6 @@ body, main, header, nav, footer, table, tr, td, th, input, textarea, button, sel
     background: var(--interactive-bg);
     border: 1px solid var(--muted-fg);
     border-radius: var(--border-radius);
-    box-shadow: 0 2px 4px -2px var(--fg);
 }
 
 .header-actions .help-dropdown,
@@ -1107,9 +1106,7 @@ button.block-drag-menu-toggle.nav-dropdown-toggle:active {
     background-color: var(--block-menu-bg, var(--box-bg, #ffffff));
     border: 1px solid var(--block-menu-border, color-mix(in srgb, var(--border, #cbd5e1) 88%, var(--fg, #0f172a) 12%));
     border-radius: 0.7rem;
-    box-shadow:
-        0 1px 2px color-mix(in srgb, var(--fg, #0f172a) 5%, transparent),
-        0 10px 28px color-mix(in srgb, var(--fg, #0f172a) 14%, transparent);
+    box-shadow: none;
 }
 
 :root.-dark-theme .block-drag-menu-dropdown .nav-dropdown-menu.block-drag-menu {
@@ -1356,9 +1353,7 @@ button.create-below.create-below-menu-toggle:active {
     background-color: var(--block-menu-bg, var(--box-bg, #ffffff));
     border: 1px solid var(--block-menu-border, color-mix(in srgb, var(--border, #cbd5e1) 88%, var(--fg, #0f172a) 12%));
     border-radius: 0.7rem;
-    box-shadow:
-        0 1px 2px color-mix(in srgb, var(--fg, #0f172a) 5%, transparent),
-        0 10px 28px color-mix(in srgb, var(--fg, #0f172a) 14%, transparent);
+    box-shadow: none;
 }
 
 :root.-dark-theme .create-below-menu-dropdown .nav-dropdown-menu.create-below-menu {
@@ -1604,7 +1599,6 @@ h1:hover > small .project-delete-btn,
     background: var(--interactive-bg);
     border: 1px solid var(--muted-fg);
     border-radius: var(--border-radius);
-    box-shadow: 0 2px 4px -2px var(--fg);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1616,7 +1610,6 @@ h1:hover > small .project-delete-btn,
 .text-size-control .nav-dropdown-toggle:hover,
 .text-size-control .nav-dropdown-toggle:focus {
     filter: brightness(1.1);
-    box-shadow: 0 3px 6px -2px var(--fg);
     background-color: var(--interactive-bg);
 }
 
@@ -1703,17 +1696,9 @@ body.htmx-swapping {
     background-color: var(--box-bg, #ffffff);
     border: 1px solid var(--border, #e0e0e0);
     border-radius: 0.65rem;
-    box-shadow:
-        0 1px 2px rgba(15, 23, 42, 0.06),
-        0 8px 24px rgba(15, 23, 42, 0.12);
+    box-shadow: none;
     z-index: 1000;
     transform-origin: top right;
-}
-
-:root.-dark-theme .nav-dropdown-menu {
-    box-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.24),
-        0 10px 28px rgba(0, 0, 0, 0.42);
 }
 
 .header-actions .nav-dropdown-menu {
@@ -6055,7 +6040,6 @@ aside.block-actions {
     background: var(--interactive-bg);
     border: 1px solid var(--muted-fg);
     border-radius: var(--border-radius);
-    box-shadow: 0 2px 4px -2px var(--fg);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -6073,7 +6057,6 @@ aside.block-actions {
 .has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history:hover,
 .has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history:focus {
     filter: brightness(1.1);
-    box-shadow: 0 3px 6px -2px var(--fg);
     background-color: var(--interactive-bg);
 }
 
@@ -6087,38 +6070,6 @@ aside.block-actions {
     background: var(--interactive-bg);
     border: 1px solid var(--muted-fg);
     border-radius: var(--border-radius);
-    box-shadow: 0 2px 4px -2px var(--fg);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--fg);
-    font-size: 0.85rem;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
-    width: 2.25rem;
-    height: 2.25rem;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history:hover,
-.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history:focus {
-    filter: brightness(1.1);
-    box-shadow: 0 3px 6px -2px var(--fg);
-    background-color: var(--interactive-bg);
-}
-
-.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history svg {
-    display: block;
-    width: 20px;
-    height: 20px;
-}
-
-.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn {
-    background: var(--interactive-bg);
-    border: 1px solid var(--muted-fg);
-    border-radius: var(--border-radius);
-    box-shadow: 0 2px 4px -2px var(--fg);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -6135,7 +6086,6 @@ aside.block-actions {
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn:hover,
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn:focus {
     filter: brightness(1.1);
-    box-shadow: 0 3px 6px -2px var(--fg);
     background-color: var(--interactive-bg);
 }
 

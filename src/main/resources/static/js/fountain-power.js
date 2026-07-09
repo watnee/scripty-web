@@ -1,0 +1,764 @@
+/**
+ * Fountain screenplay power-user features:
+ * - Tab / Shift+Tab element type cycling
+ * - Smart next-element type on Enter
+ * - Live Fountain syntax detection (force markers + heuristics)
+ * - Character cue autocomplete from project cast
+ * - Scene / section outline navigator
+ */
+(function() {
+    'use strict';
+
+    if (window._scriptyFountainPowerInit) return;
+    window._scriptyFountainPowerInit = true;
+
+    var TAB_CYCLE = [
+        'SCENE', 'ACTION', 'CHARACTER', 'DIALOGUE', 'PARENTHETICAL',
+        'TRANSITION', 'SHOT', 'DUAL_DIALOGUE', 'LYRICS', 'CENTERED',
+        'SECTION', 'SYNOPSIS', 'NOTE', 'PAGE_BREAK'
+    ];
+
+    var SCENE_HEADING = /^(?:INT\.?|EXT\.?|EST\.?|INT\.?\/EXT\.?|I\/E\.?)\s+.+/i;
+    var TRANSITION = /^[A-Z][A-Z0-9 ]+ TO:$/;
+    var SHOT = /^(?:ANGLE ON|ANOTHER ANGLE|CLOSE ON|CLOSE UP|CLOSEUP|C\.U\.?|CU|POV|INSERT|BACK TO SCENE|BACK TO|TIGHT ON|WIDER(?: SHOT)?|TRACKING|CRANE|AERIAL|ESTABLISHING|FAVOR ON|REVERSE ANGLE)\b.*/i;
+
+    var characterCache = { projectId: null, names: [], loadedAt: 0 };
+    var autocompleteEl = null;
+    var autocompleteIndex = -1;
+    var outlineEl = null;
+
+    function projectId() {
+        if (typeof window.scriptyResolveProjectId === 'function') {
+            return window.scriptyResolveProjectId() || '';
+        }
+        var params = new URLSearchParams(window.location.search);
+        return params.get('id') || '';
+    }
+
+    function typeLabel(type) {
+        return window.scriptyBlockTypeLabel
+            ? window.scriptyBlockTypeLabel(type)
+            : (type || 'Action');
+    }
+
+    function isBlockContentTextarea(el) {
+        return !!el && el.tagName === 'TEXTAREA' && el.name === 'content' && !!el.closest('.block-content');
+    }
+
+    function findAnyBlockRow(el) {
+        return el ? el.closest('.block-row, tr[data-block-id], tr:not([data-block-id])') : null;
+    }
+
+    function isCreateRow(row) {
+        return !!row && !row.hasAttribute('data-block-id');
+    }
+
+    function rowType(row) {
+        if (!row) return 'ACTION';
+        return (row.getAttribute('data-block-type') || 'ACTION').toUpperCase();
+    }
+
+    function previousSavedRow(row) {
+        if (!row) return null;
+        var prev = row.previousElementSibling;
+        while (prev) {
+            if (prev.classList && prev.classList.contains('block-row') && prev.hasAttribute('data-block-id')) {
+                return prev;
+            }
+            if (prev.tagName === 'TR' && prev.hasAttribute('data-block-id')) {
+                return prev;
+            }
+            prev = prev.previousElementSibling;
+        }
+        return null;
+    }
+
+    /** Industry-style next element after pressing Enter on a typed block. */
+    function nextTypeAfter(type) {
+        switch ((type || 'ACTION').toUpperCase()) {
+            case 'SCENE':
+            case 'SHOT':
+            case 'CENTERED':
+            case 'SECTION':
+            case 'SYNOPSIS':
+            case 'NOTE':
+            case 'PAGE_BREAK':
+                return 'ACTION';
+            case 'ACTION':
+                return 'ACTION';
+            case 'CHARACTER':
+            case 'DUAL_DIALOGUE':
+                return 'DIALOGUE';
+            case 'DIALOGUE':
+                return 'DIALOGUE';
+            case 'PARENTHETICAL':
+                return 'DIALOGUE';
+            case 'TRANSITION':
+                return 'SCENE';
+            case 'LYRICS':
+                return 'LYRICS';
+            default:
+                return 'ACTION';
+        }
+    }
+    window.scriptyNextFountainType = nextTypeAfter;
+
+    function cycleType(current, backward) {
+        var upper = (current || 'ACTION').toUpperCase();
+        var idx = TAB_CYCLE.indexOf(upper);
+        if (idx < 0) idx = TAB_CYCLE.indexOf('ACTION');
+        if (backward) {
+            idx = (idx - 1 + TAB_CYCLE.length) % TAB_CYCLE.length;
+        } else {
+            idx = (idx + 1) % TAB_CYCLE.length;
+        }
+        return TAB_CYCLE[idx];
+    }
+
+    function setCreateRowType(row, type) {
+        if (!row || !type) return;
+        if (window.scriptyApplyBlockTypeClass) {
+            var blockContent = row.querySelector('.block-content');
+            window.scriptyApplyBlockTypeClass(blockContent, type);
+        } else {
+            row.setAttribute('data-block-type', type);
+            var label = row.querySelector('.block-element-label');
+            if (label) {
+                label.setAttribute('data-block-type', type);
+                label.textContent = typeLabel(type);
+            }
+        }
+        var form = row.querySelector('form');
+        if (!form) return;
+        var typeInput = form.querySelector('input[name="type"]');
+        if (!typeInput) {
+            typeInput = document.createElement('input');
+            typeInput.type = 'hidden';
+            typeInput.name = 'type';
+            form.appendChild(typeInput);
+        }
+        typeInput.value = type;
+        if (window.scriptySyncElementTypeToolbar) {
+            window.scriptySyncElementTypeToolbar(type);
+        }
+    }
+    window.scriptySetCreateRowType = setCreateRowType;
+
+    function applyTypeToActiveBlock(type) {
+        if (!type) return;
+        var textarea = document.activeElement;
+        if (!isBlockContentTextarea(textarea)) return;
+        var row = findAnyBlockRow(textarea);
+        if (!row) return;
+
+        if (isCreateRow(row)) {
+            setCreateRowType(row, type);
+            return;
+        }
+
+        var blockId = row.getAttribute('data-block-id');
+        if (typeof window.scriptyApplyElementType === 'function') {
+            window.scriptyApplyElementType(type, blockId);
+            return;
+        }
+
+        var btn = document.querySelector('.bulk-type-btn[data-bulk-type="' + type + '"]');
+        if (btn) {
+            btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+            btn.click();
+        }
+    }
+
+    /**
+     * Detect Fountain element type from typed content.
+     * Returns { type, content } when a conversion should apply, else null.
+     */
+    function detectFountain(raw) {
+        if (raw == null) return null;
+        var text = String(raw).replace(/\u00a0/g, '');
+        var trimmed = text.trim();
+        if (!trimmed) return null;
+
+        // Multi-line: only force-marker prefixes on first line
+        var firstLine = trimmed.split('\n')[0].trim();
+
+        if (/^={3,}$/.test(trimmed)) {
+            return { type: 'PAGE_BREAK', content: '===' };
+        }
+        if (trimmed.startsWith('[[') && trimmed.endsWith(']]')) {
+            return { type: 'NOTE', content: trimmed.slice(2, -2).trim() };
+        }
+        if (firstLine.startsWith('#') && !firstLine.startsWith('##')) {
+            return { type: 'SECTION', content: trimmed.replace(/^#+\s*/, '') };
+        }
+        if (firstLine.startsWith('#') && firstLine.match(/^#+/)) {
+            return { type: 'SECTION', content: trimmed.replace(/^#+\s*/, '') };
+        }
+        if (firstLine.startsWith('=') && !firstLine.startsWith('==')) {
+            return { type: 'SYNOPSIS', content: trimmed.replace(/^=+\s*/, '') };
+        }
+        if (firstLine.startsWith('~')) {
+            return { type: 'LYRICS', content: trimmed.replace(/^~\s*/, '') };
+        }
+        if (firstLine.startsWith('.') && !firstLine.startsWith('..')) {
+            return { type: 'SCENE', content: trimmed.replace(/^\.\s*/, '') };
+        }
+        if (firstLine.startsWith('@')) {
+            var cue = firstLine.slice(1).trim().replace(/\s*\^\s*$/, '');
+            var dual = /\^\s*$/.test(firstLine);
+            return {
+                type: dual ? 'DUAL_DIALOGUE' : 'CHARACTER',
+                content: cue.toUpperCase()
+            };
+        }
+        if (firstLine.startsWith('>') && firstLine.endsWith('<') && firstLine.length > 2) {
+            return { type: 'CENTERED', content: firstLine.slice(1, -1).trim() };
+        }
+        if (firstLine.startsWith('>')) {
+            return { type: 'TRANSITION', content: firstLine.slice(1).trim() };
+        }
+        if (SCENE_HEADING.test(firstLine)) {
+            return { type: 'SCENE', content: firstLine };
+        }
+        if (TRANSITION.test(firstLine)) {
+            return { type: 'TRANSITION', content: firstLine };
+        }
+        if (SHOT.test(firstLine)) {
+            return { type: 'SHOT', content: firstLine };
+        }
+        if (/^\([^)]*\)$/.test(firstLine) || (firstLine.startsWith('(') && !firstLine.includes('\n'))) {
+            var paren = firstLine.startsWith('(')
+                ? (firstLine.endsWith(')') ? firstLine.slice(1, -1).trim() : firstLine.slice(1).trim())
+                : firstLine;
+            return { type: 'PARENTHETICAL', content: paren };
+        }
+
+        // Character cue heuristic: single ALL-CAPS line, short, not a scene/transition
+        if (trimmed === firstLine && isCharacterCueLine(firstLine)) {
+            var dualCue = /\^\s*$/.test(firstLine);
+            var name = firstLine.replace(/^@/, '').replace(/\s*\^\s*$/, '').trim();
+            return {
+                type: dualCue ? 'DUAL_DIALOGUE' : 'CHARACTER',
+                content: name
+            };
+        }
+
+        return null;
+    }
+    window.scriptyDetectFountain = detectFountain;
+
+    function isCharacterCueLine(line) {
+        if (!line || line.length > 60) return false;
+        if (/[.?!]$/.test(line)) return false;
+        if (SCENE_HEADING.test(line) || TRANSITION.test(line) || SHOT.test(line)) return false;
+        var core = line.replace(/^@/, '').replace(/\s*\^\s*$/, '').trim();
+        if (!core) return false;
+        // Allow parenthetical extensions: JOE (V.O.)
+        var base = core.replace(/\s*\([^)]*\)\s*$/, '').trim();
+        if (!/^[A-Z0-9][A-Z0-9 \-'.]*$/.test(base)) return false;
+        if (base.split(/\s+/).length > 5) return false;
+        // Must look intentionally cued (has letter and is uppercase-ish)
+        if (!/[A-Z]/.test(base)) return false;
+        return base === base.toUpperCase();
+    }
+
+    function applyDetectionToTextarea(textarea, opts) {
+        opts = opts || {};
+        if (!isBlockContentTextarea(textarea)) return false;
+        var row = findAnyBlockRow(textarea);
+        if (!row) return false;
+
+        var detected = detectFountain(textarea.value);
+        if (!detected) return false;
+
+        var current = rowType(row);
+        // Don't fight an explicit non-ACTION type unless force marker or create row
+        var forceMarker = /^[.>@~#=\[\]]|^={3,}$/.test(textarea.value.trim())
+            || (textarea.value.trim().startsWith('[['));
+        if (!opts.force && !isCreateRow(row) && current !== 'ACTION' && !forceMarker) {
+            return false;
+        }
+
+        if (detected.content !== textarea.value) {
+            var start = textarea.selectionStart;
+            textarea.value = detected.content;
+            var pos = Math.min(start, detected.content.length);
+            try {
+                textarea.setSelectionRange(pos, pos);
+            } catch (err) { /* ignore */ }
+            if (typeof window.scriptyGrowTextarea === 'function') {
+                window.scriptyGrowTextarea(textarea);
+            }
+        }
+
+        if (isCreateRow(row)) {
+            setCreateRowType(row, detected.type);
+            return true;
+        }
+
+        if (current !== detected.type) {
+            applyTypeToActiveBlock(detected.type);
+        }
+        return true;
+    }
+    window.scriptyApplyFountainDetection = applyDetectionToTextarea;
+
+    function prepareCreateRow(createRow, fromType) {
+        if (!createRow) return;
+        var next = nextTypeAfter(fromType || 'ACTION');
+        setCreateRowType(createRow, next);
+    }
+    window.scriptyPrepareCreateRowType = prepareCreateRow;
+
+    // --- Character autocomplete ---
+
+    function loadCharacters(force) {
+        var pid = projectId();
+        if (!pid) return Promise.resolve([]);
+        var now = Date.now();
+        if (!force && characterCache.projectId === pid && now - characterCache.loadedAt < 60000) {
+            return Promise.resolve(characterCache.names);
+        }
+        return fetch('/api/character?projectId=' + encodeURIComponent(pid), {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' }
+        }).then(function(r) {
+            if (!r.ok) throw new Error('character list failed');
+            return r.json();
+        }).then(function(data) {
+            var names = [];
+            var list = data._embedded
+                ? (data._embedded.personResourceList
+                    || data._embedded.persons
+                    || data._embedded.characterViewModels
+                    || Object.values(data._embedded)[0]
+                    || [])
+                : (Array.isArray(data) ? data : []);
+            list.forEach(function(item) {
+                var name = item.name || (item.content && item.content.name);
+                if (name) names.push(String(name));
+            });
+            // Also harvest character cues already in the script
+            document.querySelectorAll('.block-row[data-block-type="CHARACTER"], .block-row[data-block-type="DUAL_DIALOGUE"]').forEach(function(row) {
+                var text = row.querySelector('.script-block-text, textarea[name="content"]');
+                var cue = text ? (text.value != null ? text.value : text.textContent) : '';
+                cue = String(cue || '').trim();
+                if (cue && names.indexOf(cue) === -1) names.push(cue);
+            });
+            names.sort(function(a, b) {
+                return a.localeCompare(b, undefined, { sensitivity: 'base' });
+            });
+            characterCache = { projectId: pid, names: names, loadedAt: now };
+            return names;
+        }).catch(function() {
+            return characterCache.names || [];
+        });
+    }
+
+    function ensureAutocompleteEl() {
+        if (autocompleteEl) return autocompleteEl;
+        autocompleteEl = document.createElement('ul');
+        autocompleteEl.id = 'fountain-char-autocomplete';
+        autocompleteEl.className = 'fountain-char-autocomplete hide-in-reader-view';
+        autocompleteEl.setAttribute('role', 'listbox');
+        autocompleteEl.hidden = true;
+        document.body.appendChild(autocompleteEl);
+        return autocompleteEl;
+    }
+
+    function hideAutocomplete() {
+        if (!autocompleteEl) return;
+        autocompleteEl.hidden = true;
+        autocompleteEl.innerHTML = '';
+        autocompleteIndex = -1;
+    }
+
+    function showAutocomplete(textarea, matches) {
+        var el = ensureAutocompleteEl();
+        if (!matches.length) {
+            hideAutocomplete();
+            return;
+        }
+        el.innerHTML = matches.map(function(name, i) {
+            return '<li role="option" data-index="' + i + '"' +
+                (i === autocompleteIndex ? ' aria-selected="true" class="is-active"' : '') +
+                '>' + escapeHtml(name) + '</li>';
+        }).join('');
+        var rect = textarea.getBoundingClientRect();
+        el.style.left = Math.round(rect.left + window.scrollX) + 'px';
+        el.style.top = Math.round(rect.bottom + window.scrollY + 4) + 'px';
+        el.style.minWidth = Math.max(160, Math.round(rect.width * 0.6)) + 'px';
+        el.hidden = false;
+    }
+
+    function escapeHtml(s) {
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function filterCharacters(query, names) {
+        var q = (query || '').trim().toUpperCase();
+        if (!q) return names.slice(0, 8);
+        return names.filter(function(n) {
+            return n.toUpperCase().indexOf(q) === 0 || n.toUpperCase().indexOf(q) !== -1;
+        }).slice(0, 8);
+    }
+
+    function maybeShowCharacterAutocomplete(textarea) {
+        var row = findAnyBlockRow(textarea);
+        if (!row) return;
+        var type = rowType(row);
+        if (type !== 'CHARACTER' && type !== 'DUAL_DIALOGUE' && type !== 'ACTION') return;
+
+        var value = textarea.value;
+        // Only autocomplete single-line cues
+        if (value.indexOf('\n') !== -1) {
+            hideAutocomplete();
+            return;
+        }
+        var query = value.replace(/^@/, '').replace(/\s*\^\s*$/, '').trim();
+        if (type === 'ACTION' && query.length < 2) {
+            hideAutocomplete();
+            return;
+        }
+
+        loadCharacters(false).then(function(names) {
+            if (document.activeElement !== textarea) return;
+            var matches = filterCharacters(query, names);
+            // Don't suggest exact current value alone
+            if (matches.length === 1 && matches[0].toUpperCase() === query.toUpperCase()) {
+                hideAutocomplete();
+                return;
+            }
+            autocompleteIndex = matches.length ? 0 : -1;
+            showAutocomplete(textarea, matches);
+        });
+    }
+
+    function acceptAutocomplete(textarea, name) {
+        if (!name) return;
+        var dual = /\^\s*$/.test(textarea.value);
+        textarea.value = dual ? name + ' ^' : name;
+        hideAutocomplete();
+        var row = findAnyBlockRow(textarea);
+        if (row && (isCreateRow(row) || rowType(row) === 'ACTION')) {
+            setCreateRowType(row, dual ? 'DUAL_DIALOGUE' : 'CHARACTER');
+            if (!isCreateRow(row)) {
+                applyTypeToActiveBlock(dual ? 'DUAL_DIALOGUE' : 'CHARACTER');
+            }
+        }
+        if (typeof window.scriptyGrowTextarea === 'function') {
+            window.scriptyGrowTextarea(textarea);
+        }
+        try {
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        } catch (err) { /* ignore */ }
+    }
+
+    // --- Outline navigator ---
+
+    function collectOutlineItems() {
+        var items = [];
+        document.querySelectorAll('.project-script .block-row[data-block-id]').forEach(function(row) {
+            var type = rowType(row);
+            if (type !== 'SCENE' && type !== 'SECTION') return;
+            var textEl = row.querySelector('.script-block-text, textarea[name="content"]');
+            var text = textEl
+                ? (textEl.value != null ? textEl.value : textEl.textContent)
+                : '';
+            text = String(text || '').replace(/\u00a0/g, ' ').trim() || '(Untitled)';
+            items.push({
+                id: row.getAttribute('data-block-id'),
+                type: type,
+                text: text.length > 80 ? text.slice(0, 77) + '…' : text
+            });
+        });
+        return items;
+    }
+
+    function ensureOutline() {
+        if (outlineEl) return outlineEl;
+        outlineEl = document.createElement('aside');
+        outlineEl.id = 'fountain-outline';
+        outlineEl.className = 'fountain-outline hide-in-reader-view sidebar menu';
+        outlineEl.setAttribute('aria-label', 'Scene outline');
+        outlineEl.innerHTML =
+            '<div class="fountain-outline-header">' +
+            '<strong>Outline</strong>' +
+            '<button type="button" class="fountain-outline-close" aria-label="Close outline" title="Close outline">×</button>' +
+            '</div>' +
+            '<ol class="fountain-outline-list"></ol>' +
+            '<p class="fountain-outline-empty muted">No scenes or sections yet.</p>';
+        document.body.appendChild(outlineEl);
+
+        outlineEl.querySelector('.fountain-outline-close').addEventListener('click', function() {
+            setOutlineOpen(false);
+        });
+        outlineEl.addEventListener('click', function(e) {
+            var link = e.target.closest('[data-outline-block-id]');
+            if (!link) return;
+            e.preventDefault();
+            var id = link.getAttribute('data-outline-block-id');
+            var row = document.querySelector('.block-row[data-block-id="' + id + '"]');
+            if (!row) return;
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.classList.add('fountain-outline-flash');
+            setTimeout(function() {
+                row.classList.remove('fountain-outline-flash');
+            }, 1200);
+            var content = row.querySelector('.block-content');
+            if (content && !window.scriptyBlockEditLocked) {
+                content.click();
+            }
+        });
+        return outlineEl;
+    }
+
+    function refreshOutline() {
+        if (!outlineEl || outlineEl.hidden) return;
+        var list = outlineEl.querySelector('.fountain-outline-list');
+        var empty = outlineEl.querySelector('.fountain-outline-empty');
+        var items = collectOutlineItems();
+        if (!items.length) {
+            list.innerHTML = '';
+            empty.hidden = false;
+            return;
+        }
+        empty.hidden = true;
+        list.innerHTML = items.map(function(item, i) {
+            var num = item.type === 'SCENE' ? (i + 1) + '. ' : '';
+            return '<li class="fountain-outline-item fountain-outline-item--' +
+                item.type.toLowerCase() + '">' +
+                '<a href="#block-' + escapeHtml(item.id) + '" data-outline-block-id="' +
+                escapeHtml(item.id) + '">' +
+                '<span class="fountain-outline-num">' + num + '</span>' +
+                '<span class="fountain-outline-text">' + escapeHtml(item.text) + '</span>' +
+                '</a></li>';
+        }).join('');
+    }
+    window.scriptyRefreshFountainOutline = refreshOutline;
+
+    function setOutlineOpen(open) {
+        var el = ensureOutline();
+        el.hidden = !open;
+        document.documentElement.classList.toggle('fountain-outline-open', open);
+        var btn = document.getElementById('nav-outline-toggle');
+        if (btn) {
+            btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+            btn.classList.toggle('is-active', open);
+        }
+        try {
+            localStorage.setItem('scripty-fountain-outline', open ? 'true' : 'false');
+        } catch (err) { /* ignore */ }
+        if (open) refreshOutline();
+    }
+
+    function toggleOutline() {
+        var el = ensureOutline();
+        setOutlineOpen(!!el.hidden);
+    }
+    window.scriptyToggleFountainOutline = toggleOutline;
+
+    // --- Event wiring ---
+
+    document.addEventListener('keydown', function(e) {
+        if (!document.querySelector('.project-script')) return;
+        var textarea = e.target;
+        if (!isBlockContentTextarea(textarea)) return;
+
+        // Autocomplete navigation
+        if (autocompleteEl && !autocompleteEl.hidden) {
+            var options = autocompleteEl.querySelectorAll('li');
+            if (e.key === 'ArrowDown' && options.length) {
+                e.preventDefault();
+                autocompleteIndex = Math.min(options.length - 1, autocompleteIndex + 1);
+                options.forEach(function(li, i) {
+                    li.classList.toggle('is-active', i === autocompleteIndex);
+                    li.setAttribute('aria-selected', i === autocompleteIndex ? 'true' : 'false');
+                });
+                return;
+            }
+            if (e.key === 'ArrowUp' && options.length) {
+                e.preventDefault();
+                autocompleteIndex = Math.max(0, autocompleteIndex - 1);
+                options.forEach(function(li, i) {
+                    li.classList.toggle('is-active', i === autocompleteIndex);
+                    li.setAttribute('aria-selected', i === autocompleteIndex ? 'true' : 'false');
+                });
+                return;
+            }
+            if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey && autocompleteIndex >= 0 && options[autocompleteIndex]) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                acceptAutocomplete(textarea, options[autocompleteIndex].textContent);
+                return;
+            }
+            if (e.key === 'Escape') {
+                hideAutocomplete();
+                return;
+            }
+        }
+
+        // Tab / Shift+Tab: cycle Fountain element types
+        if (e.key === 'Tab' && !e.altKey && !e.metaKey && !e.ctrlKey) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            var row = findAnyBlockRow(textarea);
+            var next = cycleType(rowType(row), e.shiftKey);
+            applyTypeToActiveBlock(next);
+            return;
+        }
+
+        // Enter: run Fountain detection before create/save handlers
+        if (e.key === 'Enter' && !e.shiftKey && !e.repeat) {
+            var detected = detectFountain(textarea.value);
+            if (detected) {
+                applyDetectionToTextarea(textarea, { force: true });
+            }
+            hideAutocomplete();
+            var currentRow = findAnyBlockRow(textarea);
+            if (currentRow) {
+                var typeForNext = detected ? detected.type : rowType(currentRow);
+                window.scriptyPendingCreateType = nextTypeAfter(typeForNext);
+            }
+        }
+    }, true);
+
+    document.addEventListener('input', function(e) {
+        if (!document.querySelector('.project-script')) return;
+        var textarea = e.target;
+        if (!isBlockContentTextarea(textarea)) return;
+
+        var value = textarea.value;
+        var trimmed = value.trim();
+        // Live-detect force markers immediately
+        if (/^[.@>~#=]/.test(trimmed) || trimmed.startsWith('[[') || /^={3,}$/.test(trimmed)) {
+            applyDetectionToTextarea(textarea, { force: false });
+        }
+
+        maybeShowCharacterAutocomplete(textarea);
+    });
+
+    document.addEventListener('focusout', function(e) {
+        if (!isBlockContentTextarea(e.target)) return;
+        // Delay so autocomplete click can fire
+        setTimeout(function() {
+            if (autocompleteEl && autocompleteEl.contains(document.activeElement)) return;
+            hideAutocomplete();
+        }, 150);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!autocompleteEl || autocompleteEl.hidden) return;
+        var li = e.target.closest('#fountain-char-autocomplete li');
+        if (li) {
+            var textarea = document.activeElement;
+            if (!isBlockContentTextarea(textarea)) {
+                // restore last focused if needed
+                textarea = document.querySelector('.block-content textarea[name="content"]:focus')
+                    || document.querySelector('.block-row:not([data-block-id]) textarea[name="content"]');
+            }
+            if (textarea) acceptAutocomplete(textarea, li.textContent);
+            return;
+        }
+        if (!e.target.closest('#fountain-char-autocomplete')) {
+            hideAutocomplete();
+        }
+    });
+
+    // After HTMX swaps, refresh outline and apply pending create type
+    document.body.addEventListener('htmx:afterSwap', function() {
+        refreshOutline();
+        applyPendingCreateType();
+    });
+
+    function applyPendingCreateType() {
+        var pending = window.scriptyPendingCreateType;
+        if (!pending) return;
+        var createRow = document.querySelector(
+            '.project-script .block-row:not([data-block-id]) textarea[name="content"]'
+        );
+        if (createRow) {
+            setCreateRowType(createRow.closest('.block-row'), pending);
+        }
+        window.scriptyPendingCreateType = null;
+    }
+    window.scriptyApplyPendingCreateType = applyPendingCreateType;
+
+    // Observe DOM for create rows inserted via fetch (nav.html)
+    var observer = new MutationObserver(function(mutations) {
+        var needsOutline = false;
+        mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(node) {
+                if (node.nodeType !== 1) return;
+                if (node.matches && node.matches('.block-row:not([data-block-id])')) {
+                    if (window.scriptyPendingCreateType) {
+                        setCreateRowType(node, window.scriptyPendingCreateType);
+                        window.scriptyPendingCreateType = null;
+                    } else {
+                        var prev = previousSavedRow(node);
+                        if (prev) prepareCreateRow(node, rowType(prev));
+                    }
+                }
+                if (node.querySelector && node.querySelector('.block-row:not([data-block-id])')) {
+                    var nested = node.querySelector('.block-row:not([data-block-id])');
+                    if (window.scriptyPendingCreateType) {
+                        setCreateRowType(nested, window.scriptyPendingCreateType);
+                        window.scriptyPendingCreateType = null;
+                    }
+                }
+                if (node.matches && (node.matches('.block-row[data-block-id]') || node.querySelector('.block-row[data-block-id]'))) {
+                    needsOutline = true;
+                }
+            });
+            if (m.removedNodes.length) needsOutline = true;
+        });
+        if (needsOutline) refreshOutline();
+    });
+
+    function startObserver() {
+        var root = document.querySelector('.project-script') || document.body;
+        observer.observe(root, { childList: true, subtree: true });
+    }
+
+    function initOutlineButton() {
+        var btn = document.getElementById('nav-outline-toggle');
+        if (!btn) return;
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleOutline();
+        });
+        var preferOpen = false;
+        try {
+            preferOpen = localStorage.getItem('scripty-fountain-outline') === 'true';
+        } catch (err) { /* ignore */ }
+        if (preferOpen) setOutlineOpen(true);
+        else ensureOutline().hidden = true;
+    }
+
+    // Expose apply helper used by Tab cycling when element-type.js is present
+    window.scriptyApplyFountainType = function(type, preferredBlockId) {
+        if (typeof window.scriptyApplyElementType === 'function') {
+            window.scriptyApplyElementType(type, preferredBlockId || null);
+            return;
+        }
+        var ta = document.activeElement;
+        var row = isBlockContentTextarea(ta) ? findAnyBlockRow(ta) : null;
+        if (row && isCreateRow(row)) setCreateRowType(row, type);
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            startObserver();
+            initOutlineButton();
+            loadCharacters(true);
+        });
+    } else {
+        startObserver();
+        initOutlineButton();
+        loadCharacters(true);
+    }
+})();

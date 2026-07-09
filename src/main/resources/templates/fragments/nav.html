@@ -511,6 +511,10 @@
             }
             row.dataset.openingCreateBelow = 'true';
             const blockId = row.getAttribute('data-block-id');
+            const fromType = row.getAttribute('data-block-type') || 'ACTION';
+            if (!window.scriptyPendingCreateType && window.scriptyNextFountainType) {
+                window.scriptyPendingCreateType = window.scriptyNextFountainType(fromType);
+            }
             fetch('/block/createBelowInline?id=' + encodeURIComponent(blockId) + '&surface=project', {
                 credentials: 'same-origin',
                 cache: 'no-store'
@@ -525,6 +529,11 @@
                 if (typeof htmx !== 'undefined') {
                     htmx.process(createRow);
                 }
+                if (window.scriptyApplyPendingCreateType) {
+                    window.scriptyApplyPendingCreateType();
+                } else if (window.scriptyPrepareCreateRowType) {
+                    window.scriptyPrepareCreateRowType(createRow, fromType);
+                }
                 focusBlockContentEnd(createRow);
             }).catch(function() {
                 /* keep current edit if create-row load fails */
@@ -538,10 +547,15 @@
             if (row.dataset.openingCreateBelow === 'true') return;
             row.dataset.openingCreateBelow = 'true';
             const blockId = row.getAttribute('data-block-id');
+            const fromType = row.getAttribute('data-block-type') || 'ACTION';
+            const nextType = (window.scriptyPendingCreateType
+                || (window.scriptyNextFountainType && window.scriptyNextFountainType(fromType))
+                || 'ACTION');
             const body = new URLSearchParams({
                 id: blockId,
                 content: '',
-                surface: 'project'
+                surface: 'project',
+                type: nextType
             });
             fetch('/block/createBelowInline', {
                 method: 'POST',
@@ -568,6 +582,10 @@
                     return !newRow.hasAttribute('data-block-id') && newRow.querySelector('textarea[name="content"]');
                 });
                 if (createRow) {
+                    if (window.scriptySetCreateRowType) {
+                        window.scriptySetCreateRowType(createRow, nextType);
+                    }
+                    window.scriptyPendingCreateType = null;
                     focusBlockContentEnd(createRow);
                 } else {
                     const savedRow = newRows.find(function(newRow) {
@@ -589,6 +607,10 @@
             if (!row) return;
             if (row.dataset.enterCreatingBelow === 'true') return;
             row.dataset.enterCreatingBelow = 'true';
+            const fromType = row.getAttribute('data-block-type') || 'ACTION';
+            if (!window.scriptyPendingCreateType && window.scriptyNextFountainType) {
+                window.scriptyPendingCreateType = window.scriptyNextFountainType(fromType);
+            }
             waitForBlockTypeChange().then(function() {
                 const liveForm = resolveLiveEditForm(form);
                 if (!liveForm || !row.isConnected) {
@@ -684,6 +706,16 @@
                     return !newRow.hasAttribute('data-block-id') && newRow.querySelector('textarea[name="content"]');
                 });
                 if (createRow) {
+                    const savedType = savedRow
+                        ? (savedRow.getAttribute('data-block-type') || 'ACTION')
+                        : 'ACTION';
+                    const nextType = window.scriptyNextFountainType
+                        ? window.scriptyNextFountainType(savedType)
+                        : 'ACTION';
+                    if (window.scriptySetCreateRowType) {
+                        window.scriptySetCreateRowType(createRow, nextType);
+                    }
+                    window.scriptyPendingCreateType = null;
                     focusBlockContentEnd(createRow);
                 } else if (savedRow) {
                     editSavedBlockRow(savedRow);

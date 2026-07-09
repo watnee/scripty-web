@@ -377,6 +377,16 @@
         applySingle(type, captured);
     }
 
+    /** Programmatic type change for Tab cycling / Fountain detection. */
+    window.scriptyApplyElementType = function(type, preferredBlockId) {
+        if (!type || inFlight) return;
+        var captured = captureTarget(preferredBlockId || null);
+        if (captured && (captured.mode === 'single' || captured.mode === 'bulk')) {
+            beginWait();
+        }
+        onTypeButton(type, captured);
+    };
+
     document.body.addEventListener('mousedown', function(e) {
         var btn = e.target.closest('.bulk-type-btn');
         if (!btn || !document.querySelector('.project-script')) return;

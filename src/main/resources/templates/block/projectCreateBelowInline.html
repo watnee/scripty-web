@@ -13,6 +13,7 @@
         <form th:attr="hx-post=@{/block/createBelowInline(surface='project')}" hx-target="closest .block-row" hx-swap="outerHTML" hx-trigger="keydown[key=='Enter'&amp;&amp;!event.shiftKey] from:find textarea, createNext">
             <input type="hidden" name="id" th:value="${blockId}" />
             <input type="hidden" name="surface" value="project" />
+            <input type="hidden" name="type" value="ACTION" />
             <textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();event.stopPropagation();if(window.scriptyCreateBlockFromCreateRow){window.scriptyCreateBlockFromCreateRow(this);}return false;}"></textarea>
         </form>
     </div>

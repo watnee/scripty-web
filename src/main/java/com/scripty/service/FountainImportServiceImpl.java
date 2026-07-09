@@ -31,6 +31,9 @@ public class FountainImportServiceImpl implements FountainImportService {
                     + "BACK TO SCENE|BACK TO|TIGHT ON|WIDER(?: SHOT)?|TRACKING|CRANE|"
                     + "AERIAL|ESTABLISHING|FAVOR ON|REVERSE ANGLE)\\b.*",
             Pattern.CASE_INSENSITIVE);
+    private static final Pattern TITLE_PAGE_KEY = Pattern.compile(
+            "^(Title|Credit|Author|Authors|Writer|Writers|Source|Draft date|Contact|Contact Info|Contact Information)\\s*:(.*)$",
+            Pattern.CASE_INSENSITIVE);
 
     @Autowired
     private BlockRepository blockRepository;
@@ -75,8 +78,21 @@ public class FountainImportServiceImpl implements FountainImportService {
             return;
         }
 
-        List<ParsedBlock> parsed = parse(fountainText);
-        if (parsed.isEmpty()) {
+        TitlePageParseResult titlePage = extractTitlePage(fountainText);
+        if (titlePage.hasAny()) {
+            if (titlePage.title() != null) {
+                project.setScreenplayTitle(titlePage.title());
+            }
+            if (titlePage.writers() != null) {
+                project.setWriters(titlePage.writers());
+            }
+            if (titlePage.contact() != null) {
+                project.setContactInfo(titlePage.contact());
+            }
+        }
+
+        List<ParsedBlock> parsed = parse(titlePage.body());
+        if (parsed.isEmpty() && !titlePage.hasAny()) {
             return;
         }
 
@@ -108,6 +124,116 @@ public class FountainImportServiceImpl implements FountainImportService {
         project.setLastEdited(LocalDateTime.now());
         projectRepository.save(project);
         projectVersionService.autoSaveVersion(projectId);
+    }
+
+    /**
+     * Fountain title pages are key/value lines before the first blank line that
+     * separates metadata from the script body. Supports Title, Credit, Author(s),
+     * Contact, and Draft date keys.
+     */
+    private static TitlePageParseResult extractTitlePage(String fountainText) {
+        String normalized = fountainText.replace("\r\n", "\n").replace('\r', '\n');
+        String[] lines = normalized.split("\n", -1);
+
+        boolean looksLikeTitlePage = false;
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty()) {
+                break;
+            }
+            if (TITLE_PAGE_KEY.matcher(trimmed).matches()) {
+                looksLikeTitlePage = true;
+                break;
+            }
+            // First non-empty line isn't a title-page key → no title page
+            break;
+        }
+
+        if (!looksLikeTitlePage) {
+            return new TitlePageParseResult(null, null, null, normalized);
+        }
+
+        String title = null;
+        String writers = null;
+        String contact = null;
+        StringBuilder contactBuf = new StringBuilder();
+        boolean inContact = false;
+        int bodyStart = 0;
+
+        for (int i = 0; i < lines.length; i++) {
+            String raw = lines[i];
+            String trimmed = raw.trim();
+
+            if (trimmed.isEmpty()) {
+                // End of title page: first blank line after keys
+                bodyStart = i + 1;
+                // Skip additional blank lines before body
+                while (bodyStart < lines.length && lines[bodyStart].trim().isEmpty()) {
+                    bodyStart++;
+                }
+                break;
+            }
+
+            var matcher = TITLE_PAGE_KEY.matcher(trimmed);
+            if (matcher.matches()) {
+                inContact = false;
+                String key = matcher.group(1).toLowerCase(Locale.ROOT);
+                String value = matcher.group(2) != null ? matcher.group(2).trim() : "";
+                switch (key) {
+                    case "title" -> title = value.isEmpty() ? title : value;
+                    case "author", "authors", "writers", "writer" ->
+                            writers = value.isEmpty() ? writers : value;
+                    case "credit" -> {
+                        // Keep credit with writers when present: "Written by\nJane Doe"
+                        if (!value.isEmpty() && writers == null) {
+                            writers = value;
+                        } else if (!value.isEmpty()) {
+                            writers = value + (writers != null && !writers.isBlank() ? "\n" + writers : "");
+                        }
+                    }
+                    case "contact", "contact info", "contact information" -> {
+                        inContact = true;
+                        if (!value.isEmpty()) {
+                            contactBuf.append(value);
+                        }
+                    }
+                    default -> {
+                        // Ignore Draft date, Source, etc.
+                    }
+                }
+            } else if (inContact) {
+                if (contactBuf.length() > 0) {
+                    contactBuf.append('\n');
+                }
+                contactBuf.append(trimmed);
+            } else if (writers != null && !TITLE_PAGE_KEY.matcher(trimmed).matches()) {
+                // Multi-line author continuation
+                writers = writers + "\n" + trimmed;
+            }
+            bodyStart = i + 1;
+        }
+
+        if (contactBuf.length() > 0) {
+            contact = contactBuf.toString().trim();
+        }
+
+        StringBuilder body = new StringBuilder();
+        for (int i = bodyStart; i < lines.length; i++) {
+            if (body.length() > 0) {
+                body.append('\n');
+            }
+            body.append(lines[i]);
+        }
+
+        return new TitlePageParseResult(title, writers, contact, body.toString());
+    }
+
+    private record TitlePageParseResult(String title, String writers, String contact, String body) {
+        boolean hasAny() {
+            return (title != null && !title.isBlank())
+                    || (writers != null && !writers.isBlank())
+                    || (contact != null && !contact.isBlank());
+        }
     }
 
     List<ParsedBlock> parse(String fountainText) {

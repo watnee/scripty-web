@@ -129,6 +129,7 @@
             '<form hx-post="/block/createBelowInline" hx-target="closest .block-row" hx-swap="outerHTML">' +
             '<input type="hidden" name="id" value="' + escAttr(anchorBlockId) + '" />' +
             '<input type="hidden" name="surface" value="project" />' +
+            '<input type="hidden" name="type" value="ACTION" />' +
             '<textarea spellcheck="true" rows="1" class="script-block-text block-input-textarea" name="content" autofocus ' +
             'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();event.stopPropagation;' +
             'if(window.scriptyCreateBlockFromCreateRow){window.scriptyCreateBlockFromCreateRow(this);}return false;}"></textarea>' +

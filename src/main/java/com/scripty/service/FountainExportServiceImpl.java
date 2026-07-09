@@ -1,7 +1,9 @@
 package com.scripty.service;
 
 import com.scripty.dto.Block;
+import com.scripty.dto.Project;
 import com.scripty.repository.BlockRepository;
+import com.scripty.repository.ProjectRepository;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -25,11 +27,20 @@ public class FountainExportServiceImpl implements FountainExportService {
     @Autowired
     private BlockRepository blockRepository;
 
+    @Autowired
+    private ProjectRepository projectRepository;
+
     @Override
     @Transactional(readOnly = true)
     public String exportProject(Integer projectId) {
+        Project project = projectRepository.findById(projectId).orElse(null);
         List<Block> blocks = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
         StringBuilder sb = new StringBuilder();
+
+        if (project != null) {
+            appendTitlePage(sb, project);
+        }
+
         String activeCharacter = null;
 
         for (Block block : blocks) {
@@ -128,6 +139,44 @@ public class FountainExportServiceImpl implements FountainExportService {
         return sb.toString().stripTrailing();
     }
 
+    private static void appendTitlePage(StringBuilder sb, Project project) {
+        String title = project.getScreenplayTitle();
+        String writers = project.getWriters();
+        String contact = project.getContactInfo();
+        boolean hasTitle = title != null && !title.isBlank();
+        boolean hasWriters = writers != null && !writers.isBlank();
+        boolean hasContact = contact != null && !contact.isBlank();
+        if (!hasTitle && !hasWriters && !hasContact) {
+            return;
+        }
+
+        if (hasTitle) {
+            appendLine(sb, "Title: " + title.trim());
+        }
+        if (hasWriters) {
+            String[] writerLines = writers.trim().split("\n", -1);
+            appendLine(sb, "Author: " + writerLines[0].trim());
+            for (int i = 1; i < writerLines.length; i++) {
+                String line = writerLines[i].trim();
+                if (!line.isEmpty()) {
+                    appendLine(sb, line);
+                }
+            }
+        }
+        if (hasContact) {
+            String[] contactLines = contact.trim().split("\n", -1);
+            appendLine(sb, "Contact: " + contactLines[0].trim());
+            for (int i = 1; i < contactLines.length; i++) {
+                String line = contactLines[i].trim();
+                if (!line.isEmpty()) {
+                    appendLine(sb, line);
+                }
+            }
+        }
+        // Blank line separates title page from script body (Fountain spec)
+        sb.append('\n');
+    }
+
     private static void appendScene(StringBuilder sb, String content) {
         if (content.isBlank()) {
             appendLine(sb, ".");
@@ -177,6 +226,6 @@ public class FountainExportServiceImpl implements FountainExportService {
         if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != '\n') {
             sb.append('\n');
         }
-        sb.append(line);
+        sb.append(line).append('\n');
     }
 }

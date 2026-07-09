@@ -6045,7 +6045,7 @@ html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
 
 body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb,
-body.focus-mode .text-size-control > :not(#focus-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle),
+body.focus-mode .text-size-control > :not(#focus-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#nav-outline-toggle),
 body.focus-mode .project-script-toolbar,
 body.focus-mode .project-header-row,
 body.focus-mode .project-create-scene,
@@ -6611,4 +6611,167 @@ html.scripty-offline .scripty-offline-banner {
 
 .scripty-offline .project-script .block-content:not(.block-content-readonly) .block-input-textarea {
     pointer-events: auto;
+}
+
+/* Fountain power-user: character autocomplete */
+.fountain-char-autocomplete {
+    position: absolute;
+    z-index: 1200;
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
+    background: var(--bg, #fff);
+    color: var(--fg, #111);
+    border: 1px solid color-mix(in srgb, var(--fg, #111) 18%, transparent);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--fg, #111) 12%, transparent);
+    max-height: 12rem;
+    overflow-y: auto;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.fountain-char-autocomplete li {
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+}
+
+.fountain-char-autocomplete li.is-active,
+.fountain-char-autocomplete li:hover {
+    background: color-mix(in srgb, var(--accent, #145591) 16%, transparent);
+    color: var(--accent, #145591);
+}
+
+/* Fountain power-user: scene outline */
+.fountain-outline {
+    position: fixed;
+    top: 5.5rem;
+    right: 0.75rem;
+    bottom: 1rem;
+    width: min(16rem, 42vw);
+    z-index: 900;
+    display: flex;
+    flex-direction: column;
+    background: color-mix(in srgb, var(--bg, #fff) 94%, var(--fg, #111));
+    border: 1px solid color-mix(in srgb, var(--fg, #111) 14%, transparent);
+    box-shadow: -4px 0 24px color-mix(in srgb, var(--fg, #111) 8%, transparent);
+    padding: 0.75rem 0.85rem;
+    overflow: hidden;
+}
+
+.fountain-outline[hidden] {
+    display: none !important;
+}
+
+.fountain-outline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.fountain-outline-close {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.1rem 0.35rem;
+    opacity: 0.7;
+}
+
+.fountain-outline-close:hover {
+    opacity: 1;
+}
+
+.fountain-outline-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.fountain-outline-item a {
+    display: flex;
+    gap: 0.35rem;
+    padding: 0.4rem 0.35rem;
+    text-decoration: none;
+    color: inherit;
+    border-radius: 2px;
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.fountain-outline-item a:hover {
+    background: color-mix(in srgb, var(--accent, #145591) 12%, transparent);
+    color: var(--accent, #145591);
+}
+
+.fountain-outline-item--section a {
+    font-style: italic;
+    opacity: 0.85;
+    padding-left: 0.85rem;
+}
+
+.fountain-outline-num {
+    flex-shrink: 0;
+    opacity: 0.55;
+    font-variant-numeric: tabular-nums;
+}
+
+.fountain-outline-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fountain-outline-empty {
+    font-size: 0.8rem;
+    margin: 0.5rem 0 0;
+}
+
+.block-row.fountain-outline-flash {
+    animation: fountain-outline-flash 1.1s ease;
+}
+
+@keyframes fountain-outline-flash {
+    0%, 100% { background-color: transparent; }
+    25%, 60% { background-color: color-mix(in srgb, var(--accent, #145591) 14%, transparent); }
+}
+
+html.fountain-outline-open .project-script {
+    padding-right: min(17rem, 44vw);
+}
+
+@media (max-width: 720px) {
+    .fountain-outline {
+        top: auto;
+        left: 0.5rem;
+        right: 0.5rem;
+        bottom: 0.5rem;
+        width: auto;
+        max-height: 45vh;
+    }
+
+    html.fountain-outline-open .project-script {
+        padding-right: 0;
+    }
+}
+
+body.focus-mode .fountain-outline,
+body.focus-mode #nav-outline-toggle {
+    display: none !important;
+}
+
+@media print {
+    .fountain-outline,
+    .fountain-char-autocomplete {
+        display: none !important;
+    }
 }

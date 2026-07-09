@@ -6749,9 +6749,15 @@ html.scripty-offline .scripty-offline-banner {
 }
 
 .fountain-outline-item--section a {
-    font-style: italic;
-    opacity: 0.85;
+    font-weight: 600;
+    opacity: 0.9;
     padding-left: 0.85rem;
+}
+
+.fountain-outline-item--synopsis a {
+    font-style: italic;
+    opacity: 0.75;
+    padding-left: 1.15rem;
 }
 
 .fountain-outline-item--bookmark a {

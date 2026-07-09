@@ -7,7 +7,7 @@
  * - Scene heading autocomplete from prior scenes
  * - Scene location autocomplete (reuse places from prior headings)
  * - Scene time-of-day autocomplete (DAY, NIGHT, …)
- * - Scene / section / bookmark outline navigator
+ * - Scene / section / synopsis / bookmark outline navigator
  */
 (function() {
     'use strict';
@@ -833,11 +833,15 @@
         } catch (err) { /* ignore */ }
     }
 
+    function isOutlineStructuralType(type) {
+        return type === 'SCENE' || type === 'SECTION' || type === 'SYNOPSIS';
+    }
+
     function collectOutlineItems() {
         var items = [];
         document.querySelectorAll('.project-script .block-row[data-block-id]').forEach(function(row) {
             var type = rowType(row);
-            if (type !== 'SCENE' && type !== 'SECTION') return;
+            if (!isOutlineStructuralType(type)) return;
             items.push({
                 id: row.getAttribute('data-block-id'),
                 type: type,
@@ -857,7 +861,7 @@
                 id: row.getAttribute('data-block-id'),
                 type: type,
                 text: blockRowText(row),
-                scene: type === 'SCENE' || type === 'SECTION',
+                scene: isOutlineStructuralType(type),
                 bookmarked: true
             });
         });
@@ -868,7 +872,7 @@
         var items = [];
         document.querySelectorAll('.project-script .block-row[data-block-id]').forEach(function(row) {
             var type = rowType(row) || 'ACTION';
-            var isScene = type === 'SCENE' || type === 'SECTION';
+            var isScene = isOutlineStructuralType(type);
             var bookmarked = row.getAttribute('data-bookmarked') === 'true';
             if (!isScene && !bookmarked) return;
             items.push({
@@ -897,7 +901,7 @@
         }
 
         var typeHint = '';
-        if (!item.scene) {
+        if (!item.scene || item.type === 'SECTION' || item.type === 'SYNOPSIS') {
             typeHint = '<span class="fountain-outline-type">' +
                 escapeHtml(typeLabel(item.type)) + '</span>';
         }
@@ -969,7 +973,7 @@
             '<button type="button" class="fountain-outline-tab" role="tab" data-outline-tab="bookmarks" aria-selected="false">Bookmarks</button>' +
             '</div>' +
             '<ol class="fountain-outline-list"></ol>' +
-            '<p class="fountain-outline-empty muted">No scenes or bookmarks yet.</p>';
+            '<p class="fountain-outline-empty muted">No scenes, sections, synopses, or bookmarks yet.</p>';
         document.body.appendChild(outlineEl);
 
         outlineEl.querySelector('.fountain-outline-close').addEventListener('click', function() {
@@ -1010,10 +1014,10 @@
             return;
         }
         if (tab === 'scenes') {
-            renderOutlineItems(collectOutlineItems(), 'No scenes or sections yet.');
+            renderOutlineItems(collectOutlineItems(), 'No scenes, sections, or synopses yet.');
             return;
         }
-        renderOutlineItems(collectCombinedItems(), 'No scenes or bookmarks yet.');
+        renderOutlineItems(collectCombinedItems(), 'No scenes, sections, synopses, or bookmarks yet.');
     }
     window.scriptyRefreshFountainOutline = refreshOutline;
 

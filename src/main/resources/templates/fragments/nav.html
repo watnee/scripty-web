@@ -889,7 +889,24 @@
                     const songId = songItem.getAttribute('data-insert-song-id');
                     closeAllCreateBelowMenus();
                     closeAllBlockDragMenus();
-                    insertSongBelowBlock(row, songId);
+                    insertDocumentBelowBlock(row, songId, {
+                        offlineMessage: 'Connect to insert a song into the script.'
+                    });
+                    return;
+                }
+
+                const draftItem = e.target.closest('[data-insert-draft-id]');
+                if (draftItem && draftItem.closest('.create-below-menu')) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    const row = draftItem.closest('.block-row, tr');
+                    const draftId = draftItem.getAttribute('data-insert-draft-id');
+                    closeAllCreateBelowMenus();
+                    closeAllBlockDragMenus();
+                    insertDocumentBelowBlock(row, draftId, {
+                        asType: 'NOTE',
+                        offlineMessage: 'Connect to insert a draft into the script.'
+                    });
                     return;
                 }
 
@@ -916,6 +933,7 @@
                     closeAllBlockDragMenus();
                     if (!isOpen) {
                         populateCreateBelowSongs(dropdown);
+                        populateCreateBelowDrafts(dropdown);
                         dropdown.classList.add('open');
                         toggle.setAttribute('aria-expanded', 'true');
                     }
@@ -4369,13 +4387,13 @@
                 .replace(/>/g, '&gt;');
         }
 
-        function populateCreateBelowSongs(dropdown) {
-            if (!dropdown) return;
-            var section = dropdown.querySelector('.create-below-songs-section');
-            var list = dropdown.querySelector('.create-below-songs-list');
+        function populateCreateBelowDocumentSection(dropdown, options) {
+            if (!dropdown || !options) return;
+            var section = dropdown.querySelector(options.sectionSelector);
+            var list = dropdown.querySelector(options.listSelector);
             if (!section || !list) return;
 
-            var songs = Array.isArray(window.scriptyProjectSongs) ? window.scriptyProjectSongs : [];
+            var items = Array.isArray(options.items) ? options.items : [];
             var canEdit = window.scriptyCanEditScript !== false;
             if (!canEdit || !document.querySelector('.project-script')) {
                 section.hidden = true;
@@ -4383,25 +4401,47 @@
                 return;
             }
 
-            section.hidden = false;
-            if (!songs.length) {
+            if (!items.length) {
                 section.hidden = true;
                 list.innerHTML = '';
                 return;
             }
 
-            list.innerHTML = songs.map(function(song) {
-                var id = song && song.id != null ? song.id : '';
-                var title = (song && song.title) ? song.title : 'Untitled song';
+            section.hidden = false;
+            list.innerHTML = items.map(function(item) {
+                var id = item && item.id != null ? item.id : '';
+                var title = (item && item.title) ? item.title : options.untitledLabel;
                 return '<button type="button" class="nav-dropdown-item" role="menuitem" ' +
-                    'data-insert-song-id="' + escapeCreateBelowAttr(id) + '" ' +
-                    'title="Insert as Lyrics blocks below">' +
+                    options.idAttr + '="' + escapeCreateBelowAttr(id) + '" ' +
+                    'title="' + escapeCreateBelowAttr(options.insertTitle) + '">' +
                     escapeCreateBelowText(title) +
                     '</button>';
             }).join('');
         }
 
-        function resolveAfterBlockIdForSongInsert(row) {
+        function populateCreateBelowSongs(dropdown) {
+            populateCreateBelowDocumentSection(dropdown, {
+                sectionSelector: '.create-below-songs-section',
+                listSelector: '.create-below-songs-list',
+                items: window.scriptyProjectSongs,
+                untitledLabel: 'Untitled song',
+                idAttr: 'data-insert-song-id',
+                insertTitle: 'Insert as Lyrics blocks below'
+            });
+        }
+
+        function populateCreateBelowDrafts(dropdown) {
+            populateCreateBelowDocumentSection(dropdown, {
+                sectionSelector: '.create-below-drafts-section',
+                listSelector: '.create-below-drafts-list',
+                items: window.scriptyProjectDrafts,
+                untitledLabel: 'Untitled draft',
+                idAttr: 'data-insert-draft-id',
+                insertTitle: 'Insert as Note blocks below'
+            });
+        }
+
+        function resolveAfterBlockIdForDocumentInsert(row) {
             if (!row) return null;
             if (row.hasAttribute('data-block-id')) {
                 return row.getAttribute('data-block-id');
@@ -4416,13 +4456,14 @@
             return null;
         }
 
-        function insertSongBelowBlock(row, songId) {
-            if (!songId || window.scriptyCanEditScript === false) return;
+        function insertDocumentBelowBlock(row, documentId, options) {
+            if (!documentId || window.scriptyCanEditScript === false) return;
+            options = options || {};
             if (window.scriptyIsOffline && window.scriptyIsOffline()) {
-                window.alert('Connect to insert a song into the script.');
+                window.alert(options.offlineMessage || 'Connect to insert into the script.');
                 return;
             }
-            var afterBlockId = resolveAfterBlockIdForSongInsert(row);
+            var afterBlockId = resolveAfterBlockIdForDocumentInsert(row);
             var form = document.createElement('form');
             form.method = 'POST';
             form.action = '/project/documents/insert';
@@ -4431,7 +4472,7 @@
             var idInput = document.createElement('input');
             idInput.type = 'hidden';
             idInput.name = 'id';
-            idInput.value = String(songId);
+            idInput.value = String(documentId);
             form.appendChild(idInput);
 
             if (afterBlockId) {
@@ -4440,6 +4481,14 @@
                 afterInput.name = 'afterBlockId';
                 afterInput.value = String(afterBlockId);
                 form.appendChild(afterInput);
+            }
+
+            if (options.asType) {
+                var typeInput = document.createElement('input');
+                typeInput.type = 'hidden';
+                typeInput.name = 'asType';
+                typeInput.value = String(options.asType);
+                form.appendChild(typeInput);
             }
 
             document.body.appendChild(form);

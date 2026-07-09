@@ -145,6 +145,11 @@
             '<div class="create-below-songs-heading" role="presentation">Songs</div>' +
             '<div class="create-below-songs-list" role="group" aria-label="Insert song"></div>' +
             '</div>' +
+            '<div class="create-below-drafts-section" hidden>' +
+            '<hr class="nav-dropdown-divider" />' +
+            '<div class="create-below-drafts-heading" role="presentation">Drafts</div>' +
+            '<div class="create-below-drafts-list" role="group" aria-label="Insert draft"></div>' +
+            '</div>' +
             '</div></div>';
     }
 

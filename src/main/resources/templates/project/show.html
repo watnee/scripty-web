@@ -11,6 +11,10 @@
         if (!Array.isArray(window.scriptyProjectSongs)) {
             window.scriptyProjectSongs = [];
         }
+        window.scriptyProjectDrafts = /*[[${projectDrafts}]]*/ [];
+        if (!Array.isArray(window.scriptyProjectDrafts)) {
+            window.scriptyProjectDrafts = [];
+        }
         if (!projectId) return;
         var showBookmarks = localStorage.getItem('scripty-show-block-bookmarks-project-' + projectId);
         var showPins = localStorage.getItem('scripty-show-block-pins-project-' + projectId);

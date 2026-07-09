@@ -175,6 +175,17 @@ public class ProjectController {
         }
         model.addAttribute("projectSongs", projectSongs);
 
+        List<Map<String, Object>> projectDrafts = new ArrayList<>();
+        if (documents != null && documents.getDrafts() != null) {
+            for (TextDocumentViewModel draft : documents.getDrafts()) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", draft.getId());
+                item.put("title", draft.getTitle() != null && !draft.getTitle().isBlank() ? draft.getTitle() : "Untitled draft");
+                projectDrafts.add(item);
+            }
+        }
+        model.addAttribute("projectDrafts", projectDrafts);
+
         return "project/show";
     }
 

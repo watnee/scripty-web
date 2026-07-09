@@ -1382,11 +1382,13 @@ button.create-below.create-below-menu-toggle:active {
     background-color: color-mix(in srgb, var(--border, #cbd5e1) 75%, transparent);
 }
 
-.create-below-songs-section[hidden] {
+.create-below-songs-section[hidden],
+.create-below-drafts-section[hidden] {
     display: none !important;
 }
 
-.create-below-songs-heading {
+.create-below-songs-heading,
+.create-below-drafts-heading {
     padding: 0.35rem 0.65rem 0.15rem;
     font-size: 0.68rem;
     font-weight: 650;
@@ -1395,7 +1397,8 @@ button.create-below.create-below-menu-toggle:active {
     color: color-mix(in srgb, var(--muted, #64748b) 88%, var(--fg, #0f172a) 12%);
 }
 
-.create-below-songs-list .nav-dropdown-item {
+.create-below-songs-list .nav-dropdown-item,
+.create-below-drafts-list .nav-dropdown-item {
     max-width: 14rem;
     overflow: hidden;
     text-overflow: ellipsis;

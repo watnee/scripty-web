@@ -35,3 +35,7 @@ Actions → Run workflow  →  Verify (Maven)  →  Deploy to Railway (wait for 
 - `railpack.json` — Java 17 + start command for Railpack
 - `.railwayignore` — keeps `railway up` uploads small (skips `target/`, local DBs, logs, etc.)
 - `.railway/railway.ts` — Infrastructure as Code (web + MySQL + uploads volume). Preview with `railway config plan`; apply only after `railway link` and migrating off `railway.json` (a service cannot be managed by both)
+
+## Database backups
+
+Production MySQL is backed up with Railway volume snapshots plus a daily `mysqldump` to Cloudflare R2. Setup, secrets, and restore steps: [docs/BACKUP.md](docs/BACKUP.md).

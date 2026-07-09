@@ -34,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectVersionServiceImpl implements ProjectVersionService {
 
     private static final int AUTO_SAVE_INTERVAL_MINUTES = 10;
+    /** Newest auto-saves kept per script edition; manual / before-restore labels are never pruned. */
+    static final int MAX_AUTO_SAVES_PER_EDITION = 30;
     private static final DateTimeFormatter AUTO_SAVE_LABEL_FORMAT =
             DateTimeFormatter.ofPattern("MMM d, h:mm a");
 
@@ -394,10 +396,35 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             latest.setCreatedAt(LocalDateTime.now());
             latest.setLabel("Auto-save " + LocalDateTime.now().format(AUTO_SAVE_LABEL_FORMAT));
             projectVersionRepository.save(latest);
+            pruneAutoSaves(resolvedEditionId);
             return;
         }
         String label = "Auto-save " + LocalDateTime.now().format(AUTO_SAVE_LABEL_FORMAT);
         createVersionFromSnapshot(projectId, edition, label, snapshotJson);
+        pruneAutoSaves(resolvedEditionId);
+    }
+
+    /**
+     * Keeps the newest {@link #MAX_AUTO_SAVES_PER_EDITION} auto-saves for an edition.
+     * Manual labels and "Before restore …" entries are never deleted here.
+     */
+    void pruneAutoSaves(Integer scriptEditionId) {
+        if (scriptEditionId == null) {
+            return;
+        }
+        List<ProjectVersion> autoSaves =
+                projectVersionRepository.findAutoSavesByScriptEditionIdOrderByCreatedAtDesc(scriptEditionId);
+        if (autoSaves.size() <= MAX_AUTO_SAVES_PER_EDITION) {
+            return;
+        }
+        List<Integer> toDelete = autoSaves.stream()
+                .skip(MAX_AUTO_SAVES_PER_EDITION)
+                .map(ProjectVersion::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (!toDelete.isEmpty()) {
+            projectVersionRepository.deleteAllById(toDelete);
+        }
     }
 
     @Override

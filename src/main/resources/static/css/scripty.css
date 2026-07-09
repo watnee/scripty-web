@@ -1345,7 +1345,7 @@ button.create-below.create-below-menu-toggle:active {
 .create-below-menu-dropdown .nav-dropdown-menu.create-below-menu {
     left: 0;
     right: auto;
-    min-width: 10.5rem;
+    min-width: 11.5rem;
     max-height: min(22rem, 70vh);
     overflow-y: auto;
     padding: 0.4rem;
@@ -1380,6 +1380,26 @@ button.create-below.create-below-menu-toggle:active {
 .create-below-menu .nav-dropdown-divider {
     margin: 0.3rem 0.4rem;
     background-color: color-mix(in srgb, var(--border, #cbd5e1) 75%, transparent);
+}
+
+.create-below-songs-section[hidden] {
+    display: none !important;
+}
+
+.create-below-songs-heading {
+    padding: 0.35rem 0.65rem 0.15rem;
+    font-size: 0.68rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--muted, #64748b) 88%, var(--fg, #0f172a) 12%);
+}
+
+.create-below-songs-list .nav-dropdown-item {
+    max-width: 14rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 #table-blocks .block-left-controls .drag-handle,

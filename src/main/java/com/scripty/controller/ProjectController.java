@@ -23,7 +23,10 @@ import com.scripty.service.ProjectVersionService;
 import com.scripty.service.InvitationService;
 import com.scripty.service.ProjectActivityService;
 import com.scripty.service.TeamService;
+import com.scripty.service.TextDocumentService;
 import com.scripty.service.UserService;
+import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
+import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
 import com.scripty.commandmodel.invitation.SendInvitationCommandModel;
 import com.scripty.security.ProjectAccessSupport;
 import java.io.IOException;
@@ -77,6 +80,9 @@ public class ProjectController {
 
     @Autowired
     ProjectActivityService projectActivityService;
+
+    @Autowired
+    TextDocumentService textDocumentService;
 
     @Autowired
     ProjectAccessSupport projectAccess;
@@ -156,6 +162,18 @@ public class ProjectController {
         SendInvitationCommandModel inviteCommand = new SendInvitationCommandModel();
         inviteCommand.setProjectId(id);
         model.addAttribute("inviteCommand", inviteCommand);
+
+        TextDocumentListViewModel documents = textDocumentService.getListViewModel(id, currentUser);
+        List<Map<String, Object>> projectSongs = new ArrayList<>();
+        if (documents != null && documents.getSongs() != null) {
+            for (TextDocumentViewModel song : documents.getSongs()) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", song.getId());
+                item.put("title", song.getTitle() != null && !song.getTitle().isBlank() ? song.getTitle() : "Untitled song");
+                projectSongs.add(item);
+            }
+        }
+        model.addAttribute("projectSongs", projectSongs);
 
         return "project/show";
     }

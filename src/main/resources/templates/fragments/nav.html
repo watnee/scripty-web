@@ -881,6 +881,18 @@
 
             // "+" opens an element-type menu; selecting a type creates/focuses a row.
             document.addEventListener('click', function(e) {
+                const songItem = e.target.closest('[data-insert-song-id]');
+                if (songItem && songItem.closest('.create-below-menu')) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    const row = songItem.closest('.block-row, tr');
+                    const songId = songItem.getAttribute('data-insert-song-id');
+                    closeAllCreateBelowMenus();
+                    closeAllBlockDragMenus();
+                    insertSongBelowBlock(row, songId);
+                    return;
+                }
+
                 const typeItem = e.target.closest('[data-create-type]');
                 if (typeItem && typeItem.closest('.create-below-menu')) {
                     e.preventDefault();
@@ -903,6 +915,7 @@
                     closeAllCreateBelowMenus();
                     closeAllBlockDragMenus();
                     if (!isOpen) {
+                        populateCreateBelowSongs(dropdown);
                         dropdown.classList.add('open');
                         toggle.setAttribute('aria-expanded', 'true');
                     }
@@ -4339,6 +4352,98 @@
                 var toggle = dropdown.querySelector('.create-below-menu-toggle');
                 if (toggle) toggle.setAttribute('aria-expanded', 'false');
             });
+        }
+
+        function escapeCreateBelowAttr(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function escapeCreateBelowText(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function populateCreateBelowSongs(dropdown) {
+            if (!dropdown) return;
+            var section = dropdown.querySelector('.create-below-songs-section');
+            var list = dropdown.querySelector('.create-below-songs-list');
+            if (!section || !list) return;
+
+            var songs = Array.isArray(window.scriptyProjectSongs) ? window.scriptyProjectSongs : [];
+            var canEdit = window.scriptyCanEditScript !== false;
+            if (!canEdit || !document.querySelector('.project-script')) {
+                section.hidden = true;
+                list.innerHTML = '';
+                return;
+            }
+
+            section.hidden = false;
+            if (!songs.length) {
+                section.hidden = true;
+                list.innerHTML = '';
+                return;
+            }
+
+            list.innerHTML = songs.map(function(song) {
+                var id = song && song.id != null ? song.id : '';
+                var title = (song && song.title) ? song.title : 'Untitled song';
+                return '<button type="button" class="nav-dropdown-item" role="menuitem" ' +
+                    'data-insert-song-id="' + escapeCreateBelowAttr(id) + '" ' +
+                    'title="Insert as Lyrics blocks below">' +
+                    escapeCreateBelowText(title) +
+                    '</button>';
+            }).join('');
+        }
+
+        function resolveAfterBlockIdForSongInsert(row) {
+            if (!row) return null;
+            if (row.hasAttribute('data-block-id')) {
+                return row.getAttribute('data-block-id');
+            }
+            var prev = row.previousElementSibling;
+            while (prev) {
+                if (prev.hasAttribute('data-block-id')) {
+                    return prev.getAttribute('data-block-id');
+                }
+                prev = prev.previousElementSibling;
+            }
+            return null;
+        }
+
+        function insertSongBelowBlock(row, songId) {
+            if (!songId || window.scriptyCanEditScript === false) return;
+            if (window.scriptyIsOffline && window.scriptyIsOffline()) {
+                window.alert('Connect to insert a song into the script.');
+                return;
+            }
+            var afterBlockId = resolveAfterBlockIdForSongInsert(row);
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/project/documents/insert';
+            form.style.display = 'none';
+
+            var idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'id';
+            idInput.value = String(songId);
+            form.appendChild(idInput);
+
+            if (afterBlockId) {
+                var afterInput = document.createElement('input');
+                afterInput.type = 'hidden';
+                afterInput.name = 'afterBlockId';
+                afterInput.value = String(afterBlockId);
+                form.appendChild(afterInput);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
         }
 
         function createBlockWithType(row, type) {

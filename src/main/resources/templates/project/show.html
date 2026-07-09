@@ -7,6 +7,10 @@
         var projectId = /*[[${viewModel.id}]]*/ 0;
         var canEditScript = /*[[${canEditScript == null or canEditScript}]]*/ true;
         window.scriptyCanEditScript = canEditScript;
+        window.scriptyProjectSongs = /*[[${projectSongs}]]*/ [];
+        if (!Array.isArray(window.scriptyProjectSongs)) {
+            window.scriptyProjectSongs = [];
+        }
         if (!projectId) return;
         var showBookmarks = localStorage.getItem('scripty-show-block-bookmarks-project-' + projectId);
         var showPins = localStorage.getItem('scripty-show-block-pins-project-' + projectId);

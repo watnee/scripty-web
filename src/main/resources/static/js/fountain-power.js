@@ -4,6 +4,7 @@
  * - Smart next-element type on Enter
  * - Live Fountain syntax detection (force markers + heuristics)
  * - Character cue autocomplete from project cast
+ * - Scene heading autocomplete from prior scenes
  * - Scene / section outline navigator
  */
 (function() {
@@ -19,13 +20,23 @@
     ];
 
     var SCENE_HEADING = /^(?:INT\.?|EXT\.?|EST\.?|INT\.?\/EXT\.?|I\/E\.?)\s+.+/i;
+    var SCENE_PREFIX = /^(?:INT\.?|EXT\.?|EST\.?|INT\.?\/EXT\.?|I\/E\.?)\b/i;
+    var SCENE_PREFIX_SUGGESTIONS = [
+        { name: 'INT. ' },
+        { name: 'EXT. ' },
+        { name: 'EST. ' },
+        { name: 'INT./EXT. ' },
+        { name: 'I/E. ' }
+    ];
     var TRANSITION = /^[A-Z][A-Z0-9 ]+ TO:$/;
     var SHOT = /^(?:ANGLE ON|ANOTHER ANGLE|CLOSE ON|CLOSE UP|CLOSEUP|C\.U\.?|CU|POV|INSERT|BACK TO SCENE|BACK TO|TIGHT ON|WIDER(?: SHOT)?|TRACKING|CRANE|AERIAL|ESTABLISHING|FAVOR ON|REVERSE ANGLE)\b.*/i;
 
     var characterCache = { projectId: null, entries: [], loadedAt: 0 };
+    var sceneCache = { projectId: null, entries: [], loadedAt: 0 };
     var autocompleteEl = null;
     var autocompleteIndex = -1;
     var autocompleteTextarea = null;
+    var autocompleteKind = null; // 'character' | 'scene'
     var outlineEl = null;
 
     function projectId() {
@@ -410,15 +421,17 @@
         autocompleteEl.innerHTML = '';
         autocompleteIndex = -1;
         autocompleteTextarea = null;
+        autocompleteKind = null;
     }
 
-    function showAutocomplete(textarea, matches) {
+    function showAutocomplete(textarea, matches, kind) {
         var el = ensureAutocompleteEl();
         if (!matches.length) {
             hideAutocomplete();
             return;
         }
         autocompleteTextarea = textarea;
+        autocompleteKind = kind || 'character';
         el.innerHTML = matches.map(function(entry, i) {
             return '<li role="option" data-index="' + i + '"' +
                 (entry.id != null ? ' data-person-id="' + escapeHtml(String(entry.id)) + '"' : '') +
@@ -456,26 +469,31 @@
 
     function maybeShowCharacterAutocomplete(textarea) {
         var row = findAnyBlockRow(textarea);
-        if (!row) return;
+        if (!row) return false;
         var type = rowType(row);
-        if (type !== 'CHARACTER' && type !== 'DUAL_DIALOGUE' && type !== 'ACTION') return;
+        if (type !== 'CHARACTER' && type !== 'DUAL_DIALOGUE' && type !== 'ACTION') return false;
 
         var value = textarea.value;
         // Only autocomplete single-line cues
         if (value.indexOf('\n') !== -1) {
             hideAutocomplete();
-            return;
+            return true;
         }
         var forcedCue = value.trim().charAt(0) === '@';
         var query = value.replace(/^@/, '').replace(/\s*\^\s*$/, '').trim();
         // ACTION: require @ force marker or at least 2 characters of a cue
         if (type === 'ACTION' && !forcedCue && query.length < 2) {
             hideAutocomplete();
-            return;
+            return false;
+        }
+        // Prefer scene suggestions when ACTION looks like a scene heading stub
+        if (type === 'ACTION' && !forcedCue && looksLikeSceneTyping(value, type)) {
+            return false;
         }
 
         loadCharacters(false).then(function(entries) {
             if (document.activeElement !== textarea) return;
+            if (autocompleteKind === 'scene' && isAutocompleteOpen()) return;
             var matches = filterCharacters(query, entries);
             // Don't suggest exact current value alone
             if (matches.length === 1 && matches[0].name.toUpperCase() === query.toUpperCase()) {
@@ -483,8 +501,116 @@
                 return;
             }
             autocompleteIndex = matches.length ? 0 : -1;
-            showAutocomplete(textarea, matches);
+            showAutocomplete(textarea, matches, 'character');
         });
+        return true;
+    }
+
+    function maybeShowAutocomplete(textarea) {
+        var row = findAnyBlockRow(textarea);
+        if (!row) {
+            hideAutocomplete();
+            return;
+        }
+        var type = rowType(row);
+        var value = textarea.value || '';
+        var forcedCue = value.trim().charAt(0) === '@';
+
+        if (type === 'SCENE' || (!forcedCue && looksLikeSceneTyping(value, type))) {
+            if (maybeShowSceneAutocomplete(textarea)) return;
+        }
+        if (type === 'CHARACTER' || type === 'DUAL_DIALOGUE' || type === 'ACTION') {
+            if (maybeShowCharacterAutocomplete(textarea)) return;
+        }
+        hideAutocomplete();
+    }
+
+    function sceneEntries() {
+        return sceneCache.entries || [];
+    }
+
+    function harvestSceneHeadings() {
+        var entries = [];
+        document.querySelectorAll('.block-row[data-block-type="SCENE"]').forEach(function(row) {
+            var text = row.querySelector('.script-block-text, textarea[name="content"]');
+            var heading = text ? (text.value != null ? text.value : text.textContent) : '';
+            heading = String(heading || '').replace(/^\.\s*/, '').replace(/\u00a0/g, ' ').trim();
+            if (heading) upsertEntry(entries, { id: null, name: heading });
+        });
+        entries.sort(function(a, b) {
+            return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+        });
+        return entries;
+    }
+
+    function loadScenes(force) {
+        var pid = projectId();
+        var now = Date.now();
+        if (!force && sceneCache.projectId === pid && now - sceneCache.loadedAt < 15000) {
+            return sceneEntries();
+        }
+        var entries = harvestSceneHeadings();
+        sceneCache = { projectId: pid, entries: entries, loadedAt: now };
+        return entries;
+    }
+
+    function filterScenes(query, entries) {
+        var q = (query || '').trim().toUpperCase();
+        var prefixMatches = filterCharacters(q, SCENE_PREFIX_SUGGESTIONS);
+        // Drop prefix suggestions once the query already looks like a full heading
+        if (SCENE_HEADING.test(query.trim()) || (q.length > 4 && /\s/.test(q))) {
+            prefixMatches = [];
+        }
+        var sceneMatches = filterCharacters(q, entries);
+        var combined = [];
+        prefixMatches.concat(sceneMatches).forEach(function(entry) {
+            upsertEntry(combined, entry);
+        });
+        return combined.slice(0, 8);
+    }
+
+    function looksLikeSceneTyping(value, type) {
+        var trimmed = (value || '').trim();
+        if (!trimmed) return type === 'SCENE';
+        if (trimmed.charAt(0) === '.') return true;
+        if (type === 'SCENE') return true;
+        if (SCENE_PREFIX.test(trimmed)) return true;
+        // Short INT/EXT stubs while still on ACTION (before live detect flips type)
+        if (/^(?:I|IN|INT|INT\.|E|EX|EXT|EXT\.|ES|EST|EST\.|I\/|I\/E|I\/E\.|INT\.?\/|INT\.?\/E|INT\.?\/EX|INT\.?\/EXT|INT\.?\/EXT\.?)$/i.test(trimmed)) {
+            return true;
+        }
+        return false;
+    }
+
+    function maybeShowSceneAutocomplete(textarea) {
+        var row = findAnyBlockRow(textarea);
+        if (!row) return false;
+        var type = rowType(row);
+        if (type !== 'SCENE' && type !== 'ACTION') return false;
+
+        var value = textarea.value;
+        if (value.indexOf('\n') !== -1) {
+            hideAutocomplete();
+            return true;
+        }
+        if (!looksLikeSceneTyping(value, type)) return false;
+
+        var query = value.replace(/^\.\s*/, '').replace(/\u00a0/g, ' ');
+        var entries = loadScenes(false);
+        var matches = filterScenes(query, entries);
+        var q = query.trim();
+        if (matches.length === 1 && matches[0].name.toUpperCase() === q.toUpperCase()) {
+            hideAutocomplete();
+            return true;
+        }
+        // ACTION with only a short stub and no prior scenes: still show INT./EXT. prefixes
+        if (!matches.length) {
+            hideAutocomplete();
+            return type === 'SCENE';
+        }
+        autocompleteIndex = matches.length ? 0 : -1;
+        showAutocomplete(textarea, matches, 'scene');
+        return true;
     }
 
     function setBlockPersonId(textarea, personId) {
@@ -503,6 +629,34 @@
 
     function acceptAutocomplete(textarea, name, personId) {
         if (!name) return;
+        var kind = autocompleteKind;
+        if (kind === 'scene') {
+            hideAutocomplete();
+            textarea.value = name;
+            var row = findAnyBlockRow(textarea);
+            if (row && (isCreateRow(row) || rowType(row) === 'ACTION' || rowType(row) === 'SCENE')) {
+                if (isCreateRow(row) || rowType(row) === 'ACTION') {
+                    setCreateRowType(row, 'SCENE');
+                }
+                if (!isCreateRow(row) && rowType(row) !== 'SCENE') {
+                    applyTypeToActiveBlock('SCENE');
+                }
+            }
+            sceneCache.loadedAt = 0;
+            if (typeof window.scriptyGrowTextarea === 'function') {
+                window.scriptyGrowTextarea(textarea);
+            }
+            try {
+                textarea.focus({ preventScroll: true });
+                textarea.setSelectionRange(name.length, name.length);
+            } catch (err) { /* ignore */ }
+            // After a prefix stub (e.g. "INT. "), keep suggesting prior scenes
+            if (/\s$/.test(name) && !SCENE_HEADING.test(name.trim())) {
+                maybeShowSceneAutocomplete(textarea);
+            }
+            return;
+        }
+
         var dual = /\^\s*$/.test(textarea.value);
         textarea.value = dual ? name + ' ^' : name;
         hideAutocomplete();
@@ -714,7 +868,7 @@
             applyDetectionToTextarea(textarea, { force: false });
         }
 
-        maybeShowCharacterAutocomplete(textarea);
+        maybeShowAutocomplete(textarea);
     });
 
     document.addEventListener('focusout', function(e) {
@@ -752,6 +906,7 @@
 
     // After HTMX swaps, refresh outline and apply pending create type
     document.body.addEventListener('htmx:afterSwap', function() {
+        sceneCache.loadedAt = 0;
         refreshOutline();
         applyPendingCreateType();
     });
@@ -793,6 +948,7 @@
                 }
                 if (node.matches && (node.matches('.block-row[data-block-id]') || node.querySelector('.block-row[data-block-id]'))) {
                     needsOutline = true;
+                    sceneCache.loadedAt = 0;
                 }
             });
             if (m.removedNodes.length) needsOutline = true;

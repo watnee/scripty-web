@@ -36,14 +36,47 @@ public class SecurityConfig {
                     + "form-action 'self'; "
                     + "frame-ancestors 'none'";
 
+    private static final String PERMISSIONS_POLICY =
+            "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
+
     @Bean
     @Profile("!dev")
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/favicon.ico", "/css/**", "/js/**", "/dictionaries/**", "/fonts/**", "/login", "/perform-login", "/manifest.json", "/sw.js", "/offline.html", "/icons/**", "/help", "/invitation/accept").permitAll()
-                .requestMatchers("/api/account/**", "/account/**").hasRole("ADMIN")
-                .requestMatchers("/project/**", "/actor/**", "/block/**", "/character/**", "/team/**", "/invitation/**", "/user/**", "/audition/**", "/api/**").hasRole("USER")
+                .requestMatchers(
+                        "/",
+                        "/favicon.ico",
+                        "/css/**",
+                        "/js/**",
+                        "/dictionaries/**",
+                        "/fonts/**",
+                        "/login",
+                        "/perform-login",
+                        "/manifest.json",
+                        "/sw.js",
+                        "/offline.html",
+                        "/icons/**",
+                        "/help",
+                        "/invitation/accept")
+                    .permitAll()
+                .requestMatchers(
+                        "/user/**",
+                        "/api/user/**",
+                        "/team/**",
+                        "/api/team/**",
+                        "/api/account/**",
+                        "/account/**")
+                    .hasRole("ADMIN")
+                .requestMatchers(
+                        "/project/**",
+                        "/actor/**",
+                        "/block/**",
+                        "/character/**",
+                        "/invitation/**",
+                        "/audition/**",
+                        "/api/**")
+                    .hasRole("USER")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -57,10 +90,14 @@ public class SecurityConfig {
             )
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
-                .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .referrerPolicy(referrer -> referrer.policy(
+                        ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 .frameOptions(frame -> frame.deny())
-            )
-            .csrf(csrf -> csrf.disable());
+                .httpStrictTransportSecurity(hsts -> hsts
+                        .includeSubDomains(true)
+                        .maxAgeInSeconds(31536000))
+                .permissionsPolicyHeader(permissions -> permissions.policy(PERMISSIONS_POLICY))
+            );
 
         return http.build();
     }
@@ -85,9 +122,12 @@ public class SecurityConfig {
             )
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
-                .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .referrerPolicy(referrer -> referrer.policy(
+                        ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 .frameOptions(frame -> frame.deny())
+                .permissionsPolicyHeader(permissions -> permissions.policy(PERMISSIONS_POLICY))
             )
+            // Dev keeps CSRF off: DevTools restarts and auto-login make token sync brittle locally.
             .csrf(csrf -> csrf.disable());
 
         return http.build();

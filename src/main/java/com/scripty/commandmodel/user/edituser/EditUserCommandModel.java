@@ -10,7 +10,7 @@ public class EditUserCommandModel {
     @NotBlank(message = "You must supply a value for Username.")
     @Size(max = 20, message = "Username must be no more than 20 characters in length.")
     private String username;
-    @Size(max = 100, message = "Password must be no more than 100 characters in length.")
+    @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters in length.")
     private String password;
     @NotBlank(message = "You must supply a value for First Name.")
     @Size(max = 30, message = "First Name must be no more than 30 characters in length.")
@@ -49,7 +49,8 @@ public class EditUserCommandModel {
     }
 
     public void setPassword(String password) {
-        this.password = password;
+        // Blank means "leave unchanged" on edit; treat as null so @Size(min=8) does not fire.
+        this.password = (password == null || password.isBlank()) ? null : password;
     }
 
     public String getFirstName() {

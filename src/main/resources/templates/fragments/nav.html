@@ -6,6 +6,9 @@
         <button type="button" id="scripty-offline-sync-retry" class="scripty-offline-sync-retry" hidden>Retry sync</button>
     </div>
     <meta name="app-asset-version" th:content="${assetVersion}">
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+    <script th:src="@{/js/csrf.js(v=${assetVersion})}"></script>
     <script>
         (function() {
             const storedTheme = localStorage.getItem('theme') || 'system';

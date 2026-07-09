@@ -2,7 +2,7 @@ server:
   port: ${PORT:8080}
 
 spring:
-  profiles:
-    active: dev
+  # No default profile — require an explicit profile (dev locally, prod via Procfile/railpack).
+  # Running without a profile fails closed (no datasource) instead of enabling DevAutoLogin.
   hateoas:
     use-hal-as-default-json-media-type: true

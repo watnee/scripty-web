@@ -10,7 +10,7 @@ public class WebModelAdvice {
     @Value("${app.asset-version:106}")
     private String assetVersion;
 
-    @Value("${app.service-worker-enabled:true}")
+    @Value("${app.service-worker-enabled:false}")
     private boolean serviceWorkerEnabled;
 
     @ModelAttribute("assetVersion")

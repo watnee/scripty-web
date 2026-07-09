@@ -9,7 +9,7 @@ public class CreateUserCommandModel {
     @Size(max = 20, message = "Username must be no more than 20 characters in length.")
     private String username;
     @NotBlank(message = "You must supply a value for Password.")
-    @Size(max = 100, message = "Password must be no more than 100 characters in length.")
+    @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters in length.")
     private String password;
     @NotBlank(message = "You must supply a value for First Name.")
     @Size(max = 30, message = "First Name must be no more than 30 characters in length.")

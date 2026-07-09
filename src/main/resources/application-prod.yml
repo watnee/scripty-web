@@ -1,6 +1,17 @@
+server:
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        secure: true
+        http-only: true
+        same-site: lax
+
 spring:
   datasource:
-    url: jdbc:mysql://${MYSQLHOST}:${MYSQLPORT}/${MYSQLDATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    # Prefer TLS when the DB supports it. On Railway private networking without TLS,
+    # set MYSQL_SSL_MODE=DISABLED (and keep MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true if needed).
+    url: jdbc:mysql://${MYSQLHOST}:${MYSQLPORT}/${MYSQLDATABASE}?sslMode=${MYSQL_SSL_MODE:PREFERRED}&allowPublicKeyRetrieval=${MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL:true}&serverTimezone=UTC
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${MYSQLUSER}
     password: ${MYSQLPASSWORD}
@@ -32,3 +43,5 @@ app:
   base-url: ${APP_BASE_URL:}
   mail-from: ${MAIL_FROM:Scripty <noreply@scripty.app>}
   mail-enabled: ${MAIL_ENABLED:false}
+  # Disable until the service worker stops caching authenticated HTML responses.
+  service-worker-enabled: false

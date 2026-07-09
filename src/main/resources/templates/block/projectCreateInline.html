@@ -10,7 +10,7 @@
         </div>
     </aside>
     <div class="block-content script-block block-type-action script-block--action">
-        <form th:attr="hx-post=@{/block/createInline(surface='project')}" hx-target="closest .block-row" hx-swap="outerHTML" hx-trigger="keydown[key=='Enter'&amp;&amp;!event.shiftKey] from:find textarea, createNext">
+        <form th:attr="hx-post=@{/block/createInline(surface='project')}" hx-target="closest .block-row" hx-swap="outerHTML" hx-trigger="createNext">
             <input type="hidden" name="projectId" th:value="${projectId}" />
             <input type="hidden" name="surface" value="project" />
             <input type="hidden" name="type" value="ACTION" />

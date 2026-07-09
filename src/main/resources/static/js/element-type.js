@@ -35,7 +35,12 @@
     var inFlight = false;
 
     function typeLabel(type) {
-        return TYPE_LABELS[type] || type;
+        if (type == null || type === '') return TYPE_LABELS.ACTION;
+        var key = String(type).toUpperCase();
+        if (TYPE_LABELS[key]) return TYPE_LABELS[key];
+        return key.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, function(c) {
+            return c.toUpperCase();
+        });
     }
     window.scriptyBlockTypeLabel = typeLabel;
 
@@ -49,9 +54,20 @@
 
     function findRowById(blockId) {
         if (!blockId) return null;
-        return document.querySelector(
-            '.block-row[data-block-id="' + blockId + '"], tr[data-block-id="' + blockId + '"]'
-        );
+        var selector = '.block-row[data-block-id="' + blockId + '"], tr[data-block-id="' + blockId + '"]';
+        // Prefer a row that still has an open + type menu / edit form when
+        // duplicate data-block-id nodes briefly exist after create swaps.
+        var matches = document.querySelectorAll(selector);
+        if (matches.length <= 1) return matches[0] || null;
+        for (var i = 0; i < matches.length; i++) {
+            if (matches[i].querySelector('.create-below-menu-dropdown.open')) return matches[i];
+        }
+        for (var j = 0; j < matches.length; j++) {
+            if (matches[j].querySelector('.block-content form[hx-post*="/block/editInline"]')) {
+                return matches[j];
+            }
+        }
+        return matches[matches.length - 1];
     }
 
     function findEditForm(row) {
@@ -228,7 +244,9 @@
             }
         }
 
-        var blockId = preferredId || (ids.length === 1 ? ids[0] : activeBlockId());
+        var blockId = preferredId
+            || window.scriptyPendingCreateBelowTypeTargetId
+            || (ids.length === 1 ? ids[0] : activeBlockId());
         if (!blockId) {
             return null;
         }

@@ -1199,6 +1199,7 @@ button.block-drag-menu-toggle.nav-dropdown-toggle:active {
 .block-drag-menu .nav-dropdown-item {
     font-size: 0.84rem;
     font-weight: 500;
+    text-transform: none;
     color: var(--fg, #334155);
     gap: 0.55rem;
     padding: 0.48rem 0.62rem;
@@ -1446,6 +1447,7 @@ button.create-below.create-below-menu-toggle:active {
 .create-below-menu .nav-dropdown-item {
     font-size: 0.84rem;
     font-weight: 500;
+    text-transform: none;
     color: var(--fg, #334155);
 }
 
@@ -2980,6 +2982,7 @@ html.scripty-hide-block-element-labels .block-element-label {
     letter-spacing: 0.02em;
     line-height: var(--block-text-line-box, calc(12pt * 1.5));
     text-align: right;
+    text-transform: none;
     color: var(--muted-fg, #64748b);
     white-space: nowrap;
     overflow: hidden;
@@ -7423,6 +7426,7 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     margin: 0;
     font-size: 0.85rem;
     padding: 0.2rem 0.55rem;
+    text-transform: none;
 }
 
 .element-type-actions .bulk-type-btn.is-active {
@@ -8100,8 +8104,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-outline-type {
     flex-shrink: 0;
     font-size: 0.68rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    text-transform: none;
     opacity: 0.5;
 }
 

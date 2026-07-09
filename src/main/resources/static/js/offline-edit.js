@@ -847,27 +847,6 @@
         }
     }, true);
 
-    document.addEventListener('mousedown', function (e) {
-        if (isEffectivelyOnline()) return;
-        if (e.button !== 0) return;
-        var typeItem = e.target.closest('[data-create-type]');
-        if (typeItem && typeItem.closest('.create-below-menu')) {
-            e.preventDefault();
-            e.stopPropagation();
-            var typeRow = typeItem.closest('.block-row');
-            var type = typeItem.getAttribute('data-create-type');
-            if (!typeRow || !type) return;
-            if (window.scriptySetCreateRowType) {
-                window.scriptySetCreateRowType(typeRow, type);
-            }
-            document.querySelectorAll('.create-below-menu-dropdown.open').forEach(function(dropdown) {
-                dropdown.classList.remove('open');
-                var toggle = dropdown.querySelector('.create-below-menu-toggle');
-                if (toggle) toggle.setAttribute('aria-expanded', 'false');
-            });
-        }
-    }, true);
-
     document.addEventListener('click', function (e) {
         var retry = e.target.closest('#scripty-offline-sync-retry');
         if (retry) {
@@ -879,9 +858,21 @@
 
         if (isEffectivelyOnline()) return;
 
-        if (e.target.closest('.create-below-menu [data-create-type]')) {
+        var typeItem = e.target.closest('[data-create-type]');
+        if (typeItem && typeItem.closest('.create-below-menu')) {
             e.preventDefault();
             e.stopPropagation();
+            var typeRow = typeItem.closest('.block-row');
+            var type = typeItem.getAttribute('data-create-type');
+            if (!typeRow || !type) return;
+            document.querySelectorAll('.create-below-menu-dropdown.open').forEach(function(dropdown) {
+                dropdown.classList.remove('open');
+                var toggle = dropdown.querySelector('.create-below-menu-toggle');
+                if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            });
+            if (window.scriptySetCreateRowType) {
+                window.scriptySetCreateRowType(typeRow, type);
+            }
             return;
         }
 

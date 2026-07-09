@@ -113,33 +113,9 @@
         return null;
     }
 
-    /** Industry-style next element after pressing Enter on a typed block. */
-    function nextTypeAfter(type) {
-        switch ((type || 'ACTION').toUpperCase()) {
-            case 'SCENE':
-            case 'SHOT':
-            case 'CENTERED':
-            case 'SECTION':
-            case 'SYNOPSIS':
-            case 'NOTE':
-            case 'PAGE_BREAK':
-                return 'ACTION';
-            case 'ACTION':
-                return 'ACTION';
-            case 'CHARACTER':
-            case 'DUAL_DIALOGUE':
-                return 'DIALOGUE';
-            case 'DIALOGUE':
-                return 'DIALOGUE';
-            case 'PARENTHETICAL':
-                return 'DIALOGUE';
-            case 'TRANSITION':
-                return 'SCENE';
-            case 'LYRICS':
-                return 'LYRICS';
-            default:
-                return 'ACTION';
-        }
+    /** New blocks always default to Action; type can be changed via toolbar/Tab. */
+    function nextTypeAfter(/* type */) {
+        return 'ACTION';
     }
     window.scriptyNextFountainType = nextTypeAfter;
 

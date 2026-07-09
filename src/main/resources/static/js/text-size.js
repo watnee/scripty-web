@@ -15,6 +15,9 @@
     function applySize(size) {
         var main = document.querySelector('main');
         if (main) main.style.fontSize = size + '%';
+        try {
+            window.dispatchEvent(new CustomEvent('scripty:text-size-changed', { detail: { size: size } }));
+        } catch (err) { /* ignore */ }
     }
 
     function saveSize(size) {

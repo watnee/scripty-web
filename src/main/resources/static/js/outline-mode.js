@@ -33,12 +33,19 @@
         return document.documentElement.classList.contains('scripty-outline-mode');
     };
 
+    window.scriptySetOutlineMode = function (on, options) {
+        var next = !!on;
+        localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
+        apply(next);
+        if (next && !(options && options.skipPeer) && typeof window.scriptySetPageViewMode === 'function') {
+            window.scriptySetPageViewMode(false, { skipPeer: true });
+        }
+    };
+
     var toggleBtn = document.getElementById('outline-mode-toggle');
     if (toggleBtn) {
         toggleBtn.addEventListener('click', function () {
-            var next = !isOn();
-            localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
-            apply(next);
+            window.scriptySetOutlineMode(!isOn());
         });
     }
 

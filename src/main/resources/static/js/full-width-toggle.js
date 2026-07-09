@@ -15,6 +15,9 @@
             btn.title = on ? 'Use standard screenplay width' : 'Use full page width';
             btn.setAttribute('aria-label', btn.title);
         }
+        try {
+            window.dispatchEvent(new CustomEvent('scripty:full-width-changed', { detail: { on: on } }));
+        } catch (err) { /* ignore */ }
     }
 
     function sync() {

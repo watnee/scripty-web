@@ -7290,16 +7290,23 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
 .text-size-control .lists-toolbar-btn svg,
 .text-size-control .view-toolbar-btn svg,
 .text-size-control .outline-mode-toolbar-btn svg,
+.text-size-control .page-view-mode-toolbar-btn svg,
 .text-size-control .focus-toolbar-btn svg,
 .text-size-control .full-width-toolbar-btn svg,
 .text-size-control .toolbar-visibility-toggle svg {
     display: block;
 }
 
-.text-size-control #outline-mode-toggle[aria-pressed="true"] {
+.text-size-control #outline-mode-toggle[aria-pressed="true"],
+.text-size-control #page-view-mode-toggle[aria-pressed="true"] {
     box-shadow: 0 2px 4px -1px var(--fg) inset;
     background: var(--pressed-interactive-bg);
     color: var(--accent);
+}
+
+.text-size-control .page-view-mode-toolbar-btn.is-active {
+    color: var(--accent, #475569);
+    border-color: var(--accent, #475569);
 }
 
 .text-size-control .full-width-toolbar-btn .full-width-icon--compress {
@@ -7375,7 +7382,7 @@ html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
 
 body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb,
-body.focus-mode .text-size-control > :not(#focus-toggle):not(#outline-mode-toggle):not(#nav-full-width-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
+body.focus-mode .text-size-control > :not(#focus-toggle):not(#outline-mode-toggle):not(#page-view-mode-toggle):not(#nav-full-width-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
 body.focus-mode .project-script-toolbar,
 body.focus-mode .project-header-row,
 body.focus-mode .project-create-scene,
@@ -7418,6 +7425,273 @@ html.scripty-outline-mode .project-script::after {
 @media print {
     html.scripty-outline-mode .project-script::after {
         display: none !important;
+    }
+}
+
+/* Page view: US Letter sheets with measured pagination */
+html.scripty-page-view-mode .project-script,
+html.scripty-page-view-mode .script-content.entry-content {
+    --screenplay-action-width: 6in;
+    --screenplay-dialogue-width: 3.5in;
+    --screenplay-character-indent: 2.2in;
+    --screenplay-dialogue-indent: 1in;
+    --screenplay-parenthetical-indent: 1.5in;
+}
+
+html.scripty-page-view-mode .project-script .script-scene {
+    display: block;
+    width: 100%;
+}
+
+html.scripty-page-view-mode .project-script .scene-blocks {
+    display: block;
+    grid-column: unset;
+}
+
+html.scripty-page-view-mode .project-script .screenplay-pages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.75rem;
+    padding: 1.5rem 1rem 3rem;
+    background:
+        radial-gradient(ellipse at top, rgba(0, 0, 0, 0.04), transparent 55%),
+        var(--accent-bg, #f1f5f9);
+    border-radius: 8px;
+    margin-top: 0.5rem;
+}
+
+:root.-dark-theme.scripty-page-view-mode .project-script .screenplay-pages {
+    background:
+        radial-gradient(ellipse at top, rgba(255, 255, 255, 0.04), transparent 55%),
+        var(--accent-bg, #1e293b);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.-no-dark-theme).scripty-page-view-mode .project-script .screenplay-pages {
+        background:
+            radial-gradient(ellipse at top, rgba(255, 255, 255, 0.04), transparent 55%),
+            var(--accent-bg, #1e293b);
+    }
+}
+
+html.scripty-page-view-mode .project-script .screenplay-page {
+    position: relative;
+    box-sizing: border-box;
+    width: min(8.5in, 100%);
+    height: 11in;
+    max-width: 100%;
+    padding: 1in 1in 1in 1.5in;
+    background: #ffffff;
+    color: #111111;
+    border: 1px solid #cbd5e1;
+    border-radius: 2px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12pt;
+    line-height: 1;
+}
+
+html.scripty-page-view-mode .project-script .screenplay-page.screenplay-page--measure {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+    left: -9999px;
+    top: 0;
+}
+
+:root.-dark-theme.scripty-page-view-mode .project-script .screenplay-page {
+    background: #1e1e1e;
+    color: #e2e8f0;
+    border-color: #475569;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.-no-dark-theme).scripty-page-view-mode .project-script .screenplay-page {
+        background: #1e1e1e;
+        color: #e2e8f0;
+        border-color: #475569;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+    }
+}
+
+html.scripty-page-view-mode .project-script .screenplay-page-body {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+html.scripty-page-view-mode .project-script .screenplay-page-number {
+    position: absolute;
+    top: 0.45in;
+    right: 1in;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12pt;
+    line-height: 1;
+    color: inherit;
+    pointer-events: none;
+    user-select: none;
+}
+
+html.scripty-page-view-mode .project-script .scene-blocks .block-row {
+    display: block;
+    grid-column: unset;
+    grid-template-columns: none;
+    width: 100%;
+    margin: 0;
+}
+
+html.scripty-page-view-mode .project-script .block-content {
+    display: block;
+    grid-column: unset;
+    width: 100%;
+    max-width: 100%;
+    font-size: 12pt;
+    line-height: 1;
+}
+
+html.scripty-page-view-mode .project-script aside.block-left-controls,
+html.scripty-page-view-mode .project-script aside.block-actions,
+html.scripty-page-view-mode .project-script .block-element-label,
+html.scripty-page-view-mode .project-script .block-tags-list,
+html.scripty-page-view-mode .project-script .project-script-select-row,
+html.scripty-page-view-mode .project-script .block-row:not([data-block-id]) {
+    display: none !important;
+}
+
+html.scripty-page-view-mode .project-script .block-row[data-block-type="PAGE_BREAK"] {
+    display: none !important;
+}
+
+html.scripty-page-view-mode .project-script .block-content .script-character-name,
+html.scripty-page-view-mode .project-script .block-content.block-type-character .script-block-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-character .reader-visible-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-character .block-input-textarea {
+    display: block;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    margin-left: var(--screenplay-character-indent, 2.2in);
+    margin-right: 0;
+    width: auto;
+    max-width: none;
+}
+
+html.scripty-page-view-mode .project-script .block-content.block-type-dialogue .script-block-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-dialogue .reader-visible-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-dialogue .block-input-textarea,
+html.scripty-page-view-mode .project-script .script-block--dialogue .script-block-text,
+html.scripty-page-view-mode .project-script .script-block--dialogue .reader-visible-text,
+html.scripty-page-view-mode .project-script .script-block--dialogue .block-input-textarea {
+    display: block;
+    width: var(--screenplay-dialogue-width, 3.5in);
+    max-width: var(--screenplay-dialogue-width, 3.5in);
+    margin-left: var(--screenplay-dialogue-indent, 1in);
+    margin-right: 0;
+    text-align: left;
+}
+
+html.scripty-page-view-mode .project-script .block-content.block-type-parenthetical .script-block-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-parenthetical .reader-visible-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-parenthetical .block-input-textarea {
+    display: block;
+    margin-left: var(--screenplay-parenthetical-indent, 1.5in);
+    margin-right: 0;
+    max-width: 2in;
+    width: auto;
+    text-align: left;
+    font-style: italic;
+}
+
+html.scripty-page-view-mode .project-script .block-content.block-type-transition,
+html.scripty-page-view-mode .project-script .block-content.block-type-transition .script-block-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-transition .reader-visible-text {
+    text-align: right;
+    text-transform: uppercase;
+}
+
+html.scripty-page-view-mode body.focus-mode .project-script {
+    max-width: none;
+}
+
+html.scripty-page-view-mode .project-script::after {
+    content: 'Page view — US Letter layout';
+    display: block;
+    margin: 0.75rem 0 0.25rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted-fg, #64748b);
+}
+
+@media (max-width: 720px) {
+    html.scripty-page-view-mode .project-script .screenplay-pages {
+        padding: 1rem 0.5rem 2rem;
+        gap: 1.25rem;
+    }
+
+    html.scripty-page-view-mode .project-script .screenplay-page {
+        width: 100%;
+        height: auto;
+        min-height: calc(100vw * 11 / 8.5);
+        aspect-ratio: 8.5 / 11;
+        padding: 8% 8% 8% 12%;
+        font-size: clamp(8px, 2.4vw, 12pt);
+    }
+
+    html.scripty-page-view-mode .project-script .screenplay-page-number {
+        top: 3.5%;
+        right: 8%;
+        font-size: inherit;
+    }
+}
+
+@media print {
+    html.scripty-page-view-mode .project-script::after {
+        display: none !important;
+    }
+
+    html.scripty-page-view-mode .project-script .screenplay-pages {
+        display: contents;
+        background: none;
+        padding: 0;
+        gap: 0;
+        margin: 0;
+        border-radius: 0;
+    }
+
+    html.scripty-page-view-mode .project-script .screenplay-page {
+        width: auto;
+        height: auto;
+        min-height: 0;
+        aspect-ratio: auto;
+        padding: 0;
+        margin: 0;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: visible;
+        background: transparent;
+        color: inherit;
+        page-break-after: always;
+        break-after: page;
+    }
+
+    html.scripty-page-view-mode .project-script .screenplay-page:last-child {
+        page-break-after: auto;
+        break-after: auto;
+    }
+
+    html.scripty-page-view-mode .project-script .screenplay-page-number {
+        display: none !important;
+    }
+
+    html.scripty-page-view-mode .project-script .screenplay-page-body {
+        height: auto;
+        overflow: visible;
     }
 }
 

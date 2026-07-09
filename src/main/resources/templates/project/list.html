@@ -14,7 +14,24 @@
     <div th:replace="~{fragments/nav :: nav('projects')}"></div>
     <main class="project-list-page">
 
-        <div class="project-list-toolbar">
+        <div class="project-list-header">
+            <div class="project-list-header-text">
+                <h1>Projects</h1>
+                <p class="muted" th:if="${!#lists.isEmpty(viewModel.projects)}">
+                    <th:block th:with="count=${#lists.size(viewModel.projects)}">
+                        <span th:if="${count == 1}">1 screenplay</span>
+                        <span th:unless="${count == 1}" th:text="|${count} screenplays|"></span>
+                    </th:block>
+                </p>
+                <p class="muted" th:if="${#lists.isEmpty(viewModel.projects)}">Your screenplays live here.</p>
+            </div>
+            <a th:href="@{/project/create}" role="button" class="project-list-create-btn">
+                <span class="project-list-create-icon" aria-hidden="true">+</span>
+                New Project
+            </a>
+        </div>
+
+        <div class="project-list-toolbar" th:if="${!#lists.isEmpty(viewModel.projects)}">
             <div class="project-list-search-wrap" id="project-list-search-wrap">
                 <label class="visually-hidden" for="project-list-search">Search projects</label>
                 <span class="project-list-search-icon" aria-hidden="true">
@@ -43,10 +60,6 @@
                         <option value="title">Name A–Z</option>
                     </select>
                 </label>
-                <a th:href="@{/project/create}" role="button" class="project-list-create-btn">
-                    <span class="project-list-create-icon" aria-hidden="true">+</span>
-                    New Project
-                </a>
             </div>
         </div>
 
@@ -76,13 +89,24 @@
                                     <div class="project-list-title-row">
                                         <a th:href="@{/project/show(id=${project.id})}" class="project-list-title" th:text="${project.title}"></a>
                                         <span class="project-list-default-label" th:if="${project.id == defaultProjectId}">Default</span>
-                                        <th:block th:each="team : ${project.teams}">
-                                            <span th:replace="~{fragments/projectListTeam :: link(${team.id}, ${team.name})}"></span>
+                                    </div>
+                                    <div class="project-list-meta">
+                                        <span class="project-list-last-edited" th:if="${project.lastEdited != null}" th:title="${#temporals.format(project.lastEdited, 'MMM d, yyyy, h:mm a')}">
+                                            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9"></circle>
+                                                <polyline points="12 7 12 12 15 14"></polyline>
+                                            </svg>
+                                            <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.lastEdited})}"></span>
+                                        </span>
+                                        <th:block th:if="${!#lists.isEmpty(project.teams)}">
+                                            <span class="project-list-meta-sep" aria-hidden="true" th:if="${project.lastEdited != null}"></span>
+                                            <span class="project-list-teams">
+                                                <th:block th:each="team : ${project.teams}">
+                                                    <span th:replace="~{fragments/projectListTeam :: link(${team.id}, ${team.name})}"></span>
+                                                </th:block>
+                                            </span>
                                         </th:block>
                                     </div>
-                                    <span class="project-list-last-edited" th:if="${project.lastEdited != null}" th:title="${#temporals.format(project.lastEdited, 'MMM d, yyyy, h:mm a')}">
-                                        Last edited <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.lastEdited})}"></span>
-                                    </span>
                                 </div>
                                 <div th:replace="~{fragments/projectListActions :: actions(${project})}"></div>
                             </div>
@@ -96,9 +120,17 @@
         </div>
 
         <div class="project-list-empty" th:if="${#lists.isEmpty(viewModel.projects)}">
+            <div class="project-list-empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+            </div>
             <p class="project-list-empty-title">No projects yet</p>
             <p class="muted">Create your first screenplay to get started.</p>
-            <a th:href="@{/project/create}" role="button">Create New Project</a>
+            <a th:href="@{/project/create}" role="button" class="project-list-create-btn">Create New Project</a>
         </div>
     </main>
     <script src="/js/htmx.min.js"></script>

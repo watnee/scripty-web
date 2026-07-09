@@ -316,6 +316,10 @@
                        hx-boost="false">Word (.docx)</a>
                     <a class="nav-dropdown-item"
                        role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=fdx)}"
+                       hx-boost="false">Final Draft (.fdx)</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
                        th:href="@{/project/export(id=${viewModel.id}, format=fountain)}"
                        hx-boost="false">Fountain</a>
                     <div class="nav-dropdown-divider" role="separator"></div>
@@ -336,7 +340,7 @@
                 <input type="file"
                        id="project-import-file"
                        name="file"
-                       accept=".fountain,.txt,.doc,.docx,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                       accept=".fountain,.txt,.doc,.docx,.fdx,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml"
                        aria-hidden="true"
                        tabindex="-1" />
             </form>

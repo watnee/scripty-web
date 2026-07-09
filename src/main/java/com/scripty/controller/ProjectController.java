@@ -14,6 +14,7 @@ import com.scripty.viewmodel.project.projectlist.ProjectTeamViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.service.DocxExportService;
+import com.scripty.service.FdxExportService;
 import com.scripty.service.FountainExportService;
 import com.scripty.service.FountainImportService;
 import com.scripty.service.PdfExportService;
@@ -106,6 +107,9 @@ public class ProjectController {
 
     @Autowired
     DocxExportService docxExportService;
+
+    @Autowired
+    FdxExportService fdxExportService;
 
     @RequestMapping(value = "/list")
     public String list(Model model, Principal principal) {
@@ -610,6 +614,14 @@ public class ProjectController {
                             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                     .body(docx);
+        }
+        if ("fdx".equals(normalized) || "finaldraft".equals(normalized) || "final-draft".equals(normalized)) {
+            byte[] fdx = fdxExportService.exportProject(id);
+            String filename = exportFilename(project, "fdx");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/x-fdx"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(fdx);
         }
 
         String fountain = fountainExportService.exportProject(id);

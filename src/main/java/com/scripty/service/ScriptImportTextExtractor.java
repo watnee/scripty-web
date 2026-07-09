@@ -23,6 +23,9 @@ public class ScriptImportTextExtractor {
         String lowerName = filename != null ? filename.toLowerCase(Locale.ROOT) : "";
         String contentType = file.getContentType() != null ? file.getContentType().toLowerCase(Locale.ROOT) : "";
 
+        if (isFdx(lowerName, contentType)) {
+            return FdxToFountainConverter.convert(file.getInputStream());
+        }
         if (isDocx(lowerName, contentType)) {
             return extractDocx(file.getInputStream());
         }
@@ -45,6 +48,9 @@ public class ScriptImportTextExtractor {
         String lowerName = filename != null ? filename.toLowerCase(Locale.ROOT) : "";
         String contentType = file.getContentType() != null ? file.getContentType().toLowerCase(Locale.ROOT) : "";
 
+        if (isFdx(lowerName, contentType)) {
+            return FdxToFountainConverter.convertPlain(file.getInputStream());
+        }
         if (isDocx(lowerName, contentType)) {
             try (XWPFDocument document = new XWPFDocument(file.getInputStream())) {
                 return extractDocxPlain(document);
@@ -55,6 +61,10 @@ public class ScriptImportTextExtractor {
         }
 
         return normalizeLineEndings(new String(file.getBytes(), StandardCharsets.UTF_8));
+    }
+
+    private static boolean isFdx(String lowerName, String contentType) {
+        return FdxToFountainConverter.looksLikeFdx(lowerName, contentType);
     }
 
     private static boolean isDocx(String lowerName, String contentType) {

@@ -579,6 +579,10 @@
             if (row.dataset.openingCreateBelow === 'true') return;
             const nextRow = row.nextElementSibling;
             if (nextRow && nextRow.classList.contains('block-row') && !nextRow.hasAttribute('data-block-id')) {
+                if (window.scriptyPendingCreateType && window.scriptySetCreateRowType) {
+                    window.scriptySetCreateRowType(nextRow, window.scriptyPendingCreateType);
+                    window.scriptyPendingCreateType = null;
+                }
                 focusBlockContentEnd(nextRow);
                 return;
             }
@@ -875,11 +879,39 @@
             if (window._scriptyBlockEditGuardsInit) return;
             window._scriptyBlockEditGuardsInit = true;
 
-            // Handle "+" in JS so we don't race HTMX insert vs trailing-create dedupe,
-            // and so typed create-row text is saved instead of wiped.
+            // "+" opens an element-type menu; selecting a type creates/focuses a row.
             document.addEventListener('click', function(e) {
+                const typeItem = e.target.closest('[data-create-type]');
+                if (typeItem && typeItem.closest('.create-below-menu')) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    const row = typeItem.closest('.block-row, tr');
+                    const type = typeItem.getAttribute('data-create-type');
+                    closeAllCreateBelowMenus();
+                    closeAllBlockDragMenus();
+                    createBlockWithType(row, type);
+                    return;
+                }
+
+                const toggle = e.target.closest('.create-below-menu-toggle');
+                if (toggle) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    const dropdown = toggle.closest('.create-below-menu-dropdown');
+                    if (!dropdown) return;
+                    const isOpen = dropdown.classList.contains('open');
+                    closeAllCreateBelowMenus();
+                    closeAllBlockDragMenus();
+                    if (!isOpen) {
+                        dropdown.classList.add('open');
+                        toggle.setAttribute('aria-expanded', 'true');
+                    }
+                    return;
+                }
+
+                // Legacy plain "+" link (offline / older markup)
                 const link = e.target.closest('a.create-below');
-                if (!link) return;
+                if (!link || link.classList.contains('create-below-menu-toggle')) return;
                 const row = link.closest('.block-row, tr');
                 if (!row) return;
 
@@ -4301,6 +4333,46 @@
             });
         }
 
+        function closeAllCreateBelowMenus() {
+            document.querySelectorAll('.create-below-menu-dropdown.open').forEach(function(dropdown) {
+                dropdown.classList.remove('open');
+                var toggle = dropdown.querySelector('.create-below-menu-toggle');
+                if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            });
+        }
+
+        function createBlockWithType(row, type) {
+            if (!row || !type) return;
+            if (isCreateBlockRow(row)) {
+                if (window.scriptySetCreateRowType) {
+                    window.scriptySetCreateRowType(row, type);
+                } else {
+                    row.setAttribute('data-block-type', type);
+                    var typeInput = row.querySelector('input[name="type"]');
+                    if (typeInput) typeInput.value = type;
+                    var label = row.querySelector('.block-element-label');
+                    if (label) {
+                        label.setAttribute('data-block-type', type);
+                        label.textContent = (window.scriptyBlockTypeLabel && window.scriptyBlockTypeLabel(type)) || type;
+                    }
+                }
+                focusBlockContentEnd(row);
+                return;
+            }
+            if (!row.hasAttribute('data-block-id')) return;
+            window.scriptyPendingCreateType = type;
+            const nextRow = row.nextElementSibling;
+            if (isCreateBlockRow(nextRow)) {
+                if (window.scriptySetCreateRowType) {
+                    window.scriptySetCreateRowType(nextRow, type);
+                }
+                window.scriptyPendingCreateType = null;
+                focusBlockContentEnd(nextRow);
+                return;
+            }
+            openCreateBelowRow(row);
+        }
+
         function removeUnsavedBlockRow(row) {
             if (!row || row.hasAttribute('data-block-id')) return false;
             var container = row.closest('.scene-blocks, #table-blocks, tbody');
@@ -4561,6 +4633,7 @@
                         if (dragStarted) return;
                         var isOpen = dropdown.classList.contains('open');
                         closeAllBlockDragMenus();
+                        closeAllCreateBelowMenus();
                         if (!isOpen) {
                             dropdown.classList.add('open');
                             toggle.setAttribute('aria-expanded', 'true');
@@ -4603,6 +4676,15 @@
                 window._scriptyBlockDragMenuCloseInit = true;
                 document.addEventListener('click', function(e) {
                     if (e.target.closest('.block-drag-menu-dropdown')) return;
+                    closeAllBlockDragMenus();
+                });
+                document.addEventListener('click', function(e) {
+                    if (e.target.closest('.create-below-menu-dropdown')) return;
+                    closeAllCreateBelowMenus();
+                });
+                document.addEventListener('keydown', function(e) {
+                    if (e.key !== 'Escape') return;
+                    closeAllCreateBelowMenus();
                     closeAllBlockDragMenus();
                 });
             }

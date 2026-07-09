@@ -119,13 +119,37 @@
             renderTagsHtml(ctx.tags);
     }
 
+    function renderCreateBelowMenuHtml() {
+        return '<div class="nav-dropdown create-below-menu-dropdown">' +
+            '<button type="button" class="create-below create-below-menu-toggle nav-dropdown-toggle" ' +
+            'aria-haspopup="true" aria-expanded="false" title="Add block below" aria-label="Add block below">+</button>' +
+            '<div class="nav-dropdown-menu create-below-menu" role="menu" aria-label="New block element type">' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SCENE">Scene</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="ACTION">Action</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="TEXT">Text</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="CHARACTER">Character</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="DIALOGUE">Dialogue</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="DUAL_DIALOGUE">Dual</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="PARENTHETICAL">(Paren)</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="TRANSITION">Transition</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SHOT">Shot</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="LYRICS">Lyrics</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="CENTERED">Centered</button>' +
+            '<hr class="nav-dropdown-divider" />' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SECTION">Section</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SYNOPSIS">Synopsis</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="NOTE">Note</button>' +
+            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="PAGE_BREAK">Page Break</button>' +
+            '</div></div>';
+    }
+
     function renderCreateBelowRow(anchorBlockId) {
         return '<div class="block-row" data-block-type="ACTION">' +
             '<span class="block-element-label hide-in-reader-view sidebar menu" data-block-type="ACTION" title="Fountain element type">Action</span>' +
             '<aside class="block-left-controls hide-in-reader-view sidebar menu">' +
             '<div class="block-left-controls-inner">' +
             '<input type="checkbox" class="block-select-checkbox" title="Selection available after saving block" aria-label="Selection available after saving block" />' +
-            '<a href="#" role="button" class="create-below" title="Add block below" aria-label="Add block below">+</a>' +
+            renderCreateBelowMenuHtml() +
             '</div></aside>' +
             '<div class="block-content script-block block-type-action script-block--action">' +
             '<form hx-post="/block/createBelowInline" hx-target="closest .block-row" hx-swap="outerHTML">' +
@@ -146,7 +170,7 @@
             '<aside class="block-left-controls hide-in-reader-view sidebar menu">' +
             '<div class="block-left-controls-inner">' +
             '<input type="checkbox" class="block-select-checkbox" title="Selection available after saving block" aria-label="Selection available after saving block" />' +
-            '<a href="#" role="button" class="create-below" title="Add block below" aria-label="Add block below">+</a>' +
+            renderCreateBelowMenuHtml() +
             '</div></aside>' +
             '<div class="block-content script-block block-type-action script-block--action">' +
             '<form hx-post="/block/createInline?surface=project" hx-target="closest .block-row" hx-swap="outerHTML">' +
@@ -169,7 +193,7 @@
             '<aside class="block-left-controls hide-in-reader-view sidebar menu">' +
             '<div class="block-left-controls-inner">' +
             '<input type="checkbox" class="block-select-checkbox" value="' + escAttr(opts.tempBlockId) + '" />' +
-            '<a href="#" role="button" class="create-below" title="Add block below" aria-label="Add block below">+</a>' +
+            renderCreateBelowMenuHtml() +
             '</div></aside>' +
             '<div class="block-content script-block block-type-action script-block--action" ' +
             'hx-get="/block/editInline?id=' + escAttr(opts.tempBlockId) + '" ' +
@@ -379,6 +403,10 @@
         var anchorId = row.getAttribute('data-block-id');
         var nextRow = row.nextElementSibling;
         if (nextRow && nextRow.classList.contains('block-row') && !nextRow.hasAttribute('data-block-id')) {
+            if (window.scriptyPendingCreateType && window.scriptySetCreateRowType) {
+                window.scriptySetCreateRowType(nextRow, window.scriptyPendingCreateType);
+                window.scriptyPendingCreateType = null;
+            }
             focusTextareaEnd(nextRow.querySelector('textarea[name="content"]'));
             return nextRow;
         }
@@ -388,6 +416,12 @@
         if (!createRow || !row.parentNode) return null;
         row.insertAdjacentElement('afterend', createRow);
         processNodes([createRow]);
+        if (window.scriptyApplyPendingCreateType) {
+            window.scriptyApplyPendingCreateType();
+        } else if (window.scriptyPendingCreateType && window.scriptySetCreateRowType) {
+            window.scriptySetCreateRowType(createRow, window.scriptyPendingCreateType);
+            window.scriptyPendingCreateType = null;
+        }
         focusTextareaEnd(createRow.querySelector('textarea[name="content"]'));
         return createRow;
     }
@@ -812,7 +846,25 @@
         }
 
         if (isEffectivelyOnline()) return;
-        var link = e.target.closest('.create-below');
+
+        var typeItem = e.target.closest('[data-create-type]');
+        if (typeItem && typeItem.closest('.create-below-menu')) {
+            e.preventDefault();
+            e.stopPropagation();
+            var menuRow = typeItem.closest('.block-row');
+            var type = typeItem.getAttribute('data-create-type');
+            if (!menuRow || !type) return;
+            window.scriptyPendingCreateType = type;
+            if (menuRow.hasAttribute('data-block-id')) {
+                openCreateBelowOffline(menuRow);
+            } else if (window.scriptySetCreateRowType) {
+                window.scriptySetCreateRowType(menuRow, type);
+                window.scriptyPendingCreateType = null;
+            }
+            return;
+        }
+
+        var link = e.target.closest('a.create-below');
         if (!link) return;
         var row = link.closest('.block-row[data-block-id]');
         if (!row) return;

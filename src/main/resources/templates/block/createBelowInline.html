@@ -2,7 +2,7 @@
     <td class="block-left-controls">
         <div class="block-left-controls-inner">
             <span class="block-select-all-slot" aria-hidden="true"></span>
-            <a th:attr="hx-get=@{/block/createBelowInline(id=${blockId})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below" title="Add block below" aria-label="Add block below">+</a>
+            <th:block th:replace="~{fragments/createBelowMenu :: button}"></th:block>
             <th:block th:replace="~{fragments/blockDragMenu :: handle(false, false, false)}"></th:block>
         </div>
     </td>

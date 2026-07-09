@@ -73,7 +73,7 @@
                     <button type="button"
                             class="project-list-action-btn project-list-action-btn--secondary"
                             id="import-doc-btn"
-                            th:title="${isSongList} ? 'Import a song from a text or Word file' : 'Import a draft from a text or Word file'">Import</button>
+                            th:title="${isSongList} ? 'Import a song from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file' : 'Import a draft from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file'">Import</button>
                     <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
                        class="project-list-action-btn project-list-action-btn--primary"
                        th:text="${isSongList} ? 'New Song' : 'New Draft'">New</a>
@@ -98,7 +98,7 @@
                 <p class="text-documents-empty-title"
                    th:text="${isSongList} ? 'No songs yet' : 'No drafts yet'">Empty</p>
                 <p class="muted"
-                   th:text="${isSongList} ? 'Start a lyric draft here, or import a text or Word file.' : 'Keep scene notes, dialogue scraps, or research here until you need them in the script.'">
+                   th:text="${isSongList} ? 'Start a lyric draft here, or import a .txt, .fountain, Word, Final Draft, or PDF file.' : 'Keep scene notes, dialogue scraps, or research here until you need them in the script.'">
                     Empty state help.
                 </p>
                 <div class="text-documents-empty-actions">

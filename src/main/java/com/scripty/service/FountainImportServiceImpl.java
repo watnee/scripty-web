@@ -72,7 +72,43 @@ public class FountainImportServiceImpl implements FountainImportService {
     @Override
     @Transactional
     public void importFileIntoProject(Integer projectId, MultipartFile file) throws IOException {
-        importIntoProject(projectId, scriptImportTextExtractor.extract(file));
+        ImportOutcome outcome = importFileIntoProjectWithStatus(projectId, file);
+        if (!outcome.success()) {
+            throw new ScriptImportException(outcome.message());
+        }
+    }
+
+    @Override
+    @Transactional
+    public ImportOutcome importFileIntoProjectWithStatus(Integer projectId, MultipartFile file)
+            throws IOException {
+        if (file == null || file.isEmpty()) {
+            return ImportOutcome.fail(
+                    "No file selected. Choose a .fountain, .txt, .docx, .doc, .fdx, or .pdf file.");
+        }
+        try {
+            ScriptImportTextExtractor.Extraction extraction =
+                    scriptImportTextExtractor.extractWithMeta(file);
+            if (extraction.isBlank()) {
+                if (extraction.wasPdf()) {
+                    return ImportOutcome.fail(
+                            "No text found in that PDF. Scanned or image-only PDFs aren’t supported — use a text-based PDF, Fountain, or Final Draft file.");
+                }
+                return ImportOutcome.fail(
+                        "That file was empty. Try a .fountain, .txt, .docx, .doc, .fdx, or .pdf file.");
+            }
+            importIntoProject(projectId, extraction.text());
+            if (extraction.wasPdf() && !extraction.pdfUsedScreenplayLayout()) {
+                return ImportOutcome.ok(
+                        "Imported as plain text; element types may need cleanup. Best results come from Scripty-exported or standard screenplay-layout PDFs.");
+            }
+            return ImportOutcome.ok("Script imported.");
+        } catch (ScriptImportException e) {
+            return ImportOutcome.fail(e.getUserMessage());
+        } catch (IOException e) {
+            return ImportOutcome.fail(
+                    "Could not import that file. Check access and try a .fountain, .txt, .docx, .doc, .fdx, or .pdf file.");
+        }
     }
 
     @Override

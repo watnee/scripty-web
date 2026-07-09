@@ -6,6 +6,7 @@ import com.scripty.dto.TextDocument;
 import com.scripty.dto.User;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ProjectVersionService;
+import com.scripty.service.ScriptImportException;
 import com.scripty.service.TextDocumentService;
 import com.scripty.service.UserService;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
@@ -203,20 +204,30 @@ public class TextDocumentController {
                              @RequestParam(defaultValue = "SONG") String type,
                              @RequestParam("file") MultipartFile file,
                              Principal principal,
-                             RedirectAttributes redirectAttributes) throws IOException {
+                             RedirectAttributes redirectAttributes) {
         User user = currentUser(principal);
         boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
-        TextDocument saved = textDocumentService.importFile(projectId, type, file, user);
-        if (saved == null) {
+        try {
+            TextDocument saved = textDocumentService.importFile(projectId, type, file, user);
+            if (saved == null) {
+                redirectAttributes.addFlashAttribute(
+                        "documentImportMessage",
+                        "Could not import that file. Check access and try a .txt, .fountain, .docx, .doc, .fdx, or .pdf file.");
+                return "redirect:" + listUrl(projectId, isSong);
+            }
+            redirectAttributes.addFlashAttribute(
+                    "documentImportMessage",
+                    "Imported \"" + saved.getTitle() + "\".");
+            return "redirect:/project/documents/edit?id=" + saved.getId();
+        } catch (ScriptImportException e) {
+            redirectAttributes.addFlashAttribute("documentImportMessage", e.getUserMessage());
+            return "redirect:" + listUrl(projectId, isSong);
+        } catch (IOException e) {
             redirectAttributes.addFlashAttribute(
                     "documentImportMessage",
                     "Could not import that file. Check access and try a .txt, .fountain, .docx, .doc, .fdx, or .pdf file.");
             return "redirect:" + listUrl(projectId, isSong);
         }
-        redirectAttributes.addFlashAttribute(
-                "documentImportMessage",
-                "Imported \"" + saved.getTitle() + "\".");
-        return "redirect:/project/documents/edit?id=" + saved.getId();
     }
 
     private static String normalizeListType(String type) {

@@ -56,6 +56,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping(value = "/project")
@@ -574,12 +575,19 @@ public class ProjectController {
     @RequestMapping(value = "/import", method = RequestMethod.POST)
     public String importScript(@RequestParam Integer id,
                                @RequestParam("file") MultipartFile file,
-                               Principal principal) throws IOException {
+                               Principal principal,
+                               RedirectAttributes redirectAttributes) {
         if (projectService.read(id) == null || denyScriptEdit(id, principal)) {
             return "redirect:/project/list";
         }
-        if (file != null && !file.isEmpty()) {
-            fountainImportService.importFileIntoProject(id, file);
+        try {
+            FountainImportService.ImportOutcome outcome =
+                    fountainImportService.importFileIntoProjectWithStatus(id, file);
+            redirectAttributes.addFlashAttribute("scriptImportMessage", outcome.message());
+        } catch (IOException e) {
+            redirectAttributes.addFlashAttribute(
+                    "scriptImportMessage",
+                    "Could not import that file. Check access and try a .fountain, .txt, .docx, .doc, .fdx, or .pdf file.");
         }
         return "redirect:/project/show?id=" + id;
     }

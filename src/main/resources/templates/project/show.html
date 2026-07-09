@@ -566,6 +566,10 @@
     </aside>
     <main role="main">
         <div class="text-document-insert-banner"
+             th:if="${scriptImportMessage != null}"
+             th:text="${scriptImportMessage}"
+             role="status"></div>
+        <div class="text-document-insert-banner"
              th:if="${documentInsertMessage != null}"
              th:text="${documentInsertMessage}"
              role="status"></div>

@@ -14,9 +14,22 @@ import org.springframework.web.multipart.MultipartFile;
 @Component
 public class ScriptImportTextExtractor {
 
+    /**
+     * Extracted screenplay text plus PDF layout metadata for import UX.
+     */
+    public record Extraction(String text, boolean wasPdf, boolean pdfUsedScreenplayLayout) {
+        public boolean isBlank() {
+            return text == null || text.isBlank();
+        }
+    }
+
     public String extract(MultipartFile file) throws IOException {
+        return extractWithMeta(file).text();
+    }
+
+    public Extraction extractWithMeta(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
-            return "";
+            return new Extraction("", false, false);
         }
 
         String filename = file.getOriginalFilename();
@@ -24,19 +37,20 @@ public class ScriptImportTextExtractor {
         String contentType = file.getContentType() != null ? file.getContentType().toLowerCase(Locale.ROOT) : "";
 
         if (isFdx(lowerName, contentType)) {
-            return FdxToFountainConverter.convert(file.getInputStream());
+            return new Extraction(FdxToFountainConverter.convert(file.getInputStream()), false, false);
         }
         if (isPdf(lowerName, contentType)) {
-            return PdfToFountainConverter.convert(file.getInputStream());
+            PdfConversionResult result = PdfToFountainConverter.convertDetailed(file.getInputStream());
+            return new Extraction(result.text(), true, result.usedScreenplayLayout());
         }
         if (isDocx(lowerName, contentType)) {
-            return extractDocx(file.getInputStream());
+            return new Extraction(extractDocx(file.getInputStream()), false, false);
         }
         if (isDoc(lowerName, contentType)) {
-            return extractDoc(file.getInputStream());
+            return new Extraction(extractDoc(file.getInputStream()), false, false);
         }
 
-        return new String(file.getBytes(), StandardCharsets.UTF_8);
+        return new Extraction(new String(file.getBytes(), StandardCharsets.UTF_8), false, false);
     }
 
     /**

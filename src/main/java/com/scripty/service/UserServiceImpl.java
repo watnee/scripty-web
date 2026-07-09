@@ -92,6 +92,7 @@ public class UserServiceImpl implements UserService {
         existing.setFirstName(user.getFirstName());
         existing.setLastName(user.getLastName());
         existing.setTeam(user.getTeam());
+        existing.setEmail(user.getEmail());
         existing.setDefaultProjectId(user.getDefaultProjectId());
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             existing.setPassword(passwordEncoder.encode(user.getPassword()));

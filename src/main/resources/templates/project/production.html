@@ -67,6 +67,8 @@
             <div class="production-team-actions">
                 <a th:href="@{/team/create}" role="button" class="production-team-create-btn">Create Team</a>
             </div>
+            <div th:replace="~{fragments/projectSharePanel :: inviteForm(${viewModel.id}, ${inviteTeams}, ${inviteCommand}, 'production')}"></div>
+            <div th:replace="~{fragments/projectSharePanel :: pendingList(${viewModel.id}, ${pendingInvitations}, 'production')}"></div>
             <div th:replace="~{fragments/projectSharePanel :: accessList(${shareAccessUsers}, ${viewModel.teams})}"></div>
             <div class="production-team-productions" th:if="${!#lists.isEmpty(viewModel.teams)}">
                 <span class="production-team-productions-label">Related productions</span>

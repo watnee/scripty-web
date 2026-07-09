@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111111">
+    <link rel="manifest" th:href="@{/manifest.json}">
+    <meta charset="UTF-8">
+    <title>Scripty - Accept Invitation</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body class="login-body" hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main class="login-page">
+        <section class="login-card" aria-labelledby="invite-heading">
+            <header class="login-header">
+                <div class="login-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                </div>
+                <p class="login-eyebrow">Scripty</p>
+                <h1 id="invite-heading" class="login-title">Accept invitation</h1>
+                <p class="login-subtitle" th:if="${viewModel.valid and viewModel.projectTitle != null}">
+                    Join <span th:text="${viewModel.teamName}">Team</span>
+                    to collaborate on
+                    <span th:text="${viewModel.projectTitle}">Project</span>.
+                </p>
+                <p class="login-subtitle" th:if="${viewModel.valid and viewModel.projectTitle == null}">
+                    Join the <span th:text="${viewModel.teamName}">Team</span> team on Scripty.
+                </p>
+                <p class="login-subtitle" th:unless="${viewModel.valid}">
+                    This invitation can no longer be used.
+                </p>
+            </header>
+
+            <div class="login-error" th:if="${!viewModel.valid}" role="alert">
+                <span th:text="${viewModel.errorMessage}">Invalid invitation.</span>
+            </div>
+
+            <div class="login-error" th:if="${acceptError}" role="alert">
+                <span th:text="${acceptError}">Could not accept invitation.</span>
+            </div>
+
+            <form class="login-form"
+                  th:if="${viewModel.valid}"
+                  method="POST"
+                  th:action="@{/invitation/accept}"
+                  th:object="${commandModel}"
+                  hx-boost="false">
+                <input type="hidden" th:field="*{token}" />
+                <p class="invite-email-note muted">
+                    Creating an account for
+                    <strong th:text="${viewModel.email}">email@example.com</strong>
+                </p>
+                <label class="login-field">
+                    <span class="login-label">Username</span>
+                    <span class="login-input-wrap">
+                        <input type="text" th:field="*{username}" autocomplete="username" required autofocus />
+                    </span>
+                    <span class="field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></span>
+                </label>
+                <label class="login-field">
+                    <span class="login-label">Password</span>
+                    <span class="login-input-wrap">
+                        <input type="password" th:field="*{password}" autocomplete="new-password" required />
+                    </span>
+                    <span class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+                </label>
+                <label class="login-field">
+                    <span class="login-label">First name</span>
+                    <span class="login-input-wrap">
+                        <input type="text" th:field="*{firstName}" autocomplete="given-name" required />
+                    </span>
+                    <span class="field-error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></span>
+                </label>
+                <label class="login-field">
+                    <span class="login-label">Last name</span>
+                    <span class="login-input-wrap">
+                        <input type="text" th:field="*{lastName}" autocomplete="family-name" required />
+                    </span>
+                    <span class="field-error" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></span>
+                </label>
+                <button type="submit" class="login-submit">
+                    <span>Create account</span>
+                </button>
+            </form>
+
+            <footer class="login-footer">
+                <a class="login-footer-link" th:href="@{/login}">Sign in</a>
+                <a class="login-footer-link" th:href="@{/help}">Help center</a>
+            </footer>
+        </section>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

@@ -20,8 +20,10 @@ import com.scripty.service.PdfExportService;
 import com.scripty.service.ProjectService;
 import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
+import com.scripty.service.InvitationService;
 import com.scripty.service.TeamService;
 import com.scripty.service.UserService;
+import com.scripty.commandmodel.invitation.SendInvitationCommandModel;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -67,6 +69,9 @@ public class ProjectController {
 
     @Autowired
     TeamService teamService;
+
+    @Autowired
+    InvitationService invitationService;
 
     @Autowired
     FountainImportService fountainImportService;
@@ -123,6 +128,12 @@ public class ProjectController {
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("syncRevision", projectRevision(viewModel.getLastEdited()));
         model.addAttribute("shareAccessUsers", projectService.getProjectShareAccessUsers(id));
+        model.addAttribute("pendingInvitations", invitationService.getPendingInvitationsForProject(id));
+        List<Team> inviteTeams = filterAssignedTeams(viewModel.getTeams(), teamService.list());
+        model.addAttribute("inviteTeams", inviteTeams);
+        SendInvitationCommandModel inviteCommand = new SendInvitationCommandModel();
+        inviteCommand.setProjectId(id);
+        model.addAttribute("inviteCommand", inviteCommand);
 
         return "project/show";
     }
@@ -323,6 +334,11 @@ public class ProjectController {
         model.addAttribute("assignedTeamIds", assignedTeamIds);
         model.addAttribute("teamProductions", teamProductions);
         model.addAttribute("shareAccessUsers", projectService.getProjectShareAccessUsers(id));
+        model.addAttribute("pendingInvitations", invitationService.getPendingInvitationsForProject(id));
+        model.addAttribute("inviteTeams", filterAssignedTeams(viewModel.getTeams(), teams));
+        SendInvitationCommandModel inviteCommand = new SendInvitationCommandModel();
+        inviteCommand.setProjectId(id);
+        model.addAttribute("inviteCommand", inviteCommand);
         return "project/production";
     }
 
@@ -347,6 +363,19 @@ public class ProjectController {
             }
         }
         return assignedTeamIds;
+    }
+
+    private List<Team> filterAssignedTeams(List<String> teamNames, List<Team> teams) {
+        List<Team> assigned = new ArrayList<>();
+        if (teamNames == null || teamNames.isEmpty()) {
+            return assigned;
+        }
+        for (Team team : teams) {
+            if (teamNames.contains(team.getName())) {
+                assigned.add(team);
+            }
+        }
+        return assigned;
     }
 
     private List<ProjectViewModel> listTeamProductions(Integer projectId, List<String> teamNames) {

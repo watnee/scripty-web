@@ -34,6 +34,9 @@ public class User {
     @Column(length = 50)
     private String team;
 
+    @Column(length = 100)
+    private String email;
+
     @Column(name = "default_project_id")
     private Integer defaultProjectId;
 
@@ -107,6 +110,14 @@ public class User {
 
     public void setTeam(String team) {
         this.team = team;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public boolean isAdmin() {

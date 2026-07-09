@@ -61,7 +61,7 @@
                     </svg>
                 </button>
                 <div class="nav-dropdown-menu project-share-menu">
-                    <div th:replace="~{fragments/projectSharePanel :: panel(${viewModel.id}, ${shareAccessUsers}, ${viewModel.teams})}"></div>
+                    <div th:replace="~{fragments/projectSharePanel :: panel(${viewModel.id}, ${shareAccessUsers}, ${viewModel.teams}, ${inviteTeams}, ${pendingInvitations}, ${inviteCommand})}"></div>
                 </div>
             </div>
             <a id="nav-version-history"

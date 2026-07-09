@@ -31,6 +31,7 @@ Actions → Run workflow  →  Verify (Maven)  →  Deploy to Railway (wait for 
 
 ### Deploy config
 
-- `railway.json` — Railpack builder, start command, `/health` healthcheck, restart policy
+- `railway.json` — Railpack builder, start command, `/health` healthcheck, restart policy (Config as Code; used by `railway up`)
 - `railpack.json` — Java 17 + start command for Railpack
 - `.railwayignore` — keeps `railway up` uploads small (skips `target/`, local DBs, logs, etc.)
+- `.railway/railway.ts` — Infrastructure as Code (web + MySQL + uploads volume). Preview with `railway config plan`; apply only after `railway link` and migrating off `railway.json` (a service cannot be managed by both)

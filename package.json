@@ -1,0 +1,8 @@
+{
+  "name": "scripty",
+  "private": true,
+  "description": "Railway Infrastructure as Code support for Scripty (Java/Maven app).",
+  "dependencies": {
+    "railway": "^3.5.5"
+  }
+}

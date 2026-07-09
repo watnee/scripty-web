@@ -140,6 +140,26 @@
             '</div>';
     }
 
+    function renderCreateInlineRow(projectId) {
+        return '<div class="block-row" data-block-type="ACTION">' +
+            '<span class="block-element-label hide-in-reader-view sidebar menu" data-block-type="ACTION" title="Fountain element type">Action</span>' +
+            '<aside class="block-left-controls hide-in-reader-view sidebar menu">' +
+            '<div class="block-left-controls-inner">' +
+            '<input type="checkbox" class="block-select-checkbox" title="Selection available after saving block" aria-label="Selection available after saving block" />' +
+            '<a href="#" role="button" class="create-below" title="Add block below" aria-label="Add block below">+</a>' +
+            '</div></aside>' +
+            '<div class="block-content script-block block-type-action script-block--action">' +
+            '<form hx-post="/block/createInline?surface=project" hx-target="closest .block-row" hx-swap="outerHTML">' +
+            '<input type="hidden" name="projectId" value="' + escAttr(projectId) + '" />' +
+            '<input type="hidden" name="surface" value="project" />' +
+            '<textarea spellcheck="true" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" autofocus ' +
+            'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();event.stopPropagation;' +
+            'if(window.scriptyCreateBlockFromCreateRow){window.scriptyCreateBlockFromCreateRow(this);}return false;}"></textarea>' +
+            '</form></div>' +
+            '<aside class="block-actions hide-in-reader-view sidebar menu"></aside>' +
+            '</div>';
+    }
+
     function renderOptimisticBlockRow(opts) {
         var contentHtml = renderBlockTextHtml(opts.content);
         return '<div class="block-row block-offline-pending" data-block-id="' + escAttr(opts.tempBlockId) + '" ' +
@@ -846,6 +866,7 @@
     window.scriptyOpenBlockEditOffline = openBlockEditOffline;
     window.scriptyOpenCreateBelowOffline = openCreateBelowOffline;
     window.scriptySaveCreateBelowOffline = saveCreateBelowOffline;
+    window.scriptyRenderCreateInlineRow = renderCreateInlineRow;
     window.scriptySyncPendingEdits = syncPendingEdits;
     window.scriptyUpdateOfflineEditBanner = updateOfflineBanner;
     window.scriptyRenderBlockShowInline = renderShowInline;

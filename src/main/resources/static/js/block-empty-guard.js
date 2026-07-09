@@ -151,6 +151,7 @@
     function onEmptyBlockDeleteKey(ta, key) {
         var row = findAnyBlockRow(ta);
         if (!row) return;
+        var container = row.closest('.scene-blocks, #table-blocks, tbody');
         var focusTarget = findFocusTargetRow(row, key);
 
         if (!row.hasAttribute('data-block-id')) {
@@ -168,7 +169,15 @@
         }).then(function(response) {
             if (!response.ok) throw new Error('delete failed');
             row.remove();
-            focusBlockContentEnd(focusTarget);
+            var rowSelector = container && container.matches('tbody') ? 'tr' : '.block-row';
+            var hasSavedBlocks = !!(container && container.querySelector(rowSelector + '[data-block-id]'));
+            if (!hasSavedBlocks && window.scriptyEnsureEmptyCreateRow) {
+                return window.scriptyEnsureEmptyCreateRow(container);
+            }
+            if (focusTarget && focusTarget.isConnected) {
+                focusBlockContentEnd(focusTarget);
+            }
+            return null;
         }).catch(function() {
             delete row.dataset.deleting;
             ta.focus({ preventScroll: true });

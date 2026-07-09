@@ -3913,6 +3913,89 @@
             return true;
         }
 
+        function clearOrphanCreateRows(container) {
+            if (!container) return;
+            var rowSelector = container.matches('tbody') ? 'tr' : '.block-row';
+            Array.from(container.querySelectorAll(rowSelector)).forEach(function(row) {
+                if (row.hasAttribute('data-block-id')) return;
+                if (row.classList.contains('project-script-select-row')) return;
+                row.remove();
+            });
+        }
+
+        function insertCreateInlineHtml(container, html) {
+            if (!container || !html) return null;
+            var template = document.createElement('template');
+            template.innerHTML = html.trim();
+            var newRow = template.content.firstElementChild;
+            if (!newRow) return null;
+            var selectRow = container.querySelector('.project-script-select-row');
+            if (selectRow && selectRow.parentNode === container) {
+                selectRow.after(newRow);
+            } else {
+                container.appendChild(newRow);
+            }
+            if (typeof htmx !== 'undefined') {
+                htmx.process(newRow);
+            }
+            return newRow;
+        }
+
+        function focusCreateRowTextarea(row) {
+            if (!row) return;
+            var ta = row.querySelector('textarea[name="content"]');
+            if (!ta) return;
+            ta.focus({ preventScroll: true });
+            var len = ta.value.length;
+            ta.setSelectionRange(len, len);
+        }
+
+        /**
+         * After deleting the last saved block, restore an empty createInline row
+         * so the scene never ends up with zero editable rows.
+         */
+        function ensureEmptyCreateRow(container, options) {
+            options = options || {};
+            if (!container) return Promise.resolve(null);
+            var rowSelector = container.matches('tbody') ? 'tr' : '.block-row';
+            if (container.querySelector(rowSelector + '[data-block-id]')) {
+                return Promise.resolve(null);
+            }
+
+            clearOrphanCreateRows(container);
+
+            var projectId = resolveProjectId();
+            if (!projectId) return Promise.resolve(null);
+
+            function finish(newRow) {
+                if (options.focus !== false) {
+                    focusCreateRowTextarea(newRow);
+                }
+                return newRow;
+            }
+
+            if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptyRenderCreateInlineRow) {
+                var offlineRow = insertCreateInlineHtml(container, window.scriptyRenderCreateInlineRow(projectId));
+                return Promise.resolve(finish(offlineRow));
+            }
+
+            return fetch('/block/createInline?projectId=' + encodeURIComponent(projectId) + '&surface=project', {
+                credentials: 'same-origin',
+                cache: 'no-store'
+            }).then(function(response) {
+                if (!response.ok) throw new Error('createInline failed');
+                return response.text();
+            }).then(function(html) {
+                if (!container.isConnected) return null;
+                if (container.querySelector(rowSelector + '[data-block-id]')) return null;
+                clearOrphanCreateRows(container);
+                return finish(insertCreateInlineHtml(container, html));
+            }).catch(function() {
+                return null;
+            });
+        }
+        window.scriptyEnsureEmptyCreateRow = ensureEmptyCreateRow;
+
         function deleteBlockFromDragMenu(row, container) {
             if (!row) return;
 
@@ -3924,6 +4007,7 @@
             if (row.dataset.deleting === 'true') return;
             if (!confirm('Are you sure you want to delete this block?')) return;
 
+            var sceneContainer = container || row.closest('.scene-blocks, #table-blocks, tbody');
             row.dataset.deleting = 'true';
             fetch('/block/deleteInline?id=' + encodeURIComponent(row.getAttribute('data-block-id')), {
                 method: 'POST',
@@ -3931,11 +4015,12 @@
             }).then(function(response) {
                 if (!response.ok) throw new Error('delete failed');
                 row.remove();
-                if (container) {
-                    reindexBlockOrders(container);
-                    updateMoveButtonStates(container);
+                if (sceneContainer) {
+                    reindexBlockOrders(sceneContainer);
+                    updateMoveButtonStates(sceneContainer);
                 }
                 updateUndoRedoButtons(resolveProjectId());
+                return ensureEmptyCreateRow(sceneContainer);
             }).catch(function() {
                 delete row.dataset.deleting;
             });

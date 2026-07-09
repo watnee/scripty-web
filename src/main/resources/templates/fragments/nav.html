@@ -3120,6 +3120,7 @@
 
         function executeMove(blockId, direction, targetRow) {
             sessionStorage.setItem('activeBlockId', blockId);
+            rememberActiveBlockCaret(blockId);
             if (window.scriptyAbortUndoStatusFetch) {
                 window.scriptyAbortUndoStatusFetch();
             }
@@ -4748,8 +4749,11 @@
 
             syncBlockTextLayout(textarea);
             textarea.focus({ preventScroll: true });
-            const pos = Math.max(0, Math.min(pending.offset, textarea.value.length));
-            textarea.setSelectionRange(pos, pos);
+            const len = textarea.value.length;
+            const start = Math.max(0, Math.min(pending.offset, len));
+            const endRaw = pending.endOffset != null ? pending.endOffset : pending.offset;
+            const end = Math.max(start, Math.min(endRaw, len));
+            textarea.setSelectionRange(start, end);
         }
 
         function syncProjectNameDisplay() {
@@ -4925,6 +4929,96 @@
             });
         }
 
+        var editorPositionRestoredForProjectId = null;
+        var editorPositionSaveTimer = null;
+
+        function isProjectShowPage() {
+            return window.location.pathname.startsWith('/project/show');
+        }
+
+        function editorPositionStorageKey(projectId) {
+            return 'scripty-editor-position-project-' + projectId;
+        }
+
+        function readEditorPosition(projectId) {
+            if (!projectId) return null;
+            try {
+                var raw = localStorage.getItem(editorPositionStorageKey(projectId));
+                if (!raw) return null;
+                var parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' ? parsed : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function writeEditorPosition(projectId, position) {
+            if (!projectId || !position) return;
+            try {
+                localStorage.setItem(editorPositionStorageKey(projectId), JSON.stringify(position));
+            } catch (e) {
+                /* quota / private mode */
+            }
+        }
+
+        function captureEditorPosition() {
+            if (!isProjectShowPage()) return null;
+            var projectId = resolveProjectId();
+            if (!projectId) return null;
+
+            var blockId = null;
+            var caretStart = null;
+            var caretEnd = null;
+            var active = document.activeElement;
+            if (active && active.tagName === 'TEXTAREA' && active.name === 'content') {
+                var activeRow = findBlockRow(active);
+                blockId = getBlockRowId(activeRow);
+                if (blockId) {
+                    caretStart = active.selectionStart;
+                    caretEnd = active.selectionEnd;
+                }
+            }
+            if (!blockId && window.scriptyGetActiveBlockId) {
+                blockId = window.scriptyGetActiveBlockId(null);
+            }
+
+            return {
+                blockId: blockId,
+                caretStart: caretStart,
+                caretEnd: caretEnd,
+                editing: caretStart != null,
+                scrollY: window.scrollY,
+                updatedAt: Date.now()
+            };
+        }
+
+        function saveEditorPosition() {
+            var projectId = resolveProjectId();
+            if (!projectId || !isProjectShowPage()) return;
+            var position = captureEditorPosition();
+            if (!position) return;
+            var prev = readEditorPosition(projectId);
+            if (!position.blockId && prev && prev.blockId) {
+                position.blockId = prev.blockId;
+                position.caretStart = prev.caretStart;
+                position.caretEnd = prev.caretEnd;
+                // Keep last known caret, but only reopen edit if still editing.
+            } else if (position.blockId && position.caretStart == null && prev &&
+                       String(prev.blockId) === String(position.blockId) && prev.caretStart != null) {
+                position.caretStart = prev.caretStart;
+                position.caretEnd = prev.caretEnd;
+            }
+            writeEditorPosition(projectId, position);
+        }
+
+        function scheduleSaveEditorPosition(delayMs) {
+            if (editorPositionSaveTimer) clearTimeout(editorPositionSaveTimer);
+            editorPositionSaveTimer = setTimeout(function() {
+                editorPositionSaveTimer = null;
+                saveEditorPosition();
+            }, delayMs == null ? 200 : delayMs);
+        }
+
         function rememberActiveBlockCaret(blockId) {
             sessionStorage.removeItem('activeBlockCaretStart');
             sessionStorage.removeItem('activeBlockCaretEnd');
@@ -4937,6 +5031,46 @@
             if (!textarea) return;
             sessionStorage.setItem('activeBlockCaretStart', String(textarea.selectionStart));
             sessionStorage.setItem('activeBlockCaretEnd', String(textarea.selectionEnd));
+            saveEditorPosition();
+        }
+
+        function focusRestoredBlock(row, caretStartRaw, caretEndRaw, scrollY) {
+            if (!row) return;
+            var blockContent = row.querySelector('.block-content');
+            if (!blockContent) return;
+
+            var textEl = blockContent.querySelector('.reader-visible-text, .script-block-text:not(textarea)');
+            var offset = caretStartRaw != null ? parseInt(caretStartRaw, 10) : null;
+            if (textEl && offset != null && !isNaN(offset)) {
+                pendingBlockCaret = {
+                    blockContent: blockContent,
+                    textEl: textEl,
+                    offset: Math.max(0, offset),
+                    endOffset: caretEndRaw != null ? Math.max(0, parseInt(caretEndRaw, 10)) : null
+                };
+            }
+
+            blockContent.click();
+
+            setTimeout(function() {
+                var textarea = row.querySelector('textarea[name="content"]');
+                if (textarea) {
+                    growTextarea(textarea);
+                    textarea.focus({ preventScroll: true });
+                    if (caretStartRaw != null) {
+                        var len = textarea.value.length;
+                        var start = Math.max(0, Math.min(parseInt(caretStartRaw, 10), len));
+                        var end = Math.max(start, Math.min(parseInt(caretEndRaw != null ? caretEndRaw : caretStartRaw, 10), len));
+                        textarea.setSelectionRange(start, end);
+                    } else {
+                        var endLen = textarea.value.length;
+                        textarea.setSelectionRange(endLen, endLen);
+                    }
+                }
+                if (typeof scrollY === 'number') {
+                    window.scrollTo(0, scrollY);
+                }
+            }, 100);
         }
 
         function restoreActiveBlock() {
@@ -4948,30 +5082,84 @@
                 sessionStorage.removeItem('activeBlockCaretStart');
                 sessionStorage.removeItem('activeBlockCaretEnd');
                 const row = document.querySelector('tr[data-block-id="' + activeBlockId + '"], .block-row[data-block-id="' + activeBlockId + '"]');
-                if (row) {
-                    const blockContent = row.querySelector('.block-content');
-                    if (blockContent) {
-                        blockContent.click();
-                        
-                        setTimeout(function() {
-                            const textarea = row.querySelector('textarea[name="content"]');
-                            if (textarea) {
-                                growTextarea(textarea);
-                                textarea.focus({ preventScroll: true });
-                                if (caretStartRaw != null) {
-                                    const len = textarea.value.length;
-                                    const start = Math.max(0, Math.min(parseInt(caretStartRaw, 10), len));
-                                    const end = Math.max(start, Math.min(parseInt(caretEndRaw != null ? caretEndRaw : caretStartRaw, 10), len));
-                                    textarea.setSelectionRange(start, end);
-                                } else {
-                                    const len = textarea.value.length;
-                                    textarea.setSelectionRange(len, len);
-                                }
-                            }
-                        }, 100);
-                    }
-                }
+                focusRestoredBlock(row, caretStartRaw, caretEndRaw, null);
             }
+        }
+
+        function restoreEditorPosition() {
+            if (!isProjectShowPage()) {
+                editorPositionRestoredForProjectId = null;
+                return;
+            }
+            var projectId = resolveProjectId();
+            if (!projectId) return;
+            if (editorPositionRestoredForProjectId === String(projectId)) return;
+            editorPositionRestoredForProjectId = String(projectId);
+
+            // One-shot session restore (block move / bulk type) wins over persisted position.
+            if (sessionStorage.getItem('activeBlockId')) {
+                restoreActiveBlock();
+                return;
+            }
+
+            var position = readEditorPosition(projectId);
+            if (!position) return;
+
+            if (typeof position.scrollY === 'number') {
+                window.scrollTo(0, position.scrollY);
+            }
+
+            if (!position.editing || !position.blockId || position.caretStart == null ||
+                window.scriptyBlockEditLocked) {
+                return;
+            }
+
+            var row = document.querySelector(
+                'tr[data-block-id="' + position.blockId + '"], .block-row[data-block-id="' + position.blockId + '"]'
+            );
+            if (!row) return;
+            focusRestoredBlock(
+                row,
+                String(position.caretStart),
+                position.caretEnd != null ? String(position.caretEnd) : String(position.caretStart),
+                typeof position.scrollY === 'number' ? position.scrollY : null
+            );
+        }
+
+        function initEditorPositionPersistence() {
+            if (window._scriptyEditorPositionPersistenceInit) return;
+            window._scriptyEditorPositionPersistenceInit = true;
+
+            window.addEventListener('scroll', function() {
+                if (!isProjectShowPage()) return;
+                scheduleSaveEditorPosition(200);
+            }, { passive: true });
+
+            document.addEventListener('selectionchange', function() {
+                if (!isProjectShowPage()) return;
+                var active = document.activeElement;
+                if (!active || active.tagName !== 'TEXTAREA' || active.name !== 'content') return;
+                scheduleSaveEditorPosition(300);
+            });
+
+            document.addEventListener('focusin', function(e) {
+                if (!isProjectShowPage()) return;
+                if (e.target && e.target.tagName === 'TEXTAREA' && e.target.name === 'content') {
+                    scheduleSaveEditorPosition(0);
+                }
+            });
+
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden && isProjectShowPage()) {
+                    saveEditorPosition();
+                }
+            });
+
+            window.addEventListener('pagehide', function() {
+                if (isProjectShowPage()) {
+                    saveEditorPosition();
+                }
+            });
         }
 
         function initProjectDeleteConfirm() {
@@ -5074,6 +5262,7 @@
             initThemeToggle();
             initProjectDeleteConfirm();
             initGlobalShortcuts();
+            initEditorPositionPersistence();
             document.querySelectorAll('textarea').forEach(growTextarea);
             document.querySelectorAll('input[type="text"]').forEach(autoGrowInput);
             document.querySelectorAll('.scene-blocks, #table-blocks').forEach(function(container) {
@@ -5085,7 +5274,7 @@
                 }
             });
             updateLastEditedTimes();
-            restoreActiveBlock();
+            restoreEditorPosition();
             if (window.scriptySyncProjectNameDisplay) {
                 window.scriptySyncProjectNameDisplay();
             }
@@ -5155,6 +5344,9 @@
 
         document.addEventListener('visibilitychange', function() {
             if (document.hidden) {
+                if (isProjectShowPage()) {
+                    saveEditorPosition();
+                }
                 commitOpenBlockEdits();
             }
         });

@@ -5,6 +5,7 @@
  * - Live Fountain syntax detection (force markers + heuristics)
  * - Character cue autocomplete from project cast
  * - Scene heading autocomplete from prior scenes
+ * - Scene location autocomplete (reuse places from prior headings)
  * - Scene time-of-day autocomplete (DAY, NIGHT, …)
  * - Scene / section outline navigator
  */
@@ -51,7 +52,7 @@
     var autocompleteEl = null;
     var autocompleteIndex = -1;
     var autocompleteTextarea = null;
-    var autocompleteKind = null; // 'character' | 'scene' (includes time-of-day)
+    var autocompleteKind = null; // 'character' | 'scene' (includes location + time-of-day)
     var outlineEl = null;
 
     function projectId() {
@@ -580,6 +581,39 @@
         return { base: base, timeQuery: m[2] || '' };
     }
 
+    function parseSceneLocationContext(query) {
+        var raw = String(query || '').replace(/\u00a0/g, ' ');
+        // Time-of-day mode owns the query once " - " is present
+        if (parseSceneTimeContext(raw)) return null;
+        var m = raw.match(/^(INT\.?\/EXT\.?|I\/E\.?|INT\.?|EXT\.?|EST\.?)\s+(.*)$/i);
+        if (!m) return null;
+        var prefix = raw.match(/^(INT\.?\/EXT\.?|I\/E\.?|INT\.?|EXT\.?|EST\.?)\s+/i);
+        if (!prefix) return null;
+        return { prefix: prefix[0], locationQuery: m[2] || '' };
+    }
+
+    function extractSceneLocation(heading) {
+        var raw = String(heading || '').replace(/\u00a0/g, ' ').trim();
+        if (!raw) return null;
+        var withoutTime = raw.replace(/\s+-\s+.+$/, '').trim();
+        var m = withoutTime.match(/^(?:INT\.?\/EXT\.?|I\/E\.?|INT\.?|EXT\.?|EST\.?)\s+(.+)$/i);
+        if (!m) return null;
+        var loc = m[1].trim();
+        return loc || null;
+    }
+
+    function harvestSceneLocations(entries) {
+        var locations = [];
+        (entries || []).forEach(function(entry) {
+            var loc = extractSceneLocation(entry.name);
+            if (loc) upsertEntry(locations, { name: loc });
+        });
+        locations.sort(function(a, b) {
+            return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+        });
+        return locations;
+    }
+
     function harvestSceneTimes(entries) {
         var times = SCENE_TIME_SUGGESTIONS.slice();
         (entries || []).forEach(function(entry) {
@@ -608,19 +642,29 @@
         });
     }
 
+    function buildSceneLocationSuggestions(ctx, entries) {
+        if (!ctx) return [];
+        var matches = filterCharacters(ctx.locationQuery, harvestSceneLocations(entries));
+        return matches.map(function(loc) {
+            return { name: ctx.prefix + loc.name };
+        });
+    }
+
     function filterScenes(query, entries) {
         var q = (query || '').trim().toUpperCase();
         var timeCtx = parseSceneTimeContext(query);
+        var locationCtx = parseSceneLocationContext(query);
         var prefixMatches = filterCharacters(q, SCENE_PREFIX_SUGGESTIONS);
         // Drop prefix suggestions once the query already looks like a full heading
-        // or the writer is filling in time-of-day after " - "
-        if (timeCtx || SCENE_HEADING.test(query.trim()) || (q.length > 4 && /\s/.test(q))) {
+        // or the writer is filling in location / time-of-day
+        if (timeCtx || locationCtx || SCENE_HEADING.test(query.trim()) || (q.length > 4 && /\s/.test(q))) {
             prefixMatches = [];
         }
         var timeMatches = buildSceneTimeSuggestions(timeCtx, entries);
+        var locationMatches = buildSceneLocationSuggestions(locationCtx, entries);
         var sceneMatches = filterCharacters(q, entries);
         var combined = [];
-        timeMatches.concat(prefixMatches).concat(sceneMatches).forEach(function(entry) {
+        timeMatches.concat(locationMatches).concat(prefixMatches).concat(sceneMatches).forEach(function(entry) {
             upsertEntry(combined, entry);
         });
         return combined.slice(0, 8);
@@ -707,7 +751,20 @@
                 textarea.focus({ preventScroll: true });
                 textarea.setSelectionRange(name.length, name.length);
             } catch (err) { /* ignore */ }
-            // After a prefix stub (e.g. "INT. "), keep suggesting prior scenes
+            // After a location pick (heading without time), offer time-of-day next
+            if (SCENE_HEADING.test(name.trim()) && !/\s+-\s*\S/.test(name)) {
+                var withTimeSep = name.replace(/\s*$/, '') + ' - ';
+                textarea.value = withTimeSep;
+                try {
+                    textarea.setSelectionRange(withTimeSep.length, withTimeSep.length);
+                } catch (err2) { /* ignore */ }
+                if (typeof window.scriptyGrowTextarea === 'function') {
+                    window.scriptyGrowTextarea(textarea);
+                }
+                maybeShowSceneAutocomplete(textarea);
+                return;
+            }
+            // After a prefix stub (e.g. "INT. "), keep suggesting locations / prior scenes
             if (/\s$/.test(name) && !SCENE_HEADING.test(name.trim())) {
                 maybeShowSceneAutocomplete(textarea);
             }

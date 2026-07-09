@@ -126,6 +126,11 @@
     <script src="/js/offline-store.js"></script>
     <script>
         (function () {
+            var userId = localStorage.getItem('scripty-offline-user-id');
+            if (userId) {
+                document.documentElement.setAttribute('data-user-id', userId);
+                window.scriptyCurrentUserId = userId;
+            }
             if (!window.scriptyOfflineStore) return;
             window.scriptyOfflineStore.listCachedProjects().then(function (projects) {
                 if (!projects.length) {

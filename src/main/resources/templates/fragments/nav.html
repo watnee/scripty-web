@@ -9,6 +9,18 @@
     <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
     <script th:src="@{/js/csrf.js(v=${assetVersion})}"></script>
+    <script th:inline="javascript">
+        (function() {
+            var currentUserId = /*[[${currentUserId}]]*/ null;
+            if (currentUserId) {
+                document.documentElement.setAttribute('data-user-id', String(currentUserId));
+                window.scriptyCurrentUserId = String(currentUserId);
+                try {
+                    localStorage.setItem('scripty-offline-user-id', String(currentUserId));
+                } catch (err) { /* ignore */ }
+            }
+        })();
+    </script>
     <script>
         (function() {
             const storedTheme = localStorage.getItem('theme') || 'system';
@@ -94,7 +106,8 @@
                 <a class="nav-dropdown-item" th:href="@{/team/list}" th:classappend="${currentPage == 'teams'} ? 'active'" sec:authorize="isAuthenticated()">Teams</a>
                 <a class="nav-dropdown-item" th:href="@{/user/list}" th:classappend="${currentPage == 'users'} ? 'active'" sec:authorize="hasRole('ROLE_ADMIN')">Users</a>
                 <hr class="nav-dropdown-divider" sec:authorize="isAuthenticated()">
-                <a class="nav-dropdown-item" th:href="@{/logout}" hx-boost="false" sec:authorize="isAuthenticated()">Logout</a>
+                <a class="nav-dropdown-item" th:href="@{/logout}" hx-boost="false" sec:authorize="isAuthenticated()"
+                   onclick="try{localStorage.removeItem('scripty-offline-user-id');}catch(e){}if('caches' in window){caches.keys().then(function(keys){return Promise.all(keys.filter(function(k){return k.indexOf('scripty-cache')===0;}).map(function(k){return caches.delete(k);}));}).catch(function(){});}">Logout</a>
             </div>
         </div>
         </div>

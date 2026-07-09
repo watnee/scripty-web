@@ -9,6 +9,11 @@
         return !assumedOnline;
     }
 
+    function isOfflineShellPage() {
+        var body = document.getElementById('project-script-body');
+        return !!(body && body.getAttribute('data-offline-shell') === 'true');
+    }
+
     function setOnlineState(online) {
         var next = !!online;
         if (assumedOnline === next) {
@@ -69,6 +74,11 @@
         var fromQuery = Number(params.get('id'));
         if (fromQuery) return fromQuery;
 
+        if (window.scriptyProjectId) {
+            var fromWindow = Number(window.scriptyProjectId);
+            if (fromWindow) return fromWindow;
+        }
+
         var body = document.getElementById('project-script-body');
         if (!body) return null;
         var sceneBlocks = body.querySelector('.scene-blocks[id^="table-blocks-"]');
@@ -79,12 +89,20 @@
 
     window.scriptyOfflineGetProjectId = getProjectIdFromPage;
 
+    function scriptBodyHasContent(scriptBody) {
+        if (!scriptBody) return false;
+        if (scriptBody.getAttribute('data-offline-shell') === 'true') return false;
+        return !!(scriptBody.querySelector('.scene-blocks, .block-row'));
+    }
+
     function snapshotProjectIfPresent() {
         if (!window.scriptyOfflineStore) return Promise.resolve();
         var projectId = getProjectIdFromPage();
         if (!projectId) return Promise.resolve();
 
         var scriptBody = document.getElementById('project-script-body');
+        if (!scriptBodyHasContent(scriptBody)) return Promise.resolve();
+
         var titleEl = document.getElementById('reader-visible-project-title')
             || document.querySelector('.project-breadcrumb-name-display');
         var title = titleEl ? titleEl.textContent.trim() : '';
@@ -92,8 +110,8 @@
         return window.scriptyOfflineStore.saveProjectSnapshot({
             id: projectId,
             title: title || 'Untitled Project',
-            pageUrl: window.location.pathname + window.location.search,
-            scriptHtml: scriptBody ? scriptBody.outerHTML : '',
+            pageUrl: '/project/show?id=' + encodeURIComponent(projectId),
+            scriptHtml: scriptBody.outerHTML,
             cachedAt: Date.now()
         }).catch(function () {});
     }
@@ -106,31 +124,65 @@
         snapshotProjectIfPresent();
     }
 
+    function applyRestoredScript(snapshot, projectId) {
+        if (!snapshot || !snapshot.scriptHtml) return Promise.resolve(false);
+        var existing = document.getElementById('project-script-body');
+        var mount = document.getElementById('offline-project-mount');
+        if (!existing) {
+            if (!mount) return Promise.resolve(false);
+            mount.innerHTML = snapshot.scriptHtml;
+        } else {
+            existing.outerHTML = snapshot.scriptHtml;
+        }
+        var wasShell = isOfflineShellPage() || document.title.indexOf('Offline') !== -1;
+        var restored = document.getElementById('project-script-body');
+        if (restored) {
+            restored.removeAttribute('data-offline-shell');
+        }
+        if (restored && typeof htmx !== 'undefined') {
+            htmx.process(restored);
+        }
+        if (restored && window.scriptyInitBlockDragDrop) {
+            restored.querySelectorAll('.scene-blocks').forEach(function (sceneBlocks) {
+                window.scriptyInitBlockDragDrop(sceneBlocks, { projectId: projectId });
+            });
+        }
+        if (snapshot.title) {
+            var titleEl = document.getElementById('reader-visible-project-title');
+            if (titleEl) titleEl.textContent = snapshot.title;
+            if (wasShell) {
+                document.title = 'Scripty - ' + snapshot.title;
+            }
+        }
+        var missing = document.getElementById('offline-project-missing');
+        if (missing) missing.hidden = true;
+        if (mount) mount.hidden = false;
+        return applyPendingBlockEdits(projectId).then(function () { return true; });
+    }
+
     function restoreScriptFromStore() {
-        if (!isOffline() || !window.scriptyOfflineStore) return Promise.resolve();
+        if (!window.scriptyOfflineStore) return Promise.resolve();
 
         var projectId = getProjectIdFromPage();
         if (!projectId) return Promise.resolve();
 
+        var existing = document.getElementById('project-script-body');
+        var forceRestore = isOfflineShellPage() || (existing && !scriptBodyHasContent(existing));
+        if (!forceRestore && !isOffline()) return Promise.resolve();
+
         return window.scriptyOfflineStore.getProjectSnapshot(projectId).then(function (snapshot) {
-            if (!snapshot || !snapshot.scriptHtml) return;
-            var existing = document.getElementById('project-script-body');
-            if (!existing) return;
-            existing.outerHTML = snapshot.scriptHtml;
-            var restored = document.getElementById('project-script-body');
-            if (restored && typeof htmx !== 'undefined') {
-                htmx.process(restored);
+            if (!snapshot || !snapshot.scriptHtml) {
+                if (forceRestore) {
+                    var missing = document.getElementById('offline-project-missing');
+                    if (missing) missing.hidden = false;
+                    if (existing && existing.getAttribute('data-offline-shell') === 'true') {
+                        var mount = document.getElementById('offline-project-mount');
+                        if (mount) mount.hidden = true;
+                    }
+                }
+                return;
             }
-            if (restored && window.scriptyInitBlockDragDrop) {
-                restored.querySelectorAll('.scene-blocks').forEach(function (sceneBlocks) {
-                    window.scriptyInitBlockDragDrop(sceneBlocks, { projectId: projectId });
-                });
-            }
-            if (snapshot.title) {
-                var titleEl = document.getElementById('reader-visible-project-title');
-                if (titleEl) titleEl.textContent = snapshot.title;
-            }
-            return applyPendingBlockEdits(projectId);
+            return applyRestoredScript(snapshot, projectId);
         }).catch(function () {});
     }
 
@@ -216,7 +268,13 @@
 
     function initOfflineSupport() {
         updateOfflineUI();
-        restoreScriptFromStore().then(snapshotProjectIfPresent);
+        var startedAsShell = isOfflineShellPage();
+        restoreScriptFromStore().then(function () {
+            // Avoid overwriting IndexedDB with an empty offline shell.
+            if (!startedAsShell) {
+                snapshotProjectIfPresent();
+            }
+        });
         probeConnectivity().finally(scheduleConnectivityProbe);
     }
 
@@ -277,4 +335,5 @@
     window.scriptyIsOffline = isOffline;
     window.scriptyApplyPendingBlockEdits = applyPendingBlockEdits;
     window.scriptyProbeConnectivity = probeConnectivity;
+    window.scriptyRestoreScriptFromStore = restoreScriptFromStore;
 }());

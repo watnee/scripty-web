@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" class="scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select scripty-hide-block-element-labels">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111111">
+    <title>Scripty - Offline Project</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link href="/css/scripty.css" rel="stylesheet">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        .offline-project-chrome {
+            max-width: 52rem;
+            margin: 0 auto;
+            padding: 1rem 1.25rem 0.5rem;
+        }
+        .offline-project-chrome a {
+            color: inherit;
+            text-decoration: none;
+            opacity: 0.75;
+        }
+        .offline-project-chrome a:hover {
+            opacity: 1;
+        }
+        .offline-project-title {
+            margin: 0.75rem 0 0;
+            font-size: 1.35rem;
+            font-weight: 600;
+        }
+        .offline-project-missing {
+            max-width: 32rem;
+            margin: 3rem auto;
+            padding: 1.5rem;
+            text-align: center;
+            color: #aaa;
+        }
+        .offline-project-missing a {
+            color: #0076ff;
+        }
+        #offline-project-mount {
+            max-width: 52rem;
+            margin: 0 auto;
+            padding: 0 1.25rem 3rem;
+        }
+    </style>
+</head>
+<body class="has-toolbar-brand">
+    <div id="scripty-offline-banner" class="scripty-offline-banner" hidden role="status" aria-live="polite">
+        <span id="scripty-offline-banner-text">You're offline — edits save locally and sync when you're back online.</span>
+        <button type="button" id="scripty-offline-sync-retry" class="scripty-offline-sync-retry" hidden>Retry sync</button>
+    </div>
+    <header class="offline-project-chrome">
+        <nav aria-label="Breadcrumb">
+            <a href="/offline.html">Cached projects</a>
+        </nav>
+        <h1 id="reader-visible-project-title" class="offline-project-title">Loading…</h1>
+    </header>
+    <div id="offline-project-missing" class="offline-project-missing" hidden>
+        <p>This project is not available offline.</p>
+        <p>Visit it while online first, or pick another from <a href="/offline.html">cached projects</a>.</p>
+    </div>
+    <div id="offline-project-mount">
+        <div id="project-script-body" data-offline-shell="true"></div>
+    </div>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/element-type.js"></script>
+    <script src="/js/offline-store.js"></script>
+    <script src="/js/offline.js"></script>
+    <script src="/js/offline-edit.js"></script>
+    <script>
+        (function () {
+            var userId = localStorage.getItem('scripty-offline-user-id');
+            if (userId) {
+                document.documentElement.setAttribute('data-user-id', userId);
+                window.scriptyCurrentUserId = userId;
+            }
+            window.scriptyCanEditScript = true;
+            window.scriptyBlockEditLocked = false;
+
+            var params = new URLSearchParams(window.location.search);
+            var projectId = Number(params.get('id'));
+            if (projectId) {
+                window.scriptyProjectId = projectId;
+            }
+
+            function showMissing() {
+                document.getElementById('offline-project-missing').hidden = false;
+                document.getElementById('offline-project-mount').hidden = true;
+                var title = document.getElementById('reader-visible-project-title');
+                if (title) title.textContent = 'Unavailable offline';
+            }
+
+            if (!projectId || !window.scriptyOfflineStore) {
+                showMissing();
+                return;
+            }
+
+            window.scriptyOfflineStore.getProjectSnapshot(projectId).then(function (snapshot) {
+                if (!snapshot || !snapshot.scriptHtml) {
+                    showMissing();
+                    return;
+                }
+                var title = document.getElementById('reader-visible-project-title');
+                if (title) {
+                    title.textContent = snapshot.title || ('Project ' + projectId);
+                }
+                document.title = 'Scripty - ' + (snapshot.title || 'Project');
+            }).catch(showMissing);
+        }());
+    </script>
+</body>
+</html>

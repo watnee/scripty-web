@@ -43,6 +43,7 @@ public class CacheControlFilter implements Filter {
                 && !"/manifest.json".equals(path)
                 && !"/sw.js".equals(path)
                 && !"/offline.html".equals(path)
+                && !"/offline-project.html".equals(path)
                 && !path.startsWith("/h2-console");
     }
 }

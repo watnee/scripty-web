@@ -43,5 +43,5 @@ app:
   base-url: ${APP_BASE_URL:}
   mail-from: ${MAIL_FROM:Scripty <noreply@scripty.app>}
   mail-enabled: ${MAIL_ENABLED:false}
-  # Disable until the service worker stops caching authenticated HTML responses.
-  service-worker-enabled: false
+  # Static assets + public offline shells only; project HTML lives in IndexedDB.
+  service-worker-enabled: true

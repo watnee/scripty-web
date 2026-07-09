@@ -8,6 +8,33 @@
     const MAX_CACHED_PROJECTS = 12;
     const MAX_SNAPSHOT_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
+    function currentUserId() {
+        if (global.scriptyCurrentUserId) {
+            return String(global.scriptyCurrentUserId);
+        }
+        var fromDom = document.documentElement.getAttribute('data-user-id');
+        if (fromDom) return String(fromDom);
+        try {
+            var stored = localStorage.getItem('scripty-offline-user-id');
+            return stored ? String(stored) : null;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function belongsToCurrentUser(record) {
+        if (!record) return false;
+        // Legacy snapshots without userId remain visible until re-saved with a user stamp.
+        if (!record.userId) {
+            return true;
+        }
+        var userId = currentUserId();
+        if (!userId) {
+            return false;
+        }
+        return String(record.userId) === userId;
+    }
+
     function openDb() {
         return new Promise(function (resolve, reject) {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -51,6 +78,7 @@
                 db.close();
                 const ids = {};
                 (request.result || []).forEach(function (entry) {
+                    if (!belongsToCurrentUser(entry)) return;
                     if (entry.projectId != null) {
                         ids[Number(entry.projectId)] = true;
                     }
@@ -81,6 +109,9 @@
                 const now = Date.now();
                 let kept = 0;
                 items.forEach(function (item) {
+                    if (!belongsToCurrentUser(item)) {
+                        return;
+                    }
                     const id = Number(item.id);
                     const hasPending = !!pendingIds[id];
                     const tooOld = (now - (item.cachedAt || 0)) > MAX_SNAPSHOT_AGE_MS;
@@ -108,11 +139,13 @@
 
     async function saveProjectSnapshot(snapshot) {
         if (!snapshot || !snapshot.id) return;
+        const userId = currentUserId();
         const db = await openDb();
         await runTx(db, STORE, 'readwrite', function (store) {
             store.put(Object.assign({}, snapshot, {
                 id: Number(snapshot.id),
-                cachedAt: snapshot.cachedAt || Date.now()
+                cachedAt: snapshot.cachedAt || Date.now(),
+                userId: userId || snapshot.userId || null
             }));
         });
         try {
@@ -129,7 +162,8 @@
             const request = tx.objectStore(STORE).get(Number(id));
             request.onsuccess = function () {
                 db.close();
-                resolve(request.result || null);
+                const result = request.result || null;
+                resolve(belongsToCurrentUser(result) ? result : null);
             };
             request.onerror = function () {
                 db.close();
@@ -145,9 +179,11 @@
             const request = tx.objectStore(STORE).getAll();
             request.onsuccess = function () {
                 db.close();
-                const items = (request.result || []).sort(function (a, b) {
-                    return (b.cachedAt || 0) - (a.cachedAt || 0);
-                });
+                const items = (request.result || [])
+                    .filter(belongsToCurrentUser)
+                    .sort(function (a, b) {
+                        return (b.cachedAt || 0) - (a.cachedAt || 0);
+                    });
                 resolve(items);
             };
             request.onerror = function () {
@@ -166,11 +202,13 @@
     async function enqueueOperation(entry) {
         if (!entry || !entry.type) return;
         const db = await openDb();
+        const userId = currentUserId();
         const record = Object.assign({}, entry, {
             id: entry.id || (entry.type + '-' + (entry.blockId || entry.tempBlockId || Date.now()) + '-' + Date.now()),
             createdAt: entry.createdAt || Date.now(),
             attempts: entry.attempts || 0,
-            lastError: entry.lastError || null
+            lastError: entry.lastError || null,
+            userId: userId || entry.userId || null
         });
         return runTx(db, OUTBOX_STORE, 'readwrite', function (store) {
             store.put(record);
@@ -210,7 +248,8 @@
             request.onsuccess = function () {
                 db.close();
                 const match = (request.result || []).find(function (entry) {
-                    return entry.type === 'blockCreateBelow' &&
+                    return belongsToCurrentUser(entry) &&
+                        entry.type === 'blockCreateBelow' &&
                         String(entry.tempBlockId) === String(tempBlockId);
                 });
                 resolve(match || null);
@@ -240,9 +279,11 @@
                 : store.getAll();
             request.onsuccess = function () {
                 db.close();
-                const items = (request.result || []).sort(function (a, b) {
-                    return (a.createdAt || 0) - (b.createdAt || 0);
-                });
+                const items = (request.result || [])
+                    .filter(belongsToCurrentUser)
+                    .sort(function (a, b) {
+                        return (a.createdAt || 0) - (b.createdAt || 0);
+                    });
                 resolve(items);
             };
             request.onerror = function () {

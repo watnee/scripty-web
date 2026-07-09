@@ -1,6 +1,7 @@
-const CACHE_NAME = 'scripty-cache-v22';
+const CACHE_NAME = 'scripty-cache-v23';
 const ASSETS_TO_CACHE = [
   '/offline.html',
+  '/offline-project.html',
   '/css/missing.min.css',
   '/css/scripty.css',
   '/js/htmx.min.js',
@@ -32,27 +33,6 @@ function isOnlineProbe(url) {
   return url.searchParams.has('scripty-online-probe');
 }
 
-function isCacheableAppRequest(url, request) {
-  if (request.method !== 'GET') {
-    return false;
-  }
-  if (isOnlineProbe(url)) {
-    return false;
-  }
-  if (url.pathname.startsWith('/h2-console') || url.pathname.startsWith('/api/')) {
-    return false;
-  }
-  return request.mode === 'navigate'
-    || url.pathname === '/'
-    || url.pathname === '/project/show'
-    || url.pathname === '/project/list'
-    || url.pathname === '/project/showScript'
-    || url.pathname === '/project/read'
-    || url.pathname.startsWith('/scene/read')
-    || url.pathname === '/help'
-    || url.pathname === '/shortcuts';
-}
-
 function isStaticAsset(url) {
   return url.pathname.startsWith('/css/') ||
     url.pathname.startsWith('/js/') ||
@@ -61,7 +41,12 @@ function isStaticAsset(url) {
     url.pathname.startsWith('/fonts/') ||
     url.pathname === '/favicon.ico' ||
     url.pathname === '/manifest.json' ||
-    url.pathname === '/offline.html';
+    url.pathname === '/offline.html' ||
+    url.pathname === '/offline-project.html';
+}
+
+function isProjectShowNavigation(url, request) {
+  return request.mode === 'navigate' && url.pathname === '/project/show';
 }
 
 function bareAssetRequest(url) {
@@ -89,33 +74,32 @@ async function putInCache(request, response) {
   if (url.origin !== self.location.origin) {
     return;
   }
+  // Never put authenticated / private HTML into the Cache API.
+  if (!isStaticAsset(url)) {
+    return;
+  }
   const cache = await caches.open(CACHE_NAME);
   await cache.put(request, response.clone());
   // Also store under the bare pathname so ignoreSearch / offline fallbacks work.
-  if (url.search && isStaticAsset(url)) {
+  if (url.search) {
     await cache.put(bareAssetRequest(url), response.clone());
   }
 }
 
-async function networkFirstWithCache(request) {
+async function navigationFallback(request) {
+  const url = new URL(request.url);
   try {
-    const response = await fetch(request);
-    if (response && response.status === 200) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
-    }
-    return response;
+    return await fetch(request);
   } catch (err) {
-    const cachedResponse = await matchCached(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    if (request.mode === 'navigate') {
-      // Prefer the exact project page from cache, then offline shell.
-      const offlinePage = await caches.match('/offline.html');
-      if (offlinePage) {
-        return offlinePage;
+    if (isProjectShowNavigation(url, request)) {
+      const projectShell = await caches.match('/offline-project.html');
+      if (projectShell) {
+        return projectShell;
       }
+    }
+    const offlinePage = await caches.match('/offline.html');
+    if (offlinePage) {
+      return offlinePage;
     }
     throw err;
   }
@@ -186,8 +170,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (isCacheableAppRequest(url, event.request)) {
-    event.respondWith(networkFirstWithCache(event.request));
+  // Navigations: network only; on failure serve public offline shells (never cache HTML).
+  if (event.request.mode === 'navigate') {
+    event.respondWith(navigationFallback(event.request));
     return;
   }
 

@@ -78,6 +78,22 @@
             </footer>
         </section>
     </main>
+    <script>
+        (function () {
+            try {
+                localStorage.removeItem('scripty-offline-user-id');
+            } catch (err) { /* ignore */ }
+            if ('caches' in window) {
+                caches.keys().then(function (keys) {
+                    return Promise.all(keys.filter(function (key) {
+                        return key.indexOf('scripty-cache') === 0;
+                    }).map(function (key) {
+                        return caches.delete(key);
+                    }));
+                }).catch(function () {});
+            }
+        }());
+    </script>
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>

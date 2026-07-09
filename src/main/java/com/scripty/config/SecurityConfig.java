@@ -56,6 +56,7 @@ public class SecurityConfig {
                         "/manifest.json",
                         "/sw.js",
                         "/offline.html",
+                        "/offline-project.html",
                         "/icons/**",
                         "/help",
                         "/invitation/accept")

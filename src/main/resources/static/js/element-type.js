@@ -410,9 +410,18 @@
         applySingle(type, captured);
     }
 
-    /** Programmatic type change for Tab cycling / Fountain detection. */
+    /** Programmatic type change for Tab cycling / Fountain detection / + menu. */
     window.scriptyApplyElementType = function(type, preferredBlockId) {
-        if (!type || inFlight) return;
+        if (!type) return;
+        // Prefer the requested block even if a prior type change is still saving.
+        // Dropping the call left the + menu looking broken after rapid picks.
+        if (inFlight && preferredBlockId) {
+            inFlight = false;
+            snapshot = null;
+            finishWait();
+        } else if (inFlight) {
+            return;
+        }
         var captured = captureTarget(preferredBlockId || null);
         if (captured && (captured.mode === 'single' || captured.mode === 'bulk')) {
             beginWait();

@@ -493,6 +493,10 @@
             const row = form.closest('[data-block-id]');
             const blockContent = form.closest('.block-content');
             if (!row || !blockContent) return;
+            // Don't tear down an empty edit while the + type menu is open on this
+            // row, or while a type change is in flight — that race drops menu picks.
+            if (window.scriptyBlockTypeChangePending) return;
+            if (row.querySelector('.create-below-menu-dropdown.open')) return;
             const textarea = form.querySelector('textarea[name="content"]');
             if (!textarea || textarea.value.trim() !== '') return;
 
@@ -547,14 +551,21 @@
             });
         }
 
-        function editSavedBlockRow(row) {
-            if (!row || !row.hasAttribute('data-block-id')) return;
+        function editSavedBlockRow(row, done) {
+            if (!row || !row.hasAttribute('data-block-id')) {
+                if (done) done(null);
+                return;
+            }
             const blockContent = row.querySelector('.block-content');
             const blockId = row.getAttribute('data-block-id');
-            if (!blockContent || !blockId) return;
+            if (!blockContent || !blockId) {
+                if (done) done(null);
+                return;
+            }
             if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptyOpenBlockEditOffline) {
                 window.scriptyOpenBlockEditOffline(blockContent);
                 focusBlockContentEnd(row);
+                if (done) done(row);
                 return;
             }
             fetch('/block/editInline?id=' + encodeURIComponent(blockId), {
@@ -563,14 +574,19 @@
             }).then(function(response) {
                 return response.text();
             }).then(function(html) {
-                if (!blockContent.isConnected) return;
+                if (!blockContent.isConnected) {
+                    if (done) done(null);
+                    return;
+                }
                 blockContent.innerHTML = html;
                 if (typeof htmx !== 'undefined') {
                     htmx.process(blockContent);
                 }
                 focusBlockContentEnd(row);
+                if (done) done(row);
             }).catch(function() {
                 focusBlockContentEnd(row);
+                if (done) done(row);
             });
         }
 
@@ -610,8 +626,12 @@
                 if (typeof htmx !== 'undefined') {
                     htmx.process(createRow);
                 }
-                if (window.scriptyApplyPendingCreateType) {
-                    window.scriptyApplyPendingCreateType();
+                if (window.scriptyPendingCreateType && window.scriptySetCreateRowType) {
+                    window.scriptySetCreateRowType(createRow, window.scriptyPendingCreateType);
+                    createRow.dataset.scriptyTypedCreate = '1';
+                    window.scriptyPendingCreateType = null;
+                } else if (window.scriptyApplyPendingCreateType) {
+                    window.scriptyApplyPendingCreateType(createRow);
                 } else if (window.scriptyPrepareCreateRowType) {
                     window.scriptyPrepareCreateRowType(createRow, fromType);
                 }
@@ -623,9 +643,12 @@
             });
         }
 
-        function createEmptyBlockBelow(row) {
+        function createEmptyBlockBelow(row, options) {
             if (!row || !row.hasAttribute('data-block-id')) return;
             if (row.dataset.openingCreateBelow === 'true') return;
+            options = options || {};
+            const focusSaved = !!options.focusSaved;
+            const openTypeMenu = !!options.openTypeMenu;
             row.dataset.openingCreateBelow = 'true';
             const blockId = row.getAttribute('data-block-id');
             const fromType = row.getAttribute('data-block-type') || 'ACTION';
@@ -650,8 +673,25 @@
                 template.innerHTML = html.trim();
                 const newRows = Array.from(template.content.children);
                 if (newRows.length === 0 || !row.parentNode) return;
+                const savedRow = newRows.find(function(newRow) {
+                    return newRow.hasAttribute('data-block-id');
+                });
+                const createRow = newRows.find(function(newRow) {
+                    return !newRow.hasAttribute('data-block-id') && newRow.querySelector('textarea[name="content"]');
+                });
+                const savedId = savedRow && savedRow.getAttribute('data-block-id');
+                // Never insert a row that reuses the anchor's id — that creates
+                // duplicate DOM nodes and breaks type-menu clicks (querySelector
+                // updates the first match, not the menu's row).
+                const isDuplicateOfAnchor = !!(savedId && savedId === blockId);
+                // + menu: insert only the new saved block directly under the current
+                // row. Skip the response's create-row so we don't leave an empty
+                // mid-list gap before the next existing block.
+                const rowsToInsert = (focusSaved && savedRow && !isDuplicateOfAnchor)
+                    ? [savedRow]
+                    : (isDuplicateOfAnchor ? [] : newRows);
                 let insertAfter = row;
-                newRows.forEach(function(newRow) {
+                rowsToInsert.forEach(function(newRow) {
                     insertAfter.insertAdjacentElement('afterend', newRow);
                     insertAfter = newRow;
                     if (typeof htmx !== 'undefined') {
@@ -659,22 +699,38 @@
                     }
                 });
                 dedupeTrailingCreateRows(row.parentNode);
-                const createRow = newRows.find(function(newRow) {
-                    return !newRow.hasAttribute('data-block-id') && newRow.querySelector('textarea[name="content"]');
-                });
-                if (createRow) {
+                ensureTrailingCreateRow(row.parentNode);
+                if (isDuplicateOfAnchor) {
+                    // Server reused the lone empty block. Open the type menu on
+                    // the existing row so the user can still pick a type.
+                    window.scriptyPendingCreateType = null;
+                    if (openTypeMenu) {
+                        openCreateBelowTypeMenu(row);
+                    } else {
+                        focusBlockContentEnd(row);
+                    }
+                } else if (focusSaved && savedRow) {
+                    window.scriptyPendingCreateType = null;
+                    editSavedBlockRow(savedRow, function(editedRow) {
+                        if (openTypeMenu) {
+                            openCreateBelowTypeMenu(editedRow || savedRow);
+                        }
+                    });
+                } else if (createRow && createRow.isConnected) {
                     if (window.scriptySetCreateRowType) {
                         window.scriptySetCreateRowType(createRow, nextType);
                     }
                     window.scriptyPendingCreateType = null;
                     focusBlockContentEnd(createRow);
-                } else {
-                    const savedRow = newRows.find(function(newRow) {
-                        return newRow.hasAttribute('data-block-id');
-                    });
-                    if (savedRow) {
-                        editSavedBlockRow(savedRow);
+                    if (openTypeMenu) {
+                        openCreateBelowTypeMenu(createRow);
                     }
+                } else if (savedRow) {
+                    editSavedBlockRow(savedRow, function(editedRow) {
+                        if (openTypeMenu) {
+                            openCreateBelowTypeMenu(editedRow || savedRow);
+                        }
+                    });
                 }
             }).catch(function() {
                 /* keep current edit if create fails */
@@ -747,11 +803,14 @@
             return url + (url.indexOf('?') === -1 ? '?' : '&') + 'surface=project';
         }
 
-        function submitCreateRowFromEnter(textarea) {
+        function submitCreateRowFromEnter(textarea, options) {
             if (!isBlockContentTextarea(textarea) || !isCreateBlockTextarea(textarea)) return;
             const form = textarea.closest('form');
             const row = findAnyBlockRow(textarea);
             if (!form || !row || row.dataset.enterCreatingBelow === 'true') return;
+            options = options || {};
+            const focusSaved = !!options.focusSaved;
+            const openTypeMenu = !!options.openTypeMenu;
             if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptySaveCreateBelowOffline) {
                 row.dataset.enterCreatingBelow = 'true';
                 window.scriptySaveCreateBelowOffline(form, row, function() {
@@ -779,14 +838,30 @@
                         htmx.process(newRow);
                     });
                 }
-                dedupeTrailingCreateRows(row.parentNode);
                 const savedRow = newRows.find(function(newRow) {
                     return newRow.hasAttribute('data-block-id');
                 });
                 const createRow = newRows.find(function(newRow) {
                     return !newRow.hasAttribute('data-block-id') && newRow.querySelector('textarea[name="content"]');
                 });
-                if (createRow) {
+                // + menu: keep only the saved block under the current position.
+                if (focusSaved && savedRow) {
+                    newRows.forEach(function(newRow) {
+                        if (newRow !== savedRow && newRow.parentNode) {
+                            newRow.remove();
+                        }
+                    });
+                }
+                dedupeTrailingCreateRows(row.parentNode || savedRow && savedRow.parentNode);
+                ensureTrailingCreateRow((savedRow && savedRow.parentNode) || row.parentNode);
+                if (focusSaved && savedRow) {
+                    window.scriptyPendingCreateType = null;
+                    editSavedBlockRow(savedRow, function(editedRow) {
+                        if (openTypeMenu) {
+                            openCreateBelowTypeMenu(editedRow || savedRow);
+                        }
+                    });
+                } else if (createRow && createRow.isConnected) {
                     const savedType = savedRow
                         ? (savedRow.getAttribute('data-block-type') || 'ACTION')
                         : 'ACTION';
@@ -798,8 +873,15 @@
                     }
                     window.scriptyPendingCreateType = null;
                     focusBlockContentEnd(createRow);
+                    if (openTypeMenu) {
+                        openCreateBelowTypeMenu(createRow);
+                    }
                 } else if (savedRow) {
-                    editSavedBlockRow(savedRow);
+                    editSavedBlockRow(savedRow, function(editedRow) {
+                        if (openTypeMenu) {
+                            openCreateBelowTypeMenu(editedRow || savedRow);
+                        }
+                    });
                 } else {
                     focusBlockContentEnd(newRows[0]);
                 }
@@ -817,8 +899,8 @@
             saveBlockThenOpenCreateBelow(form);
         };
 
-        window.scriptyCreateBlockFromCreateRow = function(textarea) {
-            submitCreateRowFromEnter(textarea);
+        window.scriptyCreateBlockFromCreateRow = function(textarea, options) {
+            submitCreateRowFromEnter(textarea, options);
         };
 
         function removeEmptyCreateRow(row) {
@@ -843,6 +925,44 @@
             if (!row) return false;
             const ta = row.querySelector('textarea[name="content"]');
             return !!(ta && ta.value.trim() !== '');
+        }
+
+        function ensureTrailingCreateRow(container) {
+            if (!container) return;
+            const rowSelector = container.matches('tbody') ? 'tr' : '.block-row';
+            const rows = Array.from(container.querySelectorAll(rowSelector));
+            if (!rows.length) return;
+            const last = rows[rows.length - 1];
+            if (isCreateBlockRow(last)) return;
+            const lastSaved = [...rows].reverse().find(function(r) {
+                return r.hasAttribute('data-block-id');
+            });
+            if (!lastSaved) return;
+            // Reuse openCreateBelowRow without focusing — just restore the end create row.
+            const blockId = lastSaved.getAttribute('data-block-id');
+            if (!blockId || lastSaved.dataset.openingCreateBelow === 'true') return;
+            if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptyOpenCreateBelowOffline) {
+                window.scriptyOpenCreateBelowOffline(lastSaved);
+                return;
+            }
+            fetch('/block/createBelowInline?id=' + encodeURIComponent(blockId) + '&surface=project', {
+                credentials: 'same-origin',
+                cache: 'no-store'
+            }).then(function(response) {
+                return response.text();
+            }).then(function(html) {
+                if (!container.isConnected || !lastSaved.isConnected) return;
+                const stillLast = container.querySelector(rowSelector + ':last-child');
+                if (stillLast && isCreateBlockRow(stillLast)) return;
+                const template = document.createElement('template');
+                template.innerHTML = html.trim();
+                const createRow = template.content.firstElementChild;
+                if (!createRow) return;
+                container.appendChild(createRow);
+                if (typeof htmx !== 'undefined') {
+                    htmx.process(createRow);
+                }
+            }).catch(function() { /* ignore */ });
         }
 
         function dedupeTrailingCreateRows(container) {
@@ -879,8 +999,12 @@
             if (window._scriptyBlockEditGuardsInit) return;
             window._scriptyBlockEditGuardsInit = true;
 
-            // "+" opens an element-type menu; selecting a type creates/focuses a row.
-            document.addEventListener('click', function(e) {
+            // Apply + menu choices on mousedown (not click). Real pointer clicks
+            // blur the empty edit textarea first; empty-guard can then remount the
+            // row and swallow the later click / race the type change.
+            document.addEventListener('mousedown', function(e) {
+                if (e.button !== 0) return;
+
                 const songItem = e.target.closest('[data-insert-song-id]');
                 if (songItem && songItem.closest('.create-below-menu')) {
                     e.preventDefault();
@@ -918,54 +1042,32 @@
                     const type = typeItem.getAttribute('data-create-type');
                     closeAllCreateBelowMenus();
                     closeAllBlockDragMenus();
-                    createBlockWithType(row, type);
+                    applyTypeToExistingBlock(row, type);
                     return;
                 }
+            }, true);
 
-                const toggle = e.target.closest('.create-below-menu-toggle');
-                if (toggle) {
+            // "+" creates a block below, then opens the type/action menu on the new block.
+            document.addEventListener('click', function(e) {
+                // Menu choices are handled on mousedown; ignore their click.
+                if (e.target.closest('.create-below-menu [data-create-type], .create-below-menu [data-insert-song-id], .create-below-menu [data-insert-draft-id]')) {
                     e.preventDefault();
                     e.stopImmediatePropagation();
-                    const dropdown = toggle.closest('.create-below-menu-dropdown');
-                    if (!dropdown) return;
-                    const isOpen = dropdown.classList.contains('open');
-                    closeAllCreateBelowMenus();
-                    closeAllBlockDragMenus();
-                    if (!isOpen) {
-                        populateCreateBelowSongs(dropdown);
-                        populateCreateBelowDrafts(dropdown);
-                        dropdown.classList.add('open');
-                        toggle.setAttribute('aria-expanded', 'true');
-                    }
                     return;
                 }
 
-                // Legacy plain "+" link (offline / older markup)
-                const link = e.target.closest('a.create-below');
-                if (!link || link.classList.contains('create-below-menu-toggle')) return;
-                const row = link.closest('.block-row, tr');
+                const plusBtn = e.target.closest('.create-below-menu-toggle, a.create-below');
+                if (!plusBtn) return;
+                // Ignore clicks that are really on a menu item inside an open dropdown.
+                if (plusBtn.closest('.create-below-menu')) return;
+                const row = plusBtn.closest('.block-row, tr');
                 if (!row) return;
 
                 e.preventDefault();
                 e.stopImmediatePropagation();
-
-                if (isCreateBlockRow(row)) {
-                    const ta = row.querySelector('textarea[name="content"]');
-                    if (ta) {
-                        submitCreateRowFromEnter(ta);
-                    }
-                    return;
-                }
-
-                if (!row.hasAttribute('data-block-id')) return;
-
-                const nextRow = row.nextElementSibling;
-                if (isCreateBlockRow(nextRow)) {
-                    focusBlockContentEnd(nextRow);
-                    return;
-                }
-
-                openCreateBelowRow(row);
+                closeAllCreateBelowMenus();
+                closeAllBlockDragMenus();
+                addBlockBelowCurrent(row, { openTypeMenu: true });
             }, true);
 
             document.body.addEventListener('htmx:configRequest', function(e) {
@@ -4518,6 +4620,118 @@
             form.submit();
         }
 
+        function resolveSmartCreateType(row) {
+            const fromType = (row && row.getAttribute('data-block-type')) || 'ACTION';
+            if (window.scriptyNextFountainType) {
+                return window.scriptyNextFountainType(fromType);
+            }
+            return 'ACTION';
+        }
+
+        function openCreateBelowTypeMenu(row) {
+            if (!row) return;
+            // Defer so the originating + click / edit focus settle before opening.
+            window.setTimeout(function() {
+                if (!row.isConnected) return;
+                closeAllCreateBelowMenus();
+                closeAllBlockDragMenus();
+                row.classList.add('block-controls-revealed');
+                const dropdown = row.querySelector('.create-below-menu-dropdown');
+                const toggle = row.querySelector('.create-below-menu-toggle');
+                if (!dropdown || !toggle) return;
+                populateCreateBelowSongs(dropdown);
+                populateCreateBelowDrafts(dropdown);
+                dropdown.classList.add('open');
+                toggle.setAttribute('aria-expanded', 'true');
+                // Ignore the next outside-click close (same gesture that created the block).
+                dropdown.dataset.suppressOutsideClose = '1';
+                window.setTimeout(function() {
+                    delete dropdown.dataset.suppressOutsideClose;
+                }, 100);
+                const menu = dropdown.querySelector('.create-below-menu');
+                if (menu && menu.scrollIntoView) {
+                    menu.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                }
+            }, 0);
+        }
+
+        function applyTypeToExistingBlock(row, type) {
+            if (!row || !type) return;
+            if (isCreateBlockRow(row)) {
+                if (window.scriptySetCreateRowType) {
+                    window.scriptySetCreateRowType(row, type);
+                }
+                focusBlockContentEnd(row);
+                return;
+            }
+            const blockId = row.getAttribute('data-block-id');
+            if (!blockId) return;
+            // Optimistic UI so the pick feels instant even if the save is slow.
+            const blockContent = row.querySelector('.block-content');
+            if (blockContent && typeof window.scriptyApplyBlockTypeClass === 'function') {
+                window.scriptyApplyBlockTypeClass(blockContent, type);
+            } else {
+                row.setAttribute('data-block-type', type);
+                const label = row.querySelector('.block-element-label');
+                if (label) {
+                    label.setAttribute('data-block-type', type);
+                    label.textContent = (window.scriptyBlockTypeLabel && window.scriptyBlockTypeLabel(type)) || type;
+                }
+            }
+            if (typeof window.scriptyApplyElementType === 'function') {
+                window.scriptyApplyElementType(type, blockId);
+            } else if (window.scriptySetCreateRowType) {
+                window.scriptySetCreateRowType(row, type);
+            }
+            focusBlockContentEnd(row);
+        }
+
+        /** "+" button: insert a saved block below the current row, then open the
+         *  type/action menu on that new block. */
+        function addBlockBelowCurrent(row, options) {
+            if (!row) return;
+            options = options || {};
+            const openTypeMenu = options.openTypeMenu !== false;
+            if (isCreateBlockRow(row)) {
+                const type = resolveSmartCreateType(row);
+                if (window.scriptySetCreateRowType) {
+                    window.scriptySetCreateRowType(row, type);
+                }
+                const ta = row.querySelector('textarea[name="content"]');
+                if (ta && window.scriptyCreateBlockFromCreateRow) {
+                    window.scriptyCreateBlockFromCreateRow(ta, {
+                        focusSaved: true,
+                        openTypeMenu: openTypeMenu
+                    });
+                } else {
+                    focusBlockContentEnd(row);
+                    if (openTypeMenu) openCreateBelowTypeMenu(row);
+                }
+                return;
+            }
+            if (!row.hasAttribute('data-block-id')) return;
+            window.scriptyPendingCreateType = resolveSmartCreateType(row);
+            const nextRow = row.nextElementSibling;
+            if (isCreateBlockRow(nextRow)) {
+                if (window.scriptySetCreateRowType) {
+                    window.scriptySetCreateRowType(nextRow, window.scriptyPendingCreateType);
+                }
+                const nextTa = nextRow.querySelector('textarea[name="content"]');
+                if (nextTa && window.scriptyCreateBlockFromCreateRow) {
+                    window.scriptyPendingCreateType = null;
+                    window.scriptyCreateBlockFromCreateRow(nextTa, {
+                        focusSaved: true,
+                        openTypeMenu: openTypeMenu
+                    });
+                    return;
+                }
+            }
+            createEmptyBlockBelow(row, {
+                focusSaved: true,
+                openTypeMenu: openTypeMenu
+            });
+        }
+
         function createBlockWithType(row, type) {
             if (!row || !type) return;
             if (isCreateBlockRow(row)) {
@@ -4533,7 +4747,12 @@
                         label.textContent = (window.scriptyBlockTypeLabel && window.scriptyBlockTypeLabel(type)) || type;
                     }
                 }
-                focusBlockContentEnd(row);
+                const ta = row.querySelector('textarea[name="content"]');
+                if (ta && window.scriptyCreateBlockFromCreateRow) {
+                    window.scriptyCreateBlockFromCreateRow(ta, { focusSaved: true });
+                } else {
+                    focusBlockContentEnd(row);
+                }
                 return;
             }
             if (!row.hasAttribute('data-block-id')) return;
@@ -4543,11 +4762,14 @@
                 if (window.scriptySetCreateRowType) {
                     window.scriptySetCreateRowType(nextRow, type);
                 }
-                window.scriptyPendingCreateType = null;
-                focusBlockContentEnd(nextRow);
-                return;
+                const nextTa = nextRow.querySelector('textarea[name="content"]');
+                if (nextTa && window.scriptyCreateBlockFromCreateRow) {
+                    window.scriptyPendingCreateType = null;
+                    window.scriptyCreateBlockFromCreateRow(nextTa, { focusSaved: true });
+                    return;
+                }
             }
-            openCreateBelowRow(row);
+            createEmptyBlockBelow(row, { focusSaved: true });
         }
 
         function removeUnsavedBlockRow(row) {
@@ -4895,6 +5117,8 @@
                     closeAllBlockDragMenus();
                 });
                 document.addEventListener('click', function(e) {
+                    const openDropdown = document.querySelector('.create-below-menu-dropdown.open');
+                    if (openDropdown && openDropdown.dataset.suppressOutsideClose === '1') return;
                     if (e.target.closest('.create-below-menu-dropdown')) return;
                     closeAllCreateBelowMenus();
                 });

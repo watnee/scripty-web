@@ -2874,6 +2874,7 @@ html.scripty-hide-block-pins .block-action-pin {
 html.scripty-hide-block-select .block-select-checkbox,
 html.scripty-hide-block-select a.create-below[role="button"],
 html.scripty-hide-block-select .create-below-menu-dropdown,
+html.scripty-hide-block-select button.create-below.create-below-menu-toggle,
 html.scripty-hide-block-select .drag-handle,
 html.scripty-hide-block-select .block-drag-menu-dropdown,
 html.scripty-hide-block-select .block-actions-controls,
@@ -2900,11 +2901,13 @@ html.scripty-hide-block-select .table-blocks-all aside.block-actions {
 html.scripty-hide-block-select .block-row.block-controls-revealed .block-select-checkbox,
 html.scripty-hide-block-select .block-row.block-controls-revealed a.create-below[role="button"],
 html.scripty-hide-block-select .block-row.block-controls-revealed .create-below-menu-dropdown,
+html.scripty-hide-block-select .block-row.block-controls-revealed button.create-below.create-below-menu-toggle,
 html.scripty-hide-block-select .block-row.block-controls-revealed .drag-handle,
 html.scripty-hide-block-select .block-row.block-controls-revealed .block-drag-menu-dropdown,
 html.scripty-hide-block-select tr.block-controls-revealed .block-select-checkbox,
 html.scripty-hide-block-select tr.block-controls-revealed a.create-below[role="button"],
 html.scripty-hide-block-select tr.block-controls-revealed .create-below-menu-dropdown,
+html.scripty-hide-block-select tr.block-controls-revealed button.create-below.create-below-menu-toggle,
 html.scripty-hide-block-select tr.block-controls-revealed .drag-handle,
 html.scripty-hide-block-select tr.block-controls-revealed .block-drag-menu-dropdown {
     visibility: visible;
@@ -7292,7 +7295,8 @@ html.scripty-outline-mode .project-script::after {
 
 .project-script .block-left-controls-inner > .block-select-menu-dropdown,
 .project-script .block-left-controls-inner > a.create-below,
-.project-script .block-left-controls-inner > .create-below-menu-dropdown {
+.project-script .block-left-controls-inner > .create-below-menu-dropdown,
+.project-script .block-left-controls-inner > button.create-below.create-below-menu-toggle {
     grid-column: 2;
     grid-row: 1;
     position: relative;

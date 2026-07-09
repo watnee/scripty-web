@@ -116,6 +116,9 @@
         var blockContent = form.closest('.block-content');
         if (!row || !blockContent) return;
         if (!row.isConnected || row.dataset.deleting === 'true') return;
+        // Keep empty edit HTML while the + type menu is open / type change runs.
+        if (window.scriptyBlockTypeChangePending) return;
+        if (row.querySelector('.create-below-menu-dropdown.open')) return;
         var textarea = form.querySelector('textarea[name="content"]');
         if (!textarea || textarea.value.trim() !== '') return;
 

@@ -1752,14 +1752,30 @@
         applyPendingCreateType();
     });
 
-    function applyPendingCreateType() {
+    function applyPendingCreateType(preferredRow) {
         var pending = window.scriptyPendingCreateType;
         if (!pending) return;
-        var createRow = document.querySelector(
-            '.project-script .block-row:not([data-block-id]) textarea[name="content"]'
-        );
-        if (createRow) {
-            setCreateRowType(createRow.closest('.block-row'), pending);
+        var row = preferredRow;
+        if (!row || !row.classList || !row.classList.contains('block-row') || row.hasAttribute('data-block-id')) {
+            row = null;
+            // Prefer a mid-list create row (has a following saved block) over the trailing one.
+            var textareas = document.querySelectorAll(
+                '.project-script .block-row:not([data-block-id]) textarea[name="content"]'
+            );
+            for (var i = 0; i < textareas.length; i++) {
+                var candidate = textareas[i].closest('.block-row');
+                if (!candidate) continue;
+                var next = candidate.nextElementSibling;
+                if (next && next.hasAttribute && next.hasAttribute('data-block-id')) {
+                    row = candidate;
+                    break;
+                }
+                if (!row) row = candidate;
+            }
+        }
+        if (row) {
+            setCreateRowType(row, pending);
+            row.dataset.scriptyTypedCreate = '1';
         }
         window.scriptyPendingCreateType = null;
     }

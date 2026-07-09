@@ -195,25 +195,8 @@ public class BlockServiceImpl implements BlockService {
             }
         }
 
-        String existingContent = existingBlock.getContent();
-        if ((existingContent == null || existingContent.trim().isEmpty())
-                && blockRepository.countByProjectId(project.getId()) == 1) {
-            existingBlock.setContent(content);
-            if (person != null) {
-                existingBlock.setPerson(person);
-            }
-            existingBlock.setType(normalizeBlockType(cmd.getType()));
-            if (Block.isCharacterCueType(existingBlock.getType())) {
-                String characterName = normalizeCharacterCue(content);
-                if (characterName != null) {
-                    existingBlock.setContent(characterName);
-                    existingBlock.setPerson(findOrCreatePerson(characterName, project));
-                }
-            }
-            Block saved = blockRepository.save(existingBlock);
-            recordScriptEdited(project);
-            return saved;
-        }
+        // Always insert a new block below the anchor. Do not reuse a lone empty
+        // block — the + menu and Enter-to-create expect a distinct new row.
 
         Block block = new Block();
         block.setContent(content);

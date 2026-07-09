@@ -80,7 +80,7 @@
                     <h3>➕ Adding Blocks</h3>
                     <p>To insert a block, click the plus icon (<kbd>+</kbd>) on the left side of any block, or press <kbd>Enter</kbd> while editing. New blocks inherit a smart next type (Character → Dialogue → Dialogue, Transition → Scene, and so on).</p>
                 </div>
-                <div class="help-card" data-keywords="fountain tab cycle element type syntax auto detect character scene location time day night autocomplete outline power user export import pdf docx word upload download">
+                <div class="help-card" data-keywords="fountain tab cycle element type syntax auto detect character scene location time day night autocomplete outline power user export import pdf docx word upload download paste clipboard">
                     <h3>⌨️ Fountain Power Features</h3>
                     <ul style="margin-top: 0.5rem; padding-left: 1.25rem;">
                         <li><strong>Tab / Shift+Tab</strong> — cycle the active block through Fountain element types.</li>
@@ -88,6 +88,7 @@
                         <li><strong>Character autocomplete</strong> — while typing a character cue (or <code>@NAME</code> in Action), pick from your project’s cast list with ↑/↓, then Enter or Tab.</li>
                         <li><strong>Scene autocomplete</strong> — while typing a scene heading (or <code>INT.</code>/<code>EXT.</code> stubs), pick a standard prefix, reuse a location from prior scenes, pick a full prior heading, or complete time-of-day after <code> - </code> (DAY, NIGHT, DAWN, …).</li>
                         <li><strong>Outline / Characters / Locations</strong> — use the list icon in the project toolbar. <strong>Outline</strong> jumps via Combined (scenes + bookmarks), Scenes, or Bookmarks. <strong>Character list</strong> and <strong>Location list</strong> open side panels for the project’s cues and scene locations.</li>
+                        <li><strong>Paste</strong> — paste from Scripty keeps element types. Paste Fountain or plain screenplay text from elsewhere and Scripty splits it into typed blocks (scenes, character cues, dialogue, etc.). Short prose without screenplay cues stays in the current block.</li>
                         <li><strong>Import / Export / Print</strong> — use the folder icon in the project toolbar. <strong>Import</strong> accepts Fountain (<code>.fountain</code>), plain text, or Word (<code>.docx</code> / <code>.doc</code>); Word files use screenplay layout when present so Scripty-exported DOCX round-trips element types, otherwise plain text is parsed with Fountain heuristics. Import replaces all blocks in the project. <strong>Export</strong> as PDF, Word (.docx) (industry US Letter / Courier layout), or Fountain. Fountain round-trips <code>Title:</code>, <code>Credit:</code>, <code>Author:</code>, and <code>Contact:</code>, preserves bold/italic/underline, and forces Action/Character markers when needed so re-import keeps element types. <strong>Print</strong> opens the browser print dialog.</li>
                     </ul>
                 </div>

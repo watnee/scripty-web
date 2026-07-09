@@ -1875,6 +1875,9 @@
                 if (blockData.personId) {
                     body.set('personId', blockData.personId);
                 }
+                if (blockData.type) {
+                    body.set('type', blockData.type);
+                }
 
                 return fetch('/block/createBelowInline', {
                     method: 'POST',
@@ -1885,26 +1888,37 @@
                     if (!response.ok) throw new Error('create below failed');
                     return response.text();
                 }).then(function(html) {
-                    const newRow = insertBlockRowHtml(afterRow, html);
+                    // createBelowInline returns block + empty create row; keep only the
+                    // saved block so multi-block paste doesn't leave gaps of empty rows.
+                    const template = document.createElement('template');
+                    template.innerHTML = (html || '').trim();
+                    const savedNodes = Array.from(template.content.children).filter(function(el) {
+                        return el.hasAttribute && el.hasAttribute('data-block-id');
+                    });
+                    const insertHtml = savedNodes.length
+                        ? savedNodes.map(function(el) { return el.outerHTML; }).join('')
+                        : html;
+                    const newRow = insertBlockRowHtml(afterRow, insertHtml);
                     if (!newRow) return afterRow;
                     const newBlockId = newRow.getAttribute('data-block-id');
                     const blockContent = newRow.querySelector('.block-content');
                     if (!newBlockId || !blockContent) return newRow;
-                    if (!blockData.type || blockData.type === 'ACTION') {
-                        return newRow;
+                    // Type is applied on create; only re-save when person/tags still need syncing.
+                    if (blockData.personId || (blockData.tags && blockData.type && blockData.type !== 'ACTION')) {
+                        return saveBlockContentAfterCut({
+                            blockId: newBlockId,
+                            row: newRow,
+                            blockContent: blockContent,
+                            content: blockData.content != null ? blockData.content : '',
+                            personId: blockData.personId || '',
+                            tags: blockData.tags || '',
+                            type: blockData.type,
+                            applyType: !!blockData.type
+                        }).then(function() {
+                            return newRow;
+                        });
                     }
-                    return saveBlockContentAfterCut({
-                        blockId: newBlockId,
-                        row: newRow,
-                        blockContent: blockContent,
-                        content: blockData.content != null ? blockData.content : '',
-                        personId: blockData.personId || '',
-                        tags: blockData.tags || '',
-                        type: blockData.type,
-                        applyType: true
-                    }).then(function() {
-                        return newRow;
-                    });
+                    return newRow;
                 }).catch(function() {
                     return afterRow;
                 });
@@ -1994,10 +2008,64 @@
                 });
             }
 
+            function looksLikeScreenplayPaste(text) {
+                if (!text) return false;
+                const lines = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+                let nonEmpty = 0;
+                for (let i = 0; i < lines.length; i++) {
+                    const trimmed = lines[i].trim();
+                    if (!trimmed) continue;
+                    nonEmpty++;
+                    if (/^(?:INT\.?|EXT\.?|EST\.?|INT\.?\/EXT\.?|I\/E\.?)\s+/i.test(trimmed)) return true;
+                    if (/^[A-Z][A-Z0-9 ]+ TO:$/.test(trimmed)) return true;
+                    if (/^(?:ANGLE ON|CLOSE ON|POV|INSERT)\b/i.test(trimmed)) return true;
+                    if (/^[@.~>#=]/.test(trimmed) || /^={3,}$/.test(trimmed) || /^\[\[/.test(trimmed)) return true;
+                    // ALL-CAPS cue followed by a non-empty next line
+                    if (trimmed === trimmed.toUpperCase()
+                        && trimmed.length <= 60
+                        && /[A-Z]/.test(trimmed)
+                        && !/[.?!]$/.test(trimmed)) {
+                        for (let j = i + 1; j < lines.length; j++) {
+                            if (lines[j].trim()) return true;
+                        }
+                    }
+                }
+                return nonEmpty >= 2 && /\n\s*\n/.test(text);
+            }
+
+            function blocksFromExternalPasteText(text) {
+                if (text == null || text === '') return null;
+                if (typeof window.scriptyParseFountainToBlocks !== 'function') return null;
+                if (!/[\r\n]/.test(text)) return null;
+
+                // Soft-wrapped prose without screenplay cues: keep as one inline paste.
+                if (!looksLikeScreenplayPaste(text)) {
+                    return null;
+                }
+
+                const parsed = window.scriptyParseFountainToBlocks(text);
+                if (!parsed || !parsed.length) return null;
+                if (parsed.length === 1 && parsed[0].type === 'ACTION') return null;
+                return parsed.map(function(block) {
+                    return {
+                        type: block.type || 'ACTION',
+                        content: block.content != null ? block.content : '',
+                        personId: '',
+                        characterName: block.characterName || '',
+                        tags: ''
+                    };
+                });
+            }
+
             function applyBlockTextPaste(pastePayload, pasteBlocks) {
                 const payload = normalizeClipboardPayload(pastePayload, pasteBlocks);
                 if (payload.blocks && payload.blocks.length) {
                     return applyStructuredBlockPaste(payload.text, payload.blocks);
+                }
+
+                const fountainBlocks = blocksFromExternalPasteText(payload.text);
+                if (fountainBlocks && fountainBlocks.length) {
+                    return applyStructuredBlockPaste(payload.text, fountainBlocks);
                 }
 
                 const mutations = getBlockPasteMutations(payload.text);
@@ -2659,6 +2727,179 @@
                 e.preventDefault();
                 readTextFromClipboard().then(function(payload) {
                     return applyBlockTextPaste(payload);
+                });
+            }, true);
+
+            function pasteTextIntoTextareaValue(textarea, pasteText) {
+                const value = textarea.value || '';
+                const start = textarea.selectionStart != null ? textarea.selectionStart : value.length;
+                const end = textarea.selectionEnd != null ? textarea.selectionEnd : value.length;
+                textarea.value = value.slice(0, start) + pasteText + value.slice(end);
+                const caret = start + pasteText.length;
+                try {
+                    textarea.setSelectionRange(caret, caret);
+                } catch (_err) { /* ignore */ }
+                if (typeof window.scriptyGrowTextarea === 'function') {
+                    window.scriptyGrowTextarea(textarea);
+                }
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            function applyExternalPasteInTextarea(textarea, pastePayload) {
+                const payload = normalizeClipboardPayload(pastePayload);
+                let blocks = payload.blocks;
+                if (!blocks || !blocks.length) {
+                    blocks = blocksFromExternalPasteText(payload.text);
+                }
+                if (!blocks || !blocks.length) {
+                    return Promise.resolve(false);
+                }
+
+                const row = findAnyBlockRow(textarea);
+                if (!row) return Promise.resolve(false);
+
+                const first = blocks[0];
+                const trailing = blocks.slice(1);
+                const value = textarea.value || '';
+                const start = textarea.selectionStart != null ? textarea.selectionStart : 0;
+                const end = textarea.selectionEnd != null ? textarea.selectionEnd : 0;
+                const fullyReplacing = value.length === 0 || (start === 0 && end === value.length);
+                const firstContent = first.content != null ? first.content : '';
+                const isCreate = isCreateBlockRow(row);
+
+                if (fullyReplacing) {
+                    textarea.value = firstContent;
+                    try {
+                        textarea.setSelectionRange(firstContent.length, firstContent.length);
+                    } catch (_err) { /* ignore */ }
+                    if (typeof window.scriptyGrowTextarea === 'function') {
+                        window.scriptyGrowTextarea(textarea);
+                    }
+                    if (first.type && isCreate && window.scriptySetCreateRowType) {
+                        window.scriptySetCreateRowType(row, first.type);
+                    }
+                } else {
+                    pasteTextIntoTextareaValue(textarea, firstContent);
+                }
+
+                if (!trailing.length) {
+                    if (fullyReplacing && first.type && !isCreate
+                        && typeof window.scriptyApplyElementType === 'function') {
+                        window.scriptyApplyElementType(first.type, row.getAttribute('data-block-id'));
+                    } else if (typeof window.scriptyApplyFountainDetection === 'function') {
+                        window.scriptyApplyFountainDetection(textarea, { force: fullyReplacing });
+                    }
+                    return Promise.resolve(true);
+                }
+
+                // Persist current block, then create remaining typed blocks below.
+                if (isCreate) {
+                    return new Promise(function(resolve) {
+                        const form = textarea.closest('form');
+                        if (!form) {
+                            resolve(false);
+                            return;
+                        }
+                        const url = ensureProjectCreateUrl(form.getAttribute('hx-post') || '/block/createBelowInline');
+                        const body = buildCreateFormPostBody(form);
+                        if (first.type && !body.has('type')) {
+                            body.set('type', first.type);
+                        }
+                        fetch(url, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            credentials: 'same-origin',
+                            body: body.toString()
+                        }).then(function(response) {
+                            return response.text();
+                        }).then(function(html) {
+                            const template = document.createElement('template');
+                            template.innerHTML = html.trim();
+                            const newRows = Array.from(template.content.children);
+                            if (!newRows.length || !row.parentNode) {
+                                resolve(false);
+                                return;
+                            }
+                            row.replaceWith.apply(row, newRows);
+                            if (typeof htmx !== 'undefined') {
+                                newRows.forEach(function(newRow) {
+                                    htmx.process(newRow);
+                                });
+                            }
+                            const savedRow = newRows.find(function(newRow) {
+                                return newRow.hasAttribute('data-block-id');
+                            });
+                            if (!savedRow) {
+                                resolve(false);
+                                return;
+                            }
+                            createTypedBlocksBelowChain(savedRow, trailing).then(function() {
+                                updateUndoRedoButtons(resolveProjectId());
+                                resolve(true);
+                            });
+                        }).catch(function() {
+                            resolve(false);
+                        });
+                    });
+                }
+
+                const blockId = row.getAttribute('data-block-id');
+                const blockContent = row.querySelector('.block-content');
+                if (!blockId || !blockContent) return Promise.resolve(true);
+
+                const personInput = row.querySelector('input[name="personId"]');
+                const mutation = {
+                    blockId: blockId,
+                    row: row,
+                    blockContent: blockContent,
+                    content: textarea.value,
+                    personId: personInput && personInput.value ? personInput.value : '',
+                    tags: row.getAttribute('data-tags') || ''
+                };
+                if (fullyReplacing && first.type) {
+                    mutation.type = first.type;
+                    mutation.applyType = true;
+                }
+
+                return saveBlockContentAfterCut(mutation).then(function() {
+                    const savedRow = document.querySelector(
+                        '.block-row[data-block-id="' + blockId + '"], tr[data-block-id="' + blockId + '"]'
+                    ) || row;
+                    return createTypedBlocksBelowChain(savedRow, trailing);
+                }).then(function() {
+                    updateUndoRedoButtons(resolveProjectId());
+                    return true;
+                }).catch(function() {
+                    return false;
+                });
+            }
+
+            document.addEventListener('paste', function(e) {
+                const textarea = e.target && e.target.closest
+                    ? e.target.closest('textarea[name="content"]')
+                    : null;
+                if (!isBlockContentTextarea(textarea)) return;
+                if (!document.querySelector('.project-script')) return;
+
+                const clipboard = e.clipboardData;
+                if (!clipboard) return;
+
+                let structured = null;
+                try {
+                    structured = parseScriptyBlocksPayload(clipboard.getData(SCRIPTY_BLOCKS_MIME));
+                } catch (_err) {
+                    structured = null;
+                }
+                const plain = clipboard.getData('text/plain') || '';
+                const embedded = parseEmbeddedScriptyBlocks(plain);
+                const blocks = structured || embedded.blocks || blocksFromExternalPasteText(embedded.text);
+                if (!blocks || !blocks.length) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+                applyExternalPasteInTextarea(textarea, {
+                    text: embedded.text,
+                    blocks: blocks
                 });
             }, true);
 

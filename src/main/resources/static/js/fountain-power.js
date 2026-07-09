@@ -3,6 +3,7 @@
  * - Tab / Shift+Tab element type cycling
  * - Smart next-element type on Enter
  * - Live Fountain syntax detection (force markers + heuristics)
+ * - Parse multi-line Fountain/plain text into typed blocks (external paste)
  * - Character cue autocomplete from project cast
  * - Scene heading autocomplete from prior scenes
  * - Scene location autocomplete (reuse places from prior headings)
@@ -281,6 +282,213 @@
         if (!/[A-Z]/.test(base)) return false;
         return base === base.toUpperCase();
     }
+
+    /**
+     * Parse plain / Fountain text into typed blocks (mirrors server Fountain import).
+     * Used when pasting text that did not come from Scripty's structured clipboard.
+     */
+    function parseFountainToBlocks(fountainText) {
+        if (fountainText == null || fountainText === '') return [];
+        var lines = String(fountainText).replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+        var blocks = [];
+        var mode = 'ACTION';
+        var pendingCharacter = null;
+        var dialogueBuffer = [];
+        var inBoneyard = false;
+
+        function flushDialogue() {
+            if (!dialogueBuffer.length) return;
+            blocks.push({
+                type: 'DIALOGUE',
+                content: dialogueBuffer.join('\n').trim(),
+                characterName: pendingCharacter || ''
+            });
+            dialogueBuffer = [];
+        }
+
+        function normalizeCharacterName(line) {
+            return line.replace(/\^(\*)?/g, '').replace(/^@/, '').trim();
+        }
+
+        for (var i = 0; i < lines.length; i++) {
+            var rawLine = lines[i];
+            var trimmed = rawLine.trim();
+
+            if (inBoneyard) {
+                if (trimmed.indexOf('*/') !== -1) inBoneyard = false;
+                continue;
+            }
+            if (trimmed.indexOf('/*') === 0) {
+                if (trimmed.indexOf('*/') === -1) inBoneyard = true;
+                continue;
+            }
+
+            if (trimmed.indexOf('[[') === 0 && trimmed.slice(-2) === ']]') {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                blocks.push({
+                    type: 'NOTE',
+                    content: trimmed.slice(2, -2).trim(),
+                    characterName: ''
+                });
+                continue;
+            }
+
+            if (!trimmed) {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                continue;
+            }
+
+            if (/^={3,}$/.test(trimmed)) {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                blocks.push({ type: 'PAGE_BREAK', content: '===', characterName: '' });
+                continue;
+            }
+
+            if (trimmed.charAt(0) === '#') {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                blocks.push({
+                    type: 'SECTION',
+                    content: trimmed.replace(/^#+/, '').trim(),
+                    characterName: ''
+                });
+                continue;
+            }
+
+            if (trimmed.charAt(0) === '=' && trimmed.indexOf('==') !== 0) {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                blocks.push({
+                    type: 'SYNOPSIS',
+                    content: trimmed.slice(1).trim(),
+                    characterName: ''
+                });
+                continue;
+            }
+
+            if (trimmed.charAt(0) === '~') {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                blocks.push({
+                    type: 'LYRICS',
+                    content: trimmed.slice(1).trim(),
+                    characterName: ''
+                });
+                continue;
+            }
+
+            if (trimmed.charAt(0) === '.' && trimmed.indexOf('..') !== 0) {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                blocks.push({
+                    type: 'SCENE',
+                    content: trimmed.slice(1).trim(),
+                    characterName: ''
+                });
+                continue;
+            }
+
+            if (SCENE_HEADING.test(trimmed)) {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                blocks.push({ type: 'SCENE', content: trimmed, characterName: '' });
+                continue;
+            }
+
+            if (trimmed.charAt(0) === '>' && trimmed.slice(-1) === '<' && trimmed.length > 2) {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                blocks.push({
+                    type: 'CENTERED',
+                    content: trimmed.slice(1, -1).trim(),
+                    characterName: ''
+                });
+                continue;
+            }
+
+            if (trimmed.charAt(0) === '>') {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                blocks.push({
+                    type: 'TRANSITION',
+                    content: trimmed.slice(1).trim(),
+                    characterName: ''
+                });
+                continue;
+            }
+
+            if (TRANSITION.test(trimmed)) {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                blocks.push({ type: 'TRANSITION', content: trimmed, characterName: '' });
+                continue;
+            }
+
+            if (SHOT.test(trimmed)) {
+                flushDialogue();
+                mode = 'ACTION';
+                pendingCharacter = null;
+                blocks.push({ type: 'SHOT', content: trimmed, characterName: '' });
+                continue;
+            }
+
+            if ((mode === 'CHARACTER' || mode === 'DIALOGUE') && trimmed.charAt(0) === '(') {
+                flushDialogue();
+                var parenContent = trimmed.slice(-1) === ')'
+                    ? trimmed.slice(1, -1).trim()
+                    : trimmed.slice(1).trim();
+                blocks.push({ type: 'PARENTHETICAL', content: parenContent, characterName: '' });
+                mode = 'DIALOGUE';
+                continue;
+            }
+
+            if (mode === 'ACTION' && isCharacterCueLine(trimmed)) {
+                flushDialogue();
+                pendingCharacter = normalizeCharacterName(trimmed);
+                var cueType = /\^\s*$/.test(trimmed) ? 'DUAL_DIALOGUE' : 'CHARACTER';
+                blocks.push({
+                    type: cueType,
+                    content: pendingCharacter,
+                    characterName: pendingCharacter
+                });
+                mode = 'CHARACTER';
+                continue;
+            }
+
+            if (mode === 'CHARACTER' || mode === 'DIALOGUE') {
+                dialogueBuffer.push(rawLine.replace(/\s+$/, ''));
+                mode = 'DIALOGUE';
+                continue;
+            }
+
+            flushDialogue();
+            pendingCharacter = null;
+            blocks.push({
+                type: 'ACTION',
+                content: trimmed.charAt(0) === '!' ? trimmed.slice(1) : trimmed,
+                characterName: ''
+            });
+            mode = 'ACTION';
+        }
+
+        flushDialogue();
+        return blocks;
+    }
+    window.scriptyParseFountainToBlocks = parseFountainToBlocks;
 
     function applyDetectionToTextarea(textarea, opts) {
         opts = opts || {};

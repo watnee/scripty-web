@@ -5,6 +5,7 @@
  * - Live Fountain syntax detection (force markers + heuristics)
  * - Character cue autocomplete from project cast
  * - Scene heading autocomplete from prior scenes
+ * - Scene time-of-day autocomplete (DAY, NIGHT, …)
  * - Scene / section outline navigator
  */
 (function() {
@@ -28,6 +29,20 @@
         { name: 'INT./EXT. ' },
         { name: 'I/E. ' }
     ];
+    var SCENE_TIME_SUGGESTIONS = [
+        { name: 'DAY' },
+        { name: 'NIGHT' },
+        { name: 'DAWN' },
+        { name: 'DUSK' },
+        { name: 'MORNING' },
+        { name: 'AFTERNOON' },
+        { name: 'EVENING' },
+        { name: 'CONTINUOUS' },
+        { name: 'LATER' },
+        { name: 'MOMENTS LATER' },
+        { name: 'SAME TIME' },
+        { name: 'THE NEXT DAY' }
+    ];
     var TRANSITION = /^[A-Z][A-Z0-9 ]+ TO:$/;
     var SHOT = /^(?:ANGLE ON|ANOTHER ANGLE|CLOSE ON|CLOSE UP|CLOSEUP|C\.U\.?|CU|POV|INSERT|BACK TO SCENE|BACK TO|TIGHT ON|WIDER(?: SHOT)?|TRACKING|CRANE|AERIAL|ESTABLISHING|FAVOR ON|REVERSE ANGLE)\b.*/i;
 
@@ -36,7 +51,7 @@
     var autocompleteEl = null;
     var autocompleteIndex = -1;
     var autocompleteTextarea = null;
-    var autocompleteKind = null; // 'character' | 'scene'
+    var autocompleteKind = null; // 'character' | 'scene' (includes time-of-day)
     var outlineEl = null;
 
     function projectId() {
@@ -554,16 +569,58 @@
         return entries;
     }
 
+    function parseSceneTimeContext(query) {
+        var raw = String(query || '').replace(/\u00a0/g, ' ');
+        var m = raw.match(/^(.*)\s+-\s*(.*)$/);
+        if (!m) return null;
+        var base = m[1].replace(/\s+$/, '');
+        if (!SCENE_PREFIX.test(base)) return null;
+        // Need a location after the INT./EXT. prefix before offering times
+        if (!/^(?:INT\.?\/EXT\.?|I\/E\.?|INT\.?|EXT\.?|EST\.?)\s+\S/i.test(base)) return null;
+        return { base: base, timeQuery: m[2] || '' };
+    }
+
+    function harvestSceneTimes(entries) {
+        var times = SCENE_TIME_SUGGESTIONS.slice();
+        (entries || []).forEach(function(entry) {
+            var m = String(entry.name || '').match(/\s+-\s+(.+)$/);
+            if (m && m[1].trim()) upsertEntry(times, { name: m[1].trim() });
+        });
+        return times;
+    }
+
+    function filterSceneTimes(query, times) {
+        var q = (query || '').trim().toUpperCase();
+        if (!q) return times.slice(0, 8);
+        // Prefix-only: "NI" should hit NIGHT, not MORNING/EVENING
+        var matches = [];
+        times.forEach(function(entry) {
+            if (entry.name.toUpperCase().indexOf(q) === 0) matches.push(entry);
+        });
+        return matches.slice(0, 8);
+    }
+
+    function buildSceneTimeSuggestions(ctx, entries) {
+        if (!ctx) return [];
+        var times = filterSceneTimes(ctx.timeQuery, harvestSceneTimes(entries));
+        return times.map(function(t) {
+            return { name: ctx.base + ' - ' + t.name };
+        });
+    }
+
     function filterScenes(query, entries) {
         var q = (query || '').trim().toUpperCase();
+        var timeCtx = parseSceneTimeContext(query);
         var prefixMatches = filterCharacters(q, SCENE_PREFIX_SUGGESTIONS);
         // Drop prefix suggestions once the query already looks like a full heading
-        if (SCENE_HEADING.test(query.trim()) || (q.length > 4 && /\s/.test(q))) {
+        // or the writer is filling in time-of-day after " - "
+        if (timeCtx || SCENE_HEADING.test(query.trim()) || (q.length > 4 && /\s/.test(q))) {
             prefixMatches = [];
         }
+        var timeMatches = buildSceneTimeSuggestions(timeCtx, entries);
         var sceneMatches = filterCharacters(q, entries);
         var combined = [];
-        prefixMatches.concat(sceneMatches).forEach(function(entry) {
+        timeMatches.concat(prefixMatches).concat(sceneMatches).forEach(function(entry) {
             upsertEntry(combined, entry);
         });
         return combined.slice(0, 8);

@@ -29,16 +29,19 @@ public class BlockServiceImpl implements BlockService {
     private final PersonRepository personRepository;
     private final ProjectRepository projectRepository;
     private final ProjectActivityService projectActivityService;
+    private final ProjectUndoRedoService projectUndoRedoService;
 
     @Autowired
     public BlockServiceImpl(BlockRepository blockRepository,
                             PersonRepository personRepository,
                             ProjectRepository projectRepository,
-                            ProjectActivityService projectActivityService) {
+                            ProjectActivityService projectActivityService,
+                            @org.springframework.context.annotation.Lazy ProjectUndoRedoService projectUndoRedoService) {
         this.blockRepository = blockRepository;
         this.personRepository = personRepository;
         this.projectRepository = projectRepository;
         this.projectActivityService = projectActivityService;
+        this.projectUndoRedoService = projectUndoRedoService;
     }
 
     @Override
@@ -671,6 +674,7 @@ public class BlockServiceImpl implements BlockService {
             return;
         }
 
+        java.util.Set<Integer> touchedProjectIds = new java.util.HashSet<>();
         for (Integer id : ids) {
             Block block = blockRepository.findById(id).orElse(null);
             if (block != null) {
@@ -701,8 +705,13 @@ public class BlockServiceImpl implements BlockService {
 
                 block.setTags(String.join(", ", combinedTags));
                 blockRepository.save(block);
-                recordScriptEdited(block.getProject());
+                if (block.getProject() != null) {
+                    touchedProjectIds.add(block.getProject().getId());
+                }
             }
+        }
+        for (Integer projectId : touchedProjectIds) {
+            projectRepository.findById(projectId).ifPresent(this::recordScriptEdited);
         }
     }
 
@@ -714,6 +723,7 @@ public class BlockServiceImpl implements BlockService {
         }
         String normalized = type != null && Block.ELEMENT_TYPES.contains(type.toUpperCase())
                 ? type.toUpperCase() : Block.TYPE_ACTION;
+        java.util.Set<Integer> touchedProjectIds = new java.util.HashSet<>();
         for (Integer id : ids) {
             Block block = blockRepository.findById(id).orElse(null);
             if (block != null && !normalized.equals(block.getType())) {
@@ -750,8 +760,13 @@ public class BlockServiceImpl implements BlockService {
                     block.setContent("");
                 }
                 blockRepository.save(block);
-                recordScriptEdited(block.getProject());
+                if (block.getProject() != null) {
+                    touchedProjectIds.add(block.getProject().getId());
+                }
             }
+        }
+        for (Integer projectId : touchedProjectIds) {
+            projectRepository.findById(projectId).ifPresent(this::recordScriptEdited);
         }
     }
 
@@ -763,13 +778,19 @@ public class BlockServiceImpl implements BlockService {
         }
         String normalized = align != null && Block.TEXT_ALIGNS.contains(align.toUpperCase())
                 ? align.toUpperCase() : Block.ALIGN_LEFT;
+        java.util.Set<Integer> touchedProjectIds = new java.util.HashSet<>();
         for (Integer id : ids) {
             Block block = blockRepository.findById(id).orElse(null);
             if (block != null && !normalized.equals(block.getTextAlign())) {
                 block.setTextAlign(normalized);
                 blockRepository.save(block);
-                recordScriptEdited(block.getProject());
+                if (block.getProject() != null) {
+                    touchedProjectIds.add(block.getProject().getId());
+                }
             }
+        }
+        for (Integer projectId : touchedProjectIds) {
+            projectRepository.findById(projectId).ifPresent(this::recordScriptEdited);
         }
     }
 
@@ -783,6 +804,7 @@ public class BlockServiceImpl implements BlockService {
         if (!Block.TEXT_STYLES.contains(normalized)) {
             return;
         }
+        java.util.Set<Integer> touchedProjectIds = new java.util.HashSet<>();
         for (Integer id : ids) {
             Block block = blockRepository.findById(id).orElse(null);
             if (block == null) {
@@ -795,7 +817,12 @@ public class BlockServiceImpl implements BlockService {
                 default -> { continue; }
             }
             blockRepository.save(block);
-            recordScriptEdited(block.getProject());
+            if (block.getProject() != null) {
+                touchedProjectIds.add(block.getProject().getId());
+            }
+        }
+        for (Integer projectId : touchedProjectIds) {
+            projectRepository.findById(projectId).ifPresent(this::recordScriptEdited);
         }
     }
 
@@ -825,6 +852,9 @@ public class BlockServiceImpl implements BlockService {
 
     private void recordScriptEdited(Project project) {
         if (project == null || project.getId() == null) {
+            return;
+        }
+        if (projectUndoRedoService.isRecordingSuppressed()) {
             return;
         }
         projectActivityService.recordForCurrentUser(

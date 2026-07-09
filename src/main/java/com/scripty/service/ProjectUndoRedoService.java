@@ -35,4 +35,7 @@ public interface ProjectUndoRedoService {
     boolean canUndo(Integer projectId);
 
     boolean canRedo(Integer projectId);
+
+    /** True while undo/redo is applying changes (skip duplicate script-edit activity). */
+    boolean isRecordingSuppressed();
 }

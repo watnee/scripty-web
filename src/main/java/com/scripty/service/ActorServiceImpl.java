@@ -6,6 +6,7 @@ import com.scripty.dto.Actor;
 import com.scripty.dto.Audition;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
+import com.scripty.dto.ProjectActivity;
 import com.scripty.repository.ActorRepository;
 import com.scripty.repository.AuditionRepository;
 import com.scripty.repository.PersonRepository;
@@ -39,18 +40,21 @@ public class ActorServiceImpl implements ActorService {
     private final ProjectRepository projectRepository;
     private final AuditionRepository auditionRepository;
     private final ActorHeadshotService actorHeadshotService;
+    private final ProjectActivityService projectActivityService;
 
     @Autowired
     public ActorServiceImpl(ActorRepository actorRepository,
                             PersonRepository personRepository,
                             ProjectRepository projectRepository,
                             AuditionRepository auditionRepository,
-                            ActorHeadshotService actorHeadshotService) {
+                            ActorHeadshotService actorHeadshotService,
+                            ProjectActivityService projectActivityService) {
         this.actorRepository = actorRepository;
         this.personRepository = personRepository;
         this.projectRepository = projectRepository;
         this.auditionRepository = auditionRepository;
         this.actorHeadshotService = actorHeadshotService;
+        this.projectActivityService = projectActivityService;
     }
 
     @Override
@@ -278,26 +282,77 @@ public class ActorServiceImpl implements ActorService {
         actor.setPhone(cmd.getPhone());
         actor.setEmail(cmd.getEmail());
         actor.setProjects(resolveProjects(cmd.getProjectIds()));
-        return actorRepository.save(actor);
+        Actor saved = actorRepository.save(actor);
+        String name = formatActorName(saved);
+        for (Project project : saved.getProjects()) {
+            projectActivityService.recordForCurrentUser(
+                    project.getId(),
+                    ProjectActivity.ACTION_ACTOR_ADDED,
+                    "added actor " + name + " to casting",
+                    ProjectActivity.ENTITY_ACTOR,
+                    saved.getId());
+        }
+        return saved;
     }
 
     @Override
     public Actor saveEditActorCommandModel(EditActorCommandModel cmd) {
         Actor actor = actorRepository.findById(cmd.getId()).orElse(null);
+        Set<Integer> previousProjectIds = projectIds(actor);
         actor.setFirstName(cmd.getFirst());
         actor.setLastName(cmd.getLast());
         actor.setPhone(cmd.getPhone());
         actor.setEmail(cmd.getEmail());
         actor.setProjects(resolveProjects(cmd.getProjectIds()));
         actorRepository.save(actor);
+
+        String name = formatActorName(actor);
+        Set<Integer> currentProjectIds = projectIds(actor);
+        for (Integer projectId : currentProjectIds) {
+            if (!previousProjectIds.contains(projectId)) {
+                projectActivityService.recordForCurrentUser(
+                        projectId,
+                        ProjectActivity.ACTION_ACTOR_ADDED,
+                        "added actor " + name + " to casting",
+                        ProjectActivity.ENTITY_ACTOR,
+                        actor.getId());
+            } else {
+                projectActivityService.recordForCurrentUser(
+                        projectId,
+                        ProjectActivity.ACTION_ACTOR_UPDATED,
+                        "updated actor " + name,
+                        ProjectActivity.ENTITY_ACTOR,
+                        actor.getId());
+            }
+        }
+        for (Integer projectId : previousProjectIds) {
+            if (!currentProjectIds.contains(projectId)) {
+                projectActivityService.recordForCurrentUser(
+                        projectId,
+                        ProjectActivity.ACTION_ACTOR_REMOVED,
+                        "removed actor " + name + " from casting",
+                        ProjectActivity.ENTITY_ACTOR,
+                        actor.getId());
+            }
+        }
         return actor;
     }
 
     @Override
     public Actor deleteActor(Integer id) {
         Actor actor = actorRepository.findByIdWithProjects(id).orElse(null);
+        String name = formatActorName(actor);
+        Set<Integer> linkedProjectIds = projectIds(actor);
         actorHeadshotService.deleteHeadshot(actor);
         actorRepository.delete(actor);
+        for (Integer projectId : linkedProjectIds) {
+            projectActivityService.recordForCurrentUser(
+                    projectId,
+                    ProjectActivity.ACTION_ACTOR_REMOVED,
+                    "removed actor " + name + " from casting",
+                    ProjectActivity.ENTITY_ACTOR,
+                    id);
+        }
         return actor;
     }
 

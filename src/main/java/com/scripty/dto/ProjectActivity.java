@@ -33,6 +33,12 @@ public class ProjectActivity {
     public static final String ACTION_CHARACTER_CREATED = "CHARACTER_CREATED";
     public static final String ACTION_CHARACTER_DELETED = "CHARACTER_DELETED";
     public static final String ACTION_ACTOR_ASSIGNED = "ACTOR_ASSIGNED";
+    public static final String ACTION_ACTOR_ADDED = "ACTOR_ADDED";
+    public static final String ACTION_ACTOR_UPDATED = "ACTOR_UPDATED";
+    public static final String ACTION_ACTOR_REMOVED = "ACTOR_REMOVED";
+    public static final String ACTION_AUDITIONS_UPDATED = "AUDITIONS_UPDATED";
+    public static final String ACTION_SCRIPT_UNDO = "SCRIPT_UNDO";
+    public static final String ACTION_SCRIPT_REDO = "SCRIPT_REDO";
 
     public static final String ENTITY_PROJECT = "PROJECT";
     public static final String ENTITY_BLOCK = "BLOCK";
@@ -40,6 +46,8 @@ public class ProjectActivity {
     public static final String ENTITY_DOCUMENT = "DOCUMENT";
     public static final String ENTITY_INVITATION = "INVITATION";
     public static final String ENTITY_PERSON = "PERSON";
+    public static final String ENTITY_ACTOR = "ACTOR";
+    public static final String ENTITY_AUDITION = "AUDITION";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

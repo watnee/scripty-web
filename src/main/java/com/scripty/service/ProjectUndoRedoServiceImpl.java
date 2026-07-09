@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scripty.dto.Block;
 import com.scripty.dto.Project;
+import com.scripty.dto.ProjectActivity;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.ProjectRepository;
 import jakarta.servlet.http.HttpSession;
@@ -30,6 +31,7 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     private final BlockRepository blockRepository;
     private final ProjectRepository projectRepository;
     private final ObjectMapper objectMapper;
+    private final ProjectActivityService projectActivityService;
 
     private final ThreadLocal<Boolean> suppressRecording = ThreadLocal.withInitial(() -> false);
 
@@ -38,12 +40,14 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
                                         BlockService blockService,
                                         BlockRepository blockRepository,
                                         ProjectRepository projectRepository,
-                                        ObjectMapper objectMapper) {
+                                        ObjectMapper objectMapper,
+                                        ProjectActivityService projectActivityService) {
         this.projectVersionService = projectVersionService;
         this.blockService = blockService;
         this.blockRepository = blockRepository;
         this.projectRepository = projectRepository;
         this.objectMapper = objectMapper;
+        this.projectActivityService = projectActivityService;
     }
 
     @Override
@@ -150,12 +154,14 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
                     return UndoRedoResult.failed();
                 }
                 saveState(projectId, state);
+                recordUndoRedo(projectId, true);
                 return UndoRedoResult.moveSuccess();
             }
 
             state.redoStack.push(projectVersionService.buildSnapshotJson(projectId));
             projectVersionService.applySnapshotJson(projectId, entry);
             saveState(projectId, state);
+            recordUndoRedo(projectId, true);
             return UndoRedoResult.snapshotSuccess();
         } finally {
             suppressRecording.set(false);
@@ -185,16 +191,27 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
                     return UndoRedoResult.failed();
                 }
                 saveState(projectId, state);
+                recordUndoRedo(projectId, false);
                 return UndoRedoResult.moveSuccess();
             }
 
             state.undoStack.push(projectVersionService.buildSnapshotJson(projectId));
             projectVersionService.applySnapshotJson(projectId, entry);
             saveState(projectId, state);
+            recordUndoRedo(projectId, false);
             return UndoRedoResult.snapshotSuccess();
         } finally {
             suppressRecording.set(false);
         }
+    }
+
+    private void recordUndoRedo(Integer projectId, boolean undo) {
+        projectActivityService.recordForCurrentUser(
+                projectId,
+                undo ? ProjectActivity.ACTION_SCRIPT_UNDO : ProjectActivity.ACTION_SCRIPT_REDO,
+                undo ? "undid a script change" : "redid a script change",
+                ProjectActivity.ENTITY_BLOCK,
+                null);
     }
 
     @Override
@@ -205,6 +222,11 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     @Override
     public boolean canRedo(Integer projectId) {
         return projectId != null && !getState(projectId).redoStack.isEmpty();
+    }
+
+    @Override
+    public boolean isRecordingSuppressed() {
+        return Boolean.TRUE.equals(suppressRecording.get());
     }
 
     private String encodeMoveEntry(int blockId, int fromOrder, int toOrder) {

@@ -172,7 +172,7 @@ public class PdfExportServiceImpl implements PdfExportService {
                 p.setSpacingAfter(ELEMENT_SPACING);
                 document.add(p);
             }
-            case Block.TYPE_ACTION, Block.TYPE_LYRICS -> {
+            case Block.TYPE_ACTION, Block.TYPE_TEXT, Block.TYPE_LYRICS -> {
                 int flags = styleFlags(block, Block.TYPE_LYRICS.equals(type) ? Font.ITALIC : Font.NORMAL);
                 Paragraph p = styledParagraph(content, flags);
                 p.setSpacingBefore(ELEMENT_SPACING);

@@ -18,6 +18,7 @@ public class Block {
     // Fountain screenplay element types
     public static final String TYPE_SCENE = "SCENE";
     public static final String TYPE_ACTION = "ACTION";
+    public static final String TYPE_TEXT = "TEXT";
     public static final String TYPE_CHARACTER = "CHARACTER";
     public static final String TYPE_DIALOGUE = "DIALOGUE";
     public static final String TYPE_DUAL_DIALOGUE = "DUAL_DIALOGUE";
@@ -50,7 +51,7 @@ public class Block {
             TYPE_CHARACTER, TYPE_DUAL_DIALOGUE);
 
     public static final java.util.Set<String> ELEMENT_TYPES = java.util.Set.of(
-            TYPE_SCENE, TYPE_ACTION, TYPE_CHARACTER, TYPE_DIALOGUE, TYPE_DUAL_DIALOGUE,
+            TYPE_SCENE, TYPE_ACTION, TYPE_TEXT, TYPE_CHARACTER, TYPE_DIALOGUE, TYPE_DUAL_DIALOGUE,
             TYPE_PARENTHETICAL, TYPE_TRANSITION, TYPE_SHOT, TYPE_LYRICS, TYPE_CENTERED,
             TYPE_SECTION, TYPE_SYNOPSIS, TYPE_NOTE, TYPE_PAGE_BREAK);
 
@@ -65,6 +66,7 @@ public class Block {
         return switch (type) {
             case TYPE_SCENE -> "Scene";
             case TYPE_ACTION -> "Action";
+            case TYPE_TEXT -> "Text";
             case TYPE_CHARACTER -> "Character";
             case TYPE_DIALOGUE -> "Dialogue";
             case TYPE_DUAL_DIALOGUE -> "Dual";

@@ -61,6 +61,11 @@ public class FountainExportServiceImpl implements FountainExportService {
                     appendBlankLine(sb);
                     appendAction(sb, content, block);
                 }
+                case Block.TYPE_TEXT -> {
+                    activeCharacter = null;
+                    appendBlankLine(sb);
+                    appendLine(sb, applyEmphasis(content, block));
+                }
                 case Block.TYPE_CHARACTER -> {
                     String characterName = block.getPerson() != null ? block.getPerson().getName() : content;
                     if (characterName != null && !characterName.isBlank()) {

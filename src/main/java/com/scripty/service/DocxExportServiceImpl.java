@@ -203,7 +203,7 @@ public class DocxExportServiceImpl implements DocxExportService {
                 XWPFParagraph p = bodyParagraph(document);
                 addRun(p, content.trim().toUpperCase(Locale.ROOT), styleFlags(block, Font.BOLD));
             }
-            case Block.TYPE_ACTION -> {
+            case Block.TYPE_ACTION, Block.TYPE_TEXT -> {
                 XWPFParagraph p = bodyParagraph(document);
                 addMultilineRun(p, content, styleFlags(block, Font.NORMAL));
             }

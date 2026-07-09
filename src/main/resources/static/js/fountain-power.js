@@ -27,7 +27,7 @@
         '</svg></span>';
 
     var TAB_CYCLE = [
-        'SCENE', 'ACTION', 'CHARACTER', 'DIALOGUE', 'PARENTHETICAL',
+        'SCENE', 'ACTION', 'TEXT', 'CHARACTER', 'DIALOGUE', 'PARENTHETICAL',
         'TRANSITION', 'SHOT', 'DUAL_DIALOGUE', 'LYRICS', 'CENTERED',
         'SECTION', 'SYNOPSIS', 'NOTE', 'PAGE_BREAK'
     ];

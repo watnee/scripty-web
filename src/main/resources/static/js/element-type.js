@@ -16,6 +16,7 @@
     var TYPE_LABELS = {
         SCENE: 'Scene',
         ACTION: 'Action',
+        TEXT: 'Text',
         CHARACTER: 'Character',
         DIALOGUE: 'Dialogue',
         DUAL_DIALOGUE: 'Dual',

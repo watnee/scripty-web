@@ -9,6 +9,7 @@
  * - Scene time-of-day autocomplete (DAY, NIGHT, …)
  * - Scene / section / synopsis / bookmark outline navigator
  * - Character list sidebar
+ * - Location list sidebar
  */
 (function() {
     'use strict';
@@ -64,6 +65,7 @@
     var autocompleteKind = null; // 'character' | 'scene' (includes location + time-of-day)
     var outlineEl = null;
     var characterListEl = null;
+    var locationListEl = null;
 
     function projectId() {
         if (typeof window.scriptyResolveProjectId === 'function') {
@@ -1037,6 +1039,7 @@
         } catch (err) { /* ignore */ }
         if (open) {
             if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
+            if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
             syncOutlineTabs();
             refreshOutline();
         }
@@ -1134,6 +1137,7 @@
         if (open) {
             // Avoid stacking both side panels on the right.
             if (outlineEl && !outlineEl.hidden) setOutlineOpen(false);
+            if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
             refreshCharacterList();
         }
         requestAnimationFrame(function() {
@@ -1150,6 +1154,144 @@
         setCharacterListOpen(!!el.hidden);
     }
     window.scriptyToggleFountainCharacterList = toggleCharacterList;
+
+    // --- Location list sidebar ---
+
+    function collectLocationItems() {
+        var locations = [];
+        document.querySelectorAll('.project-script .block-row[data-block-type="SCENE"][data-block-id]').forEach(function(row) {
+            var textEl = row.querySelector('.script-block-text, textarea[name="content"]');
+            var heading = textEl
+                ? (textEl.value != null ? textEl.value : textEl.textContent)
+                : '';
+            heading = String(heading || '').replace(/^\.\s*/, '').replace(/\u00a0/g, ' ').trim();
+            var loc = extractSceneLocation(heading);
+            if (!loc) return;
+            var upper = loc.toUpperCase();
+            for (var i = 0; i < locations.length; i++) {
+                if (locations[i].name.toUpperCase() === upper) {
+                    if (!locations[i].id) {
+                        locations[i].id = row.getAttribute('data-block-id');
+                    }
+                    locations[i].count += 1;
+                    return;
+                }
+            }
+            locations.push({
+                name: loc,
+                id: row.getAttribute('data-block-id'),
+                count: 1
+            });
+        });
+        locations.sort(function(a, b) {
+            return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+        });
+        return locations;
+    }
+
+    function ensureLocationList() {
+        if (locationListEl) return locationListEl;
+        locationListEl = document.createElement('aside');
+        locationListEl.id = 'fountain-location-list';
+        locationListEl.className = 'fountain-location-list hide-in-reader-view sidebar menu';
+        locationListEl.setAttribute('aria-label', 'Location list');
+        locationListEl.innerHTML =
+            '<div class="fountain-location-list-header">' +
+            '<strong>Locations</strong>' +
+            '<button type="button" class="fountain-location-list-close" aria-label="Close location list" title="Close location list">×</button>' +
+            '</div>' +
+            '<ol class="fountain-location-list-items"></ol>' +
+            '<p class="fountain-location-list-empty muted">No locations yet.</p>';
+        document.body.appendChild(locationListEl);
+
+        locationListEl.querySelector('.fountain-location-list-close').addEventListener('click', function() {
+            setLocationListOpen(false);
+        });
+        locationListEl.addEventListener('click', function(e) {
+            var link = e.target.closest('[data-location-block-id]');
+            if (!link || !locationListEl.contains(link)) return;
+            e.preventDefault();
+            var id = link.getAttribute('data-location-block-id');
+            var row = document.querySelector('.block-row[data-block-id="' + id + '"]');
+            if (!row) return;
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.classList.add('fountain-outline-flash');
+            setTimeout(function() {
+                row.classList.remove('fountain-outline-flash');
+            }, 1200);
+            var content = row.querySelector('.block-content');
+            if (content && !window.scriptyBlockEditLocked) {
+                content.click();
+            }
+        });
+        return locationListEl;
+    }
+
+    function locationListItemHtml(entry) {
+        var name = escapeHtml(entry.name);
+        var count = entry.count > 1
+            ? '<span class="fountain-location-list-count">' + entry.count + '</span>'
+            : '';
+        if (entry.id != null) {
+            return '<li class="fountain-location-list-item">' +
+                '<a href="#block-' + escapeHtml(String(entry.id)) + '" data-location-block-id="' +
+                escapeHtml(String(entry.id)) + '">' +
+                '<span class="fountain-location-list-name">' + name + '</span>' +
+                count +
+                '</a></li>';
+        }
+        return '<li class="fountain-location-list-item">' +
+            '<span class="fountain-location-list-name">' + name + '</span>' +
+            count +
+            '</li>';
+    }
+
+    function refreshLocationList() {
+        if (!locationListEl || locationListEl.hidden) return;
+        var list = locationListEl.querySelector('.fountain-location-list-items');
+        var empty = locationListEl.querySelector('.fountain-location-list-empty');
+        var entries = collectLocationItems();
+        if (!entries.length) {
+            list.innerHTML = '';
+            empty.hidden = false;
+            return;
+        }
+        empty.hidden = true;
+        list.innerHTML = entries.map(locationListItemHtml).join('');
+    }
+    window.scriptyRefreshFountainLocationList = refreshLocationList;
+
+    function setLocationListOpen(open) {
+        var el = ensureLocationList();
+        el.hidden = !open;
+        document.documentElement.classList.toggle('fountain-location-list-open', open);
+        var btn = document.getElementById('nav-location-list-toggle');
+        if (btn) {
+            btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+            btn.classList.toggle('is-active', open);
+        }
+        try {
+            localStorage.setItem('scripty-fountain-location-list', open ? 'true' : 'false');
+        } catch (err) { /* ignore */ }
+        if (open) {
+            if (outlineEl && !outlineEl.hidden) setOutlineOpen(false);
+            if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
+            refreshLocationList();
+        }
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                if (typeof window.scriptyRepositionBlockCaretPreview === 'function') {
+                    window.scriptyRepositionBlockCaretPreview();
+                }
+            });
+        });
+    }
+
+    function toggleLocationList() {
+        var el = ensureLocationList();
+        setLocationListOpen(!!el.hidden);
+    }
+    window.scriptyToggleFountainLocationList = toggleLocationList;
 
     // --- Event wiring ---
 
@@ -1277,6 +1419,7 @@
         characterCache.loadedAt = 0;
         refreshOutline();
         refreshCharacterList();
+        refreshLocationList();
         applyPendingCreateType();
     });
 
@@ -1326,6 +1469,7 @@
         if (needsOutline) {
             refreshOutline();
             refreshCharacterList();
+            refreshLocationList();
         }
     });
 
@@ -1373,6 +1517,25 @@
         else ensureCharacterList().hidden = true;
     }
 
+    function initLocationListButton() {
+        var btn = document.getElementById('nav-location-list-toggle');
+        if (!btn) return;
+        btn.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+        });
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleLocationList();
+        });
+        var preferOpen = false;
+        try {
+            preferOpen = localStorage.getItem('scripty-fountain-location-list') === 'true';
+        } catch (err) { /* ignore */ }
+        if (preferOpen) setLocationListOpen(true);
+        else ensureLocationList().hidden = true;
+    }
+
     // Expose apply helper used by Tab cycling when element-type.js is present
     window.scriptyApplyFountainType = function(type, preferredBlockId) {
         if (typeof window.scriptyApplyElementType === 'function') {
@@ -1389,12 +1552,14 @@
             startObserver();
             initOutlineButton();
             initCharacterListButton();
+            initLocationListButton();
             loadCharacters(true);
         });
     } else {
         startObserver();
         initOutlineButton();
         initCharacterListButton();
+        initLocationListButton();
         loadCharacters(true);
     }
 })();

@@ -7,6 +7,7 @@
         var projectId = /*[[${viewModel.id}]]*/ 0;
         var canEditScript = /*[[${canEditScript == null or canEditScript}]]*/ true;
         window.scriptyCanEditScript = canEditScript;
+        window.scriptyProjectId = projectId || null;
         window.scriptyProjectSongs = /*[[${projectSongs}]]*/ [];
         if (!Array.isArray(window.scriptyProjectSongs)) {
             window.scriptyProjectSongs = [];

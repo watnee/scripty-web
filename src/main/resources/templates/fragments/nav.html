@@ -647,17 +647,26 @@
         }
 
         function createEmptyBlockBelow(row, options) {
-            if (!row || !row.hasAttribute('data-block-id')) return;
-            if (row.dataset.openingCreateBelow === 'true') return;
+            if (!row || !row.hasAttribute('data-block-id')) {
+                if (options && options.onDone) options.onDone();
+                return;
+            }
+            if (row.dataset.openingCreateBelow === 'true') {
+                if (options && options.onDone) options.onDone();
+                return;
+            }
             options = options || {};
             const focusSaved = !!options.focusSaved;
             const openTypeMenu = !!options.openTypeMenu;
+            const onDone = typeof options.onDone === 'function' ? options.onDone : null;
             row.dataset.openingCreateBelow = 'true';
             const blockId = row.getAttribute('data-block-id');
             const fromType = row.getAttribute('data-block-type') || 'ACTION';
             const nextType = (window.scriptyPendingCreateType
                 || (window.scriptyNextFountainType && window.scriptyNextFountainType(fromType))
                 || 'ACTION');
+            // Consume pending type immediately so a second pick cannot reuse it.
+            window.scriptyPendingCreateType = null;
             const body = new URLSearchParams({
                 id: blockId,
                 content: '',
@@ -692,7 +701,11 @@
                 // mid-list gap before the next existing block.
                 const rowsToInsert = (focusSaved && savedRow && !isDuplicateOfAnchor)
                     ? [savedRow]
-                    : (isDuplicateOfAnchor ? [] : newRows);
+                    : (isDuplicateOfAnchor ? [] : newRows.filter(function(newRow) {
+                        // Even without focusSaved, never insert more than one saved
+                        // block from a single create response.
+                        return newRow === savedRow || newRow === createRow;
+                    }));
                 let insertAfter = row;
                 rowsToInsert.forEach(function(newRow) {
                     insertAfter.insertAdjacentElement('afterend', newRow);
@@ -704,16 +717,12 @@
                 dedupeTrailingCreateRows(row.parentNode);
                 ensureTrailingCreateRow(row.parentNode);
                 if (isDuplicateOfAnchor) {
-                    // Server reused the lone empty block. Open the type menu on
-                    // the existing row so the user can still pick a type.
-                    window.scriptyPendingCreateType = null;
                     if (openTypeMenu) {
                         openCreateBelowTypeMenu(row);
                     } else {
                         focusBlockContentEnd(row);
                     }
                 } else if (focusSaved && savedRow) {
-                    window.scriptyPendingCreateType = null;
                     editSavedBlockRow(savedRow, function(editedRow) {
                         if (openTypeMenu) {
                             openCreateBelowTypeMenu(editedRow || savedRow);
@@ -723,7 +732,6 @@
                     if (window.scriptySetCreateRowType) {
                         window.scriptySetCreateRowType(createRow, nextType);
                     }
-                    window.scriptyPendingCreateType = null;
                     focusBlockContentEnd(createRow);
                     if (openTypeMenu) {
                         openCreateBelowTypeMenu(createRow);
@@ -739,6 +747,7 @@
                 /* keep current edit if create fails */
             }).finally(function() {
                 delete row.dataset.openingCreateBelow;
+                if (onDone) onDone();
             });
         }
 
@@ -814,10 +823,12 @@
             options = options || {};
             const focusSaved = !!options.focusSaved;
             const openTypeMenu = !!options.openTypeMenu;
+            const onDone = typeof options.onDone === 'function' ? options.onDone : null;
             if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptySaveCreateBelowOffline) {
                 row.dataset.enterCreatingBelow = 'true';
                 window.scriptySaveCreateBelowOffline(form, row, function() {
                     delete row.dataset.enterCreatingBelow;
+                    if (onDone) onDone();
                 });
                 return;
             }
@@ -835,27 +846,29 @@
                 template.innerHTML = html.trim();
                 const newRows = Array.from(template.content.children);
                 if (newRows.length === 0 || !row.parentNode) return;
-                row.replaceWith.apply(row, newRows);
-                if (typeof htmx !== 'undefined') {
-                    newRows.forEach(function(newRow) {
-                        htmx.process(newRow);
-                    });
-                }
                 const savedRow = newRows.find(function(newRow) {
                     return newRow.hasAttribute('data-block-id');
                 });
                 const createRow = newRows.find(function(newRow) {
                     return !newRow.hasAttribute('data-block-id') && newRow.querySelector('textarea[name="content"]');
                 });
-                // + menu: keep only the saved block under the current position.
+                // Replace the create row with only the new saved block when this
+                // came from the + type menu. The trailing create row is restored
+                // separately so we never leave a second empty mid-list block.
                 if (focusSaved && savedRow) {
-                    newRows.forEach(function(newRow) {
-                        if (newRow !== savedRow && newRow.parentNode) {
-                            newRow.remove();
-                        }
-                    });
+                    row.replaceWith(savedRow);
+                    if (typeof htmx !== 'undefined') {
+                        htmx.process(savedRow);
+                    }
+                } else {
+                    row.replaceWith.apply(row, newRows);
+                    if (typeof htmx !== 'undefined') {
+                        newRows.forEach(function(newRow) {
+                            htmx.process(newRow);
+                        });
+                    }
                 }
-                dedupeTrailingCreateRows(row.parentNode || savedRow && savedRow.parentNode);
+                dedupeTrailingCreateRows(savedRow && savedRow.parentNode);
                 ensureTrailingCreateRow((savedRow && savedRow.parentNode) || row.parentNode);
                 if (focusSaved && savedRow) {
                     window.scriptyPendingCreateType = null;
@@ -892,6 +905,7 @@
                 focusBlockContentEnd(row);
             }).finally(function() {
                 delete row.dataset.enterCreatingBelow;
+                if (onDone) onDone();
             });
         }
 
@@ -911,8 +925,10 @@
             const container = row.closest('.scene-blocks, #table-blocks, tbody');
             if (!container) return false;
             const rowSelector = container.matches('tbody') ? 'tr' : '.block-row';
+            // Ignore the select-all chrome row — it is a .block-row but not editable.
+            const editableRows = container.querySelectorAll(rowSelector + ':not(.project-script-select-row)');
             const savedBlocks = container.querySelectorAll(rowSelector + '[data-block-id]').length;
-            if (savedBlocks === 0 && container.querySelectorAll(rowSelector).length <= 1) return false;
+            if (savedBlocks === 0 && editableRows.length <= 1) return false;
             row.remove();
             return true;
         }
@@ -1002,9 +1018,11 @@
             if (window._scriptyBlockEditGuardsInit) return;
             window._scriptyBlockEditGuardsInit = true;
 
-            // Apply + menu choices on mousedown (not click). Real pointer clicks
-            // blur the empty edit textarea first; empty-guard can then remount the
-            // row and swallow the later click / race the type change.
+            // Order: + adds a block below, then opens the type/song/draft menu
+            // on that new block. Type picks retype the new block (do not create
+            // another). Songs/drafts insert below / replace the empty new block.
+            // Apply menu choices on mousedown so empty-block revert cannot race
+            // the type change after the new empty row is focused.
             document.addEventListener('mousedown', function(e) {
                 if (e.button !== 0) return;
 
@@ -1012,7 +1030,11 @@
                 if (songItem && songItem.closest('.create-below-menu')) {
                     e.preventDefault();
                     e.stopImmediatePropagation();
-                    const row = songItem.closest('.block-row, tr');
+                    const dropdown = songItem.closest('.create-below-menu-dropdown');
+                    const pinnedId = dropdown && dropdown.dataset.createBelowTargetId;
+                    const row = (pinnedId && document.querySelector(
+                        '.block-row[data-block-id="' + pinnedId + '"], tr[data-block-id="' + pinnedId + '"]'
+                    )) || (dropdown && dropdown.closest('.block-row, tr')) || songItem.closest('.block-row, tr');
                     const songId = songItem.getAttribute('data-insert-song-id');
                     closeAllCreateBelowMenus();
                     closeAllBlockDragMenus();
@@ -1026,7 +1048,11 @@
                 if (draftItem && draftItem.closest('.create-below-menu')) {
                     e.preventDefault();
                     e.stopImmediatePropagation();
-                    const row = draftItem.closest('.block-row, tr');
+                    const dropdown = draftItem.closest('.create-below-menu-dropdown');
+                    const pinnedId = dropdown && dropdown.dataset.createBelowTargetId;
+                    const row = (pinnedId && document.querySelector(
+                        '.block-row[data-block-id="' + pinnedId + '"], tr[data-block-id="' + pinnedId + '"]'
+                    )) || (dropdown && dropdown.closest('.block-row, tr')) || draftItem.closest('.block-row, tr');
                     const draftId = draftItem.getAttribute('data-insert-draft-id');
                     closeAllCreateBelowMenus();
                     closeAllBlockDragMenus();
@@ -1041,8 +1067,20 @@
                 if (typeItem && typeItem.closest('.create-below-menu')) {
                     e.preventDefault();
                     e.stopImmediatePropagation();
-                    const row = typeItem.closest('.block-row, tr');
+                    const dropdown = typeItem.closest('.create-below-menu-dropdown');
+                    // Prefer the row the menu was opened on (pinned at open), not
+                    // a stale active/source row from the + click.
+                    const pinnedId = dropdown && dropdown.dataset.createBelowTargetId;
+                    let row = (pinnedId && document.querySelector(
+                        '.block-row[data-block-id="' + pinnedId + '"], tr[data-block-id="' + pinnedId + '"]'
+                    )) || (dropdown && dropdown.closest('.block-row, tr')) || typeItem.closest('.block-row, tr');
                     const type = typeItem.getAttribute('data-create-type');
+                    // Hold empty-block revert before closing the menu — closing
+                    // removes .open and would otherwise remount the new empty row
+                    // before setTypeAndContent runs.
+                    if (window.scriptyBeginBlockTypeChangeWait) {
+                        window.scriptyBeginBlockTypeChangeWait();
+                    }
                     closeAllCreateBelowMenus();
                     closeAllBlockDragMenus();
                     applyTypeToExistingBlock(row, type);
@@ -1050,7 +1088,6 @@
                 }
             }, true);
 
-            // "+" creates a block below, then opens the type/action menu on the new block.
             document.addEventListener('click', function(e) {
                 // Menu choices are handled on mousedown; ignore their click.
                 if (e.target.closest('.create-below-menu [data-create-type], .create-below-menu [data-insert-song-id], .create-below-menu [data-insert-draft-id]')) {
@@ -3570,6 +3607,20 @@
                 if (preview && preview.row && preview.row.isConnected) {
                     return preview.row;
                 }
+                // Prefer the row whose + type menu is open (the new block), not
+                // an earlier source row that still has controls revealed.
+                const openCreate = document.querySelector('.create-below-menu-dropdown.open');
+                if (openCreate) {
+                    const pinnedId = openCreate.dataset.createBelowTargetId;
+                    if (pinnedId) {
+                        const pinned = document.querySelector(
+                            '.block-row[data-block-id="' + pinnedId + '"], tr[data-block-id="' + pinnedId + '"]'
+                        );
+                        if (pinned) return pinned;
+                    }
+                    const openRow = openCreate.closest('.block-row[data-block-id], tr[data-block-id]');
+                    if (openRow) return openRow;
+                }
                 return document.querySelector('.block-row.block-controls-revealed[data-block-id], tr.block-controls-revealed[data-block-id]');
             }
 
@@ -4495,6 +4546,7 @@
         function closeAllCreateBelowMenus() {
             document.querySelectorAll('.create-below-menu-dropdown.open').forEach(function(dropdown) {
                 dropdown.classList.remove('open');
+                delete dropdown.dataset.createBelowTargetId;
                 var toggle = dropdown.querySelector('.create-below-menu-toggle');
                 if (toggle) toggle.setAttribute('aria-expanded', 'false');
             });
@@ -4515,6 +4567,15 @@
                 .replace(/>/g, '&gt;');
         }
 
+        function createBelowManageLinkHtml(options) {
+            var projectId = window.scriptyProjectId;
+            if (!options || !options.manageHref || !projectId) return '';
+            return '<a class="nav-dropdown-item create-below-docs-manage" role="menuitem" href="' +
+                escapeCreateBelowAttr(options.manageHref + encodeURIComponent(projectId)) + '">' +
+                escapeCreateBelowText(options.manageLabel || 'Go to list…') +
+                '</a>';
+        }
+
         function populateCreateBelowDocumentSection(dropdown, options) {
             if (!dropdown || !options) return;
             var section = dropdown.querySelector(options.sectionSelector);
@@ -4529,13 +4590,16 @@
                 return;
             }
 
+            section.hidden = false;
             if (!items.length) {
-                section.hidden = true;
-                list.innerHTML = '';
+                var emptyHtml = '<div class="create-below-docs-empty" role="presentation">' +
+                    escapeCreateBelowText(options.emptyLabel || 'None yet') +
+                    '</div>';
+                emptyHtml += createBelowManageLinkHtml(options);
+                list.innerHTML = emptyHtml;
                 return;
             }
 
-            section.hidden = false;
             list.innerHTML = items.map(function(item) {
                 var id = item && item.id != null ? item.id : '';
                 var title = (item && item.title) ? item.title : options.untitledLabel;
@@ -4544,7 +4608,7 @@
                     'title="' + escapeCreateBelowAttr(options.insertTitle) + '">' +
                     escapeCreateBelowText(title) +
                     '</button>';
-            }).join('');
+            }).join('') + createBelowManageLinkHtml(options);
         }
 
         function populateCreateBelowSongs(dropdown) {
@@ -4554,7 +4618,10 @@
                 items: window.scriptyProjectSongs,
                 untitledLabel: 'Untitled song',
                 idAttr: 'data-insert-song-id',
-                insertTitle: 'Insert as Lyrics blocks below'
+                insertTitle: 'Insert as Lyrics blocks below',
+                emptyLabel: 'No songs yet',
+                manageHref: '/project/documents/songs?projectId=',
+                manageLabel: 'Go to songs…'
             });
         }
 
@@ -4565,15 +4632,24 @@
                 items: window.scriptyProjectDrafts,
                 untitledLabel: 'Untitled draft',
                 idAttr: 'data-insert-draft-id',
-                insertTitle: 'Insert as Note blocks below'
+                insertTitle: 'Insert as Note blocks below',
+                emptyLabel: 'No drafts yet',
+                manageHref: '/project/documents/drafts?projectId=',
+                manageLabel: 'Go to drafts…'
             });
         }
 
-        function resolveAfterBlockIdForDocumentInsert(row) {
+        function isBlockRowContentEmpty(row) {
+            if (!row) return false;
+            var textarea = row.querySelector('textarea[name="content"]');
+            if (textarea) return textarea.value.trim() === '';
+            var textEl = row.querySelector('.script-block-text');
+            if (!textEl) return false;
+            return (textEl.textContent || '').replace(/\u00a0/g, ' ').trim() === '';
+        }
+
+        function findPreviousSavedBlockId(row) {
             if (!row) return null;
-            if (row.hasAttribute('data-block-id')) {
-                return row.getAttribute('data-block-id');
-            }
             var prev = row.previousElementSibling;
             while (prev) {
                 if (prev.hasAttribute('data-block-id')) {
@@ -4584,14 +4660,22 @@
             return null;
         }
 
-        function insertDocumentBelowBlock(row, documentId, options) {
-            if (!documentId || window.scriptyCanEditScript === false) return;
-            options = options || {};
-            if (window.scriptyIsOffline && window.scriptyIsOffline()) {
-                window.alert(options.offlineMessage || 'Connect to insert into the script.');
-                return;
+        function resolveAfterBlockIdForDocumentInsert(row) {
+            if (!row) return null;
+            // + creates an empty block first, then opens this menu. Inserting a
+            // song/draft should replace that placeholder, not leave it behind.
+            if (row.hasAttribute('data-block-id') && isBlockRowContentEmpty(row)) {
+                var previousId = findPreviousSavedBlockId(row);
+                if (previousId) return previousId;
             }
-            var afterBlockId = resolveAfterBlockIdForDocumentInsert(row);
+            if (row.hasAttribute('data-block-id')) {
+                return row.getAttribute('data-block-id');
+            }
+            return findPreviousSavedBlockId(row);
+        }
+
+        function submitDocumentInsertForm(documentId, afterBlockId, options) {
+            options = options || {};
             var form = document.createElement('form');
             form.method = 'POST';
             form.action = '/project/documents/insert';
@@ -4623,6 +4707,42 @@
             form.submit();
         }
 
+        function insertDocumentBelowBlock(row, documentId, options) {
+            if (!documentId || window.scriptyCanEditScript === false) return;
+            options = options || {};
+            if (window.scriptyIsOffline && window.scriptyIsOffline()) {
+                window.alert(options.offlineMessage || 'Connect to insert into the script.');
+                return;
+            }
+
+            var replaceEmptyId = null;
+            var afterBlockId = resolveAfterBlockIdForDocumentInsert(row);
+            if (row && row.hasAttribute('data-block-id') && isBlockRowContentEmpty(row)) {
+                var emptyId = row.getAttribute('data-block-id');
+                // Only delete the placeholder when we can insert after a previous
+                // block. If this is the lone empty block, the server fills it.
+                if (afterBlockId && afterBlockId !== emptyId) {
+                    replaceEmptyId = emptyId;
+                }
+            }
+
+            if (!replaceEmptyId) {
+                submitDocumentInsertForm(documentId, afterBlockId, options);
+                return;
+            }
+
+            fetch('/block/deleteInline?id=' + encodeURIComponent(replaceEmptyId), {
+                method: 'POST',
+                credentials: 'same-origin'
+            }).then(function(response) {
+                if (!response.ok) throw new Error('delete failed');
+                submitDocumentInsertForm(documentId, afterBlockId, options);
+            }).catch(function() {
+                // Fall back to inserting after the empty row if cleanup fails.
+                submitDocumentInsertForm(documentId, replaceEmptyId, options);
+            });
+        }
+
         function resolveSmartCreateType(row) {
             const fromType = (row && row.getAttribute('data-block-type')) || 'ACTION';
             if (window.scriptyNextFountainType) {
@@ -4638,10 +4758,21 @@
                 if (!row.isConnected) return;
                 closeAllCreateBelowMenus();
                 closeAllBlockDragMenus();
+                // Only the target row should look "active" — otherwise
+                // scriptyGetActiveBlockId / toolbar type picks hit the + source
+                // (first .block-controls-revealed in DOM order).
+                clearRevealedBlockControls();
                 row.classList.add('block-controls-revealed');
+                rememberActiveBlockRow(row);
                 const dropdown = row.querySelector('.create-below-menu-dropdown');
                 const toggle = row.querySelector('.create-below-menu-toggle');
                 if (!dropdown || !toggle) return;
+                const targetId = row.getAttribute('data-block-id');
+                if (targetId) {
+                    dropdown.dataset.createBelowTargetId = targetId;
+                } else {
+                    delete dropdown.dataset.createBelowTargetId;
+                }
                 populateCreateBelowSongs(dropdown);
                 populateCreateBelowDrafts(dropdown);
                 dropdown.classList.add('open');
@@ -4669,6 +4800,7 @@
             }
             const blockId = row.getAttribute('data-block-id');
             if (!blockId) return;
+            rememberActiveBlockRow(row);
             // Optimistic UI so the pick feels instant even if the save is slow.
             const blockContent = row.querySelector('.block-content');
             if (blockContent && typeof window.scriptyApplyBlockTypeClass === 'function') {
@@ -4689,12 +4821,19 @@
             focusBlockContentEnd(row);
         }
 
-        /** "+" button: insert a saved block below the current row, then open the
-         *  type/action menu on that new block. */
+        /** "+" button: insert one saved block below the current row, then open
+         *  the type/song/draft menu on that new block. */
         function addBlockBelowCurrent(row, options) {
             if (!row) return;
+            if (row.dataset.openingCreateBelow === 'true') return;
+            if (window.scriptyCreateBelowInFlight) return;
             options = options || {};
             const openTypeMenu = options.openTypeMenu !== false;
+            window.scriptyCreateBelowInFlight = true;
+            var clearInFlight = function() {
+                window.scriptyCreateBelowInFlight = false;
+            };
+
             if (isCreateBlockRow(row)) {
                 const type = resolveSmartCreateType(row);
                 if (window.scriptySetCreateRowType) {
@@ -4704,39 +4843,41 @@
                 if (ta && window.scriptyCreateBlockFromCreateRow) {
                     window.scriptyCreateBlockFromCreateRow(ta, {
                         focusSaved: true,
-                        openTypeMenu: openTypeMenu
+                        openTypeMenu: openTypeMenu,
+                        onDone: clearInFlight
                     });
                 } else {
+                    clearInFlight();
                     focusBlockContentEnd(row);
                     if (openTypeMenu) openCreateBelowTypeMenu(row);
                 }
                 return;
             }
-            if (!row.hasAttribute('data-block-id')) return;
-            window.scriptyPendingCreateType = resolveSmartCreateType(row);
-            const nextRow = row.nextElementSibling;
-            if (isCreateBlockRow(nextRow)) {
-                if (window.scriptySetCreateRowType) {
-                    window.scriptySetCreateRowType(nextRow, window.scriptyPendingCreateType);
-                }
-                const nextTa = nextRow.querySelector('textarea[name="content"]');
-                if (nextTa && window.scriptyCreateBlockFromCreateRow) {
-                    window.scriptyPendingCreateType = null;
-                    window.scriptyCreateBlockFromCreateRow(nextTa, {
-                        focusSaved: true,
-                        openTypeMenu: openTypeMenu
-                    });
-                    return;
-                }
+            if (!row.hasAttribute('data-block-id')) {
+                clearInFlight();
+                return;
             }
+            // Always insert a distinct new saved block under the clicked row.
+            // Do not save the trailing create-row in place — that response can
+            // double-insert a companion create row.
+            window.scriptyPendingCreateType = resolveSmartCreateType(row);
             createEmptyBlockBelow(row, {
                 focusSaved: true,
-                openTypeMenu: openTypeMenu
+                openTypeMenu: openTypeMenu,
+                onDone: clearInFlight
             });
         }
 
         function createBlockWithType(row, type) {
             if (!row || !type) return;
+            if (row.dataset.openingCreateBelow === 'true') return;
+            if (window.scriptyCreateBelowInFlight) return;
+            window.scriptyCreateBelowInFlight = true;
+            var clearInFlight = function() {
+                window.scriptyCreateBelowInFlight = false;
+            };
+
+            // Trailing create row: set type, then save as one new block.
             if (isCreateBlockRow(row)) {
                 if (window.scriptySetCreateRowType) {
                     window.scriptySetCreateRowType(row, type);
@@ -4752,27 +4893,29 @@
                 }
                 const ta = row.querySelector('textarea[name="content"]');
                 if (ta && window.scriptyCreateBlockFromCreateRow) {
-                    window.scriptyCreateBlockFromCreateRow(ta, { focusSaved: true });
+                    window.scriptyCreateBlockFromCreateRow(ta, {
+                        focusSaved: true,
+                        onDone: clearInFlight
+                    });
                 } else {
+                    clearInFlight();
                     focusBlockContentEnd(row);
                 }
                 return;
             }
-            if (!row.hasAttribute('data-block-id')) return;
-            window.scriptyPendingCreateType = type;
-            const nextRow = row.nextElementSibling;
-            if (isCreateBlockRow(nextRow)) {
-                if (window.scriptySetCreateRowType) {
-                    window.scriptySetCreateRowType(nextRow, type);
-                }
-                const nextTa = nextRow.querySelector('textarea[name="content"]');
-                if (nextTa && window.scriptyCreateBlockFromCreateRow) {
-                    window.scriptyPendingCreateType = null;
-                    window.scriptyCreateBlockFromCreateRow(nextTa, { focusSaved: true });
-                    return;
-                }
+            if (!row.hasAttribute('data-block-id')) {
+                clearInFlight();
+                return;
             }
-            createEmptyBlockBelow(row, { focusSaved: true });
+
+            // Always create via createEmptyBlockBelow (inserts only the new saved
+            // row). Do not save the trailing create-row in place — that response
+            // includes a companion create row and was easy to double-insert.
+            window.scriptyPendingCreateType = type;
+            createEmptyBlockBelow(row, {
+                focusSaved: true,
+                onDone: clearInFlight
+            });
         }
 
         function removeUnsavedBlockRow(row) {
@@ -4780,8 +4923,10 @@
             var container = row.closest('.scene-blocks, #table-blocks, tbody');
             if (!container) return false;
             var rowSelector = container.matches('tbody') ? 'tr' : '.block-row';
+            // Ignore the select-all chrome row — it is a .block-row but not editable.
+            var editableRows = container.querySelectorAll(rowSelector + ':not(.project-script-select-row)');
             var savedBlocks = container.querySelectorAll(rowSelector + '[data-block-id]').length;
-            if (savedBlocks === 0 && container.querySelectorAll(rowSelector).length <= 1) return false;
+            if (savedBlocks === 0 && editableRows.length <= 1) return false;
             row.remove();
             return true;
         }

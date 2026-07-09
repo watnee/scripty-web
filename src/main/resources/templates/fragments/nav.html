@@ -770,15 +770,39 @@
             return true;
         }
 
+        function isCreateBlockRow(row) {
+            return !!(row &&
+                !row.hasAttribute('data-block-id') &&
+                !row.classList.contains('project-script-select-row') &&
+                (row.classList.contains('block-row') || row.tagName === 'TR'));
+        }
+
+        function createRowHasContent(row) {
+            if (!row) return false;
+            const ta = row.querySelector('textarea[name="content"]');
+            return !!(ta && ta.value.trim() !== '');
+        }
+
         function dedupeTrailingCreateRows(container) {
             if (!container) return;
             const rowSelector = container.matches('tbody') ? 'tr' : '.block-row';
-            const createRows = Array.from(container.querySelectorAll(rowSelector)).filter(function(row) {
-                return !row.hasAttribute('data-block-id') &&
-                    !row.classList.contains('project-script-select-row');
-            });
-            if (createRows.length <= 1) return;
-            createRows.slice(0, -1).forEach(function(row) {
+            const rows = Array.from(container.querySelectorAll(rowSelector));
+            // Only collapse empty create rows at the end of the scene — never remove a
+            // create row inserted mid-list by the "+" button.
+            const trailing = [];
+            for (let i = rows.length - 1; i >= 0; i--) {
+                if (!isCreateBlockRow(rows[i])) break;
+                trailing.unshift(rows[i]);
+            }
+            if (trailing.length <= 1) return;
+            const withContent = trailing.filter(createRowHasContent);
+            if (withContent.length > 0) {
+                trailing.forEach(function(row) {
+                    if (!createRowHasContent(row)) row.remove();
+                });
+                return;
+            }
+            trailing.slice(0, -1).forEach(function(row) {
                 row.remove();
             });
         }
@@ -792,6 +816,36 @@
         function initBlockEditGuards() {
             if (window._scriptyBlockEditGuardsInit) return;
             window._scriptyBlockEditGuardsInit = true;
+
+            // Handle "+" in JS so we don't race HTMX insert vs trailing-create dedupe,
+            // and so typed create-row text is saved instead of wiped.
+            document.addEventListener('click', function(e) {
+                const link = e.target.closest('a.create-below');
+                if (!link) return;
+                const row = link.closest('.block-row, tr');
+                if (!row) return;
+
+                e.preventDefault();
+                e.stopImmediatePropagation();
+
+                if (isCreateBlockRow(row)) {
+                    const ta = row.querySelector('textarea[name="content"]');
+                    if (ta) {
+                        submitCreateRowFromEnter(ta);
+                    }
+                    return;
+                }
+
+                if (!row.hasAttribute('data-block-id')) return;
+
+                const nextRow = row.nextElementSibling;
+                if (isCreateBlockRow(nextRow)) {
+                    focusBlockContentEnd(nextRow);
+                    return;
+                }
+
+                openCreateBelowRow(row);
+            }, true);
 
             document.body.addEventListener('htmx:configRequest', function(e) {
                 if (!document.querySelector('.project-script')) return;

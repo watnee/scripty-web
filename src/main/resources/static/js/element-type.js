@@ -102,15 +102,31 @@
             : null;
     }
 
-    function findCreateRow() {
-        var el = document.activeElement;
-        if (!el) return null;
+    function createRowFromEditable(el) {
+        if (!el || el.name !== 'content' || el.tagName !== 'TEXTAREA') return null;
         var row = el.closest('.block-row:not([data-block-id]), tr:not([data-block-id])');
-        if (!row || row.classList.contains('project-script-select-spacer')) return null;
-        if (!row.querySelector('textarea[name="content"]')) return null;
-        return document.activeElement === row.querySelector('textarea[name="content"]')
-            ? row
-            : null;
+        if (!row || row.classList.contains('project-script-select-row')) return null;
+        if (row.classList.contains('project-script-select-spacer')) return null;
+        var textarea = row.querySelector('textarea[name="content"]');
+        return textarea === el ? row : null;
+    }
+
+    function findCreateRow() {
+        var focused = createRowFromEditable(document.activeElement);
+        if (focused) return focused;
+
+        // Keyboard activation focuses the type button; recover the create row
+        // only when the event originated from the element toolbar.
+        var active = document.activeElement;
+        var onTypeControl = !!(active && active.closest &&
+            active.closest('.bulk-type-btn, .element-type-actions, .project-script-toolbar'));
+        if (!onTypeControl) return null;
+
+        var last = window.scriptyLastFocusedEditable;
+        if (last && last.isConnected) {
+            return createRowFromEditable(last);
+        }
+        return null;
     }
 
     function clearTextSelection() {
@@ -199,16 +215,30 @@
             };
         }
 
-        var blockId = ids.length === 1 ? ids[0] : (preferredId || activeBlockId());
-        if (!blockId) {
+        // Trailing create rows are often focused while a prior saved block is
+        // still remembered as "active". Prefer the create row so type changes
+        // apply to the last (unsaved) block the user is actually editing.
+        if (ids.length === 0 && !preferredId) {
             var createRow = findCreateRow();
             if (createRow) {
                 return { mode: 'create', row: createRow, ids: [], content: null };
             }
+        }
+
+        var blockId = ids.length === 1 ? ids[0] : (preferredId || activeBlockId());
+        if (!blockId) {
             return null;
         }
 
         var row = findRowById(blockId);
+        if (!row) {
+            var orphanCreate = findCreateRow();
+            if (orphanCreate) {
+                return { mode: 'create', row: orphanCreate, ids: [], content: null };
+            }
+            return null;
+        }
+
         var form = findEditForm(row);
         var personId = null;
         var tags = null;
@@ -426,11 +456,11 @@
         onTypeButton(type, captured);
     });
 
-    // Keep toolbar highlight in sync when focusing a block.
+    // Keep toolbar highlight in sync when focusing a block (saved or create).
     document.addEventListener('focusin', function(e) {
         if (!e.target || e.target.name !== 'content') return;
-        var row = e.target.closest('.block-row[data-block-id], tr[data-block-id]');
-        if (!row) return;
+        var row = e.target.closest('.block-row, tr[data-block-id], tr:not([data-block-id])');
+        if (!row || row.classList.contains('project-script-select-row')) return;
         syncToolbar(row.getAttribute('data-block-type'));
     });
 })();

@@ -152,6 +152,7 @@
             '<form hx-post="/block/createInline?surface=project" hx-target="closest .block-row" hx-swap="outerHTML">' +
             '<input type="hidden" name="projectId" value="' + escAttr(projectId) + '" />' +
             '<input type="hidden" name="surface" value="project" />' +
+            '<input type="hidden" name="type" value="ACTION" />' +
             '<textarea spellcheck="true" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" autofocus ' +
             'onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();event.stopPropagation;' +
             'if(window.scriptyCreateBlockFromCreateRow){window.scriptyCreateBlockFromCreateRow(this);}return false;}"></textarea>' +

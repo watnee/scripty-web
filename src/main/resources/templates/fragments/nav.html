@@ -173,12 +173,31 @@
             }
         }
 
+        function clearActiveBlockMemory() {
+            lastActiveBlockRow = null;
+            try {
+                sessionStorage.removeItem('activeBlockId');
+                sessionStorage.removeItem('activeBlockCaretStart');
+                sessionStorage.removeItem('activeBlockCaretEnd');
+            } catch (err) { /* ignore */ }
+            if (window.scriptyClearBlockCaretPreview) {
+                window.scriptyClearBlockCaretPreview();
+            }
+        }
+
         // Track last focused input/textarea
         document.addEventListener('focusin', function(e) {
             if (e.target.tagName === 'TEXTAREA' || (e.target.tagName === 'INPUT' && (e.target.type === 'text' || e.target.type === 'textarea'))) {
                 lastFocusedEditable = e.target;
-                rememberActiveBlockRow(findBlockRow(e.target));
-                var row = findBlockRow(e.target);
+                window.scriptyLastFocusedEditable = e.target;
+                var savedRow = findBlockRow(e.target);
+                if (savedRow) {
+                    rememberActiveBlockRow(savedRow);
+                } else if (findAnyBlockRow(e.target) && !e.target.closest('[data-block-id]')) {
+                    // Focused the trailing create row — don't keep a stale saved block active.
+                    clearActiveBlockMemory();
+                }
+                var row = findAnyBlockRow(e.target);
                 if (row && window.scriptySyncElementTypeToolbar) {
                     window.scriptySyncElementTypeToolbar(row.getAttribute('data-block-type'));
                 }
@@ -3968,6 +3987,7 @@
             if (!projectId) return Promise.resolve(null);
 
             function finish(newRow) {
+                clearActiveBlockMemory();
                 if (options.focus !== false) {
                     focusCreateRowTextarea(newRow);
                 }

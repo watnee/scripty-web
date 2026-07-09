@@ -1,15 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" class="scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select scripty-hide-block-element-labels">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:class="${(canEditScript == null or canEditScript) ? 'scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select scripty-hide-block-element-labels' : 'scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select scripty-hide-block-element-labels scripty-script-readonly scripty-block-edit-locked'}">
 <head>
     <script th:inline="javascript">
     (function() {
         var projectId = /*[[${viewModel.id}]]*/ 0;
+        var canEditScript = /*[[${canEditScript == null or canEditScript}]]*/ true;
+        window.scriptyCanEditScript = canEditScript;
         if (!projectId) return;
         var showBookmarks = localStorage.getItem('scripty-show-block-bookmarks-project-' + projectId);
         var showPins = localStorage.getItem('scripty-show-block-pins-project-' + projectId);
         var showSelect = localStorage.getItem('scripty-show-block-select-project-' + projectId);
         var showElementLabels = localStorage.getItem('scripty-show-block-element-labels-project-' + projectId);
-        var blockEditLocked = localStorage.getItem('scripty-block-edit-locked-project-' + projectId) === 'true';
+        var blockEditLocked = !canEditScript || localStorage.getItem('scripty-block-edit-locked-project-' + projectId) === 'true';
         showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
         showPins = showPins === null ? false : showPins !== 'false';
         showSelect = showSelect === null ? false : showSelect !== 'false';
@@ -21,6 +24,7 @@
         root.classList.toggle('scripty-hide-block-select', !showSelect);
         root.classList.toggle('scripty-hide-block-element-labels', !showElementLabels);
         root.classList.toggle('scripty-block-edit-locked', blockEditLocked);
+        root.classList.toggle('scripty-script-readonly', !canEditScript);
         var toolbarHidden = localStorage.getItem('scripty-toolbar-hidden') === 'true';
         root.classList.toggle('scripty-toolbar-hidden', toolbarHidden);
     })();
@@ -153,12 +157,13 @@
             <button id="nav-lock-toggle"
                     type="button"
                     class="nav-dropdown-toggle lock-filter-toggle"
+                    th:if="${canEditScript == null or canEditScript}"
                     aria-pressed="false"
                     aria-label="Lock block text editing"
                     title="Lock block text editing">
                 <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
             </button>
-            <span th:replace="~{fragments/spellcheckToggle :: toolbarButton}"></span>
+            <span th:if="${canEditScript == null or canEditScript}" th:replace="~{fragments/spellcheckToggle :: toolbarButton}"></span>
             <div class="nav-dropdown project-search-dropdown" id="project-search-dropdown">
                 <button class="nav-dropdown-toggle project-search-toggle" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Search script" title="Search script">
                     <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -183,25 +188,26 @@
                     </div>
                 </div>
             </div>
-            <span th:replace="~{fragments/historyToolbarButtons :: buttons}"></span>
+            <span th:if="${canEditScript == null or canEditScript}" th:replace="~{fragments/historyToolbarButtons :: buttons}"></span>
             <div class="nav-dropdown file-dropdown" id="project-file-dropdown">
                 <button id="nav-file"
                         type="button"
                         class="nav-dropdown-toggle file-toolbar-btn"
                         aria-haspopup="true"
                         aria-expanded="false"
-                        aria-label="Import, export, and print"
-                        title="Import, export, and print">
+                        th:aria-label="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}"
+                        th:title="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}">
                     <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                     </svg>
                 </button>
-                <div class="nav-dropdown-menu file-menu" role="menu" aria-label="Import, export, and print">
+                <div class="nav-dropdown-menu file-menu" role="menu" th:aria-label="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}">
                     <button id="nav-import"
                             type="button"
                             class="nav-dropdown-item"
-                            role="menuitem">Import</button>
-                    <div class="nav-dropdown-divider" role="separator"></div>
+                            role="menuitem"
+                            th:if="${canEditScript == null or canEditScript}">Import</button>
+                    <div class="nav-dropdown-divider" role="separator" th:if="${canEditScript == null or canEditScript}"></div>
                     <div class="file-menu-label" aria-hidden="true">Export</div>
                     <a class="nav-dropdown-item"
                        role="menuitem"
@@ -224,6 +230,7 @@
                 </div>
             </div>
             <form id="project-import-form"
+                  th:if="${canEditScript == null or canEditScript}"
                   th:action="@{/project/import(id=${viewModel.id})}"
                   method="post"
                   enctype="multipart/form-data"
@@ -308,7 +315,7 @@
             </div>
         </div>
     </aside>
-    <aside class="project-script-toolbar hide-in-reader-view sidebar menu">
+    <aside class="project-script-toolbar hide-in-reader-view sidebar menu" th:if="${canEditScript == null or canEditScript}">
         <div class="project-toolbar-row">
             <div class="project-toolbar-main">
                 <div class="tags-bulk-action tags-bulk-action--compact block-bulk-actions" id="project-bulk-bar" hidden>
@@ -394,11 +401,13 @@
     <script th:src="@{/js/element-type.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/fountain-power.js(v=${assetVersion})}"></script>
     <script th:inline="javascript">
-    document.querySelectorAll('.project-script .scene-blocks').forEach(function(sceneBlocks) {
-        if (window.scriptyInitBlockDragDrop) {
-            window.scriptyInitBlockDragDrop(sceneBlocks, { projectId: /*[[${viewModel.id}]]*/ '' });
-        }
-    });
+    if (window.scriptyCanEditScript !== false) {
+        document.querySelectorAll('.project-script .scene-blocks').forEach(function(sceneBlocks) {
+            if (window.scriptyInitBlockDragDrop) {
+                window.scriptyInitBlockDragDrop(sceneBlocks, { projectId: /*[[${viewModel.id}]]*/ '' });
+            }
+        });
+    }
     </script>
     <script th:inline="javascript">
     if (window.scriptyInitProjectPageScripts) {
@@ -415,7 +424,10 @@
         if (!searchInput) return;
 
         if (window.scriptyInitBlockMarkerToggles) {
-            window.scriptyInitBlockMarkerToggles({ projectId: projectId });
+            window.scriptyInitBlockMarkerToggles({
+                projectId: projectId,
+                canEditScript: window.scriptyCanEditScript !== false
+            });
         }
 
         function rowMatchesSearch(row, query, isSceneNameMatch) {

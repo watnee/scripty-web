@@ -3,12 +3,17 @@ package com.scripty.api;
 import com.scripty.controller.BlockRestController;
 import com.scripty.controller.ProjectRestController;
 import com.scripty.dto.Block;
+import com.scripty.dto.User;
+import com.scripty.security.ProjectAccessSupport;
 import com.scripty.viewmodel.block.BlockViewModel;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -16,6 +21,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Component
 public class BlockResourceAssembler implements RepresentationModelAssembler<BlockViewModel, EntityModel<BlockResource>> {
+
+    @Autowired
+    ProjectAccessSupport projectAccess;
 
     @Override
     public EntityModel<BlockResource> toModel(BlockViewModel block) {
@@ -106,14 +114,28 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
     private org.springframework.hateoas.Link[] blockLinks(int id, Integer projectId) {
         List<org.springframework.hateoas.Link> links = new ArrayList<>();
         links.add(linkTo(methodOn(BlockRestController.class).show(id, null)).withSelfRel());
-        links.add(linkTo(methodOn(BlockRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE));
-        links.add(linkTo(methodOn(BlockRestController.class).delete(id, null)).withRel(ApiRel.DELETE));
-        links.add(linkTo(methodOn(BlockRestController.class).toggleBookmark(id, null)).withRel(ApiRel.TOGGLE_BOOKMARK));
-        links.add(linkTo(methodOn(BlockRestController.class).togglePinned(id, null)).withRel(ApiRel.TOGGLE_PINNED));
+        if (canEdit(projectId, id)) {
+            links.add(linkTo(methodOn(BlockRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE));
+            links.add(linkTo(methodOn(BlockRestController.class).delete(id, null)).withRel(ApiRel.DELETE));
+            links.add(linkTo(methodOn(BlockRestController.class).toggleBookmark(id, null)).withRel(ApiRel.TOGGLE_BOOKMARK));
+            links.add(linkTo(methodOn(BlockRestController.class).togglePinned(id, null)).withRel(ApiRel.TOGGLE_PINNED));
+        }
         if (projectId != null) {
             links.add(linkTo(methodOn(BlockRestController.class).list(projectId, null)).withRel(ApiRel.BLOCKS));
             links.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
         return links.toArray(org.springframework.hateoas.Link[]::new);
+    }
+
+    private boolean canEdit(Integer projectId, int blockId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        User user = projectAccess.currentUser(authentication);
+        if (projectId != null) {
+            return projectAccess.canEditScript(projectId, user);
+        }
+        return projectAccess.canEditBlock(blockId, user);
     }
 }

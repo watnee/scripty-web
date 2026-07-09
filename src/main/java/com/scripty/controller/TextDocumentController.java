@@ -4,6 +4,7 @@ import com.scripty.commandmodel.textdocument.TextDocumentCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.dto.TextDocument;
 import com.scripty.dto.User;
+import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.TextDocumentService;
 import com.scripty.service.UserService;
@@ -37,6 +38,9 @@ public class TextDocumentController {
     @Autowired
     UserService userService;
 
+    @Autowired
+    ProjectAccessSupport projectAccess;
+
     @RequestMapping(value = "/list")
     public String list(@RequestParam Integer projectId, Model model, Principal principal) {
         TextDocumentListViewModel viewModel = textDocumentService.getListViewModel(projectId, currentUser(principal));
@@ -44,6 +48,7 @@ public class TextDocumentController {
             return "redirect:/project/list";
         }
         model.addAttribute("viewModel", viewModel);
+        model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
         return "project/documents/list";
     }
 
@@ -62,6 +67,7 @@ public class TextDocumentController {
         model.addAttribute("commandModel", commandModel);
         model.addAttribute("isNew", true);
         model.addAttribute("isSong", "SONG".equalsIgnoreCase(commandModel.getDocumentType()));
+        model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
         return "project/documents/edit";
     }
 
@@ -78,6 +84,7 @@ public class TextDocumentController {
         model.addAttribute("commandModel", commandModel);
         model.addAttribute("isNew", false);
         model.addAttribute("isSong", "SONG".equalsIgnoreCase(commandModel.getDocumentType()));
+        model.addAttribute("canEditScript", projectAccess.canEditScript(viewModel.getProjectId(), user));
         return "project/documents/edit";
     }
 
@@ -127,6 +134,9 @@ public class TextDocumentController {
         TextDocumentViewModel viewModel = textDocumentService.getViewModel(id, user);
         if (viewModel == null) {
             return "redirect:/project/list";
+        }
+        if (!projectAccess.canEditScript(viewModel.getProjectId(), user)) {
+            return "redirect:/project/documents/list?projectId=" + viewModel.getProjectId();
         }
 
         List<Block> created = textDocumentService.insertIntoScript(id, afterBlockId, asType, user);

@@ -85,6 +85,10 @@ public class ProjectController {
         return !projectAccess.canAccessProject(projectId, principal);
     }
 
+    private boolean denyScriptEdit(Integer projectId, Principal principal) {
+        return !projectAccess.canEditScript(projectId, principal);
+    }
+
     @Autowired
     FountainImportService fountainImportService;
 
@@ -144,6 +148,7 @@ public class ProjectController {
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("syncRevision", projectRevision(viewModel.getLastEdited()));
+        model.addAttribute("canEditScript", projectAccess.canEditScript(id, currentUser));
         model.addAttribute("shareAccessUsers", projectService.getProjectShareAccessUsers(id));
         model.addAttribute("pendingInvitations", invitationService.getPendingInvitationsForProject(id, currentUser));
         List<Team> inviteTeams = filterAssignedTeams(viewModel.getTeams(), teamService.list());
@@ -187,6 +192,7 @@ public class ProjectController {
             return "redirect:/project/list";
         }
         model.addAttribute("viewModel", viewModel);
+        model.addAttribute("canEditScript", projectAccess.canEditScript(id, principal));
         return "project/showScript";
     }
 
@@ -201,7 +207,7 @@ public class ProjectController {
     @RequestMapping(value = "/undo", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<EntityModel<Map<String, Object>>> undo(@RequestParam Integer projectId, Principal principal) {
-        if (denyProjectAccess(projectId, principal)) {
+        if (denyScriptEdit(projectId, principal)) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
         ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.undoWithDetails(projectId);
@@ -211,7 +217,7 @@ public class ProjectController {
     @RequestMapping(value = "/redo", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<EntityModel<Map<String, Object>>> redo(@RequestParam Integer projectId, Principal principal) {
-        if (denyProjectAccess(projectId, principal)) {
+        if (denyScriptEdit(projectId, principal)) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
         ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.redoWithDetails(projectId);
@@ -485,13 +491,14 @@ public class ProjectController {
 
         model.addAttribute("project", projectViewModel);
         model.addAttribute("commandModel", commandModel);
+        model.addAttribute("canEditScript", projectAccess.canEditScript(id, principal));
 
         return "project/titlePage";
     }
 
     @RequestMapping(value = "/titlePage", method = RequestMethod.POST)
     public String saveTitlePage(@Valid @ModelAttribute("commandModel") TitlePageCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
-        if (denyProjectAccess(commandModel.getId(), principal)) {
+        if (denyScriptEdit(commandModel.getId(), principal)) {
             return "redirect:/project/list";
         }
         if (bindingResult.hasErrors()) {
@@ -501,6 +508,7 @@ public class ProjectController {
             }
             model.addAttribute("project", projectViewModel);
             model.addAttribute("commandModel", commandModel);
+            model.addAttribute("canEditScript", projectAccess.canEditScript(commandModel.getId(), principal));
             return "project/titlePage";
         }
 
@@ -525,7 +533,7 @@ public class ProjectController {
     public String importScript(@RequestParam Integer id,
                                @RequestParam("file") MultipartFile file,
                                Principal principal) throws IOException {
-        if (projectService.read(id) == null || denyProjectAccess(id, principal)) {
+        if (projectService.read(id) == null || denyScriptEdit(id, principal)) {
             return "redirect:/project/list";
         }
         if (file != null && !file.isEmpty()) {

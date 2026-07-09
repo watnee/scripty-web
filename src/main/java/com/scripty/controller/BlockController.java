@@ -52,16 +52,16 @@ public class BlockController {
         return "redirect:/project/list";
     }
 
-    private boolean denyProject(Integer projectId, Principal principal) {
-        return !projectAccess.canAccessProject(projectId, principal);
-    }
-
     private boolean denyBlock(Integer blockId, Principal principal) {
         return !projectAccess.canAccessBlock(blockId, principal);
     }
 
-    private ResponseEntity<?> forbiddenJson() {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    private boolean denyEditProject(Integer projectId, Principal principal) {
+        return !projectAccess.canEditScript(projectId, principal);
+    }
+
+    private boolean denyEditBlock(Integer blockId, Principal principal) {
+        return !projectAccess.canEditBlock(blockId, principal);
     }
 
     private String resolveProjectSurface(String surface, HttpServletRequest request) {
@@ -79,7 +79,7 @@ public class BlockController {
 
     @RequestMapping(value = "/delete")
     public String delete(@RequestParam Integer id, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
 
@@ -92,7 +92,7 @@ public class BlockController {
     @RequestMapping(value = "/deleteInline", method = RequestMethod.POST)
     @org.springframework.web.bind.annotation.ResponseBody
     public ResponseEntity<String> deleteInline(@RequestParam Integer id, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
         }
 
@@ -104,7 +104,7 @@ public class BlockController {
 
     @RequestMapping(value = "/moveUp")
     public String moveUp(@RequestParam Integer id, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
 
@@ -116,7 +116,7 @@ public class BlockController {
 
     @RequestMapping(value = "/moveDown")
     public String moveDown(@RequestParam Integer id, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
 
@@ -128,7 +128,7 @@ public class BlockController {
 
     @RequestMapping(value = "/moveTo", method = RequestMethod.POST)
     public String moveTo(@RequestParam Integer id, @RequestParam int position, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
         Block block = blockService.moveBlockTo(id, position);
@@ -138,7 +138,7 @@ public class BlockController {
 
     @RequestMapping(value = "/toggleBookmark")
     public String toggleBookmark(@RequestParam Integer id, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
         Block block = blockService.toggleBookmark(id);
@@ -148,7 +148,7 @@ public class BlockController {
     @RequestMapping(value = "/toggleBookmarkInline", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @org.springframework.web.bind.annotation.ResponseBody
     public ResponseEntity<EntityModel<Map<String, Boolean>>> toggleBookmarkInline(@RequestParam Integer id, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Block block = blockService.toggleBookmark(id);
@@ -157,7 +157,7 @@ public class BlockController {
 
     @RequestMapping(value = "/togglePinned")
     public String togglePinned(@RequestParam Integer id, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
         Block block = blockService.togglePinned(id);
@@ -167,7 +167,7 @@ public class BlockController {
     @RequestMapping(value = "/togglePinnedInline", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     @org.springframework.web.bind.annotation.ResponseBody
     public ResponseEntity<EntityModel<Map<String, Boolean>>> togglePinnedInline(@RequestParam Integer id, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Block block = blockService.togglePinned(id);
@@ -176,7 +176,7 @@ public class BlockController {
 
     @RequestMapping(value = "/editInline")
     public String editInline(@RequestParam Integer id, Model model, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
         EditBlockViewModel viewModel = blockService.getEditBlockViewModel(id);
@@ -188,7 +188,7 @@ public class BlockController {
 
     @RequestMapping(value = "/editInline", method = RequestMethod.POST)
     public String saveEditInline(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
-        if (denyBlock(commandModel.getId(), principal)) {
+        if (denyEditBlock(commandModel.getId(), principal)) {
             return denyRedirect();
         }
         if (bindingResult.hasErrors()) {
@@ -218,7 +218,7 @@ public class BlockController {
     // Show Form
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
 
@@ -233,7 +233,7 @@ public class BlockController {
     // Handle Form Submission
     @RequestMapping(value = "/edit", method = RequestMethod.POST)
     public String saveEdit(@Valid @ModelAttribute("commandModel") EditBlockCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
-        if (denyBlock(commandModel.getId(), principal)) {
+        if (denyEditBlock(commandModel.getId(), principal)) {
             return denyRedirect();
         }
 
@@ -255,7 +255,7 @@ public class BlockController {
     // Show Form
     @RequestMapping(value = "/create")
     public String create(@RequestParam Integer projectId, Model model, Principal principal) {
-        if (denyProject(projectId, principal)) {
+        if (denyEditProject(projectId, principal)) {
             return denyRedirect();
         }
 
@@ -270,7 +270,7 @@ public class BlockController {
     // Handle Form Submission
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public String saveCreate(@Valid @ModelAttribute("commandModel") CreateBlockCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
-        if (denyProject(commandModel.getProjectId(), principal)) {
+        if (denyEditProject(commandModel.getProjectId(), principal)) {
             return denyRedirect();
         }
 
@@ -295,7 +295,7 @@ public class BlockController {
                                HttpServletRequest request,
                                Model model,
                                Principal principal) {
-        if (denyProject(projectId, principal)) {
+        if (denyEditProject(projectId, principal)) {
             return denyRedirect();
         }
         surface = resolveProjectSurface(surface, request);
@@ -317,7 +317,7 @@ public class BlockController {
                                    HttpServletRequest request,
                                    Model model,
                                    Principal principal) {
-        if (denyProject(projectId, principal)) {
+        if (denyEditProject(projectId, principal)) {
             return denyRedirect();
         }
         surface = resolveProjectSurface(surface, request);
@@ -353,7 +353,7 @@ public class BlockController {
     // Show Form
     @RequestMapping(value = "/createBelow")
     public String createBelow(@RequestParam Integer id, Model model, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
 
@@ -368,7 +368,7 @@ public class BlockController {
     // Handle Form Submission
     @RequestMapping(value = "/createBelow", method = RequestMethod.POST)
     public String saveCreateBelow(@Valid @ModelAttribute("commandModel") CreateBlockBelowCommandModel commandModel, BindingResult bindingResult, Model model, Principal principal) {
-        if (denyBlock(commandModel.getId(), principal)) {
+        if (denyEditBlock(commandModel.getId(), principal)) {
             return denyRedirect();
         }
 
@@ -393,7 +393,7 @@ public class BlockController {
                                     HttpServletRequest request,
                                     Model model,
                                     Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
         surface = resolveProjectSurface(surface, request);
@@ -415,7 +415,7 @@ public class BlockController {
                                         HttpServletRequest request,
                                         Model model,
                                         Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
         surface = resolveProjectSurface(surface, request);
@@ -445,7 +445,7 @@ public class BlockController {
 
     @RequestMapping(value = "/editSceneNameInline")
     public String editSceneNameInline(@RequestParam Integer id, Model model, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
         BlockViewModel vm = blockService.getBlockViewModel(id);
@@ -455,7 +455,7 @@ public class BlockController {
 
     @RequestMapping(value = "/editSceneNameInline", method = RequestMethod.POST)
     public String saveEditSceneNameInline(@RequestParam Integer id, @RequestParam(defaultValue = "") String name, Model model, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
         Block block = blockService.updateSceneName(id, name);
@@ -467,7 +467,7 @@ public class BlockController {
 
     @RequestMapping(value = "/editCharacterNameInline")
     public String editCharacterNameInline(@RequestParam Integer id, Model model, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
         BlockViewModel vm = blockService.getBlockViewModel(id);
@@ -477,7 +477,7 @@ public class BlockController {
 
     @RequestMapping(value = "/editCharacterNameInline", method = RequestMethod.POST)
     public String saveEditCharacterNameInline(@RequestParam Integer id, @RequestParam(defaultValue = "") String name, Model model, Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
         Block block = blockService.updateCharacterName(id, name);
@@ -524,7 +524,7 @@ public class BlockController {
 
     private boolean denyBulk(List<Integer> blockIds, Integer projectId, Principal principal) {
         User user = projectAccess.currentUser(principal);
-        return !projectAccess.canAccessBlocks(blockIds, projectId, user);
+        return !projectAccess.canEditBlocks(blockIds, projectId, user);
     }
 
     @RequestMapping(value = "/bulkAddTags", method = RequestMethod.POST)
@@ -569,7 +569,7 @@ public class BlockController {
                                     @RequestParam(required = false) String partial,
                                     Model model,
                                     Principal principal) {
-        if (denyBlock(id, principal)) {
+        if (denyEditBlock(id, principal)) {
             return denyRedirect();
         }
         Block block = blockService.updateBlockTypeAndContent(id, type, content, personId, tags);

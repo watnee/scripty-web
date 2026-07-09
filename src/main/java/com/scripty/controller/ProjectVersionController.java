@@ -28,6 +28,7 @@ public class ProjectVersionController {
         }
         VersionHistoryViewModel viewModel = projectVersionService.getVersionHistoryViewModel(projectId);
         model.addAttribute("viewModel", viewModel);
+        model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
         return "project/versionHistory";
     }
 
@@ -35,7 +36,7 @@ public class ProjectVersionController {
     public String create(@RequestParam Integer projectId,
                          @RequestParam(defaultValue = "") String label,
                          Principal principal) {
-        if (!projectAccess.canAccessProject(projectId, principal)) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
             return "redirect:/project/list";
         }
         if (label == null || label.isBlank()) {
@@ -47,7 +48,7 @@ public class ProjectVersionController {
 
     @RequestMapping(value = "/restore", method = RequestMethod.POST)
     public String restore(@RequestParam Integer id, @RequestParam Integer projectId, Principal principal) {
-        if (!projectAccess.canAccessProject(projectId, principal)) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
             return "redirect:/project/list";
         }
         if (!projectVersionService.restoreVersionForProject(id, projectId)) {
@@ -58,7 +59,7 @@ public class ProjectVersionController {
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public String delete(@RequestParam Integer id, @RequestParam Integer projectId, Principal principal) {
-        if (!projectAccess.canAccessProject(projectId, principal)) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
             return "redirect:/project/list";
         }
         if (!projectVersionService.deleteVersionForProject(id, projectId)) {

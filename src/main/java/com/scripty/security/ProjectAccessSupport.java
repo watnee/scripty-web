@@ -64,6 +64,28 @@ public class ProjectAccessSupport {
         return canAccessBlock(blockId, currentUser(principal));
     }
 
+    /**
+     * Screenplay edits require project access and the writer role.
+     */
+    public boolean canEditScript(Integer projectId, User user) {
+        return canAccessProject(projectId, user) && user != null && user.isWriter();
+    }
+
+    public boolean canEditScript(Integer projectId, Principal principal) {
+        return canEditScript(projectId, currentUser(principal));
+    }
+
+    public boolean canEditBlock(Integer blockId, User user) {
+        if (blockId == null || user == null || !user.isWriter()) {
+            return false;
+        }
+        return canAccessBlock(blockId, user);
+    }
+
+    public boolean canEditBlock(Integer blockId, Principal principal) {
+        return canEditBlock(blockId, currentUser(principal));
+    }
+
     public boolean canAccessPerson(Integer personId, User user) {
         if (personId == null || user == null) {
             return false;
@@ -101,6 +123,13 @@ public class ProjectAccessSupport {
             }
         }
         return projectService.canUserAccessProject(projectId, user);
+    }
+
+    /**
+     * Same project validation as {@link #canAccessBlocks}, plus writer edit permission.
+     */
+    public boolean canEditBlocks(List<Integer> blockIds, Integer expectedProjectId, User user) {
+        return canAccessBlocks(blockIds, expectedProjectId, user) && user != null && user.isWriter();
     }
 
     public Integer projectIdForBlock(Integer blockId) {

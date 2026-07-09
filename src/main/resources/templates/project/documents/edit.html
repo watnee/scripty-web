@@ -80,7 +80,7 @@
             </p>
         </form>
 
-        <div class="text-document-insert-panel" th:if="${!isNew and commandModel.id != null}">
+        <div class="text-document-insert-panel" th:if="${!isNew and commandModel.id != null and (canEditScript == null or canEditScript)}">
             <h2>Insert into Screenplay</h2>
             <p class="muted"
                th:text="${isSong} ? 'Adds this song at the end of the script as Lyrics blocks.' : 'Adds this draft at the end of the script as Note blocks (or choose another type).'">

@@ -21,7 +21,8 @@
             </ol>
         </nav>
         <h1>Version History</h1>
-        <form th:action="@{/project/version/create}" method="POST" hx-boost="false" style="margin-bottom: 2rem; display: flex; gap: 0.5rem; align-items: end">
+        <form th:if="${canEditScript == null or canEditScript}"
+              th:action="@{/project/version/create}" method="POST" hx-boost="false" style="margin-bottom: 2rem; display: flex; gap: 0.5rem; align-items: end">
             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
             <label>
                 Label
@@ -30,7 +31,8 @@
             <button type="submit">Save Current Version</button>
         </form>
         <th:block th:if="${#lists.isEmpty(viewModel.versions)}">
-            <p>No versions saved yet. Save a version to create a snapshot you can restore later.</p>
+            <p th:if="${canEditScript == null or canEditScript}">No versions saved yet. Save a version to create a snapshot you can restore later.</p>
+            <p th:unless="${canEditScript == null or canEditScript}">No versions saved yet.</p>
         </th:block>
         <table th:if="${not #lists.isEmpty(viewModel.versions)}">
             <thead>
@@ -57,7 +59,7 @@
                     <td th:text="${version.sceneCount}"></td>
                     <td th:text="${version.blockCount}"></td>
                     <td th:text="${version.characterCount}"></td>
-                    <td class="nowrap">
+                    <td class="nowrap" th:if="${canEditScript == null or canEditScript}">
                         <form th:action="@{/project/version/restore}" method="POST" hx-boost="false" style="display: inline">
                             <input type="hidden" name="id" th:value="${version.id}" />
                             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
@@ -69,6 +71,7 @@
                             <button type="submit" role="button" _="on click if not confirm('Delete this version?') halt">Delete</button>
                         </form>
                     </td>
+                    <td class="nowrap" th:unless="${canEditScript == null or canEditScript}"></td>
                 </tr>
             </tbody>
         </table>

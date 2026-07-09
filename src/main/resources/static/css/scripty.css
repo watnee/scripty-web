@@ -2783,6 +2783,27 @@ html.scripty-block-edit-locked .project-script .block-content form[hx-post*="/bl
     pointer-events: none;
 }
 
+html.scripty-script-readonly .project-script .create-below,
+html.scripty-script-readonly .project-script .block-left-controls,
+html.scripty-script-readonly .project-script .block-actions,
+html.scripty-script-readonly .project-script-toolbar,
+html.scripty-script-readonly .block-row:not([data-block-id]),
+html.scripty-script-readonly .project-script .project-script-select-row {
+    display: none !important;
+}
+
+html.scripty-script-readonly .project-script .block-content {
+    cursor: default;
+}
+
+html.scripty-script-readonly .project-script .character-name,
+html.scripty-script-readonly .project-script a[hx-get*="/block/edit"],
+html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
+    pointer-events: none;
+    cursor: default;
+    text-decoration: none;
+}
+
 .text-size-control .project-search-toggle.is-active,
 .text-size-control .lock-filter-toggle.is-active {
     color: var(--accent, #475569);

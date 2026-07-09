@@ -67,7 +67,7 @@ public class BlockRestController {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
         }
-        if (!projectAccess.canAccessProject(commandModel.getProjectId(), principal)) {
+        if (!projectAccess.canEditScript(commandModel.getProjectId(), principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Block block = blockService.saveCreateBlockCommandModel(commandModel);
@@ -100,7 +100,7 @@ public class BlockRestController {
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
         }
-        if (!projectAccess.canAccessBlock(id, principal)) {
+        if (!projectAccess.canEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         commandModel.setId(id);
@@ -110,7 +110,7 @@ public class BlockRestController {
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<EntityModel<BlockResource>> delete(@PathVariable Integer id, Principal principal) {
-        if (!projectAccess.canAccessBlock(id, principal)) {
+        if (!projectAccess.canEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Block block = blockService.deleteBlock(id);
@@ -119,7 +119,7 @@ public class BlockRestController {
 
     @RequestMapping(value = "/{id}/bookmark", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<EntityModel<BlockResource>> toggleBookmark(@PathVariable Integer id, Principal principal) {
-        if (!projectAccess.canAccessBlock(id, principal)) {
+        if (!projectAccess.canEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Block block = blockService.toggleBookmark(id);
@@ -128,7 +128,7 @@ public class BlockRestController {
 
     @RequestMapping(value = "/{id}/pinned", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<EntityModel<BlockResource>> togglePinned(@PathVariable Integer id, Principal principal) {
-        if (!projectAccess.canAccessBlock(id, principal)) {
+        if (!projectAccess.canEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Block block = blockService.togglePinned(id);

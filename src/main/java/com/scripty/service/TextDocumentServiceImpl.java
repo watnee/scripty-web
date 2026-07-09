@@ -229,7 +229,9 @@ public class TextDocumentServiceImpl implements TextDocumentService {
 
         Project project = doc.getProject();
         Integer projectId = project.getId();
-        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+        if (!projectService.canUserAccessProject(projectId, currentUser)
+                || currentUser == null
+                || !currentUser.isWriter()) {
             return List.of();
         }
 

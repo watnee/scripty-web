@@ -1,12 +1,12 @@
 <div xmlns:th="http://www.thymeleaf.org" th:fragment="scriptBody(viewModel)" id="project-script-body">
     <section th:each="scene : ${viewModel.scenes}" class="script-scene">
         <div class="scene-blocks table-blocks-all" th:id="'table-blocks-' + ${viewModel.id}">
-            <div th:if="${sceneStat.first}" th:replace="~{block/projectScriptSelectRow :: selectRow}"></div>
+            <div th:if="${sceneStat.first and (canEditScript == null or canEditScript)}" th:replace="~{block/projectScriptSelectRow :: selectRow}"></div>
             <th:block th:each="block, blockStat : ${scene.blocks}">
-                <div th:replace="~{block/projectBlockRow :: blockRow(block=${block}, projectId=${viewModel.id}, canMoveUp=${!blockStat.first}, canMoveDown=${!blockStat.last})}"></div>
+                <div th:replace="~{block/projectBlockRow :: blockRow(block=${block}, projectId=${viewModel.id}, canMoveUp=${!blockStat.first}, canMoveDown=${!blockStat.last}, canEditScript=${canEditScript != null ? canEditScript : true})}"></div>
             </th:block>
-            <div th:if="${#lists.isEmpty(scene.blocks)}" th:replace="~{block/projectCreateInline :: createInlineRow(projectId=${viewModel.id})}"></div>
-            <div th:if="${scene.lastBlockId != null and !#lists.isEmpty(scene.blocks)}" class="hide-in-reader-view sidebar menu" th:attr="hx-get=@{/block/createBelowInline(id=${scene.lastBlockId},surface='project')}" hx-trigger="load" hx-swap="outerHTML"></div>
+            <div th:if="${#lists.isEmpty(scene.blocks) and (canEditScript == null or canEditScript)}" th:replace="~{block/projectCreateInline :: createInlineRow(projectId=${viewModel.id})}"></div>
+            <div th:if="${scene.lastBlockId != null and !#lists.isEmpty(scene.blocks) and (canEditScript == null or canEditScript)}" class="hide-in-reader-view sidebar menu" th:attr="hx-get=@{/block/createBelowInline(id=${scene.lastBlockId},surface='project')}" hx-trigger="load" hx-swap="outerHTML"></div>
         </div>
     </section>
 </div>

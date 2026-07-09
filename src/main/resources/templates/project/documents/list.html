@@ -89,7 +89,8 @@
                     </div>
                     <div class="text-document-card-actions">
                         <a th:href="@{/project/documents/edit(id=${doc.id})}" role="button">Edit</a>
-                        <form th:action="@{/project/documents/insert}" method="post" class="text-document-insert-form" hx-boost="false">
+                        <form th:if="${canEditScript == null or canEditScript}"
+                              th:action="@{/project/documents/insert}" method="post" class="text-document-insert-form" hx-boost="false">
                             <input type="hidden" name="id" th:value="${doc.id}" />
                             <button type="submit" class="good" title="Insert as Lyrics blocks at end of script">
                                 Insert into Script
@@ -161,7 +162,8 @@
                     </div>
                     <div class="text-document-card-actions">
                         <a th:href="@{/project/documents/edit(id=${doc.id})}" role="button">Edit</a>
-                        <form th:action="@{/project/documents/insert}" method="post" class="text-document-insert-form" hx-boost="false">
+                        <form th:if="${canEditScript == null or canEditScript}"
+                              th:action="@{/project/documents/insert}" method="post" class="text-document-insert-form" hx-boost="false">
                             <input type="hidden" name="id" th:value="${doc.id}" />
                             <button type="submit" class="good" title="Insert as Note blocks at end of script">
                                 Insert into Script

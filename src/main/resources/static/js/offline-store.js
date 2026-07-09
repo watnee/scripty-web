@@ -5,6 +5,8 @@
     const DB_VERSION = 2;
     const STORE = 'projects';
     const OUTBOX_STORE = 'outbox';
+    const MAX_CACHED_PROJECTS = 12;
+    const MAX_SNAPSHOT_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
     function openDb() {
         return new Promise(function (resolve, reject) {
@@ -40,15 +42,84 @@
         });
     }
 
+    async function listPendingProjectIds() {
+        const db = await openDb();
+        return new Promise(function (resolve, reject) {
+            const tx = db.transaction(OUTBOX_STORE, 'readonly');
+            const request = tx.objectStore(OUTBOX_STORE).getAll();
+            request.onsuccess = function () {
+                db.close();
+                const ids = {};
+                (request.result || []).forEach(function (entry) {
+                    if (entry.projectId != null) {
+                        ids[Number(entry.projectId)] = true;
+                    }
+                });
+                resolve(ids);
+            };
+            request.onerror = function () {
+                db.close();
+                reject(request.error);
+            };
+        });
+    }
+
+    async function pruneProjectSnapshots(keepProjectId) {
+        const pendingIds = await listPendingProjectIds();
+        if (keepProjectId != null) {
+            pendingIds[Number(keepProjectId)] = true;
+        }
+        const db = await openDb();
+        return new Promise(function (resolve, reject) {
+            const tx = db.transaction(STORE, 'readwrite');
+            const store = tx.objectStore(STORE);
+            const request = store.getAll();
+            request.onsuccess = function () {
+                const items = (request.result || []).slice().sort(function (a, b) {
+                    return (b.cachedAt || 0) - (a.cachedAt || 0);
+                });
+                const now = Date.now();
+                let kept = 0;
+                items.forEach(function (item) {
+                    const id = Number(item.id);
+                    const hasPending = !!pendingIds[id];
+                    const tooOld = (now - (item.cachedAt || 0)) > MAX_SNAPSHOT_AGE_MS;
+                    if (hasPending) {
+                        kept += 1;
+                        return;
+                    }
+                    if (tooOld || kept >= MAX_CACHED_PROJECTS) {
+                        store.delete(id);
+                        return;
+                    }
+                    kept += 1;
+                });
+            };
+            tx.oncomplete = function () {
+                db.close();
+                resolve();
+            };
+            tx.onerror = function () {
+                db.close();
+                reject(tx.error);
+            };
+        });
+    }
+
     async function saveProjectSnapshot(snapshot) {
         if (!snapshot || !snapshot.id) return;
         const db = await openDb();
-        return runTx(db, STORE, 'readwrite', function (store) {
+        await runTx(db, STORE, 'readwrite', function (store) {
             store.put(Object.assign({}, snapshot, {
                 id: Number(snapshot.id),
                 cachedAt: snapshot.cachedAt || Date.now()
             }));
         });
+        try {
+            await pruneProjectSnapshots(snapshot.id);
+        } catch (err) {
+            /* pruning is best-effort */
+        }
     }
 
     async function getProjectSnapshot(id) {
@@ -97,7 +168,9 @@
         const db = await openDb();
         const record = Object.assign({}, entry, {
             id: entry.id || (entry.type + '-' + (entry.blockId || entry.tempBlockId || Date.now()) + '-' + Date.now()),
-            createdAt: entry.createdAt || Date.now()
+            createdAt: entry.createdAt || Date.now(),
+            attempts: entry.attempts || 0,
+            lastError: entry.lastError || null
         });
         return runTx(db, OUTBOX_STORE, 'readwrite', function (store) {
             store.put(record);
@@ -228,8 +301,10 @@
         saveProjectSnapshot: saveProjectSnapshot,
         getProjectSnapshot: getProjectSnapshot,
         listCachedProjects: listCachedProjects,
+        pruneProjectSnapshots: pruneProjectSnapshots,
         enqueueBlockEdit: enqueueBlockEdit,
         enqueueOperation: enqueueOperation,
+        updateOperation: updateOperation,
         listPendingEdits: listPendingEdits,
         listPendingOperations: listPendingOperations,
         countPendingEdits: countPendingEdits,

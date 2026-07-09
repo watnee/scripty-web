@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v18';
+const CACHE_NAME = 'scripty-cache-v19';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/css/missing.min.css',
@@ -12,6 +12,7 @@ const ASSETS_TO_CACHE = [
   '/js/focus-mode.js',
   '/js/toolbar-toggle.js',
   '/js/import-script.js',
+  '/js/fountain-power.js',
   '/js/offline-store.js',
   '/js/offline.js',
   '/js/offline-edit.js',
@@ -21,8 +22,15 @@ const ASSETS_TO_CACHE = [
   '/manifest.json'
 ];
 
+function isOnlineProbe(url) {
+  return url.searchParams.has('scripty-online-probe');
+}
+
 function isCacheableAppRequest(url, request) {
   if (request.method !== 'GET') {
+    return false;
+  }
+  if (isOnlineProbe(url)) {
     return false;
   }
   if (url.pathname.startsWith('/h2-console') || url.pathname.startsWith('/api/')) {
@@ -39,6 +47,49 @@ function isCacheableAppRequest(url, request) {
     || url.pathname === '/shortcuts';
 }
 
+function isStaticAsset(url) {
+  return url.pathname.startsWith('/css/') ||
+    url.pathname.startsWith('/js/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname.startsWith('/fonts/') ||
+    url.pathname === '/favicon.ico' ||
+    url.pathname === '/manifest.json' ||
+    url.pathname === '/offline.html';
+}
+
+function bareAssetRequest(url) {
+  return new Request(url.origin + url.pathname, { credentials: 'same-origin' });
+}
+
+async function matchCached(request, options) {
+  const exact = await caches.match(request, options);
+  if (exact) {
+    return exact;
+  }
+  const url = new URL(request.url);
+  if (!url.search) {
+    return undefined;
+  }
+  // Pages request assets as /js/foo.js?v=N; precache stores /js/foo.js.
+  return caches.match(bareAssetRequest(url), options);
+}
+
+async function putInCache(request, response) {
+  if (!response || response.status !== 200) {
+    return;
+  }
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(request, response.clone());
+  // Also store under the bare pathname so ignoreSearch / offline fallbacks work.
+  if (url.search && isStaticAsset(url)) {
+    await cache.put(bareAssetRequest(url), response.clone());
+  }
+}
+
 async function networkFirstWithCache(request) {
   try {
     const response = await fetch(request);
@@ -48,11 +99,12 @@ async function networkFirstWithCache(request) {
     }
     return response;
   } catch (err) {
-    const cachedResponse = await caches.match(request);
+    const cachedResponse = await matchCached(request);
     if (cachedResponse) {
       return cachedResponse;
     }
     if (request.mode === 'navigate') {
+      // Prefer the exact project page from cache, then offline shell.
       const offlinePage = await caches.match('/offline.html');
       if (offlinePage) {
         return offlinePage;
@@ -62,18 +114,39 @@ async function networkFirstWithCache(request) {
   }
 }
 
+async function precacheAssets() {
+  const cache = await caches.open(CACHE_NAME);
+  await Promise.all(ASSETS_TO_CACHE.map(async (url) => {
+    try {
+      await cache.add(url);
+    } catch (err) {
+      console.warn('[Service Worker] Failed to pre-cache', url, err);
+    }
+  }));
+}
+
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
+async function notifyClientsToSync() {
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  clients.forEach((client) => {
+    client.postMessage({ type: 'SCRIPTY_SYNC_OUTBOX' });
+  });
+}
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'scripty-sync-outbox') {
+    event.waitUntil(notifyClientsToSync());
+  }
+});
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Pre-caching static assets');
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    precacheAssets().then(() => self.skipWaiting())
   );
 });
 
@@ -98,21 +171,20 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
+  // Connectivity probes must hit the network; never serve from cache.
+  if (isOnlineProbe(url)) {
+    event.respondWith(
+      fetch(event.request).catch(() => new Response('', { status: 503, statusText: 'Offline' }))
+    );
+    return;
+  }
+
   if (isCacheableAppRequest(url, event.request)) {
     event.respondWith(networkFirstWithCache(event.request));
     return;
   }
 
-  const isStaticAsset =
-    url.pathname.startsWith('/css/') ||
-    url.pathname.startsWith('/js/') ||
-    url.pathname.startsWith('/icons/') ||
-    url.pathname.startsWith('/fonts/') ||
-    url.pathname === '/favicon.ico' ||
-    url.pathname === '/manifest.json' ||
-    url.pathname === '/offline.html';
-
-  if (!isStaticAsset) {
+  if (!isStaticAsset(url)) {
     return;
   }
 
@@ -120,31 +192,21 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          if (response && response.status === 200 && url.origin === self.location.origin) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          }
+          putInCache(event.request, response);
           return response;
         })
-        .catch(() => caches.match(event.request))
+        .catch(() => matchCached(event.request, { ignoreSearch: true }))
     );
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    matchCached(event.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
       return fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && url.origin === self.location.origin) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
+        putInCache(event.request, networkResponse);
         return networkResponse;
       }).catch(() => {
         if (event.request.destination === 'image') {

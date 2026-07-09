@@ -4,6 +4,8 @@
     var syncing = false;
     var syncFailed = false;
     var snapshotTimer = null;
+    var syncRetryTimer = null;
+    var MAX_SYNC_ATTEMPTS = 5;
 
     function escText(value) {
         return String(value == null ? '' : value)
@@ -193,11 +195,49 @@
         }
     }
 
+    function showBanner() {
+        var els = getBannerElements();
+        if (els.banner) els.banner.hidden = false;
+    }
+
+    function hideBannerIfOnline() {
+        var els = getBannerElements();
+        if (!els.banner) return;
+        if (isEffectivelyOnline() && !syncing && !syncFailed) {
+            els.banner.hidden = true;
+            els.banner.classList.remove('scripty-offline-banner--error', 'scripty-offline-banner--syncing');
+        }
+    }
+
     function updateOfflineBanner() {
-        if (!window.scriptyIsOffline || !window.scriptyIsOffline()) return;
         if (syncing) return;
 
         var projectId = getProjectIdFromPage();
+        var offline = window.scriptyIsOffline && window.scriptyIsOffline();
+
+        if (!offline) {
+            if (syncFailed && window.scriptyOfflineStore) {
+                showBanner();
+                window.scriptyOfflineStore.countPendingEdits(projectId).then(function (count) {
+                    if (count > 0) {
+                        setBannerMessage('Some edits failed to sync. Check your connection and retry.', {
+                            error: true,
+                            showRetry: true
+                        });
+                    } else {
+                        syncFailed = false;
+                        hideBannerIfOnline();
+                    }
+                }).catch(function () {
+                    hideBannerIfOnline();
+                });
+                return;
+            }
+            hideBannerIfOnline();
+            return;
+        }
+
+        showBanner();
         var baseText = "You're offline — edits save locally and sync when you're back online.";
         if (!window.scriptyOfflineStore || !projectId) {
             setBannerMessage(baseText);
@@ -468,12 +508,37 @@
         return row ? row.getAttribute('data-block-id') : null;
     }
 
+    function isEffectivelyOnline() {
+        if (window.scriptyIsOffline) {
+            return !window.scriptyIsOffline();
+        }
+        return navigator.onLine;
+    }
+
+    function scheduleSyncRetry(delayMs) {
+        if (syncRetryTimer) clearTimeout(syncRetryTimer);
+        syncRetryTimer = setTimeout(function () {
+            syncRetryTimer = null;
+            syncPendingEdits();
+        }, delayMs || 4000);
+    }
+
+    function registerBackgroundSync() {
+        if (!('serviceWorker' in navigator) || !('SyncManager' in window)) return;
+        navigator.serviceWorker.ready.then(function (reg) {
+            if (!reg.sync) return;
+            return reg.sync.register('scripty-sync-outbox');
+        }).catch(function () {});
+    }
+
     async function syncOneOperation(op, tempIdMap) {
         if (op.type === 'blockEdit') {
             var blockId = op.payload.id;
             if (isTempBlockId(blockId)) {
                 blockId = resolveAnchorId(blockId, tempIdMap);
-                if (isTempBlockId(blockId)) return false;
+                if (isTempBlockId(blockId)) {
+                    return { ok: false, retryable: true, error: 'Waiting for related create to sync' };
+                }
                 op.payload.id = blockId;
             }
             var params = new URLSearchParams(op.payload);
@@ -483,12 +548,19 @@
                 credentials: 'same-origin',
                 body: params.toString()
             });
-            return response.ok;
+            if (response.ok) return { ok: true };
+            return {
+                ok: false,
+                retryable: response.status >= 500 || response.status === 0 || response.status === 429,
+                error: 'HTTP ' + response.status
+            };
         }
 
         if (op.type === 'blockCreateBelow') {
             var anchorId = resolveAnchorId(op.anchorBlockId || op.payload.id, tempIdMap);
-            if (isTempBlockId(anchorId)) return false;
+            if (isTempBlockId(anchorId)) {
+                return { ok: false, retryable: true, error: 'Waiting for related create to sync' };
+            }
             var createParams = new URLSearchParams(op.payload);
             createParams.set('id', anchorId);
             var createResponse = await fetch('/block/createBelowInline', {
@@ -497,7 +569,13 @@
                 credentials: 'same-origin',
                 body: createParams.toString()
             });
-            if (!createResponse.ok) return false;
+            if (!createResponse.ok) {
+                return {
+                    ok: false,
+                    retryable: createResponse.status >= 500 || createResponse.status === 0 || createResponse.status === 429,
+                    error: 'HTTP ' + createResponse.status
+                };
+            }
             var html = await createResponse.text();
             var savedId = extractSavedBlockId(html);
             if (savedId && op.tempBlockId) {
@@ -507,56 +585,118 @@
                     replaceRowWithHtml(tempRow, html);
                 }
             }
-            return true;
+            return { ok: true };
         }
 
-        return false;
+        return { ok: false, retryable: false, error: 'Unknown operation' };
     }
 
     async function syncPendingEdits() {
-        if (syncing || !navigator.onLine || !window.scriptyOfflineStore) return;
+        if (syncing || !isEffectivelyOnline() || !window.scriptyOfflineStore) return;
         syncing = true;
         syncFailed = false;
 
         try {
+            if (window.scriptyProbeConnectivity) {
+                var reachable = await window.scriptyProbeConnectivity();
+                if (!reachable) {
+                    syncFailed = true;
+                    setBannerMessage('Still offline — will retry when your connection returns.', {
+                        error: true,
+                        showRetry: true
+                    });
+                    return;
+                }
+            }
+
             var ops = await window.scriptyOfflineStore.listPendingOperations();
             if (ops.length === 0) {
-                syncing = false;
                 updateOfflineBanner();
                 return;
             }
 
+            showBanner();
             setBannerMessage('Back online — syncing ' + ops.length + ' change' + (ops.length === 1 ? '' : 's') + '…', { syncing: true });
 
             var tempIdMap = {};
-            var failedAt = null;
+            var synced = 0;
+            var failedCount = 0;
+            var shouldRetryLater = false;
+
             for (var i = 0; i < ops.length; i++) {
-                var ok = await syncOneOperation(ops[i], tempIdMap);
-                if (!ok) {
-                    failedAt = ops[i];
+                if (!isEffectivelyOnline()) {
+                    shouldRetryLater = true;
+                    break;
+                }
+                var op = ops[i];
+                var result;
+                try {
+                    result = await syncOneOperation(op, tempIdMap);
+                } catch (err) {
+                    result = { ok: false, retryable: true, error: (err && err.message) || 'Network error' };
+                }
+
+                if (result.ok) {
+                    await window.scriptyOfflineStore.removePendingOperation(op.id);
+                    synced += 1;
+                    continue;
+                }
+
+                failedCount += 1;
+                var attempts = (op.attempts || 0) + 1;
+                if (window.scriptyOfflineStore.updateOperation) {
+                    await window.scriptyOfflineStore.updateOperation(op.id, {
+                        attempts: attempts,
+                        lastError: result.error || 'Sync failed',
+                        lastAttemptAt: Date.now()
+                    });
+                }
+
+                // Hard failures (auth/validation) stop the queue so order is preserved.
+                if (!result.retryable || attempts >= MAX_SYNC_ATTEMPTS) {
                     syncFailed = true;
                     break;
                 }
-                await window.scriptyOfflineStore.removePendingOperation(ops[i].id);
+
+                // Soft/transient failure: keep later ops for a later pass.
+                shouldRetryLater = true;
+                syncFailed = true;
+                break;
             }
 
-            if (!syncFailed) {
-                var projectId = getProjectIdFromPage();
-                await refreshPendingMarkers(projectId);
+            var projectId = getProjectIdFromPage();
+            await refreshPendingMarkers(projectId);
+
+            if (failedCount === 0 && !shouldRetryLater) {
+                syncFailed = false;
                 if (window.scriptySaveProjectSnapshot) {
                     await window.scriptySaveProjectSnapshot();
                 }
+                showBanner();
                 setBannerMessage('All offline changes synced.');
-                setTimeout(updateOfflineBanner, 1500);
+                setTimeout(function () {
+                    hideBannerIfOnline();
+                    updateOfflineBanner();
+                }, 1500);
             } else {
-                setBannerMessage('Could not sync "' + (failedAt.type || 'change') + '". Retry when your connection is stable.', {
-                    error: true,
-                    showRetry: true
-                });
+                showBanner();
+                var remaining = await window.scriptyOfflineStore.countPendingEdits(projectId);
+                setBannerMessage(
+                    'Synced ' + synced + ' change' + (synced === 1 ? '' : 's') +
+                    (remaining ? '; ' + remaining + ' still pending.' : '.') +
+                    ' Retry when your connection is stable.',
+                    { error: true, showRetry: true }
+                );
+                if (shouldRetryLater) {
+                    scheduleSyncRetry(Math.min(30000, 2000 * Math.pow(2, Math.min(synced + failedCount, 4))));
+                    registerBackgroundSync();
+                }
             }
         } catch (err) {
             syncFailed = true;
             setBannerMessage('Sync failed. Retry when your connection is stable.', { error: true, showRetry: true });
+            scheduleSyncRetry(8000);
+            registerBackgroundSync();
         } finally {
             syncing = false;
         }
@@ -568,7 +708,7 @@
     }
 
     document.body.addEventListener('htmx:beforeRequest', function (e) {
-        if (navigator.onLine) return;
+        if (isEffectivelyOnline()) return;
         var path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
         if (!isOfflineBlockPath(path)) return;
 
@@ -613,7 +753,7 @@
             return;
         }
 
-        if (navigator.onLine) return;
+        if (isEffectivelyOnline()) return;
         var link = e.target.closest('.create-below');
         if (!link) return;
         var row = link.closest('.block-row[data-block-id]');
@@ -623,6 +763,20 @@
         openCreateBelowOffline(row);
     });
 
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden && isEffectivelyOnline()) {
+            syncPendingEdits();
+        }
+    });
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', function (event) {
+            if (event.data && event.data.type === 'SCRIPTY_SYNC_OUTBOX') {
+                syncPendingEdits();
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         updateOfflineBanner();
         var projectId = getProjectIdFromPage();
@@ -630,8 +784,11 @@
             refreshPendingMarkers(projectId);
             if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptyApplyPendingBlockEdits) {
                 window.scriptyApplyPendingBlockEdits(projectId);
+            } else if (isEffectivelyOnline()) {
+                syncPendingEdits();
             }
         }
+        registerBackgroundSync();
     });
     if (document.readyState !== 'loading') {
         updateOfflineBanner();
@@ -692,6 +849,7 @@
     window.scriptySyncPendingEdits = syncPendingEdits;
     window.scriptyUpdateOfflineEditBanner = updateOfflineBanner;
     window.scriptyRenderBlockShowInline = renderShowInline;
+    window.scriptyRenderOptimisticBlockRow = renderOptimisticBlockRow;
     window.scriptyGetBlockEditContext = getBlockEditContext;
     window.scriptyRefreshOfflinePendingMarkers = refreshPendingMarkers;
     window.scriptyScheduleOfflineSnapshot = scheduleSnapshot;

@@ -5354,7 +5354,8 @@
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
             const serviceWorkerEnabled = /*[[${serviceWorkerEnabled}]]*/ true;
-            const SW_MIGRATION_KEY = 'sw-migration-v14';
+            const SW_MIGRATION_KEY = 'sw-migration-v19';
+            let refreshingForSw = false;
 
             async function clearServiceWorkerState() {
                 if ('caches' in window) {
@@ -5375,10 +5376,34 @@
                 window.location.reload();
             }
 
+            function activateWaitingWorker(reg) {
+                if (reg.waiting) {
+                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+            }
+
             function registerServiceWorker() {
-                navigator.serviceWorker.register('/sw.js?v=' + /*[[${assetVersion}]]*/ '68')
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (refreshingForSw) return;
+                    refreshingForSw = true;
+                    window.location.reload();
+                });
+
+                navigator.serviceWorker.register('/sw.js?v=' + /*[[${assetVersion}]]*/ '93')
                     .then((reg) => {
                         console.log('SW registered:', reg.scope);
+                        if (reg.waiting) {
+                            activateWaitingWorker(reg);
+                        }
+                        reg.addEventListener('updatefound', () => {
+                            const installing = reg.installing;
+                            if (!installing) return;
+                            installing.addEventListener('statechange', () => {
+                                if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                                    activateWaitingWorker(reg);
+                                }
+                            });
+                        });
                         reg.update();
                     })
                     .catch((err) => console.error('SW registration failed:', err));

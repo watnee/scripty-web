@@ -3642,7 +3642,6 @@
             var elementLabelsToggle = document.getElementById('nav-element-labels-toggle');
             var lockToggle = document.getElementById('nav-lock-toggle');
             var editionToggle = document.querySelector('#script-edition-dropdown .script-edition-toggle');
-            var lockToggleLabel = lockToggle ? lockToggle.querySelector('.lock-filter-toggle-label') : null;
             var bookmarksKey = 'scripty-show-block-bookmarks-project-' + projectId;
             var pinsKey = 'scripty-show-block-pins-project-' + projectId;
             var selectKey = 'scripty-show-block-select-project-' + projectId;
@@ -3809,13 +3808,9 @@
                 var lockTitle = blockEditLocked ? 'Unlock this version' : 'Lock this version';
                 if (lockToggle) {
                     lockToggle.setAttribute('aria-pressed', blockEditLocked ? 'true' : 'false');
-                    lockToggle.setAttribute('aria-checked', blockEditLocked ? 'true' : 'false');
                     lockToggle.classList.toggle('is-active', blockEditLocked);
                     lockToggle.title = lockTitle;
                     lockToggle.setAttribute('aria-label', lockTitle);
-                }
-                if (lockToggleLabel) {
-                    lockToggleLabel.textContent = lockTitle;
                 }
                 if (editionToggle) {
                     var editionName = editionToggle.querySelector('.script-edition-toggle-label');

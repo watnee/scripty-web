@@ -185,18 +185,6 @@
                                 class="nav-dropdown-item script-edition-create-btn"
                                 id="script-edition-create-open">New version…</button>
                         <div class="nav-dropdown-divider" role="separator"></div>
-                        <button id="nav-lock-toggle"
-                                type="button"
-                                class="nav-dropdown-item lock-filter-toggle"
-                                th:if="${canEditScript == null or canEditScript}"
-                                role="menuitemcheckbox"
-                                aria-pressed="false"
-                                aria-checked="false"
-                                aria-label="Lock this version"
-                                title="Lock this version">
-                            <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
-                            <span class="lock-filter-toggle-label">Lock this version</span>
-                        </button>
                         <a id="nav-version-history"
                            class="nav-dropdown-item"
                            role="menuitem"
@@ -211,6 +199,15 @@
                         </a>
                     </div>
                 </div>
+                <button id="nav-lock-toggle"
+                        type="button"
+                        class="nav-dropdown-toggle lock-filter-toggle"
+                        th:if="${canEditScript == null or canEditScript}"
+                        aria-pressed="false"
+                        aria-label="Lock this version"
+                        title="Lock this version">
+                    <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
+                </button>
                 <dialog id="script-edition-create-dialog" class="script-edition-dialog">
                     <form th:if="${canEditScript == null or canEditScript}"
                           th:action="@{/project/edition/create}" method="POST" hx-boost="false" class="script-edition-create-form">

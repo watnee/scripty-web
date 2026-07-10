@@ -3564,29 +3564,34 @@ input.project-list-search:focus-visible {
 }
 
 .project-search-dropdown {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
+    display: inline-block;
     position: relative;
     flex: 0 0 auto;
     min-width: 0;
     margin-left: auto;
+    z-index: 1;
 }
 
-.project-search-dropdown .project-search-wrap {
+.project-search-dropdown.open {
+    z-index: 1300;
+}
+
+.project-search-dropdown .nav-dropdown-menu.project-search-menu {
     display: none;
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: 18rem;
+    right: 0;
+    left: auto;
+    min-width: min(20rem, calc(100vw - 2rem));
+    max-width: min(22rem, calc(100vw - 2rem));
+    padding: 0.65rem;
 }
 
-.project-search-dropdown.is-open {
-    flex: 1 1 14rem;
-    max-width: min(22rem, calc(100% - 12rem));
+.project-search-dropdown.open .nav-dropdown-menu.project-search-menu {
+    display: block;
 }
 
-.project-search-dropdown.is-open .project-search-wrap {
-    display: flex;
+.project-search-dropdown.has-value .project-search-toggle {
+    color: var(--accent, #475569);
+    border-color: var(--accent, #475569);
 }
 
 .project-search-toggle {
@@ -3614,7 +3619,7 @@ input.project-list-search:focus-visible {
     outline: none;
 }
 
-.project-search-dropdown.is-open .project-search-toggle,
+.project-search-dropdown.open .project-search-toggle,
 .project-search-toggle[aria-expanded="true"] {
     box-shadow: 0 2px 4px -1px var(--fg) inset;
     background: var(--pressed-interactive-bg, var(--interactive-bg));
@@ -3764,19 +3769,21 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
 }
 
 .project-tools-group .project-search-dropdown {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
+    display: inline-block;
+    position: relative;
     margin-left: 0;
     flex: 0 0 auto;
     max-width: none;
     z-index: 1;
 }
 
-.project-tools-group .project-search-dropdown.is-open {
-    flex: 1 1 12rem;
-    max-width: min(18rem, 100%);
+.project-tools-group .project-search-dropdown.open {
     z-index: 1300;
+}
+
+.project-tools-group .project-search-dropdown .nav-dropdown-menu.project-search-menu {
+    right: 0;
+    left: auto;
 }
 
 .project-tools-group .project-search-toggle {
@@ -4616,16 +4623,11 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
 }
 
 .project-top-bar-breadcrumb > .project-search-dropdown {
-    display: inline-flex;
-    align-items: center;
+    display: inline-block;
+    position: relative;
     line-height: 1.2;
     flex: 0 0 auto;
     min-width: 0;
-}
-
-.project-top-bar-breadcrumb > .project-search-dropdown.is-open {
-    flex: 1 1 14rem;
-    max-width: min(22rem, calc(100% - 14rem));
 }
 
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line {
@@ -7657,7 +7659,7 @@ kbd {
         justify-content: center !important;
     }
 
-    /* Inline search in the project tools row — icon/label; field expands when open */
+    /* Project search dropdown in the project tools row */
     .project-search-dropdown {
         flex: 0 0 auto !important;
         max-width: none !important;
@@ -7665,9 +7667,11 @@ kbd {
         margin-left: 0 !important;
     }
 
-    .project-search-dropdown.is-open {
-        flex: 1 1 auto !important;
-        max-width: min(18rem, 100%) !important;
+    .project-search-dropdown .nav-dropdown-menu.project-search-menu {
+        min-width: calc(100vw - 2rem) !important;
+        max-width: calc(100vw - 2rem) !important;
+        right: 0 !important;
+        left: auto !important;
     }
 
     .project-share-dropdown .nav-dropdown-menu {
@@ -8015,7 +8019,8 @@ aside.block-actions {
 
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn[aria-expanded="true"],
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle[aria-expanded="true"],
-.has-toolbar-brand .project-top-bar-breadcrumb .project-search-toggle[aria-expanded="true"] {
+.has-toolbar-brand .project-top-bar-breadcrumb .project-search-toggle[aria-expanded="true"],
+.has-toolbar-brand .project-top-bar-breadcrumb .project-search-dropdown.has-value .project-search-toggle {
     box-shadow: 0 2px 4px -1px var(--fg) inset;
     background: var(--pressed-interactive-bg);
 }

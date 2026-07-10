@@ -1,5 +1,5 @@
 /**
- * Project script search (icon button + expandable field beside toolbar actions).
+ * Project script search (dropdown menu with search field).
  *
  * Loaded from nav.html so handlers survive HTMX-boosted navigation into
  * /project/show (page scripts are not executed when allowScriptTags is false).
@@ -26,12 +26,24 @@
         return document.getElementById('project-search-toggle');
     }
 
+    function closeOtherDropdowns() {
+        document.querySelectorAll('.nav-dropdown').forEach(function (dropdown) {
+            if (dropdown.id === 'project-search-dropdown') return;
+            dropdown.classList.remove('open');
+            var toggle = dropdown.querySelector('.nav-dropdown-toggle');
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
+        });
+    }
+
     function setOpen(open) {
         var searchDropdown = getDropdown();
         var searchInput = getInput();
         var toggle = getToggle();
         if (!searchDropdown || !searchInput) return;
-        searchDropdown.classList.toggle('is-open', !!open);
+        if (open) {
+            closeOtherDropdowns();
+        }
+        searchDropdown.classList.toggle('open', !!open);
         if (toggle) {
             toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
         }
@@ -43,7 +55,7 @@
 
     function isOpen() {
         var searchDropdown = getDropdown();
-        return !!(searchDropdown && searchDropdown.classList.contains('is-open'));
+        return !!(searchDropdown && searchDropdown.classList.contains('open'));
     }
 
     function focusSearch() {
@@ -59,12 +71,6 @@
     function closeSearch() {
         var searchInput = getInput();
         var toggle = getToggle();
-        if (searchInput && searchInput.value) {
-            // Keep open while a query is active so results stay filterable
-            setOpen(true);
-            searchInput.blur();
-            return;
-        }
         setOpen(false);
         if (searchInput) searchInput.blur();
         if (toggle) toggle.focus();
@@ -97,7 +103,6 @@
         }
         if (searchDropdown) {
             searchDropdown.classList.toggle('has-value', !!query);
-            if (query) setOpen(true);
         }
         document.querySelectorAll('.project-script .scene-blocks .block-row[data-block-id]').forEach(function (row) {
             var matches = rowMatchesSearch(row, query);
@@ -154,7 +159,8 @@
         var toggle = target.closest('#project-search-toggle');
         if (toggle) {
             e.preventDefault();
-            if (isOpen() && !(getInput() && getInput().value)) {
+            e.stopPropagation();
+            if (isOpen()) {
                 closeSearch();
             } else {
                 focusSearch();
@@ -175,10 +181,7 @@
 
         var searchDropdown = getDropdown();
         if (searchDropdown && isOpen() && !searchDropdown.contains(target)) {
-            var inputEl = getInput();
-            if (inputEl && !inputEl.value) {
-                setOpen(false);
-            }
+            closeSearch();
         }
     });
 
@@ -215,10 +218,9 @@
         if (!getInput()) return;
         syncShortcutLabel();
         var input = getInput();
-        if (input && input.value) {
-            setOpen(true);
-        } else if (!isOpen()) {
-            setOpen(false);
+        var searchDropdown = getDropdown();
+        if (searchDropdown) {
+            searchDropdown.classList.toggle('has-value', !!(input && input.value));
         }
         performSearch();
     }

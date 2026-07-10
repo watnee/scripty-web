@@ -20,19 +20,7 @@
                 <li aria-current="page" th:text="${viewModel.title}"></li>
             </ol>
         </nav>
-        <div class="text-size-control">
-            <div class="nav-dropdown" id="history-dropdown" style="display: none;">
-                <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false" title="History">🕒</button>
-                <div class="nav-dropdown-menu">
-                    <a class="nav-dropdown-item" id="nav-version-history" href="#">Version History</a>
-                    <hr class="nav-dropdown-divider">
-                    <button class="nav-dropdown-item" id="nav-undo" type="button">Undo</button>
-                    <button class="nav-dropdown-item" id="nav-redo" type="button">Redo</button>
-                </div>
-            </div>
-            <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
-            <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
-        </div>
+        <div th:replace="~{fragments/editorToolbar :: editorToolbar(${lastEditedAt})}"></div>
         <h1>
             <span th:text="${viewModel.title}"></span>
             <form th:action="@{/project/toggleDefault}" method="POST" style="display: inline-block; margin-left: 0.5rem; vertical-align: middle;">

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<div th:fragment="editorToolbar(lastEditedAt)" class="text-size-control">
+    <small class="save-status" id="toolbar-save-status" th:style="${lastEditedAt == null} ? 'visibility: hidden;' : null">
+        <span class="save-label" th:text="${lastEditedAt != null} ? 'Last edited ' : 'Saved '">Saved </span><span class="save-time" th:text="${lastEditedAt != null ? #temporals.format(lastEditedAt, 'MMM d, h:mm a') : ''}"></span>
+    </small>
+    <div class="toolbar-actions">
+        <div class="nav-dropdown" id="history-dropdown" style="display: none;">
+            <button class="nav-dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false" title="History">🕒</button>
+            <div class="nav-dropdown-menu">
+                <a class="nav-dropdown-item" id="nav-version-history" href="#">Version History</a>
+                <hr class="nav-dropdown-divider">
+                <button class="nav-dropdown-item" id="nav-undo" type="button">Undo</button>
+                <button class="nav-dropdown-item" id="nav-redo" type="button">Redo</button>
+            </div>
+        </div>
+        <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
+        <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
+    </div>
+    <script>
+        (function() {
+            function updateToolbarSaveStatus() {
+                const status = document.getElementById('toolbar-save-status');
+                if (!status) return;
+                const labelEl = status.querySelector('.save-label');
+                const timeEl = status.querySelector('.save-time');
+                if (!labelEl || !timeEl) return;
+                labelEl.textContent = 'Saved ';
+                timeEl.textContent = new Date().toLocaleTimeString();
+                status.style.visibility = 'visible';
+            }
+
+            document.body.addEventListener('htmx:afterRequest', function(evt) {
+                const path = evt.detail.pathInfo && evt.detail.pathInfo.requestPath;
+                if (!path || !path.includes('/block/editInline')) return;
+                if (evt.detail.successful) {
+                    updateToolbarSaveStatus();
+                }
+            });
+        })();
+    </script>
+</div>
+</html>

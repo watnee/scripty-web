@@ -273,7 +273,7 @@ html[data-spellcheck="false"] .spellcheck-toggle-btn .spellcheck-slash {
 html[data-spellcheck="false"] .spellcheck-toggle-btn .spellcheck-check {
     opacity: 0.3;
 }
-html[data-spellcheck="false"] .spellcheck-toggle-btn {
+html[data-spellcheck="false"] .spellcheck-toggle-btn:not(.nav-dropdown-item) {
     opacity: 0.5;
 }
 html[data-spellcheck="true"] .spellcheck-toggle-btn .spellcheck-slash {

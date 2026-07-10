@@ -14,12 +14,14 @@
     }
 
     function updateSpellcheckToggleButton(state) {
-        var btn = document.querySelector('.spellcheck-toggle-btn');
+        var btn = document.getElementById('nav-spellcheck-toggle')
+            || document.querySelector('.spellcheck-toggle-btn');
         if (!btn) return;
-        var title = state ? 'Spellcheck: Enabled (click to disable)' : 'Spellcheck: Disabled (click to enable)';
+        var title = state ? 'Disable spellcheck' : 'Enable spellcheck';
         btn.title = title;
         btn.setAttribute('aria-label', title);
         btn.setAttribute('aria-pressed', state ? 'true' : 'false');
+        btn.setAttribute('aria-checked', state ? 'true' : 'false');
     }
 
     function applySpellcheckToElement(el, state) {
@@ -95,6 +97,7 @@
 
     function syncSpellcheckAfterHtmx() {
         updateAllSpellcheckElements();
+        updateSpellcheckToggleButton(isSpellcheckEnabled());
     }
 
     window.scriptyIsSpellcheckEnabled = isSpellcheckEnabled;

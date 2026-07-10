@@ -338,6 +338,9 @@
                         </svg>
                         <span>Word count</span>
                     </button>
+                    <th:block th:if="${canEditScript == null or canEditScript}">
+                        <button th:replace="~{fragments/spellcheckToggle :: menuItem}"></button>
+                    </th:block>
                     <div class="nav-dropdown-divider" role="separator"></div>
                     <a class="nav-dropdown-item"
                        role="menuitem"
@@ -352,7 +355,7 @@
                     </a>
                 </div>
             </div>
-            <span th:if="${canEditScript == null or canEditScript}" th:replace="~{fragments/spellcheckToggle :: toolbarButton}"></span>
+
             <span th:if="${canEditScript == null or canEditScript}" th:replace="~{fragments/historyToolbarButtons :: buttons}"></span>
             <div class="nav-dropdown file-dropdown" id="project-file-dropdown">
                 <button id="nav-file"

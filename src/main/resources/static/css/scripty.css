@@ -4,6 +4,8 @@
     --accent-bg: rgba(0, 0, 0, 0.05);
     --text: var(--fg);
     --muted: var(--muted-fg);
+    /* Screenplay text zoom (A−/A+); 1 = 12pt industry default */
+    --scripty-text-scale: 1;
     color-scheme: light;
 }
 
@@ -1570,7 +1572,7 @@ body.login-body main.login-page {
     --block-select-col-plus: 1.5rem;
     --block-select-col-drag: 1.15rem;
     --block-select-col-gap: 8px;
-    --block-text-line-box: calc(12pt * 1.5);
+    --block-text-line-box: calc(12pt * 1.5 * var(--scripty-text-scale, 1));
 }
 
 .project-toolbar-row {
@@ -3833,7 +3835,7 @@ html.scripty-hide-block-element-labels .block-element-label {
     font-size: 0.62rem;
     font-weight: 600;
     letter-spacing: 0.02em;
-    line-height: var(--block-text-line-box, calc(12pt * 1.5));
+    line-height: var(--block-text-line-box, calc(12pt * 1.5 * var(--scripty-text-scale, 1)));
     text-align: right;
     text-transform: none;
     color: var(--muted-fg, #64748b);
@@ -7579,7 +7581,7 @@ main h3 {
 .table-blocks-all .block-content,
 .script-content .block-content {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 12pt;
+    font-size: calc(12pt * var(--scripty-text-scale, 1));
     line-height: 1.5;
     width: min(var(--screenplay-action-width, 6in), 100%);
     max-width: min(var(--screenplay-action-width, 6in), 100%);
@@ -8308,7 +8310,7 @@ html.scripty-page-view-mode .project-script .screenplay-page {
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     font-family: 'Courier New', Courier, monospace;
-    font-size: 12pt;
+    font-size: calc(12pt * var(--scripty-text-scale, 1));
     line-height: 1;
 }
 
@@ -8348,7 +8350,7 @@ html.scripty-page-view-mode .project-script .screenplay-page-number {
     top: 0.45in;
     right: 1in;
     font-family: 'Courier New', Courier, monospace;
-    font-size: 12pt;
+    font-size: calc(12pt * var(--scripty-text-scale, 1));
     line-height: 1;
     color: inherit;
     pointer-events: none;
@@ -8368,7 +8370,7 @@ html.scripty-page-view-mode .project-script .block-content {
     grid-column: unset;
     width: 100%;
     max-width: 100%;
-    font-size: 12pt;
+    font-size: calc(12pt * var(--scripty-text-scale, 1));
     line-height: 1;
 }
 
@@ -8497,7 +8499,7 @@ html.scripty-screenplay-full-width.scripty-page-view-mode .project-script::after
         min-height: calc(100vw * 11 / 8.5);
         aspect-ratio: 8.5 / 11;
         padding: 8% 8% 8% 12%;
-        font-size: clamp(8px, 2.4vw, 12pt);
+        font-size: calc(clamp(8px, 2.4vw, 12pt) * var(--scripty-text-scale, 1));
     }
 
     html.scripty-page-view-mode .project-script .screenplay-page-number {

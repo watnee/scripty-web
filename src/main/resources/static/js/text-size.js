@@ -24,8 +24,10 @@
     }
 
     function applySize(size) {
-        var main = document.querySelector('main');
-        if (main) main.style.fontSize = size + '%';
+        // Scale screenplay block text via CSS var. Absolute 12pt on .block-content
+        // does not inherit from main { font-size: N% }, so a custom property is required.
+        var scale = (size / 100).toFixed(2);
+        document.documentElement.style.setProperty('--scripty-text-scale', scale);
         try {
             window.dispatchEvent(new CustomEvent('scripty:text-size-changed', { detail: { size: size } }));
         } catch (err) { /* ignore */ }

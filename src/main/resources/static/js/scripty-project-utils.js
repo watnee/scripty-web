@@ -140,10 +140,31 @@
             return document.querySelector('.block-row.block-controls-revealed[data-block-id], tr.block-controls-revealed[data-block-id]');
         }
 
+        function isFormatChrome(el) {
+            return !!(el && el.closest && el.closest(
+                '.bulk-type-btn, .bulk-align-btn, .bulk-style-btn, .text-align-toolbar-btn, ' +
+                '.text-align-dropdown, .text-format-actions, .element-type-actions, .project-script-toolbar'
+            ));
+        }
+
+        function liveBlockRow(row) {
+            if (!row) return null;
+            if (row.isConnected) return row;
+            var id = row.getAttribute && row.getAttribute('data-block-id');
+            if (!id || !/^\d+$/.test(id)) return null;
+            return document.querySelector(
+                '.block-row[data-block-id="' + id + '"], tr[data-block-id="' + id + '"]'
+            );
+        }
+
         var lastFocusedEditable = window.scriptyLastFocusedEditable;
         var focusedEditableRow = (function () {
             if (!lastFocusedEditable || !lastFocusedEditable.isConnected) return null;
             if (document.activeElement === lastFocusedEditable) {
+                return findBlockRow(lastFocusedEditable);
+            }
+            // Format toolbar clicks steal focus; recover the block that was being edited.
+            if (isFormatChrome(document.activeElement) || isFormatChrome(triggerEl)) {
                 return findBlockRow(lastFocusedEditable);
             }
             return null;
@@ -154,7 +175,7 @@
             findCaretPreviewBlockRow(),
             findBlockRow(document.activeElement),
             focusedEditableRow,
-            window.scriptyLastActiveBlockRow,
+            liveBlockRow(window.scriptyLastActiveBlockRow),
             window.scriptyHoveredRow,
             findBlockRow(triggerEl)
         ];

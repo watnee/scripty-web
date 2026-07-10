@@ -3906,7 +3906,7 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
     text-decoration: none;
 }
 
-.text-size-control .outline-mode-toolbar-btn.is-active {
+.project-top-bar-actions .outline-mode-toolbar-btn.is-active {
     color: var(--accent, #475569);
     border-color: var(--accent, #475569);
 }
@@ -7233,6 +7233,7 @@ aside.block-actions {
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .focus-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .full-width-toolbar-btn,
+.has-toolbar-brand .project-top-bar-breadcrumb .outline-mode-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle {
     background: var(--interactive-bg);
     border: 1px solid var(--muted-fg);
@@ -7258,7 +7259,8 @@ aside.block-actions {
 
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .focus-toolbar-btn,
-.has-toolbar-brand .project-top-bar-breadcrumb .full-width-toolbar-btn {
+.has-toolbar-brand .project-top-bar-breadcrumb .full-width-toolbar-btn,
+.has-toolbar-brand .project-top-bar-breadcrumb .outline-mode-toolbar-btn {
     width: 2.25rem;
 }
 
@@ -7268,6 +7270,8 @@ aside.block-actions {
 .has-toolbar-brand .project-top-bar-breadcrumb .focus-toolbar-btn:focus,
 .has-toolbar-brand .project-top-bar-breadcrumb .full-width-toolbar-btn:hover,
 .has-toolbar-brand .project-top-bar-breadcrumb .full-width-toolbar-btn:focus,
+.has-toolbar-brand .project-top-bar-breadcrumb .outline-mode-toolbar-btn:hover,
+.has-toolbar-brand .project-top-bar-breadcrumb .outline-mode-toolbar-btn:focus,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle:hover,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle:focus {
     filter: brightness(1.1);
@@ -7283,6 +7287,7 @@ aside.block-actions {
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn svg,
 .has-toolbar-brand .project-top-bar-breadcrumb .focus-toolbar-btn svg,
 .has-toolbar-brand .project-top-bar-breadcrumb .full-width-toolbar-btn svg,
+.has-toolbar-brand .project-top-bar-breadcrumb .outline-mode-toolbar-btn svg,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle svg {
     display: block;
     width: 20px;
@@ -8201,7 +8206,6 @@ html.safari-reader-view .block-content .reader-visible-text {
 .text-size-control .share-toolbar-btn svg,
 .text-size-control .lists-toolbar-btn svg,
 .text-size-control .view-toolbar-btn svg,
-.text-size-control .outline-mode-toolbar-btn svg,
 .text-size-control .page-view-mode-toolbar-btn svg,
 .text-size-control .toolbar-visibility-toggle svg {
     display: block;
@@ -8220,7 +8224,7 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
     display: none;
 }
 
-.text-size-control #outline-mode-toggle[aria-pressed="true"],
+.project-top-bar-actions #outline-mode-toggle[aria-pressed="true"],
 .text-size-control #page-view-mode-toggle[aria-pressed="true"] {
     box-shadow: 0 2px 4px -1px var(--fg) inset;
     background: var(--pressed-interactive-bg);
@@ -8316,8 +8320,8 @@ html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
 
 body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb > nav,
-body.focus-mode .project-top-bar-actions > :not(#focus-toggle):not(#nav-full-width-toggle):not(.text-size-buttons),
-body.focus-mode .text-size-control > :not(#outline-mode-toggle):not(#page-view-mode-toggle):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
+body.focus-mode .project-top-bar-actions > :not(#focus-toggle):not(#nav-full-width-toggle):not(#outline-mode-toggle):not(.text-size-buttons),
+body.focus-mode .text-size-control > :not(#page-view-mode-toggle):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
 body.focus-mode .project-script-toolbar,
 body.focus-mode .project-header-row,
 body.focus-mode .project-create-scene,

@@ -6,7 +6,7 @@
 #   ./scripts/ship-mobile-changes.sh --apply   # cherry-pick onto main and push
 #   ./scripts/ship-mobile-changes.sh --apply cursor/fix-file-dropdown-mobile-7a12
 #
-# Skips commits already on main (by SHA or equivalent patch-id from a prior cherry-pick).
+# Skips commits already on main (by SHA, commit subject, or equivalent patch-id).
 
 set -euo pipefail
 
@@ -33,18 +33,31 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-is_patch_on_main() {
+MAIN_PATCH_IDS=""
+MAIN_SUBJECTS=""
+
+build_main_index() {
+  local m
+  MAIN_PATCH_IDS=""
+  MAIN_SUBJECTS="$(git log origin/main -n 80 --format='%s')"
+  for m in $(git log origin/main -n 40 --pretty=format:%H); do
+    MAIN_PATCH_IDS="$MAIN_PATCH_IDS$(git show "$m" | git patch-id --stable | awk '{print $1}')"$'\n'
+  done
+}
+
+already_on_main() {
   local commit="$1"
-  local pid mpid m
+  local subject pid
+  if git merge-base --is-ancestor "$commit" origin/main 2>/dev/null; then
+    return 0
+  fi
+  subject="$(git log -1 --format='%s' "$commit")"
+  if [ -n "$subject" ] && printf '%s\n' "$MAIN_SUBJECTS" | grep -Fxq -- "$subject"; then
+    return 0
+  fi
   pid="$(git show "$commit" | git patch-id --stable | awk '{print $1}')"
   [ -z "$pid" ] && return 1
-  for m in $(git log origin/main -n 100 --pretty=format:%H); do
-    mpid="$(git show "$m" | git patch-id --stable | awk '{print $1}')"
-    if [ -n "$mpid" ] && [ "$mpid" = "$pid" ]; then
-      return 0
-    fi
-  done
-  return 1
+  printf '%s\n' "$MAIN_PATCH_IDS" | grep -Fxq -- "$pid"
 }
 
 echo "Fetching origin…"
@@ -56,6 +69,7 @@ if ! git rev-parse --verify origin/main >/dev/null 2>&1; then
 fi
 
 BRANCHES="$(git branch -r --list 'origin/cursor/*' | sed 's|^[[:space:]]*origin/||' | sort -u)"
+build_main_index
 
 if [ -n "$FILTER" ]; then
   SELECTED=""
@@ -82,11 +96,8 @@ for b in $BRANCHES; do
   [ -z "$b" ] && continue
   need=0
   for c in $(git rev-list --reverse "origin/main..origin/$b" 2>/dev/null); do
-    if git merge-base --is-ancestor "$c" origin/main 2>/dev/null; then
-      continue
-    fi
-    if is_patch_on_main "$c"; then
-      echo "  note: already on main (same patch): $(git log -1 --oneline "$c")"
+    if already_on_main "$c"; then
+      echo "  note: already on main: $(git log -1 --oneline "$c")"
       continue
     fi
     need=1
@@ -108,7 +119,7 @@ echo ""
 for b in $PENDING; do
   echo "  $b"
   for c in $(git rev-list --reverse "origin/main..origin/$b"); do
-    if git merge-base --is-ancestor "$c" origin/main 2>/dev/null || is_patch_on_main "$c"; then
+    if already_on_main "$c"; then
       continue
     fi
     echo "    $(git log -1 --oneline "$c")"
@@ -135,7 +146,7 @@ for b in $PENDING; do
   echo "=== Shipping $b ==="
   for c in $(git rev-list --reverse "origin/main..origin/$b"); do
     subject="$(git log -1 --format='%s' "$c")"
-    if git merge-base --is-ancestor "$c" HEAD 2>/dev/null || is_patch_on_main "$c"; then
+    if already_on_main "$c"; then
       echo "  skip (already on main): $subject"
       continue
     fi

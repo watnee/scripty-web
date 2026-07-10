@@ -119,6 +119,25 @@
                         <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
                     </svg>
                 </button>
+                <button id="nav-full-width-toggle"
+                        type="button"
+                        class="nav-dropdown-toggle full-width-toolbar-btn"
+                        aria-pressed="false"
+                        aria-label="Use full page width"
+                        title="Use full page width">
+                    <svg class="full-width-icon full-width-icon--expand" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                    <svg class="full-width-icon full-width-icon--compress" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="4 14 10 14 10 20"></polyline>
+                        <polyline points="20 10 14 10 14 4"></polyline>
+                        <line x1="14" y1="10" x2="21" y2="3"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                </button>
                 <span class="text-size-buttons" role="group" aria-label="Text size">
                     <button id="text-size-decrease" type="button" class="text-size-btn" aria-label="Decrease text size">A−</button>
                     <button id="text-size-increase" type="button" class="text-size-btn" aria-label="Increase text size">A+</button>
@@ -402,25 +421,6 @@
                     <line x1="8" y1="8" x2="16" y2="8"></line>
                     <line x1="8" y1="12" x2="16" y2="12"></line>
                     <line x1="8" y1="16" x2="13" y2="16"></line>
-                </svg>
-            </button>
-            <button id="nav-full-width-toggle"
-                    type="button"
-                    class="nav-dropdown-toggle full-width-toolbar-btn"
-                    aria-pressed="false"
-                    aria-label="Use full page width"
-                    title="Use full page width">
-                <svg class="full-width-icon full-width-icon--expand" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="15 3 21 3 21 9"></polyline>
-                    <polyline points="9 21 3 21 3 15"></polyline>
-                    <line x1="21" y1="3" x2="14" y2="10"></line>
-                    <line x1="3" y1="21" x2="10" y2="14"></line>
-                </svg>
-                <svg class="full-width-icon full-width-icon--compress" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="4 14 10 14 10 20"></polyline>
-                    <polyline points="20 10 14 10 14 4"></polyline>
-                    <line x1="14" y1="10" x2="21" y2="3"></line>
-                    <line x1="3" y1="21" x2="10" y2="14"></line>
                 </svg>
             </button>
             <button id="outline-mode-toggle"

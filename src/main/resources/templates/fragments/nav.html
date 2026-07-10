@@ -28,44 +28,25 @@
         <a th:href="@{/}" class="nav-brand"><strong>Scripty</strong></a>
     </nav>
     <div class="header-actions">
-        <div class="header-actions-group" aria-label="Account and settings">
-        <div class="nav-dropdown help-dropdown" id="help-dropdown">
-            <button class="nav-dropdown-toggle help-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Help" title="Help"
-                    th:aria-current="${currentPage == 'help' or currentPage == 'shortcuts'} ? 'page'">
-                <svg class="help-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        <div class="header-actions-group" aria-label="Account">
+        <th:block th:unless="${currentPage == 'project'}">
+            <div th:replace="~{:: helpDropdown(${currentPage})}"></div>
+        </th:block>
+        <div class="nav-dropdown user-dropdown-container" id="user-dropdown">
+            <button class="nav-dropdown-toggle user-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="User menu" title="User menu">
+                <svg class="user-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
                 </svg>
             </button>
-            <div class="nav-dropdown-menu help-dropdown-menu" role="menu" aria-label="Help">
-                <div class="help-feature-search" role="search">
-                    <input type="search"
-                           id="help-feature-search"
-                           class="help-feature-search-input"
-                           placeholder="Search features…"
-                           aria-label="Search features"
-                           autocomplete="off"
-                           spellcheck="false">
-                    <div id="help-feature-search-results" class="help-feature-search-results" hidden></div>
-                    <p id="help-feature-search-empty" class="help-feature-search-empty muted" hidden>No matching features</p>
-                </div>
+            <div class="nav-dropdown-menu" role="menu" aria-label="User menu">
+                <a class="nav-dropdown-item" th:href="@{/login}" hx-boost="false" sec:authorize="!isAuthenticated()">Sign In</a>
+                <a class="nav-dropdown-item" th:href="@{/team/list}" th:classappend="${currentPage == 'teams'} ? 'active'" sec:authorize="isAuthenticated()">Teams</a>
+                <a class="nav-dropdown-item" th:href="@{/user/list}" th:classappend="${currentPage == 'users'} ? 'active'" sec:authorize="hasRole('ROLE_ADMIN')">Users</a>
                 <hr class="nav-dropdown-divider">
-                <a class="nav-dropdown-item" th:href="@{/help}" th:classappend="${currentPage == 'help'} ? 'active'">Scripty Help</a>
-                <a class="nav-dropdown-item" th:href="@{/shortcuts}" th:classappend="${currentPage == 'shortcuts'} ? 'active'">Keyboard Shortcuts</a>
-                <button type="button" class="nav-dropdown-item" data-scripty-install-app hidden>Install App</button>
-            </div>
-        </div>
-        <div class="nav-dropdown settings-dropdown" id="settings-dropdown">
-            <button class="nav-dropdown-toggle settings-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Settings" title="Settings">
-                <svg class="settings-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-            </button>
-            <div class="nav-dropdown-menu">
+                <div class="user-menu-label" id="settings-dropdown">Theme</div>
                 <button class="nav-dropdown-item theme-option" data-theme="light" type="button" role="menuitemradio" aria-checked="false">
-                    <svg class="sun-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; display: inline; vertical-align: middle;">
+                    <svg class="sun-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="12" cy="12" r="5"></circle>
                         <line x1="12" y1="1" x2="12" y2="3"></line>
                         <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -75,33 +56,23 @@
                         <line x1="21" y1="12" x2="23" y2="12"></line>
                         <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
                         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg> Light
+                    </svg>
+                    <span>Light</span>
                 </button>
                 <button class="nav-dropdown-item theme-option" data-theme="dark" type="button" role="menuitemradio" aria-checked="false">
-                    <svg class="moon-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; display: inline; vertical-align: middle;">
+                    <svg class="moon-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg> Dark
+                    </svg>
+                    <span>Dark</span>
                 </button>
                 <button class="nav-dropdown-item theme-option" data-theme="system" type="button" role="menuitemradio" aria-checked="false">
-                    <svg class="system-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem; display: inline; vertical-align: middle;">
+                    <svg class="system-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
                         <line x1="8" y1="21" x2="16" y2="21"></line>
                         <line x1="12" y1="17" x2="12" y2="21"></line>
-                    </svg> System
+                    </svg>
+                    <span>System</span>
                 </button>
-            </div>
-        </div>
-        <div class="nav-dropdown user-dropdown-container" id="user-dropdown">
-            <button class="nav-dropdown-toggle user-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="User menu" title="User menu">
-                <svg class="user-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-            </button>
-            <div class="nav-dropdown-menu">
-                <a class="nav-dropdown-item" th:href="@{/login}" hx-boost="false" sec:authorize="!isAuthenticated()">Sign In</a>
-                <a class="nav-dropdown-item" th:href="@{/team/list}" th:classappend="${currentPage == 'teams'} ? 'active'" sec:authorize="isAuthenticated()">Teams</a>
-                <a class="nav-dropdown-item" th:href="@{/user/list}" th:classappend="${currentPage == 'users'} ? 'active'" sec:authorize="hasRole('ROLE_ADMIN')">Users</a>
                 <hr class="nav-dropdown-divider" sec:authorize="isAuthenticated()">
                 <form th:action="@{/logout}" method="post" hx-boost="false" sec:authorize="isAuthenticated()"
                       onsubmit="try{localStorage.removeItem('scripty-offline-user-id');}catch(e){}if('caches' in window){caches.keys().then(function(keys){return Promise.all(keys.filter(function(k){return k.indexOf('scripty-cache')===0;}).map(function(k){return caches.delete(k);}));}).catch(function(){});}">
@@ -6159,4 +6130,33 @@
     <script th:src="@{/js/element-type.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/fountain-power.js(v=${assetVersion})}"></script>
 </header>
+
+    <div th:fragment="helpDropdown(currentPage)" class="nav-dropdown help-dropdown" id="help-dropdown">
+        <button class="nav-dropdown-toggle help-toggle-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Help" title="Help"
+                th:aria-current="${currentPage == 'help' or currentPage == 'shortcuts'} ? 'page'">
+            <svg class="help-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <span class="help-toggle-label">Help</span>
+        </button>
+        <div class="nav-dropdown-menu help-dropdown-menu" role="menu" aria-label="Help">
+            <div class="help-feature-search" role="search">
+                <input type="search"
+                       id="help-feature-search"
+                       class="help-feature-search-input"
+                       placeholder="Search features…"
+                       aria-label="Search features"
+                       autocomplete="off"
+                       spellcheck="false">
+                <div id="help-feature-search-results" class="help-feature-search-results" hidden></div>
+                <p id="help-feature-search-empty" class="help-feature-search-empty muted" hidden>No matching features</p>
+            </div>
+            <hr class="nav-dropdown-divider">
+            <a class="nav-dropdown-item" th:href="@{/help}" th:classappend="${currentPage == 'help'} ? 'active'">Scripty Help</a>
+            <a class="nav-dropdown-item" th:href="@{/shortcuts}" th:classappend="${currentPage == 'shortcuts'} ? 'active'">Keyboard Shortcuts</a>
+            <button type="button" class="nav-dropdown-item" data-scripty-install-app hidden>Install App</button>
+        </div>
+    </div>
 </html>

@@ -33,10 +33,10 @@
     }
 
     function initThemeToggle() {
-        var dropdown = document.getElementById('settings-dropdown');
+        var dropdown = document.getElementById('user-dropdown');
         if (!dropdown) return;
 
-        var items = dropdown.querySelectorAll('[data-theme]');
+        var items = dropdown.querySelectorAll('.theme-option[data-theme]');
         if (!items.length) return;
 
         items.forEach(function (item) {
@@ -44,12 +44,10 @@
             item.dataset.scriptyThemeWired = '1';
             item.addEventListener('click', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 var selectedTheme = item.getAttribute('data-theme');
                 localStorage.setItem('theme', selectedTheme);
                 applyTheme(selectedTheme, items);
-                dropdown.classList.remove('open');
-                var toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
-                if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
             });
         });
 

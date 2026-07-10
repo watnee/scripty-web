@@ -123,28 +123,38 @@ body, main, header, nav, footer, table, tr, td, th, input, textarea, button, sel
 }
 
 .user-dropdown-container .nav-dropdown-item.active,
-.settings-dropdown .theme-option.active,
-html[data-theme-setting="light"] .settings-dropdown .theme-option[data-theme="light"],
-html[data-theme-setting="dark"] .settings-dropdown .theme-option[data-theme="dark"],
-html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="system"] {
+.user-dropdown-container .theme-option.active,
+html[data-theme-setting="light"] .user-dropdown-container .theme-option[data-theme="light"],
+html[data-theme-setting="dark"] .user-dropdown-container .theme-option[data-theme="dark"],
+html[data-theme-setting="system"] .user-dropdown-container .theme-option[data-theme="system"] {
     background-color: var(--accent-bg);
     color: var(--accent);
     font-weight: 600;
 }
 
-.settings-dropdown .theme-option {
+.user-menu-label {
+    padding: 0.35rem 0.65rem 0.15rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted, #888);
+    user-select: none;
+}
+
+.user-dropdown-container .theme-option {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     width: 100%;
 }
 
-.settings-dropdown .theme-option svg {
+.user-dropdown-container .theme-option svg {
     flex-shrink: 0;
     margin-right: 0 !important;
 }
 
-.settings-dropdown .theme-option::after {
+.user-dropdown-container .theme-option::after {
     content: '';
     margin-left: auto;
     width: 1rem;
@@ -152,9 +162,9 @@ html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="s
     flex-shrink: 0;
 }
 
-html[data-theme-setting="light"] .settings-dropdown .theme-option[data-theme="light"]::after,
-html[data-theme-setting="dark"] .settings-dropdown .theme-option[data-theme="dark"]::after,
-html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="system"]::after {
+html[data-theme-setting="light"] .user-dropdown-container .theme-option[data-theme="light"]::after,
+html[data-theme-setting="dark"] .user-dropdown-container .theme-option[data-theme="dark"]::after,
+html[data-theme-setting="system"] .user-dropdown-container .theme-option[data-theme="system"]::after {
     content: '✓';
     color: var(--accent);
     font-weight: 700;
@@ -204,6 +214,10 @@ html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="s
 .help-dropdown .help-icon,
 .settings-dropdown .settings-icon {
     flex-shrink: 0;
+}
+
+.header-actions .help-toggle-label {
+    display: none;
 }
 
 .help-dropdown .nav-dropdown-item.active {
@@ -2639,6 +2653,11 @@ h1:hover > small .project-delete-btn,
 .text-size-control .history-dropdown {
     display: inline-block;
     position: relative;
+    z-index: 1;
+}
+
+.project-tools-group .history-dropdown.open,
+.text-size-control .history-dropdown.open {
     z-index: 1300;
 }
 
@@ -3665,9 +3684,19 @@ input.project-list-search:focus-visible {
 .text-size-control .lists-dropdown,
 .project-tools-group .docs-dropdown,
 .project-tools-group .element-type-dropdown,
-.project-tools-group .script-edition-dropdown {
+.project-tools-group .script-edition-dropdown,
+.project-tools-group .help-dropdown {
     display: inline-block;
     position: relative;
+    z-index: 1;
+}
+
+.project-tools-group .lists-dropdown.open,
+.text-size-control .lists-dropdown.open,
+.project-tools-group .docs-dropdown.open,
+.project-tools-group .element-type-dropdown.open,
+.project-tools-group .script-edition-dropdown.open,
+.project-tools-group .help-dropdown.open {
     z-index: 1300;
 }
 
@@ -3675,7 +3704,8 @@ input.project-list-search:focus-visible {
 .text-size-control .lists-dropdown .nav-dropdown-menu.lists-menu,
 .project-tools-group .docs-dropdown .nav-dropdown-menu.docs-menu,
 .project-tools-group .element-type-dropdown .nav-dropdown-menu.element-type-menu,
-.project-tools-group .script-edition-dropdown .nav-dropdown-menu.script-edition-menu {
+.project-tools-group .script-edition-dropdown .nav-dropdown-menu.script-edition-menu,
+.project-tools-group .help-dropdown .nav-dropdown-menu.help-dropdown-menu {
     display: none;
     left: 0;
     right: auto;
@@ -3689,8 +3719,30 @@ input.project-list-search:focus-visible {
 .text-size-control .lists-dropdown.open .nav-dropdown-menu.lists-menu,
 .project-tools-group .docs-dropdown.open .nav-dropdown-menu.docs-menu,
 .project-tools-group .element-type-dropdown.open .nav-dropdown-menu.element-type-menu,
-.project-tools-group .script-edition-dropdown.open .nav-dropdown-menu.script-edition-menu {
+.project-tools-group .script-edition-dropdown.open .nav-dropdown-menu.script-edition-menu,
+.project-tools-group .help-dropdown.open .nav-dropdown-menu.help-dropdown-menu {
     display: block;
+}
+
+.project-tools-group .help-dropdown .help-icon {
+    display: none;
+}
+
+.project-tools-group .help-dropdown .help-toggle-btn {
+    width: auto;
+    height: auto;
+    border-radius: var(--border-radius, 0.35rem);
+    transform: none;
+}
+
+.project-tools-group .help-dropdown .help-toggle-btn:hover,
+.project-tools-group .help-dropdown .help-toggle-btn:focus {
+    transform: none;
+}
+
+.project-tools-group .help-dropdown .nav-dropdown-menu.help-dropdown-menu {
+    min-width: 16.5rem;
+    max-width: min(20rem, calc(100vw - 1.5rem));
 }
 
 .project-tools-group .script-edition-dropdown .nav-dropdown-menu.script-edition-menu {
@@ -3719,12 +3771,13 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
     margin-left: 0;
     flex: 0 0 auto;
     max-width: none;
-    z-index: 1300;
+    z-index: 1;
 }
 
 .project-tools-group .project-search-dropdown.is-open {
     flex: 1 1 12rem;
     max-width: min(18rem, 100%);
+    z-index: 1300;
 }
 
 .project-tools-group .project-search-toggle {
@@ -3758,6 +3811,11 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
 .text-size-control .view-dropdown {
     display: inline-block;
     position: relative;
+    z-index: 1;
+}
+
+.project-tools-group .view-dropdown.open,
+.text-size-control .view-dropdown.open {
     z-index: 1300;
 }
 
@@ -4549,7 +4607,7 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
 }
 
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line {
-    margin-left: 0;
+    margin-left: auto;
     padding: 0.15rem 0.35rem 0.15rem 0.5rem;
     font-size: 0.9rem;
 }
@@ -7588,13 +7646,19 @@ aside.block-actions {
     min-height: 0;
     border-bottom: none;
     overflow: visible;
-    z-index: 1002;
+    /* Above tools-row dropdowns (1300) and open Share top-bar (1400). */
+    z-index: 1500;
 }
 
 .has-toolbar-brand .header-actions {
     top: var(--toolbar-brand-top-space, 0.5rem);
     right: var(--toolbar-brand-side-space, 0.5rem);
     height: 2.25rem;
+    z-index: 1500;
+}
+
+.has-toolbar-brand .header-actions .nav-dropdown-menu {
+    z-index: 1501;
 }
 
 .has-toolbar-brand .project-top-bar {
@@ -7606,6 +7670,12 @@ aside.block-actions {
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
+}
+
+/* Share (and other top-bar menus) must paint above the tools row (z-index 1300). */
+.has-toolbar-brand .project-top-bar:has(.project-share-dropdown.open),
+.has-toolbar-brand .project-top-bar:has(.nav-dropdown.open) {
+    z-index: 1400;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb {
@@ -7623,6 +7693,7 @@ aside.block-actions {
     flex: 1 1 auto;
     min-width: 0;
     width: auto;
+    max-width: none;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb > .project-search-dropdown {
@@ -7631,7 +7702,8 @@ aside.block-actions {
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb > .project-top-bar-actions {
-    margin-left: 0;
+    margin-left: auto;
+    margin-right: 0;
     flex: 0 0 auto;
     flex-shrink: 0;
     position: relative;
@@ -7674,11 +7746,16 @@ aside.block-actions {
     position: relative;
     height: 2.25rem;
     z-index: 1;
+    overflow: visible;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb .project-share-dropdown.open,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-dropdown.open {
     z-index: 1300;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .project-share-dropdown .nav-dropdown-menu {
+    z-index: 1400;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle {
@@ -7793,13 +7870,23 @@ aside.block-actions {
     height: 12px;
 }
 
-.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .focus-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .full-width-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .outline-mode-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .page-view-mode-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .project-search-toggle {
     width: 2.25rem;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn {
+    gap: 0.3rem;
+    width: auto;
+    padding: 0 0.55rem 0 0.45rem;
+    font-weight: 600;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn .project-share-toggle-label {
+    line-height: 1.2;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn:hover,
@@ -7860,7 +7947,7 @@ body.has-toolbar-brand {
     --toolbar-brand-top-space: 1rem;
     --toolbar-brand-bottom-space: 0.75rem;
     --toolbar-brand-side-space: 1.25rem;
-    --toolbar-brand-header-actions-space: 7.5rem;
+    --toolbar-brand-header-actions-space: 3.5rem;
     --project-chrome-inset: 0.25rem;
     padding-top: var(--toolbar-brand-top-space);
     padding-left: var(--toolbar-brand-side-space);
@@ -8803,32 +8890,15 @@ html.safari-reader-view .block-content .reader-visible-text {
     color: var(--accent, #475569);
 }
 
+.text-size-control .page-view-mode-toolbar-btn svg,
 .text-size-control .spellcheck-toggle-btn svg,
 .text-size-control .drafts-toolbar-btn svg,
 .text-size-control .file-toolbar-btn svg,
 .text-size-control .share-toolbar-btn svg,
 .text-size-control .lists-toolbar-btn svg,
 .text-size-control .view-toolbar-btn svg,
-.text-size-control .history-toolbar-btn svg,
-.text-size-control .page-view-mode-toolbar-btn svg,
-.text-size-control .toolbar-visibility-toggle {
-    gap: 0.3rem;
-    padding: 0.15em 0.5em;
-    width: auto;
-    min-width: 0;
-    height: auto;
-    min-height: 0;
-}
-
-.text-size-control .toolbar-visibility-toggle svg {
+.text-size-control .history-toolbar-btn svg {
     display: block;
-    flex-shrink: 0;
-}
-
-.text-size-control .toolbar-visibility-label {
-    font-size: 0.85rem;
-    font-weight: 600;
-    line-height: 1.2;
 }
 
 /* Keep these after the generic toolbar svg rule so lock icon swap wins. */
@@ -8912,39 +8982,6 @@ html.scripty-screenplay-full-width body.focus-mode .project-script {
     max-width: none;
 }
 
-.text-size-control .toolbar-visibility-toggle .toolbar-visibility-icon--hidden {
-    display: none;
-}
-
-html.scripty-toolbar-hidden .toolbar-visibility-toggle .toolbar-visibility-icon--shown {
-    display: none;
-}
-
-html.scripty-toolbar-hidden .toolbar-visibility-toggle .toolbar-visibility-icon--hidden {
-    display: block;
-}
-
-html.scripty-toolbar-hidden .text-size-control > :not(#nav-toolbar-toggle),
-html.scripty-toolbar-hidden .project-script-toolbar {
-    display: none !important;
-}
-
-html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
-    padding-right: var(--toolbar-brand-side-space, 0.5rem);
-}
-
-@media (min-width: 960px) {
-    html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
-        grid-template-columns: minmax(0, max-content) auto;
-    }
-}
-
-.text-size-control #nav-toolbar-toggle[aria-pressed="true"] {
-    box-shadow: 0 2px 4px -1px var(--fg) inset;
-    background: var(--pressed-interactive-bg);
-    color: var(--accent);
-}
-
 /* Focus mode: hide distractions while writing on the project page */
 .project-top-bar-actions #focus-toggle[aria-pressed="true"],
 .project-top-bar-controls #focus-toggle[aria-pressed="true"] {
@@ -8956,7 +8993,7 @@ html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
 body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb > nav,
 body.focus-mode .project-top-bar-actions,
-body.focus-mode .text-size-control > :not(#nav-toolbar-toggle),
+body.focus-mode .text-size-control,
 body.focus-mode .project-script-toolbar .project-toolbar-row:not(.project-tools-row),
 body.focus-mode .project-tools-group > :not(#project-lists-dropdown):not(#project-view-dropdown):not(#project-search-dropdown),
 body.focus-mode .project-header-row,
@@ -9733,7 +9770,11 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     display: inline-flex;
     align-items: center;
     position: relative;
-    z-index: 1200;
+    z-index: 1;
+}
+
+.text-format-dropdown.open {
+    z-index: 1300;
 }
 
 .project-tools-group .text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle,

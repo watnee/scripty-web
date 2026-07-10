@@ -2328,7 +2328,7 @@ h1 > small a[role="button"].versions-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    max-width: 10rem;
+    max-width: 11rem;
 }
 
 .script-edition-toggle-label {
@@ -2337,6 +2337,21 @@ h1 > small a[role="button"].versions-btn {
     white-space: nowrap;
     font-size: 0.85rem;
     font-weight: 600;
+}
+
+.script-edition-toggle-caret {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.script-edition-dropdown.open .script-edition-toggle-caret {
+    transform: rotate(180deg);
+}
+
+.script-edition-menu .nav-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
 }
 
 .script-edition-dropdown .nav-dropdown-menu.script-edition-menu {
@@ -3530,6 +3545,7 @@ input.project-list-search:focus-visible {
     min-width: min(22rem, calc(100vw - 2rem));
     max-width: min(24rem, calc(100vw - 2rem));
     padding: 0.75rem;
+    z-index: 1300;
 }
 
 .project-share-dropdown.open .nav-dropdown-menu {
@@ -4275,6 +4291,8 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
     min-width: 0;
     min-height: 2.25rem;
     height: 100%;
+    font-size: 1.25rem;
+    line-height: 1.25;
 }
 
 .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol {
@@ -4282,12 +4300,18 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
     height: 100%;
     align-items: center;
     margin: 0;
+    gap: 0.3rem 0.55rem;
 }
 
 .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol > li {
     display: inline-flex;
     align-items: center;
     height: 100%;
+}
+
+.project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol > li + li::before {
+    font-size: 1.15em;
+    margin-right: 0.55rem;
 }
 
 .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol > li:last-child {
@@ -4321,7 +4345,6 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
     line-height: 1.2;
     flex: 0 0 auto;
     min-width: 0;
-    margin-left: auto;
 }
 
 .project-top-bar-breadcrumb > .project-search-dropdown.is-open {
@@ -4332,14 +4355,22 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line {
     margin-left: 0;
     padding: 0.15rem 0.35rem 0.15rem 0.5rem;
+    font-size: 0.9rem;
 }
 
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited {
+    font-size: 0.9rem;
     line-height: 1.2;
 }
 
+.project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited svg {
+    width: 14px;
+    height: 14px;
+}
+
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-breadcrumb-name-display {
-    max-width: min(100%, 20rem);
+    max-width: min(100%, 22rem);
+    font-weight: 600;
 }
 
 .top-bar-start {
@@ -7375,57 +7406,75 @@ aside.block-actions {
 
 .has-toolbar-brand .project-top-bar-breadcrumb {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     min-height: 2.25rem;
-    height: 2.25rem;
+    height: auto;
     width: 100%;
     gap: 0.5rem;
+    row-gap: 0.4rem;
 }
 
-.has-toolbar-brand .project-top-bar-breadcrumb .project-top-bar-actions {
-    margin-left: 0.5rem;
+.has-toolbar-brand .project-top-bar-breadcrumb > nav[aria-label="Breadcrumb"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb > .project-search-dropdown {
+    margin-left: 0;
+    flex: 0 0 auto;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb > .project-top-bar-actions {
+    margin-left: 0;
+    flex: 0 0 auto;
     flex-shrink: 0;
-    z-index: 1001;
+    position: relative;
+    z-index: 1200;
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
+    justify-content: flex-start;
     gap: 0.35rem;
     height: 2.25rem;
+    max-width: none;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .project-top-bar-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.35rem;
+    row-gap: 0.35rem;
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.project-top-bar-actions-row-break {
+    flex-basis: 100%;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb .project-share-dropdown,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-dropdown {
     position: relative;
     height: 2.25rem;
+    z-index: 1;
 }
 
-.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history {
-    background: var(--interactive-bg);
-    border: 1px solid var(--muted-fg);
-    border-radius: var(--border-radius);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--fg);
-    font-size: 0.85rem;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
-    width: 2.25rem;
-    height: 2.25rem;
-    padding: 0;
-    box-sizing: border-box;
-    text-decoration: none;
-}
-
-.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history:hover,
-.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history:focus {
-    filter: brightness(1.1);
-    background-color: var(--interactive-bg);
-}
-
-.has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history svg {
-    display: block;
-    width: 20px;
-    height: 20px;
+.has-toolbar-brand .project-top-bar-breadcrumb .project-share-dropdown.open,
+.has-toolbar-brand .project-top-bar-breadcrumb .script-edition-dropdown.open {
+    z-index: 1300;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle {
@@ -7505,6 +7554,7 @@ aside.block-actions {
 .has-toolbar-brand .project-top-bar-breadcrumb .focus-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .full-width-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .outline-mode-toolbar-btn,
+.has-toolbar-brand .project-top-bar-breadcrumb .page-view-mode-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle,
 .has-toolbar-brand .project-top-bar-breadcrumb .project-search-toggle {
     background: var(--interactive-bg);
@@ -7525,14 +7575,20 @@ aside.block-actions {
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle {
     gap: 0.35rem;
     width: auto;
-    max-width: 10rem;
-    padding: 0 0.55rem;
+    max-width: 11rem;
+    padding: 0 0.45rem 0 0.55rem;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle .script-edition-toggle-caret {
+    width: 12px;
+    height: 12px;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .focus-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .full-width-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .outline-mode-toolbar-btn,
+.has-toolbar-brand .project-top-bar-breadcrumb .page-view-mode-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .project-search-toggle {
     width: 2.25rem;
 }
@@ -7545,6 +7601,8 @@ aside.block-actions {
 .has-toolbar-brand .project-top-bar-breadcrumb .full-width-toolbar-btn:focus,
 .has-toolbar-brand .project-top-bar-breadcrumb .outline-mode-toolbar-btn:hover,
 .has-toolbar-brand .project-top-bar-breadcrumb .outline-mode-toolbar-btn:focus,
+.has-toolbar-brand .project-top-bar-breadcrumb .page-view-mode-toolbar-btn:hover,
+.has-toolbar-brand .project-top-bar-breadcrumb .page-view-mode-toolbar-btn:focus,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle:hover,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle:focus,
 .has-toolbar-brand .project-top-bar-breadcrumb .project-search-toggle:hover,
@@ -7564,6 +7622,7 @@ aside.block-actions {
 .has-toolbar-brand .project-top-bar-breadcrumb .focus-toolbar-btn svg,
 .has-toolbar-brand .project-top-bar-breadcrumb .full-width-toolbar-btn svg,
 .has-toolbar-brand .project-top-bar-breadcrumb .outline-mode-toolbar-btn svg,
+.has-toolbar-brand .project-top-bar-breadcrumb .page-view-mode-toolbar-btn svg,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle svg,
 .has-toolbar-brand .project-top-bar-breadcrumb .project-search-toggle svg {
     display: block;
@@ -7625,6 +7684,8 @@ body.has-toolbar-brand {
     flex-wrap: wrap;
     width: 100%;
     row-gap: 0.35rem;
+    position: relative;
+    z-index: 1;
 }
 
 @media (min-width: 960px) {
@@ -8558,31 +8619,39 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
 }
 
 .project-top-bar-actions #outline-mode-toggle[aria-pressed="true"],
+.project-top-bar-controls #outline-mode-toggle[aria-pressed="true"],
+.project-top-bar-controls #page-view-mode-toggle[aria-pressed="true"],
 .text-size-control #page-view-mode-toggle[aria-pressed="true"] {
     box-shadow: 0 2px 4px -1px var(--fg) inset;
     background: var(--pressed-interactive-bg);
     color: var(--accent);
 }
 
-.text-size-control .page-view-mode-toolbar-btn.is-active {
+.text-size-control .page-view-mode-toolbar-btn.is-active,
+.project-top-bar-controls .page-view-mode-toolbar-btn.is-active {
     color: var(--accent, #475569);
     border-color: var(--accent, #475569);
 }
 
-.project-top-bar-actions .full-width-toolbar-btn .full-width-icon--compress {
+.project-top-bar-actions .full-width-toolbar-btn .full-width-icon--compress,
+.project-top-bar-controls .full-width-toolbar-btn .full-width-icon--compress {
     display: none;
 }
 
-html.scripty-screenplay-full-width .project-top-bar-actions .full-width-toolbar-btn .full-width-icon--expand {
+html.scripty-screenplay-full-width .project-top-bar-actions .full-width-toolbar-btn .full-width-icon--expand,
+html.scripty-screenplay-full-width .project-top-bar-controls .full-width-toolbar-btn .full-width-icon--expand {
     display: none;
 }
 
-html.scripty-screenplay-full-width .project-top-bar-actions .full-width-toolbar-btn .full-width-icon--compress {
+html.scripty-screenplay-full-width .project-top-bar-actions .full-width-toolbar-btn .full-width-icon--compress,
+html.scripty-screenplay-full-width .project-top-bar-controls .full-width-toolbar-btn .full-width-icon--compress {
     display: block;
 }
 
 .project-top-bar-actions .full-width-toolbar-btn.is-active,
-.project-top-bar-actions #nav-full-width-toggle[aria-pressed="true"] {
+.project-top-bar-actions #nav-full-width-toggle[aria-pressed="true"],
+.project-top-bar-controls .full-width-toolbar-btn.is-active,
+.project-top-bar-controls #nav-full-width-toggle[aria-pressed="true"] {
     box-shadow: 0 2px 4px -1px var(--fg) inset;
     background: var(--pressed-interactive-bg);
     color: var(--accent);
@@ -8645,7 +8714,8 @@ html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
 }
 
 /* Focus mode: hide distractions while writing on the project page */
-.project-top-bar-actions #focus-toggle[aria-pressed="true"] {
+.project-top-bar-actions #focus-toggle[aria-pressed="true"],
+.project-top-bar-controls #focus-toggle[aria-pressed="true"] {
     box-shadow: 0 2px 4px -1px var(--fg) inset;
     background: var(--pressed-interactive-bg);
     color: var(--accent);
@@ -8654,8 +8724,10 @@ html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
 body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb > nav,
 body.focus-mode .project-top-bar-breadcrumb > .project-search-dropdown,
-body.focus-mode .project-top-bar-actions > :not(#focus-toggle):not(#nav-full-width-toggle):not(#outline-mode-toggle):not(.text-size-buttons),
-body.focus-mode .text-size-control > :not(#page-view-mode-toggle):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
+body.focus-mode .project-top-bar-controls > .project-search-dropdown,
+body.focus-mode .project-top-bar-actions,
+body.focus-mode .project-top-bar-controls > :not(#focus-toggle):not(#nav-full-width-toggle):not(#outline-mode-toggle):not(#page-view-mode-toggle):not(.text-size-buttons),
+body.focus-mode .text-size-control > :not(#nav-toolbar-toggle):not(#project-lists-dropdown),
 body.focus-mode .project-script-toolbar,
 body.focus-mode .project-header-row,
 body.focus-mode .project-create-scene,

@@ -108,6 +108,105 @@
                         <div th:replace="~{fragments/projectSharePanel :: panel(${viewModel.id}, ${shareAccessUsers}, ${viewModel.teams}, ${inviteTeams}, ${pendingInvitations}, ${inviteCommand})}"></div>
                     </div>
                 </div>
+                <div class="nav-dropdown script-edition-dropdown" id="script-edition-dropdown">
+                    <button class="nav-dropdown-toggle script-edition-toggle"
+                            type="button"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            th:aria-label="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}"
+                            th:title="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="6" y1="3" x2="6" y2="15"></line>
+                            <circle cx="18" cy="6" r="3"></circle>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <path d="M18 9a9 9 0 0 1-9 9"></path>
+                        </svg>
+                        <span class="script-edition-toggle-label" th:text="${viewModel.editionName != null ? viewModel.editionName : 'Main'}">Main</span>
+                        <svg class="script-edition-toggle-caret" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="nav-dropdown-menu script-edition-menu">
+                        <div class="script-edition-menu-label">Versions</div>
+                        <div th:each="edition : ${viewModel.editions}"
+                             class="script-edition-row"
+                             th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'is-active'">
+                            <a class="nav-dropdown-item script-edition-switch"
+                               th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'active'"
+                               th:href="@{/project/show(id=${viewModel.id}, editionId=${edition.id})}"
+                               hx-boost="false"
+                               th:text="${edition.name}">Main</a>
+                            <form th:if="${(canEditScript == null or canEditScript) and !edition.default}"
+                                  th:action="@{/project/edition/setDefault}"
+                                  method="POST"
+                                  hx-boost="false"
+                                  class="script-edition-default-form">
+                                <input type="hidden" name="projectId" th:value="${viewModel.id}" />
+                                <input type="hidden" name="editionId" th:value="${edition.id}" />
+                                <button type="submit"
+                                        class="default-project-toggle script-edition-default-toggle"
+                                        th:aria-label="'Set ' + ${edition.name} + ' as default version'"
+                                        th:title="'Set as default version'">
+                                    <span class="icon-outline" aria-hidden="true">☆</span>
+                                    <span class="icon-filled" aria-hidden="true">★</span>
+                                </button>
+                            </form>
+                            <span th:if="${edition.default}"
+                                  class="default-project-toggle script-edition-default-toggle is-default"
+                                  aria-label="Default version"
+                                  title="Default version">
+                                <span class="icon-outline" aria-hidden="true">☆</span>
+                                <span class="icon-filled" aria-hidden="true">★</span>
+                            </span>
+                        </div>
+                        <div class="nav-dropdown-divider" th:if="${canEditScript == null or canEditScript}"></div>
+                        <button th:if="${canEditScript == null or canEditScript}"
+                                type="button"
+                                class="nav-dropdown-item script-edition-create-btn"
+                                id="script-edition-create-open">New version…</button>
+                        <div class="nav-dropdown-divider" role="separator"></div>
+                        <a id="nav-version-history"
+                           class="nav-dropdown-item"
+                           role="menuitem"
+                           th:href="@{/project/version/list(projectId=${viewModel.id}, editionId=${viewModel.editionId})}"
+                           hx-boost="false"
+                           title="Snapshot history">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span>Snapshot history</span>
+                        </a>
+                    </div>
+                </div>
+                <dialog id="script-edition-create-dialog" class="script-edition-dialog">
+                    <form th:if="${canEditScript == null or canEditScript}"
+                          th:action="@{/project/edition/create}" method="POST" hx-boost="false" class="script-edition-create-form">
+                        <h2>New screenplay version</h2>
+                        <p class="muted">Creates an editable copy of the current version. Songs, drafts, and casting stay shared.</p>
+                        <input type="hidden" name="projectId" th:value="${viewModel.id}" />
+                        <input type="hidden" name="copyFromEditionId" th:value="${viewModel.editionId}" />
+                        <label>
+                            Name
+                            <input type="text" name="name" required maxlength="100" placeholder="e.g. Workshop Draft, Alt Ending" autofocus />
+                        </label>
+                        <div class="script-edition-dialog-actions">
+                            <button type="button" class="script-edition-dialog-cancel" value="cancel">Cancel</button>
+                            <button type="submit">Create version</button>
+                        </div>
+                    </form>
+                </dialog>
+                <button id="nav-lock-toggle"
+                        type="button"
+                        class="nav-dropdown-toggle lock-filter-toggle"
+                        th:if="${canEditScript == null or canEditScript}"
+                        aria-pressed="false"
+                        aria-label="Lock block text editing"
+                        title="Lock block text editing">
+                    <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
+                </button>
+            </div>
+            <div class="project-top-bar-controls">
                 <button id="focus-toggle"
                         type="button"
                         class="nav-dropdown-toggle focus-toolbar-btn"
@@ -149,102 +248,23 @@
                         <path d="M4 18h6"></path>
                     </svg>
                 </button>
+                <button id="page-view-mode-toggle"
+                        type="button"
+                        class="nav-dropdown-toggle page-view-mode-toolbar-btn"
+                        aria-pressed="false"
+                        aria-label="View screenplay as pages"
+                        title="View screenplay as pages">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="5" y="3" width="14" height="18" rx="1.5"></rect>
+                        <line x1="8" y1="8" x2="16" y2="8"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                        <line x1="8" y1="16" x2="13" y2="16"></line>
+                    </svg>
+                </button>
                 <span class="text-size-buttons" role="group" aria-label="Text size">
                     <button id="text-size-decrease" type="button" class="text-size-btn" aria-label="Decrease text size">A−</button>
                     <button id="text-size-increase" type="button" class="text-size-btn" aria-label="Increase text size">A+</button>
                 </span>
-                <div class="nav-dropdown script-edition-dropdown" id="script-edition-dropdown">
-                    <button class="nav-dropdown-toggle script-edition-toggle"
-                            type="button"
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                            th:aria-label="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}"
-                            th:title="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}">
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <line x1="6" y1="3" x2="6" y2="15"></line>
-                            <circle cx="18" cy="6" r="3"></circle>
-                            <circle cx="6" cy="18" r="3"></circle>
-                            <path d="M18 9a9 9 0 0 1-9 9"></path>
-                        </svg>
-                        <span class="script-edition-toggle-label" th:text="${viewModel.editionName != null ? viewModel.editionName : 'Main'}">Main</span>
-                    </button>
-                    <div class="nav-dropdown-menu script-edition-menu">
-                        <div class="script-edition-menu-label">Versions</div>
-                        <div th:each="edition : ${viewModel.editions}"
-                             class="script-edition-row"
-                             th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'is-active'">
-                            <a class="nav-dropdown-item script-edition-switch"
-                               th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'active'"
-                               th:href="@{/project/show(id=${viewModel.id}, editionId=${edition.id})}"
-                               hx-boost="false"
-                               th:text="${edition.name}">Main</a>
-                            <form th:if="${(canEditScript == null or canEditScript) and !edition.default}"
-                                  th:action="@{/project/edition/setDefault}"
-                                  method="POST"
-                                  hx-boost="false"
-                                  class="script-edition-default-form">
-                                <input type="hidden" name="projectId" th:value="${viewModel.id}" />
-                                <input type="hidden" name="editionId" th:value="${edition.id}" />
-                                <button type="submit"
-                                        class="default-project-toggle script-edition-default-toggle"
-                                        th:aria-label="'Set ' + ${edition.name} + ' as default version'"
-                                        th:title="'Set as default version'">
-                                    <span class="icon-outline" aria-hidden="true">☆</span>
-                                    <span class="icon-filled" aria-hidden="true">★</span>
-                                </button>
-                            </form>
-                            <span th:if="${edition.default}"
-                                  class="default-project-toggle script-edition-default-toggle is-default"
-                                  aria-label="Default version"
-                                  title="Default version">
-                                <span class="icon-outline" aria-hidden="true">☆</span>
-                                <span class="icon-filled" aria-hidden="true">★</span>
-                            </span>
-                        </div>
-                        <div class="nav-dropdown-divider" th:if="${canEditScript == null or canEditScript}"></div>
-                        <button th:if="${canEditScript == null or canEditScript}"
-                                type="button"
-                                class="nav-dropdown-item script-edition-create-btn"
-                                id="script-edition-create-open">New version…</button>
-                    </div>
-                </div>
-                <dialog id="script-edition-create-dialog" class="script-edition-dialog">
-                    <form th:if="${canEditScript == null or canEditScript}"
-                          th:action="@{/project/edition/create}" method="POST" hx-boost="false" class="script-edition-create-form">
-                        <h2>New screenplay version</h2>
-                        <p class="muted">Creates an editable copy of the current version. Songs, drafts, and casting stay shared.</p>
-                        <input type="hidden" name="projectId" th:value="${viewModel.id}" />
-                        <input type="hidden" name="copyFromEditionId" th:value="${viewModel.editionId}" />
-                        <label>
-                            Name
-                            <input type="text" name="name" required maxlength="100" placeholder="e.g. Workshop Draft, Alt Ending" autofocus />
-                        </label>
-                        <div class="script-edition-dialog-actions">
-                            <button type="button" class="script-edition-dialog-cancel" value="cancel">Cancel</button>
-                            <button type="submit">Create version</button>
-                        </div>
-                    </form>
-                </dialog>
-                <a id="nav-version-history"
-                   class="nav-dropdown-toggle version-history-toolbar-btn"
-                   th:href="@{/project/version/list(projectId=${viewModel.id}, editionId=${viewModel.editionId})}"
-                   hx-boost="false"
-                   aria-label="Snapshot history"
-                   title="Snapshot history">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                </a>
-                <button id="nav-lock-toggle"
-                        type="button"
-                        class="nav-dropdown-toggle lock-filter-toggle"
-                        th:if="${canEditScript == null or canEditScript}"
-                        aria-pressed="false"
-                        aria-label="Lock block text editing"
-                        title="Lock block text editing">
-                    <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
-                </button>
             </div>
         </div>
         <div class="text-size-control">
@@ -420,19 +440,6 @@
                        aria-hidden="true"
                        tabindex="-1" />
             </form>
-            <button id="page-view-mode-toggle"
-                    type="button"
-                    class="nav-dropdown-toggle page-view-mode-toolbar-btn"
-                    aria-pressed="false"
-                    aria-label="View screenplay as pages"
-                    title="View screenplay as pages">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="5" y="3" width="14" height="18" rx="1.5"></rect>
-                    <line x1="8" y1="8" x2="16" y2="8"></line>
-                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                    <line x1="8" y1="16" x2="13" y2="16"></line>
-                </svg>
-            </button>
             <div class="text-format-actions hide-in-reader-view sidebar menu">
                     <div class="nav-dropdown text-format-dropdown" id="project-text-format-dropdown">
                         <button type="button"
@@ -526,7 +533,6 @@
                         </div>
                     </div>
                 </div>
-            <span class="text-size-control-row-break" aria-hidden="true"></span>
             <a class="nav-dropdown-toggle songs-toolbar-btn"
                th:href="@{/project/documents/songs(projectId=${viewModel.id})}"
                hx-boost="false"

@@ -123,6 +123,9 @@
                                             <span class="user-list-access-projects-label muted">Can view</span>
                                             <span class="user-list-project-chip user-list-project-chip--all"
                                                   th:if="${user.privilegedProjectAccess}">All projects</span>
+                                            <span class="visually-hidden"
+                                                  th:if="${user.privilegedProjectAccess}"
+                                                  th:text="${user.projectAccessSearchText}">All projects</span>
                                             <th:block th:unless="${user.privilegedProjectAccess}">
                                                 <span class="user-list-project-chip"
                                                       th:each="project : ${user.projectAccess}"

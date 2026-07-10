@@ -192,6 +192,23 @@ public class UserViewModel {
         if (projectAccess == null || projectAccess.isEmpty()) {
             return "No projects";
         }
+        return joinedProjectNames();
+    }
+
+    /**
+     * All accessible project names (for list search), even when the UI shows "All projects".
+     */
+    public String getProjectAccessSearchText() {
+        if (!enabled || projectAccess == null || projectAccess.isEmpty()) {
+            return getProjectAccessLabel();
+        }
+        if (privilegedProjectAccess) {
+            return "All projects " + joinedProjectNames();
+        }
+        return joinedProjectNames();
+    }
+
+    private String joinedProjectNames() {
         return projectAccess.stream()
                 .map(UserProjectAccessViewModel::getProjectName)
                 .filter(name -> name != null && !name.isBlank())

@@ -74,8 +74,9 @@ function buildContainerEnv(env: Env): Record<string, string> {
 
 export class ScriptyContainer extends Container<Env> {
   defaultPort = 8080;
-  // Keep the JVM warm between requests; cold Spring Boot boots are slow.
-  sleepAfter = "30m";
+  // Keep the JVM warm between requests; cold Spring Boot boots are slow
+  // and look like sync/offline failures to clients on an otherwise stable network.
+  sleepAfter = "2h";
   enableInternet = true;
 
   constructor(ctx: DurableObjectState, env: Env) {

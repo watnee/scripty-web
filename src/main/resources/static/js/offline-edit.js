@@ -700,16 +700,18 @@
         syncFailed = false;
 
         try {
+            // Probe may fail once during a cold start; only abort if we are
+            // actually marked offline after the consecutive-failure threshold.
             if (window.scriptyProbeConnectivity) {
-                var reachable = await window.scriptyProbeConnectivity();
-                if (!reachable) {
-                    syncFailed = true;
-                    setBannerMessage('Still offline — will retry when your connection returns.', {
-                        error: true,
-                        showRetry: true
-                    });
-                    return;
-                }
+                await window.scriptyProbeConnectivity();
+            }
+            if (window.scriptyIsOffline && window.scriptyIsOffline()) {
+                syncFailed = true;
+                setBannerMessage('Still offline — will retry when your connection returns.', {
+                    error: true,
+                    showRetry: true
+                });
+                return;
             }
 
             var ops = await window.scriptyOfflineStore.listPendingOperations();

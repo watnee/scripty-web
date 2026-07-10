@@ -5774,6 +5774,12 @@
                 window.dispatchEvent(new CustomEvent('scripty:project-script-refreshed', { detail: { projectId: projectId } }));
             }
 
+            function noteReachable(ok) {
+                if (window.scriptyReportServerReachable) {
+                    window.scriptyReportServerReachable(!!ok);
+                }
+            }
+
             function refreshScript(targetRevision) {
                 if (refreshInProgress || isEditing()) {
                     if (typeof targetRevision === 'number') {
@@ -5790,6 +5796,7 @@
                     headers: { 'Accept': 'text/html' }
                 }).then(function(response) {
                     if (!response.ok) throw new Error('refresh failed');
+                    noteReachable(true);
                     return response.text();
                 }).then(function(html) {
                     // User may have started editing while the refresh was in flight.
@@ -5814,6 +5821,7 @@
                         window.scriptySaveProjectSnapshot();
                     }
                 }).catch(function() {
+                    noteReachable(false);
                     if (typeof targetRevision === 'number') {
                         pendingRevision = targetRevision;
                     }
@@ -5827,8 +5835,11 @@
                 fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=0', {
                     credentials: 'same-origin',
                     cache: 'no-store'
-                }).then(function(r) { return r.json(); })
-                  .then(function(data) {
+                }).then(function(r) {
+                    if (!r.ok) throw new Error('sync status ' + r.status);
+                    noteReachable(true);
+                    return r.json();
+                }).then(function(data) {
                     if (data && typeof data.revision === 'number') {
                         revision = data.revision;
                         if (pendingRevision != null && pendingRevision <= revision) {
@@ -5838,7 +5849,9 @@
                     if (data && data.title != null) {
                         applyTitle(data.title);
                     }
-                  }).catch(function() {});
+                }).catch(function() {
+                    noteReachable(false);
+                });
             }
 
             function poll() {
@@ -5858,8 +5871,11 @@
                 fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=' + encodeURIComponent(revision), {
                     credentials: 'same-origin',
                     cache: 'no-store'
-                }).then(function(r) { return r.json(); })
-                  .then(function(data) {
+                }).then(function(r) {
+                    if (!r.ok) throw new Error('sync status ' + r.status);
+                    noteReachable(true);
+                    return r.json();
+                }).then(function(data) {
                     if (!data || !data.changed) return;
                     if (data.title != null) applyTitle(data.title);
                     if (isEditing()) {
@@ -5867,7 +5883,9 @@
                         return;
                     }
                     refreshScript(data.revision);
-                  }).catch(function() {});
+                }).catch(function() {
+                    noteReachable(false);
+                });
             }
 
             function onAfterLoad(e) {
@@ -6917,7 +6935,7 @@
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
             const serviceWorkerEnabled = /*[[${serviceWorkerEnabled}]]*/ true;
-            const SW_MIGRATION_KEY = 'sw-migration-v23';
+            const SW_MIGRATION_KEY = 'sw-migration-v24';
             let refreshingForSw = false;
 
             async function clearServiceWorkerState() {

@@ -3,7 +3,13 @@
 
     var assumedOnline = navigator.onLine;
     var probeTimer = null;
+    var consecutiveFailures = 0;
     var PROBE_INTERVAL_MS = 30000;
+    var PROBE_RETRY_MS = 5000;
+    var PROBE_TIMEOUT_MS = 8000;
+    // Require several failed probes before flipping offline so brief
+    // deploy/cold-start blips don't kill live sync on a stable client network.
+    var OFFLINE_FAILURE_THRESHOLD = 3;
 
     function isOffline() {
         return !assumedOnline;
@@ -21,30 +27,64 @@
             return;
         }
         assumedOnline = next;
+        if (assumedOnline) {
+            consecutiveFailures = 0;
+        }
         updateOfflineUI();
         if (assumedOnline && window.scriptySyncPendingEdits) {
             window.scriptySyncPendingEdits();
         }
     }
 
+    function reportServerReachable(reachable) {
+        if (reachable) {
+            consecutiveFailures = 0;
+            setOnlineState(true);
+            return true;
+        }
+        consecutiveFailures += 1;
+        if (!navigator.onLine || consecutiveFailures >= OFFLINE_FAILURE_THRESHOLD) {
+            setOnlineState(false);
+        }
+        return assumedOnline;
+    }
+
     function probeConnectivity() {
         if (!navigator.onLine) {
+            consecutiveFailures = OFFLINE_FAILURE_THRESHOLD;
             setOnlineState(false);
             return Promise.resolve(false);
         }
+
         var url = '/manifest.json?scripty-online-probe=' + Date.now();
+        var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        var timeoutId = null;
+        if (controller) {
+            timeoutId = setTimeout(function () {
+                try { controller.abort(); } catch (e) { /* ignore */ }
+            }, PROBE_TIMEOUT_MS);
+        }
+
         return fetch(url, {
             method: 'GET',
             cache: 'no-store',
             credentials: 'same-origin',
-            headers: { 'Cache-Control': 'no-cache' }
+            headers: { 'Cache-Control': 'no-cache' },
+            signal: controller ? controller.signal : undefined
         }).then(function (response) {
-            setOnlineState(response.ok);
+            reportServerReachable(response.ok);
             return response.ok;
         }).catch(function () {
-            setOnlineState(false);
+            reportServerReachable(false);
             return false;
+        }).finally(function () {
+            if (timeoutId) clearTimeout(timeoutId);
         });
+    }
+
+    function nextProbeDelayMs() {
+        // Probe faster after failures so we recover quickly from transient 502/cold starts.
+        return consecutiveFailures > 0 || !assumedOnline ? PROBE_RETRY_MS : PROBE_INTERVAL_MS;
     }
 
     function scheduleConnectivityProbe() {
@@ -52,7 +92,7 @@
         probeTimer = setTimeout(function () {
             probeTimer = null;
             probeConnectivity().finally(scheduleConnectivityProbe);
-        }, PROBE_INTERVAL_MS);
+        }, nextProbeDelayMs());
     }
 
     function updateOfflineUI() {
@@ -279,9 +319,11 @@
     }
 
     window.addEventListener('online', function () {
+        consecutiveFailures = 0;
         probeConnectivity();
     });
     window.addEventListener('offline', function () {
+        consecutiveFailures = OFFLINE_FAILURE_THRESHOLD;
         setOnlineState(false);
     });
 
@@ -335,5 +377,6 @@
     window.scriptyIsOffline = isOffline;
     window.scriptyApplyPendingBlockEdits = applyPendingBlockEdits;
     window.scriptyProbeConnectivity = probeConnectivity;
+    window.scriptyReportServerReachable = reportServerReachable;
     window.scriptyRestoreScriptFromStore = restoreScriptFromStore;
 }());

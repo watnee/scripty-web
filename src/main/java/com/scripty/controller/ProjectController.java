@@ -80,6 +80,7 @@ public class ProjectController {
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("isDefault", isDefault);
+        model.addAttribute("lastEditedAt", projectVersionService.getLatestVersionCreatedAt(id));
 
         return "project/show";
     }

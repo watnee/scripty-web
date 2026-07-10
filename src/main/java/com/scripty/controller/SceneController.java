@@ -46,6 +46,7 @@ public class SceneController {
         SceneProfileViewModel viewModel = sceneService.getSceneProfileViewModel(id);
 
         model.addAttribute("viewModel", viewModel);
+        model.addAttribute("lastEditedAt", projectVersionService.getLatestVersionCreatedAt(viewModel.getProjectId()));
 
         return "scene/show";
     }

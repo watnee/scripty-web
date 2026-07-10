@@ -263,4 +263,10 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     public void deleteVersion(Integer versionId) {
         projectVersionRepository.deleteById(versionId);
     }
+
+    @Override
+    public LocalDateTime getLatestVersionCreatedAt(Integer projectId) {
+        ProjectVersion latest = projectVersionRepository.findFirstByProjectIdOrderByCreatedAtDesc(projectId);
+        return latest != null ? latest.getCreatedAt() : null;
+    }
 }

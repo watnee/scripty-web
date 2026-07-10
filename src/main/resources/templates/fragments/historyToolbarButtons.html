@@ -1,14 +1,19 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:fragment="buttons">
-    <button id="nav-undo" type="button" class="nav-dropdown-toggle history-action-btn" aria-label="Undo" title="Undo">
-        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 7v6h6"></path>
-            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
-        </svg>
-    </button>
-    <button id="nav-redo" type="button" class="nav-dropdown-toggle history-action-btn" aria-label="Redo" title="Redo">
-        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 7v6h-6"></path>
-            <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
-        </svg>
-    </button>
+    <div class="nav-dropdown history-dropdown" id="history-dropdown">
+        <button type="button"
+                class="nav-dropdown-toggle history-toolbar-btn"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label="Undo and redo"
+                title="Undo and redo">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 7v6h6"></path>
+                <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+            </svg>
+        </button>
+        <div class="nav-dropdown-menu history-menu" role="menu" aria-label="Undo and redo">
+            <button id="nav-undo" type="button" class="nav-dropdown-item history-action-btn" role="menuitem" aria-label="Undo" title="Undo">Undo</button>
+            <button id="nav-redo" type="button" class="nav-dropdown-item history-action-btn" role="menuitem" aria-label="Redo" title="Redo">Redo</button>
+        </div>
+    </div>
 </th:block>

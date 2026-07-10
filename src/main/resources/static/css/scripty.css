@@ -2496,8 +2496,29 @@ h1:hover > small .project-delete-btn,
     cursor: not-allowed;
 }
 
-.text-size-control button.history-action-btn svg {
+.text-size-control .history-dropdown {
+    display: inline-block;
+    position: relative;
+    z-index: 1300;
+}
+
+.text-size-control .history-dropdown .nav-dropdown-menu.history-menu {
+    display: none;
+    left: 0;
+    right: auto;
+    min-width: 10.5rem;
+    padding: 0.35rem;
+    transform-origin: top left;
+    z-index: 1300;
+}
+
+.text-size-control .history-dropdown.open .nav-dropdown-menu.history-menu {
     display: block;
+}
+
+.history-menu .nav-dropdown-item {
+    font-size: 0.84rem;
+    font-weight: 500;
 }
 
 .text-size-control .nav-dropdown-toggle {
@@ -8230,6 +8251,7 @@ html.safari-reader-view .block-content .reader-visible-text {
 .text-size-control .share-toolbar-btn svg,
 .text-size-control .lists-toolbar-btn svg,
 .text-size-control .view-toolbar-btn svg,
+.text-size-control .history-toolbar-btn svg,
 .text-size-control .page-view-mode-toolbar-btn svg,
 .text-size-control .toolbar-visibility-toggle svg {
     display: block;

@@ -8513,6 +8513,17 @@ html.scripty-page-view-mode .project-script .screenplay-page .reader-visible-cha
 html.scripty-page-view-mode .project-script .screenplay-page .script-character-name,
 html.scripty-page-view-mode .project-script .screenplay-page .block-input-textarea {
     color: inherit;
+    caret-color: currentColor;
+    /* Global color transitions make the caret flicker/vanish on page ink changes */
+    transition: none;
+}
+
+html.scripty-page-view-mode .project-script .screenplay-page .block-caret-preview {
+    background-color: currentColor;
+}
+
+html.scripty-page-view-mode .project-script .screenplay-page .block-content form.scripty-spell-active:focus-within .block-input-textarea.script-block-text {
+    caret-color: currentColor;
 }
 
 html.scripty-page-view-mode .project-script .block-row[data-block-type="PAGE_BREAK"] {

@@ -159,6 +159,102 @@
         }
     }
 
+    /**
+     * Moving block rows during pagination blurs focused textareas/contenteditables
+     * (caret disappears). Capture and restore the editing caret across reflows.
+     */
+    function captureEditState() {
+        var active = document.activeElement;
+        if (!active || !active.closest) return null;
+        if (!active.closest('.project-script .block-row, .project-script tr[data-block-id]')) {
+            return null;
+        }
+
+        var state = {
+            el: active,
+            selectionStart: null,
+            selectionEnd: null,
+            contentEditableOffset: null
+        };
+
+        if (typeof active.selectionStart === 'number' && typeof active.selectionEnd === 'number') {
+            state.selectionStart = active.selectionStart;
+            state.selectionEnd = active.selectionEnd;
+            return state;
+        }
+
+        if (active.isContentEditable && window.getSelection) {
+            var selection = window.getSelection();
+            if (selection && selection.rangeCount && selection.anchorNode && active.contains(selection.anchorNode)) {
+                try {
+                    var pre = document.createRange();
+                    pre.selectNodeContents(active);
+                    pre.setEnd(selection.anchorNode, selection.anchorOffset);
+                    state.contentEditableOffset = pre.toString().length;
+                } catch (err) { /* ignore */ }
+            }
+        }
+
+        return state;
+    }
+
+    function restoreContentEditableOffset(el, offset) {
+        if (!el || offset == null || !window.getSelection) return;
+        var remaining = Math.max(0, offset);
+        var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        var node;
+        var range = document.createRange();
+        var placed = false;
+
+        while ((node = walker.nextNode())) {
+            var len = node.textContent.length;
+            if (remaining <= len) {
+                range.setStart(node, remaining);
+                placed = true;
+                break;
+            }
+            remaining -= len;
+        }
+
+        if (!placed) {
+            range.selectNodeContents(el);
+            range.collapse(false);
+        } else {
+            range.collapse(true);
+        }
+
+        var selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    function restoreEditState(state) {
+        if (!state || !state.el || !state.el.isConnected) return;
+        try {
+            state.el.focus({ preventScroll: true });
+        } catch (err) {
+            try { state.el.focus(); } catch (err2) { return; }
+        }
+
+        if (typeof state.selectionStart === 'number' && typeof state.el.setSelectionRange === 'function') {
+            try {
+                var len = state.el.value != null ? state.el.value.length : 0;
+                var start = Math.max(0, Math.min(state.selectionStart, len));
+                var end = Math.max(start, Math.min(
+                    state.selectionEnd != null ? state.selectionEnd : state.selectionStart,
+                    len
+                ));
+                state.el.setSelectionRange(start, end);
+            } catch (err) { /* ignore */ }
+        } else if (state.contentEditableOffset != null) {
+            restoreContentEditableOffset(state.el, state.contentEditableOffset);
+        }
+
+        if (typeof window.scriptyRepositionBlockCaretPreview === 'function') {
+            try { window.scriptyRepositionBlockCaretPreview(); } catch (err) { /* ignore */ }
+        }
+    }
+
     function paginate() {
         if (measuring) return;
         if (!document.documentElement.classList.contains(CLASS_NAME)) return;
@@ -166,6 +262,7 @@
         var sceneBlocks = getSceneBlocks();
         if (!sceneBlocks) return;
 
+        var editState = captureEditState();
         measuring = true;
         try {
             unwrapPages();
@@ -277,6 +374,7 @@
             updateRealPageCount(finalPages.length);
         } finally {
             measuring = false;
+            restoreEditState(editState);
         }
     }
 

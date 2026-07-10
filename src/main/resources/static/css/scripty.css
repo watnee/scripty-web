@@ -8151,6 +8151,14 @@ html.scripty-screenplay-full-width .script-content.entry-content {
     --screenplay-dialogue-width: 58.333%;
 }
 
+/* Escape Missing.css main { max-inline-size: var(--eff-line-length) } (~40rem).
+   Without this, 100% action width only fills a column already near 6in. */
+html.scripty-screenplay-full-width main {
+    max-inline-size: none;
+    inline-size: 100%;
+    width: 100%;
+}
+
 html.scripty-screenplay-full-width .project-toolbar-row,
 html.scripty-screenplay-full-width .project-script .script-scene {
     grid-template-columns: auto minmax(0, 1fr) auto;

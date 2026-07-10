@@ -35,8 +35,14 @@ public class FdxExportServiceImpl implements FdxExportService {
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId) {
+        return exportProject(projectId, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportProject(Integer projectId, Integer editionId) {
         Project project = projectRepository.findById(projectId).orElse(null);
-        ScriptEdition edition = scriptEditionService.getDefaultForProject(projectId);
+        ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
                 ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
                 : blockRepository.findByProjectIdOrderByOrderAsc(projectId);

@@ -5520,6 +5520,36 @@
             var refreshInProgress = false;
             var pendingRevision = null;
             var intervalId = null;
+            var toastHideTimer = null;
+
+            function editionQuery() {
+                var editionId = typeof window.scriptyResolveEditionId === 'function'
+                    ? window.scriptyResolveEditionId()
+                    : (window.scriptyEditionId || null);
+                return editionId ? ('&editionId=' + encodeURIComponent(editionId)) : '';
+            }
+
+            function showSyncToast(message) {
+                var toast = document.getElementById('scripty-editor-toast');
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'scripty-editor-toast';
+                    toast.className = 'scripty-editor-toast';
+                    toast.setAttribute('role', 'status');
+                    toast.setAttribute('aria-live', 'polite');
+                    document.body.appendChild(toast);
+                }
+                toast.textContent = message;
+                toast.hidden = false;
+                toast.classList.add('is-visible');
+                if (toastHideTimer) {
+                    clearTimeout(toastHideTimer);
+                }
+                toastHideTimer = setTimeout(function() {
+                    toast.classList.remove('is-visible');
+                    toast.hidden = true;
+                }, 2800);
+            }
 
             function scriptBody() {
                 return document.getElementById('project-script-body');
@@ -5602,7 +5632,7 @@
                 refreshInProgress = true;
                 var scrollY = window.scrollY;
                 fetch('/project/showScript?id=' + encodeURIComponent(projectId)
-                        + (window.scriptyEditionId ? ('&editionId=' + encodeURIComponent(window.scriptyEditionId)) : ''), {
+                        + editionQuery(), {
                     credentials: 'same-origin',
                     cache: 'no-store',
                     headers: { 'Accept': 'text/html' }
@@ -5629,6 +5659,7 @@
                     }
                     reinitScriptBody();
                     window.scrollTo(0, scrollY);
+                    showSyncToast('Script updated — refreshed from server');
                     if (window.scriptySaveProjectSnapshot) {
                         window.scriptySaveProjectSnapshot();
                     }
@@ -5644,7 +5675,7 @@
             function bumpRevisionFromServer() {
                 // Allow recovery attempts while marked offline if the browser is online.
                 if (window.scriptyIsOffline && window.scriptyIsOffline() && !navigator.onLine) return;
-                fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=0', {
+                fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=0' + editionQuery(), {
                     credentials: 'same-origin',
                     cache: 'no-store'
                 }).then(function(r) {
@@ -5678,7 +5709,7 @@
 
                 if (isEditing()) return;
 
-                fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=' + encodeURIComponent(revision), {
+                fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=' + encodeURIComponent(revision) + editionQuery(), {
                     credentials: 'same-origin',
                     cache: 'no-store'
                 }).then(function(r) {
@@ -5714,6 +5745,10 @@
                 if (intervalId) {
                     clearInterval(intervalId);
                     intervalId = null;
+                }
+                if (toastHideTimer) {
+                    clearTimeout(toastHideTimer);
+                    toastHideTimer = null;
                 }
                 document.body.removeEventListener('htmx:afterOnLoad', onAfterLoad);
                 document.removeEventListener('visibilitychange', onVisibilityChange);

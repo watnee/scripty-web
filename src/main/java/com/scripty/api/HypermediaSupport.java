@@ -16,7 +16,11 @@ public final class HypermediaSupport {
     }
 
     public static EntityModel<Map<String, Object>> projectSyncStatus(Map<String, Object> body, Integer projectId, Long since) {
-        return EntityModel.of(body).add(projectSyncLinks(projectId, since));
+        return projectSyncStatus(body, projectId, since, null);
+    }
+
+    public static EntityModel<Map<String, Object>> projectSyncStatus(Map<String, Object> body, Integer projectId, Long since, Integer editionId) {
+        return EntityModel.of(body).add(projectSyncLinks(projectId, since, editionId));
     }
 
     public static EntityModel<Map<String, Object>> projectUndoRedo(Map<String, Object> body, Integer projectId, boolean undo) {
@@ -42,9 +46,9 @@ public final class HypermediaSupport {
         return EntityModel.of(body, self, alternate);
     }
 
-    private static Link[] projectSyncLinks(Integer projectId, Long since) {
+    private static Link[] projectSyncLinks(Integer projectId, Long since, Integer editionId) {
         return new Link[]{
-                linkTo(methodOn(ProjectController.class).syncStatus(projectId, since, null)).withSelfRel(),
+                linkTo(methodOn(ProjectController.class).syncStatus(projectId, since, editionId, null)).withSelfRel(),
                 linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT),
                 linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null, null)).withRel(ApiRel.UNDO_REDO_STATUS)
         };
@@ -56,7 +60,7 @@ public final class HypermediaSupport {
                 linkTo(methodOn(ProjectController.class).undo(projectId, null, null)).withRel(ApiRel.UNDO),
                 linkTo(methodOn(ProjectController.class).redo(projectId, null, null)).withRel(ApiRel.REDO),
                 linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null, null)).withRel(ApiRel.UNDO_REDO_STATUS),
-                linkTo(methodOn(ProjectController.class).syncStatus(projectId, null, null)).withRel(ApiRel.SYNC_STATUS)
+                linkTo(methodOn(ProjectController.class).syncStatus(projectId, null, null, null)).withRel(ApiRel.SYNC_STATUS)
         };
     }
 }

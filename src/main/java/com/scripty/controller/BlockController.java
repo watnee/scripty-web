@@ -557,7 +557,23 @@ public class BlockController {
         if (resolvedProjectId == null) {
             return denyRedirect();
         }
-        return "redirect:/project/show?id=" + resolvedProjectId;
+        String redirect = "redirect:/project/show?id=" + resolvedProjectId;
+        Integer editionId = resolveEditionId(blockIds);
+        if (editionId != null) {
+            redirect += "&editionId=" + editionId;
+        }
+        return redirect;
+    }
+
+    private Integer resolveEditionId(List<Integer> blockIds) {
+        if (blockIds == null || blockIds.isEmpty()) {
+            return null;
+        }
+        Block block = blockService.read(blockIds.get(0));
+        if (block == null || block.getScriptEdition() == null) {
+            return null;
+        }
+        return block.getScriptEdition().getId();
     }
 
     private boolean denyBulk(List<Integer> blockIds, Integer projectId, Principal principal) {

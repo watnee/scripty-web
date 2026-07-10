@@ -9377,6 +9377,30 @@ html.scripty-outline-mode .element-type-actions .element-type-expand-btn {
     color: #d9ffe3;
 }
 
+.scripty-editor-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    z-index: 10001;
+    transform: translateX(-50%) translateY(0.5rem);
+    max-width: min(28rem, calc(100vw - 2rem));
+    padding: 0.55rem 0.9rem;
+    border-radius: 6px;
+    background: #1f2933;
+    color: #f5f7fa;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.28);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.scripty-editor-toast.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 .scripty-offline-sync-retry {
     background: rgba(255, 255, 255, 0.14);
     color: inherit;

@@ -5,6 +5,7 @@ import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
 import com.scripty.dto.Project;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.dto.Team;
 import com.scripty.dto.User;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
@@ -23,6 +24,7 @@ import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.InvitationService;
 import com.scripty.service.ProjectActivityService;
+import com.scripty.service.ScriptEditionService;
 import com.scripty.service.TeamService;
 import com.scripty.service.TextDocumentService;
 import com.scripty.service.UserService;
@@ -70,6 +72,9 @@ public class ProjectController {
 
     @Autowired
     ProjectUndoRedoService projectUndoRedoService;
+
+    @Autowired
+    ScriptEditionService scriptEditionService;
 
     @Autowired
     UserService userService;
@@ -199,7 +204,10 @@ public class ProjectController {
 
     @RequestMapping(value = "/syncStatus", produces = MediaTypes.HAL_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<EntityModel<Map<String, Object>>> syncStatus(@RequestParam Integer id, @RequestParam(required = false) Long since, Principal principal) {
+    public ResponseEntity<EntityModel<Map<String, Object>>> syncStatus(@RequestParam Integer id,
+                                                                       @RequestParam(required = false) Long since,
+                                                                       @RequestParam(required = false) Integer editionId,
+                                                                       Principal principal) {
         if (denyProjectAccess(id, principal)) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
@@ -209,14 +217,18 @@ public class ProjectController {
             body.put("exists", false);
             body.put("revision", since != null ? since : 0L);
             body.put("changed", false);
-            return ResponseEntity.ok(HypermediaSupport.projectSyncStatus(body, id, since));
+            return ResponseEntity.ok(HypermediaSupport.projectSyncStatus(body, id, since, editionId));
         }
-        long revision = projectRevision(project.getLastEdited());
+        ScriptEdition edition = scriptEditionService.requireForProject(id, editionId);
+        long revision = projectRevision(
+                edition != null && edition.getLastEdited() != null
+                        ? edition.getLastEdited()
+                        : project.getLastEdited());
         body.put("exists", true);
         body.put("revision", revision);
         body.put("title", project.getTitle());
         body.put("changed", since == null || since < revision);
-        return ResponseEntity.ok(HypermediaSupport.projectSyncStatus(body, id, since));
+        return ResponseEntity.ok(HypermediaSupport.projectSyncStatus(body, id, since, editionId));
     }
 
     @RequestMapping(value = "/showScript")
@@ -261,7 +273,7 @@ public class ProjectController {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
         ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.undoWithDetails(projectId, editionId);
-        return ResponseEntity.ok(HypermediaSupport.projectUndoRedo(buildUndoRedoResponse(result, projectId), projectId, true));
+        return ResponseEntity.ok(HypermediaSupport.projectUndoRedo(buildUndoRedoResponse(result, projectId, editionId), projectId, true));
     }
 
     @RequestMapping(value = "/redo", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
@@ -273,7 +285,7 @@ public class ProjectController {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
         ProjectUndoRedoService.UndoRedoResult result = projectUndoRedoService.redoWithDetails(projectId, editionId);
-        return ResponseEntity.ok(HypermediaSupport.projectUndoRedo(buildUndoRedoResponse(result, projectId), projectId, false));
+        return ResponseEntity.ok(HypermediaSupport.projectUndoRedo(buildUndoRedoResponse(result, projectId, editionId), projectId, false));
     }
 
     @RequestMapping(value = "/undoRedoStatus", produces = MediaTypes.HAL_JSON_VALUE)
@@ -298,12 +310,13 @@ public class ProjectController {
     }
 
     private Map<String, Object> buildUndoRedoResponse(ProjectUndoRedoService.UndoRedoResult result,
-                                                      Integer projectId) {
+                                                      Integer projectId,
+                                                      Integer editionId) {
         Map<String, Object> status = new HashMap<>();
         status.put("success", result.success());
         status.put("moveOnly", result.moveOnly());
-        status.put("canUndo", projectUndoRedoService.canUndo(projectId));
-        status.put("canRedo", projectUndoRedoService.canRedo(projectId));
+        status.put("canUndo", projectUndoRedoService.canUndo(projectId, editionId));
+        status.put("canRedo", projectUndoRedoService.canRedo(projectId, editionId));
         return status;
     }
 
@@ -582,28 +595,36 @@ public class ProjectController {
 
     @RequestMapping(value = "/import", method = RequestMethod.POST)
     public String importScript(@RequestParam Integer id,
+                               @RequestParam(required = false) Integer editionId,
                                @RequestParam("file") MultipartFile file,
                                Principal principal,
                                RedirectAttributes redirectAttributes) {
         if (projectService.read(id) == null || denyScriptEdit(id, principal)) {
             return "redirect:/project/list";
         }
+        ScriptEdition edition = scriptEditionService.requireForProject(id, editionId);
+        Integer resolvedEditionId = edition != null ? edition.getId() : editionId;
         try {
             FountainImportService.ImportOutcome outcome =
-                    fountainImportService.importFileIntoProjectWithStatus(id, file);
+                    fountainImportService.importFileIntoProjectWithStatus(id, resolvedEditionId, file);
             redirectAttributes.addFlashAttribute("scriptImportMessage", outcome.message());
         } catch (IOException e) {
             redirectAttributes.addFlashAttribute(
                     "scriptImportMessage",
                     "Could not import that file. Check access and try a .fountain, .txt, .docx, .doc, .fdx, or .pdf file.");
         }
-        return "redirect:/project/show?id=" + id;
+        String redirect = "redirect:/project/show?id=" + id;
+        if (resolvedEditionId != null) {
+            redirect += "&editionId=" + resolvedEditionId;
+        }
+        return redirect;
     }
 
     @RequestMapping(value = "/export", method = RequestMethod.GET)
     public ResponseEntity<byte[]> exportScript(
             @RequestParam Integer id,
             @RequestParam(required = false, defaultValue = "fountain") String format,
+            @RequestParam(required = false) Integer editionId,
             Principal principal) {
         if (denyProjectAccess(id, principal)) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
@@ -615,7 +636,7 @@ public class ProjectController {
 
         String normalized = format == null ? "fountain" : format.trim().toLowerCase();
         if ("pdf".equals(normalized)) {
-            byte[] pdf = pdfExportService.exportProject(id);
+            byte[] pdf = pdfExportService.exportProject(id, editionId);
             String filename = exportFilename(project, "pdf");
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)
@@ -623,7 +644,7 @@ public class ProjectController {
                     .body(pdf);
         }
         if ("docx".equals(normalized) || "word".equals(normalized)) {
-            byte[] docx = docxExportService.exportProject(id);
+            byte[] docx = docxExportService.exportProject(id, editionId);
             String filename = exportFilename(project, "docx");
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(
@@ -632,7 +653,7 @@ public class ProjectController {
                     .body(docx);
         }
         if ("fdx".equals(normalized) || "finaldraft".equals(normalized) || "final-draft".equals(normalized)) {
-            byte[] fdx = fdxExportService.exportProject(id);
+            byte[] fdx = fdxExportService.exportProject(id, editionId);
             String filename = exportFilename(project, "fdx");
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/x-fdx"))
@@ -640,7 +661,7 @@ public class ProjectController {
                     .body(fdx);
         }
 
-        String fountain = fountainExportService.exportProject(id);
+        String fountain = fountainExportService.exportProject(id, editionId);
         String filename = exportFilename(project, "fountain");
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/plain; charset=UTF-8"))

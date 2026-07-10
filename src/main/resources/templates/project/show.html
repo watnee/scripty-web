@@ -379,19 +379,19 @@
                     <div class="file-menu-label" aria-hidden="true">Export</div>
                     <a class="nav-dropdown-item"
                        role="menuitem"
-                       th:href="@{/project/export(id=${viewModel.id}, format=pdf)}"
+                       th:href="@{/project/export(id=${viewModel.id}, format=pdf, editionId=${viewModel.editionId})}"
                        hx-boost="false">PDF</a>
                     <a class="nav-dropdown-item"
                        role="menuitem"
-                       th:href="@{/project/export(id=${viewModel.id}, format=docx)}"
+                       th:href="@{/project/export(id=${viewModel.id}, format=docx, editionId=${viewModel.editionId})}"
                        hx-boost="false">Word (.docx)</a>
                     <a class="nav-dropdown-item"
                        role="menuitem"
-                       th:href="@{/project/export(id=${viewModel.id}, format=fdx)}"
+                       th:href="@{/project/export(id=${viewModel.id}, format=fdx, editionId=${viewModel.editionId})}"
                        hx-boost="false">Final Draft (.fdx)</a>
                     <a class="nav-dropdown-item"
                        role="menuitem"
-                       th:href="@{/project/export(id=${viewModel.id}, format=fountain)}"
+                       th:href="@{/project/export(id=${viewModel.id}, format=fountain, editionId=${viewModel.editionId})}"
                        hx-boost="false">Fountain</a>
                     <div class="nav-dropdown-divider" role="separator"></div>
                     <button id="nav-print"
@@ -408,6 +408,10 @@
                   enctype="multipart/form-data"
                   hx-boost="false"
                   hidden>
+                <input type="hidden"
+                       name="editionId"
+                       th:if="${viewModel.editionId != null}"
+                       th:value="${viewModel.editionId}" />
                 <input type="file"
                        id="project-import-file"
                        name="file"

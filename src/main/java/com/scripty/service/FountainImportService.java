@@ -20,6 +20,8 @@ public interface FountainImportService {
 
     void importIntoProject(Integer projectId, String fountainText);
 
+    void importIntoProject(Integer projectId, Integer editionId, String fountainText);
+
     void importFileIntoProject(Integer projectId, MultipartFile file) throws IOException;
 
     /**
@@ -27,4 +29,7 @@ public interface FountainImportService {
      * Does not throw for empty/corrupt content; throws only for unexpected I/O.
      */
     ImportOutcome importFileIntoProjectWithStatus(Integer projectId, MultipartFile file) throws IOException;
+
+    ImportOutcome importFileIntoProjectWithStatus(Integer projectId, Integer editionId, MultipartFile file)
+            throws IOException;
 }

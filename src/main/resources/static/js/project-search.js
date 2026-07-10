@@ -37,8 +37,14 @@
         if (!query) return true;
         var contentCell = row.querySelector('.block-content');
         var blockContentText = contentCell ? contentCell.textContent.toLowerCase() : '';
+        var characterNameEl = row.querySelector(
+            '.script-character-name, .reader-visible-character-name, .character-name'
+        );
+        var characterNameText = characterNameEl ? characterNameEl.textContent.toLowerCase() : '';
         var tagsAttr = row.getAttribute('data-tags') || '';
-        return blockContentText.includes(query) || tagsAttr.toLowerCase().includes(query);
+        return blockContentText.includes(query)
+            || characterNameText.includes(query)
+            || tagsAttr.toLowerCase().includes(query);
     }
 
     function performSearch() {

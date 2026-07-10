@@ -138,9 +138,15 @@
         var projectId = resolveProjectId();
         if (!projectId) return;
         var shareLinkInput = shareDropdown.querySelector('.project-share-link-input');
-        if (shareLinkInput && !shareLinkInput.value) {
-            shareLinkInput.value = window.location.origin + '/project/show?id=' + projectId;
+        if (!shareLinkInput) return;
+        var link = window.location.origin + '/project/show?id=' + encodeURIComponent(projectId);
+        var editionId = typeof window.scriptyResolveEditionId === 'function'
+            ? window.scriptyResolveEditionId()
+            : (window.scriptyEditionId || null);
+        if (editionId) {
+            link += '&editionId=' + encodeURIComponent(editionId);
         }
+        shareLinkInput.value = link;
     }
 
     function markCopied(copyBtn) {

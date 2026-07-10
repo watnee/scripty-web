@@ -93,12 +93,12 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(BlockRestController.class).list(id, null, null)).withRel(ApiRel.BLOCKS),
                 linkTo(methodOn(PersonRestController.class).list(id, null)).withRel(ApiRel.CHARACTERS),
                 linkTo(methodOn(ActorRestController.class).list(id)).withRel(ApiRel.ACTORS),
-                linkTo(methodOn(ProjectController.class).syncStatus(id, null, null)).withRel(ApiRel.SYNC_STATUS),
+                linkTo(methodOn(ProjectController.class).syncStatus(id, null, null, null)).withRel(ApiRel.SYNC_STATUS),
                 linkTo(methodOn(ProjectController.class).undoRedoStatus(id, null, null)).withRel(ApiRel.UNDO_REDO_STATUS),
-                linkTo(methodOn(ProjectController.class).exportScript(id, "fountain", null)).withRel(ApiRel.EXPORT),
-                linkTo(methodOn(ProjectController.class).exportScript(id, "pdf", null)).withRel(ApiRel.EXPORT_PDF),
-                linkTo(methodOn(ProjectController.class).exportScript(id, "docx", null)).withRel(ApiRel.EXPORT_DOCX),
-                linkTo(methodOn(ProjectController.class).exportScript(id, "fdx", null)).withRel(ApiRel.EXPORT_FDX)
+                linkTo(methodOn(ProjectController.class).exportScript(id, "fountain", null, null)).withRel(ApiRel.EXPORT),
+                linkTo(methodOn(ProjectController.class).exportScript(id, "pdf", null, null)).withRel(ApiRel.EXPORT_PDF),
+                linkTo(methodOn(ProjectController.class).exportScript(id, "docx", null, null)).withRel(ApiRel.EXPORT_DOCX),
+                linkTo(methodOn(ProjectController.class).exportScript(id, "fdx", null, null)).withRel(ApiRel.EXPORT_FDX)
         };
     }
 }

@@ -72,7 +72,7 @@ public class FountainImportServiceImpl implements FountainImportService {
     @Override
     @Transactional
     public void importFileIntoProject(Integer projectId, MultipartFile file) throws IOException {
-        ImportOutcome outcome = importFileIntoProjectWithStatus(projectId, file);
+        ImportOutcome outcome = importFileIntoProjectWithStatus(projectId, null, file);
         if (!outcome.success()) {
             throw new ScriptImportException(outcome.message());
         }
@@ -81,6 +81,13 @@ public class FountainImportServiceImpl implements FountainImportService {
     @Override
     @Transactional
     public ImportOutcome importFileIntoProjectWithStatus(Integer projectId, MultipartFile file)
+            throws IOException {
+        return importFileIntoProjectWithStatus(projectId, null, file);
+    }
+
+    @Override
+    @Transactional
+    public ImportOutcome importFileIntoProjectWithStatus(Integer projectId, Integer editionId, MultipartFile file)
             throws IOException {
         if (file == null || file.isEmpty()) {
             return ImportOutcome.fail(
@@ -97,7 +104,7 @@ public class FountainImportServiceImpl implements FountainImportService {
                 return ImportOutcome.fail(
                         "That file was empty. Try a .fountain, .txt, .docx, .doc, .fdx, or .pdf file.");
             }
-            importIntoProject(projectId, extraction.text());
+            importIntoProject(projectId, editionId, extraction.text());
             if (extraction.wasPdf() && !extraction.pdfUsedScreenplayLayout()) {
                 return ImportOutcome.ok(
                         "Imported as plain text; element types may need cleanup. Best results come from Scripty-exported or standard screenplay-layout PDFs.");
@@ -114,6 +121,12 @@ public class FountainImportServiceImpl implements FountainImportService {
     @Override
     @Transactional
     public void importIntoProject(Integer projectId, String fountainText) {
+        importIntoProject(projectId, null, fountainText);
+    }
+
+    @Override
+    @Transactional
+    public void importIntoProject(Integer projectId, Integer editionId, String fountainText) {
         if (fountainText == null || fountainText.isBlank()) {
             return;
         }
@@ -144,7 +157,10 @@ public class FountainImportServiceImpl implements FountainImportService {
             return;
         }
 
-        ScriptEdition edition = scriptEditionService.ensureDefaultEdition(projectId);
+        ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
+        if (edition == null) {
+            edition = scriptEditionService.ensureDefaultEdition(projectId);
+        }
         List<Block> existing = edition != null
                 ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
                 : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
@@ -167,15 +183,21 @@ public class FountainImportServiceImpl implements FountainImportService {
 
             if ((Block.isCharacterCueType(parsedBlock.type()) || Block.TYPE_DIALOGUE.equals(parsedBlock.type()))
                     && parsedBlock.characterName() != null) {
-                block.setPerson(findOrCreatePerson(project, parsedBlock.characterName(), characterCache));
+                block.setPerson(findOrCreatePerson(project, edition, parsedBlock.characterName(), characterCache));
             }
 
             blockRepository.save(block);
         }
 
-        project.setLastEdited(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        project.setLastEdited(now);
         projectRepository.save(project);
-        projectVersionService.autoSaveVersion(projectId);
+        if (edition != null) {
+            scriptEditionService.touchEdition(edition);
+            projectVersionService.autoSaveVersion(projectId, edition.getId());
+        } else {
+            projectVersionService.autoSaveVersion(projectId);
+        }
         projectActivityService.recordForCurrentUser(
                 projectId,
                 ProjectActivity.ACTION_SCRIPT_IMPORTED,
@@ -503,16 +525,18 @@ public class FountainImportServiceImpl implements FountainImportService {
         return line != null && line.trim().endsWith("^");
     }
 
-    private Person findOrCreatePerson(Project project, String name, Map<String, Person> cache) {
+    private Person findOrCreatePerson(Project project, ScriptEdition edition, String name, Map<String, Person> cache) {
         String key = name.toUpperCase(Locale.ROOT);
         Person cached = cache.get(key);
         if (cached != null) {
             return cached;
         }
 
-        ScriptEdition edition = scriptEditionService.getDefaultForProject(project.getId());
-        List<Person> persons = edition != null
-                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+        ScriptEdition personEdition = edition != null
+                ? edition
+                : scriptEditionService.getDefaultForProject(project.getId());
+        List<Person> persons = personEdition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(personEdition.getId())
                 : personRepository.findByProjectIdOrderByNameAsc(project.getId());
         for (Person person : persons) {
             if (person.getName() != null && person.getName().equalsIgnoreCase(name)) {
@@ -525,7 +549,9 @@ public class FountainImportServiceImpl implements FountainImportService {
         person.setName(PlainTextSanitizer.sanitizeSingleLine(name));
         person.setFullName(PlainTextSanitizer.sanitizeSingleLine(name));
         person.setProject(project);
-        person.setScriptEdition(edition != null ? edition : scriptEditionService.ensureDefaultEdition(project.getId()));
+        person.setScriptEdition(personEdition != null
+                ? personEdition
+                : scriptEditionService.ensureDefaultEdition(project.getId()));
         person = personRepository.save(person);
         cache.put(key, person);
         return person;

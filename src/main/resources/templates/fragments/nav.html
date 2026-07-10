@@ -3457,6 +3457,7 @@
                 return;
             }
 
+            window.scriptyBlockEditOpenInFlight = (window.scriptyBlockEditOpenInFlight || 0) + 1;
             fetch('/block/editInline?id=' + encodeURIComponent(blockId), {
                 credentials: 'same-origin',
                 cache: 'no-store'
@@ -3478,6 +3479,8 @@
                 textarea.setSelectionRange(nextOffset, nextOffset);
             }).catch(function() {
                 /* keep view mode if edit load fails */
+            }).finally(function() {
+                window.scriptyBlockEditOpenInFlight = Math.max(0, (window.scriptyBlockEditOpenInFlight || 1) - 1);
             });
         }
 
@@ -5699,18 +5702,32 @@
             var pollMs = options.pollMs || 4000;
             if (!projectId) return;
 
+            // Avoid stacking pollers across HTMX/full reloads of the project page.
+            if (typeof window._scriptyLiveSyncCleanup === 'function') {
+                window._scriptyLiveSyncCleanup();
+                window._scriptyLiveSyncCleanup = null;
+            }
+
             var refreshInProgress = false;
+            var pendingRevision = null;
+            var intervalId = null;
 
             function scriptBody() {
                 return document.getElementById('project-script-body');
             }
 
             function isEditing() {
+                if (window.scriptyBlockCaretPreviewActive) return true;
+                if (window.scriptyBlockEditOpenInFlight) return true;
                 if (document.querySelector('.project-breadcrumb-name-wrap input[name="title"]')) return true;
                 if (document.querySelector('.scene-name-wrap input[name="name"]')) return true;
                 if (document.querySelector('.block-content textarea:focus')) return true;
                 if (document.querySelector('.block-content form')) return true;
                 if (document.querySelector('.htmx-request')) return true;
+                var textareas = document.querySelectorAll('.block-content textarea[name="content"]');
+                for (var i = 0; i < textareas.length; i++) {
+                    if (textareas[i].value !== textareas[i].defaultValue) return true;
+                }
                 return false;
             }
 
@@ -5757,8 +5774,13 @@
                 window.dispatchEvent(new CustomEvent('scripty:project-script-refreshed', { detail: { projectId: projectId } }));
             }
 
-            function refreshScript() {
-                if (refreshInProgress) return;
+            function refreshScript(targetRevision) {
+                if (refreshInProgress || isEditing()) {
+                    if (typeof targetRevision === 'number') {
+                        pendingRevision = targetRevision;
+                    }
+                    return;
+                }
                 refreshInProgress = true;
                 var scrollY = window.scrollY;
                 fetch('/project/showScript?id=' + encodeURIComponent(projectId)
@@ -5770,15 +5792,31 @@
                     if (!response.ok) throw new Error('refresh failed');
                     return response.text();
                 }).then(function(html) {
+                    // User may have started editing while the refresh was in flight.
+                    if (isEditing()) {
+                        if (typeof targetRevision === 'number') {
+                            pendingRevision = targetRevision;
+                        }
+                        return;
+                    }
                     var container = scriptBody();
                     if (!container) return;
                     container.outerHTML = html;
+                    if (typeof targetRevision === 'number') {
+                        revision = targetRevision;
+                        if (pendingRevision != null && pendingRevision <= revision) {
+                            pendingRevision = null;
+                        }
+                    }
                     reinitScriptBody();
                     window.scrollTo(0, scrollY);
                     if (window.scriptySaveProjectSnapshot) {
                         window.scriptySaveProjectSnapshot();
                     }
                 }).catch(function() {
+                    if (typeof targetRevision === 'number') {
+                        pendingRevision = targetRevision;
+                    }
                 }).finally(function() {
                     refreshInProgress = false;
                 });
@@ -5793,6 +5831,9 @@
                   .then(function(data) {
                     if (data && typeof data.revision === 'number') {
                         revision = data.revision;
+                        if (pendingRevision != null && pendingRevision <= revision) {
+                            pendingRevision = null;
+                        }
                     }
                     if (data && data.title != null) {
                         applyTitle(data.title);
@@ -5802,30 +5843,56 @@
 
             function poll() {
                 if (window.scriptyIsOffline && window.scriptyIsOffline()) return;
-                if (document.hidden || isEditing() || refreshInProgress) return;
+                if (document.hidden || refreshInProgress) return;
+
+                // Apply a deferred refresh once local editing has stopped.
+                if (pendingRevision != null && !isEditing()) {
+                    var deferred = pendingRevision;
+                    pendingRevision = null;
+                    refreshScript(deferred);
+                    return;
+                }
+
+                if (isEditing()) return;
+
                 fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=' + encodeURIComponent(revision), {
                     credentials: 'same-origin',
                     cache: 'no-store'
                 }).then(function(r) { return r.json(); })
                   .then(function(data) {
                     if (!data || !data.changed) return;
-                    revision = data.revision;
                     if (data.title != null) applyTitle(data.title);
-                    refreshScript();
+                    if (isEditing()) {
+                        pendingRevision = data.revision;
+                        return;
+                    }
+                    refreshScript(data.revision);
                   }).catch(function() {});
             }
 
-            document.body.addEventListener('htmx:afterOnLoad', function(e) {
+            function onAfterLoad(e) {
                 var path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
                 if (path.indexOf('/block/') === -1 && path.indexOf('/scene/') === -1 && path.indexOf('/project/editNameInline') === -1) return;
                 runWhenHtmxIdle(bumpRevisionFromServer);
-            });
+            }
 
-            document.addEventListener('visibilitychange', function() {
+            function onVisibilityChange() {
                 if (!document.hidden) poll();
-            });
+            }
 
-            setInterval(poll, pollMs);
+            document.body.addEventListener('htmx:afterOnLoad', onAfterLoad);
+            document.addEventListener('visibilitychange', onVisibilityChange);
+
+            intervalId = setInterval(poll, pollMs);
+            window._scriptyLiveSyncCleanup = function() {
+                if (intervalId) {
+                    clearInterval(intervalId);
+                    intervalId = null;
+                }
+                document.body.removeEventListener('htmx:afterOnLoad', onAfterLoad);
+                document.removeEventListener('visibilitychange', onVisibilityChange);
+            };
+
             bumpRevisionFromServer();
         };
 

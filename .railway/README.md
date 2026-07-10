@@ -9,7 +9,7 @@ This project defines its Railway infrastructure in code.
 Scripty is a Spring Boot (Java 17 / Maven) app. The generated config wires:
 
 - `web` — GitHub `watnee/scripty`, Railpack build, `/health` check, prod start command
-- `MySQL` — managed MySQL with JDBC vars for `application-prod.yml` (volume backups: Daily / Weekly / Monthly via dashboard or `scripts/railway-mysql-backups.sh`)
+- `MySQL` — managed MySQL with JDBC vars for `application-prod.yml` (volume backups: Daily / Weekly / Monthly via `./scripts/railway-mysql-backups.sh ensure`)
 - `uploads` — volume mounted at `/app/uploads`
 
 **Coexistence note:** Deploy-time settings still live in root `railway.json` + `railpack.json` (used by GitHub Actions `railway up`). A service cannot be managed by both Config-as-Code and IaC. Keep `railway.json` until you intentionally migrate (see docs below).

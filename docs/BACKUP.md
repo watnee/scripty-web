@@ -21,12 +21,13 @@ Railway snapshots the volume attached to the MySQL service (`mysql-volume` at `/
 
 ```bash
 chmod +x scripts/railway-mysql-backups.sh
-./scripts/railway-mysql-backups.sh status    # schedules + existing backups
+./scripts/railway-mysql-backups.sh status    # schedules + backups (exits 1 if unhealthy)
+./scripts/railway-mysql-backups.sh ensure    # enable schedules + snapshot if none exist
 ./scripts/railway-mysql-backups.sh enable    # Daily + Weekly + Monthly
 ./scripts/railway-mysql-backups.sh snapshot  # manual backup now
 ```
 
-Requires `railway login`. Schedules can also be set in the dashboard: **MySQL** → **Backups** → **Edit Schedule**.
+The helper auto-resolves the `mysql-volume` instance from the linked Railway project (override with `MYSQL_VOLUME_INSTANCE_ID` / `RAILWAY_ENVIRONMENT_ID` if needed). Requires `railway login`. Schedules can also be set in the dashboard: **MySQL** → **Backups** → **Edit Schedule**.
 
 ### Restore a volume backup
 
@@ -116,9 +117,9 @@ Auto-saves in Snapshot History are pruned per screenplay edition: the newest **3
 ## Checklist
 
 - [x] Railway MySQL: Daily + Weekly + Monthly volume backups enabled
-- [ ] R2 bucket created (`scripty-db-backups`)
-- [ ] R2 30-day lifecycle rule (recommended)
-- [ ] `CLOUDFLARE_API_TOKEN` includes R2 edit
-- [ ] `MYSQL*` / `CLOUDFLARE_*` / `R2_BUCKET` GitHub secrets set
-- [ ] Manual **Backup database** workflow succeeded once
+- [x] R2 bucket created (`scripty-db-backups`)
+- [x] R2 30-day lifecycle rule (`expire-30d`)
+- [x] `CLOUDFLARE_API_TOKEN` includes R2 edit
+- [x] `MYSQL*` / `CLOUDFLARE_*` / `R2_BUCKET` GitHub secrets set
+- [x] Manual **Backup database** workflow succeeded once
 - [ ] You know how to restore from Railway and from an R2 dump

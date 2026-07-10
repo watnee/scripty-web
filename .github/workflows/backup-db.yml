@@ -48,6 +48,12 @@ jobs:
       - name: Run backup script
         id: dump
         env:
+          # Prefer dedicated backup secrets when present; script falls back to MYSQL*.
+          MYSQL_BACKUP_HOST: ${{ secrets.MYSQL_BACKUP_HOST }}
+          MYSQL_BACKUP_PORT: ${{ secrets.MYSQL_BACKUP_PORT }}
+          MYSQL_BACKUP_USER: ${{ secrets.MYSQL_BACKUP_USER }}
+          MYSQL_BACKUP_PASSWORD: ${{ secrets.MYSQL_BACKUP_PASSWORD }}
+          MYSQL_BACKUP_DATABASE: ${{ secrets.MYSQL_BACKUP_DATABASE }}
           MYSQLHOST: ${{ secrets.MYSQLHOST }}
           MYSQLPORT: ${{ secrets.MYSQLPORT }}
           MYSQLUSER: ${{ secrets.MYSQLUSER }}

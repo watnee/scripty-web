@@ -5,6 +5,6 @@
     "java": "17"
   },
   "deploy": {
-    "startCommand": "java $JAVA_OPTS -jar target/scripty.jar --server.port=${PORT:-8080} --spring.profiles.active=prod"
+    "startCommand": "sh -c 'java $JAVA_OPTS -jar target/scripty.jar --server.port=${PORT:-8080} --spring.profiles.active=prod'"
   }
 }

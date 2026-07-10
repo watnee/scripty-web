@@ -20,6 +20,7 @@ Actions → Run workflow  →  Verify (Maven)  →  Deploy Railway ∥ Deploy Cl
    | `RAILWAY_SERVICE_ID` | Railway → your web service → Settings → copy service ID |
    | `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Workers Scripts Edit + Containers |
    | `CLOUDFLARE_ACCOUNT_ID` | (optional) Cloudflare account ID if the token can see multiple accounts |
+   | `MYSQLHOST` / `MYSQLPORT` / `MYSQLUSER` / `MYSQLPASSWORD` / `MYSQLDATABASE` | Railway MySQL **TCP proxy** host/port + credentials (for Cloudflare first deploy) |
 
 2. **Turn off Railway auto-deploy** for this service (Settings → Source / GitHub) so pushes are not deployed twice — once by Railway and once by Actions.
 

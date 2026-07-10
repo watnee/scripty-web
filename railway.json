@@ -1,16 +1,17 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "RAILPACK",
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile",
     "watchPatterns": [
       "src/**",
       "pom.xml",
-      "railway.json",
-      "railpack.json"
+      "Dockerfile",
+      "railway.json"
     ]
   },
   "deploy": {
-    "startCommand": "java $JAVA_OPTS -jar target/scripty.jar --server.port=${PORT:-8080} --spring.profiles.active=prod",
+    "startCommand": "sh -c 'java $JAVA_OPTS -jar scripty.jar --server.port=${PORT:-8080} --spring.profiles.active=prod'",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",

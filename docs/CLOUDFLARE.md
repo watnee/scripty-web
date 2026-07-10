@@ -29,6 +29,15 @@ Or set them in the dashboard: Workers & Pages → **scripty** → Settings → V
 
 `wrangler deploy` validates `secrets.required` before succeeding.
 
+For a **first** deploy (Worker does not exist yet), pass secrets in one shot:
+
+```bash
+cd cloudflare
+npx wrangler deploy --secrets-file .deploy-secrets
+```
+
+where `.deploy-secrets` has `MYSQLHOST=…` lines (gitignored). CI does this automatically when the `MYSQL*` Actions secrets are set (Railway MySQL **TCP proxy** host/port, not the private hostname).
+
 ## Deploy
 
 ```bash
@@ -36,7 +45,7 @@ cd cloudflare
 npx wrangler deploy
 ```
 
-CI deploys this in parallel with Railway when `CLOUDFLARE_API_TOKEN` is set (see root README).
+CI deploys this in parallel with Railway when `CLOUDFLARE_API_TOKEN` and `MYSQL*` secrets are set (see root README).
 
 ## Notes
 

@@ -335,6 +335,10 @@ body.landing-body header {
 }
 
 body.landing-body main.landing-page {
+    /* Override Missing.css main { max-inline-size: var(--eff-line-length) } */
+    max-inline-size: none;
+    inline-size: 100%;
+    width: 100%;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -950,6 +954,10 @@ body.login-body header {
 }
 
 body.login-body main.login-page {
+    /* Override Missing.css main { max-inline-size: var(--eff-line-length) } */
+    max-inline-size: none;
+    inline-size: 100%;
+    width: 100%;
     min-height: 100vh;
     display: flex;
     align-items: center;

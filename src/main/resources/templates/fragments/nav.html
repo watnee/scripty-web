@@ -102,7 +102,7 @@
                 </svg>
             </button>
             <div class="nav-dropdown-menu">
-                <a class="nav-dropdown-item" th:href="@{/login}" sec:authorize="!isAuthenticated()">Sign In</a>
+                <a class="nav-dropdown-item" th:href="@{/login}" hx-boost="false" sec:authorize="!isAuthenticated()">Sign In</a>
                 <a class="nav-dropdown-item" th:href="@{/team/list}" th:classappend="${currentPage == 'teams'} ? 'active'" sec:authorize="isAuthenticated()">Teams</a>
                 <a class="nav-dropdown-item" th:href="@{/user/list}" th:classappend="${currentPage == 'users'} ? 'active'" sec:authorize="hasRole('ROLE_ADMIN')">Users</a>
                 <hr class="nav-dropdown-divider" sec:authorize="isAuthenticated()">

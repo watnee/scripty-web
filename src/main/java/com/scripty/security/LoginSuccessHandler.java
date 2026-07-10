@@ -4,6 +4,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.RequestCache;
@@ -40,8 +41,7 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
             return false;
         }
         try {
-            java.net.URI uri = java.net.URI.create(redirectUrl);
-            String path = uri.getPath();
+            String path = URI.create(redirectUrl).getPath();
             return path != null && path.endsWith("/logout");
         } catch (IllegalArgumentException ex) {
             return redirectUrl.contains("/logout");

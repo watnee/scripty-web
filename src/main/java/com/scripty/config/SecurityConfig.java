@@ -50,8 +50,21 @@ public class SecurityConfig {
     }
 
     @Bean
+    public LoginSuccessHandler loginSuccessHandler(RequestCache requestCache) {
+        return new LoginSuccessHandler(requestCache);
+    }
+
+    @Bean
+    public HtmxLoginUrlAuthenticationEntryPoint authenticationEntryPoint() {
+        return new HtmxLoginUrlAuthenticationEntryPoint("/login");
+    }
+
+    @Bean
     @Profile("!dev")
-    public SecurityFilterChain filterChain(HttpSecurity http, RequestCache requestCache) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+            RequestCache requestCache,
+            LoginSuccessHandler loginSuccessHandler,
+            HtmxLoginUrlAuthenticationEntryPoint authenticationEntryPoint) throws Exception {
         http
             .requestCache(cache -> cache.requestCache(requestCache))
             .authorizeHttpRequests(auth -> auth
@@ -64,7 +77,6 @@ public class SecurityConfig {
                         "/dictionaries/**",
                         "/fonts/**",
                         "/login",
-                        "/perform-login",
                         "/manifest.json",
                         "/sw.js",
                         "/offline.html",
@@ -95,7 +107,7 @@ public class SecurityConfig {
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .successHandler(new LoginSuccessHandler(requestCache))
+                .successHandler(loginSuccessHandler)
                 .failureUrl("/login?login_error=1")
                 .permitAll()
             )
@@ -107,7 +119,7 @@ public class SecurityConfig {
                 .permitAll()
             )
             .exceptionHandling(ex -> ex
-                .authenticationEntryPoint(new HtmxLoginUrlAuthenticationEntryPoint("/login"))
+                .authenticationEntryPoint(authenticationEntryPoint)
             )
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
@@ -125,17 +137,19 @@ public class SecurityConfig {
 
     @Bean
     @Profile("dev")
-    public SecurityFilterChain devFilterChain(HttpSecurity http, RequestCache requestCache) throws Exception {
+    public SecurityFilterChain devFilterChain(HttpSecurity http,
+            RequestCache requestCache,
+            LoginSuccessHandler loginSuccessHandler) throws Exception {
         http
             .requestCache(cache -> cache.requestCache(requestCache))
             .addFilterBefore(new DevAutoLoginFilter(), UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/perform-login").permitAll()
+                .requestMatchers("/login").permitAll()
                 .anyRequest().permitAll()
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .successHandler(new LoginSuccessHandler(requestCache))
+                .successHandler(loginSuccessHandler)
                 .failureUrl("/login?login_error=1")
                 .permitAll()
             )

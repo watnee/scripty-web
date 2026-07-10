@@ -1,40 +1,40 @@
 package com.scripty.config;
 
-import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import java.util.List;
+import org.springframework.web.filter.OncePerRequestFilter;
 
-public class DevAutoLoginFilter implements Filter {
+/**
+ * Dev-only filter that signs in as {@code admin} when no authentication is present,
+ * so local work does not require a manual login.
+ */
+public class DevAutoLoginFilter extends OncePerRequestFilter {
 
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = new User(
-                "admin",
-                "",
-                List.of(
+    private static final UserDetails DEV_ADMIN = new User(
+            "admin",
+            "",
+            List.of(
                     new SimpleGrantedAuthority("ROLE_USER"),
                     new SimpleGrantedAuthority("ROLE_ADMIN"),
-                    new SimpleGrantedAuthority("ROLE_WRITER")
-                )
-            );
+                    new SimpleGrantedAuthority("ROLE_WRITER")));
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                userDetails,
-                null,
-                userDetails.getAuthorities()
-            );
+                    DEV_ADMIN, null, DEV_ADMIN.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
-        chain.doFilter(request, response);
+        filterChain.doFilter(request, response);
     }
 }

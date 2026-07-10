@@ -68,8 +68,7 @@
         }
         var xhr = event.detail.xhr;
         var html = xhr && xhr.responseText ? xhr.responseText : '';
-        if (html.indexOf('id="login-heading"') === -1
-                && html.indexOf('id="login-brand"') === -1
+        if (html.indexOf('id="login-brand"') === -1
                 && html.indexOf('class="login-body"') === -1
                 && html.indexOf("class='login-body'") === -1) {
             return;

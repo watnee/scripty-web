@@ -30,7 +30,7 @@ export default defineRailway(() => {
     source: github("watnee/scripty", { branch: "main" }),
     // Railpack builds from pom.xml (Java 17 via railpack.json / RAILPACK_JDK_VERSION).
     start:
-      "java $JAVA_OPTS -jar target/scripty.jar --server.port=${PORT:-8080} --spring.profiles.active=prod",
+      "java -XX:MaxRAMPercentage=75.0 -jar target/scripty.jar --server.port=$PORT --spring.profiles.active=prod",
     healthcheck: "/health",
     healthcheckTimeout: 300,
     volumeMounts: {

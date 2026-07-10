@@ -521,22 +521,29 @@
                     <button type="button" id="project-bulk-copy-btn" title="Copy selected block text">Copy</button>
                     <button type="button" id="project-bulk-delete-btn" class="bad" title="Delete selected blocks">Delete</button>
                 </div>
-                <div class="element-type-actions hide-in-reader-view sidebar menu">
+                <div class="element-type-actions hide-in-reader-view sidebar menu" id="element-type-actions">
                     <button type="button" class="bulk-type-btn" data-bulk-type="SCENE" title="Turn active or selected rows into scene headings">Scene</button>
                     <button type="button" class="bulk-type-btn" data-bulk-type="ACTION" title="Turn active or selected rows into action">Action</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="TEXT" title="Turn active or selected rows into plain text">Text</button>
+                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="TEXT" title="Turn active or selected rows into plain text">Text</button>
                     <button type="button" class="bulk-type-btn" data-bulk-type="CHARACTER" title="Turn active or selected rows into character cues">Character</button>
                     <button type="button" class="bulk-type-btn" data-bulk-type="DIALOGUE" title="Turn active or selected rows into dialogue">Dialogue</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="DUAL_DIALOGUE" title="Turn active or selected rows into dual-dialogue character cues (Fountain ^)">Dual</button>
+                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="DUAL_DIALOGUE" title="Turn active or selected rows into dual-dialogue character cues (Fountain ^)">Dual</button>
                     <button type="button" class="bulk-type-btn" data-bulk-type="PARENTHETICAL" title="Turn active or selected rows into parentheticals">(Paren)</button>
                     <button type="button" class="bulk-type-btn" data-bulk-type="TRANSITION" title="Turn active or selected rows into transitions">Transition</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="SHOT" title="Turn active or selected rows into shots">Shot</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="LYRICS" title="Turn active or selected rows into lyrics">Lyrics</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="CENTERED" title="Turn active or selected rows into centered text">Centered</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="SECTION" title="Turn active or selected rows into outline sections (non-printing)">Section</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="SYNOPSIS" title="Turn active or selected rows into synopses (non-printing)">Synopsis</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="NOTE" title="Turn active or selected rows into notes (non-printing)">Note</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="PAGE_BREAK" title="Turn active or selected rows into page breaks">Page Break</button>
+                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="SHOT" title="Turn active or selected rows into shots">Shot</button>
+                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="LYRICS" title="Turn active or selected rows into lyrics">Lyrics</button>
+                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="CENTERED" title="Turn active or selected rows into centered text">Centered</button>
+                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="SECTION" title="Turn active or selected rows into outline sections (non-printing)">Section</button>
+                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="SYNOPSIS" title="Turn active or selected rows into synopses (non-printing)">Synopsis</button>
+                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="NOTE" title="Turn active or selected rows into notes (non-printing)">Note</button>
+                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="PAGE_BREAK" title="Turn active or selected rows into page breaks">Page Break</button>
+                    <button type="button"
+                            class="element-type-expand-btn"
+                            id="element-type-expand-btn"
+                            aria-expanded="false"
+                            aria-controls="element-type-actions"
+                            title="Show more element types"
+                            aria-label="Show more element types">More</button>
                 </div>
                 <div class="text-format-actions hide-in-reader-view sidebar menu">
                     <span class="text-align-actions" aria-label="Text alignment">

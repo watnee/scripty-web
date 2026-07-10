@@ -457,6 +457,40 @@
         onTypeButton(type, captured);
     };
 
+    function getActions() {
+        return document.getElementById('element-type-actions')
+            || document.querySelector('.element-type-actions');
+    }
+
+    function getExpandBtn(actions) {
+        return (actions && actions.querySelector('.element-type-expand-btn'))
+            || document.getElementById('element-type-expand-btn');
+    }
+
+    function setExpanded(expanded) {
+        var actions = getActions();
+        if (!actions) return;
+        var btn = getExpandBtn(actions);
+        actions.classList.toggle('is-expanded', expanded);
+        if (btn) {
+            btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            btn.textContent = expanded ? 'Less' : 'More';
+            btn.title = expanded ? 'Show fewer element types' : 'Show more element types';
+            btn.setAttribute('aria-label', btn.title);
+        }
+    }
+
+    document.body.addEventListener('click', function(e) {
+        var expandBtn = e.target.closest('.element-type-expand-btn');
+        if (!expandBtn || !document.querySelector('.project-script')) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        var actions = expandBtn.closest('.element-type-actions') || getActions();
+        setExpanded(!(actions && actions.classList.contains('is-expanded')));
+    });
+
     document.body.addEventListener('mousedown', function(e) {
         var btn = e.target.closest('.bulk-type-btn');
         if (!btn || !document.querySelector('.project-script')) return;

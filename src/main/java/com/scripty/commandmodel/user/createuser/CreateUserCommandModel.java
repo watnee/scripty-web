@@ -26,6 +26,7 @@ public class CreateUserCommandModel {
     private boolean actor;
     private boolean crew;
     private boolean directorOfPhotography;
+    private boolean castingDirector;
 
     public String getUsername() {
         return username;
@@ -121,5 +122,13 @@ public class CreateUserCommandModel {
 
     public void setDirectorOfPhotography(boolean directorOfPhotography) {
         this.directorOfPhotography = directorOfPhotography;
+    }
+
+    public boolean isCastingDirector() {
+        return castingDirector;
+    }
+
+    public void setCastingDirector(boolean castingDirector) {
+        this.castingDirector = castingDirector;
     }
 }

@@ -62,6 +62,9 @@ public class UserServiceImpl implements UserService {
         if (user.isDirectorOfPhotography()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_DP"));
         }
+        if (user.isCastingDirector()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_CASTING"));
+        }
         return saved;
     }
 
@@ -126,6 +129,9 @@ public class UserServiceImpl implements UserService {
         if (user.isDirectorOfPhotography()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_DP"));
         }
+        if (user.isCastingDirector()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_CASTING"));
+        }
     }
 
     @Override
@@ -164,6 +170,7 @@ public class UserServiceImpl implements UserService {
             uvm.setActor(user.isActor());
             uvm.setCrew(user.isCrew());
             uvm.setDirectorOfPhotography(user.isDirectorOfPhotography());
+            uvm.setCastingDirector(user.isCastingDirector());
             userViewModels.add(uvm);
         }
         vm.setUsers(userViewModels);
@@ -195,6 +202,7 @@ public class UserServiceImpl implements UserService {
         commandModel.setActor(user.isActor());
         commandModel.setCrew(user.isCrew());
         commandModel.setDirectorOfPhotography(user.isDirectorOfPhotography());
+        commandModel.setCastingDirector(user.isCastingDirector());
         vm.setEditUserCommandModel(commandModel);
         return vm;
     }
@@ -215,6 +223,7 @@ public class UserServiceImpl implements UserService {
         user.setActor(cmd.isActor());
         user.setCrew(cmd.isCrew());
         user.setDirectorOfPhotography(cmd.isDirectorOfPhotography());
+        user.setCastingDirector(cmd.isCastingDirector());
         return create(user);
     }
 
@@ -233,6 +242,7 @@ public class UserServiceImpl implements UserService {
         user.setActor(cmd.isActor());
         user.setCrew(cmd.isCrew());
         user.setDirectorOfPhotography(cmd.isDirectorOfPhotography());
+        user.setCastingDirector(cmd.isCastingDirector());
         update(user);
         return user;
     }
@@ -259,8 +269,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public User deleteUser(Integer id) {
+    public User deleteUser(Integer id, String actingUsername) {
         User user = read(id);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found.");
+        }
+        if (actingUsername != null && actingUsername.equalsIgnoreCase(user.getUsername())) {
+            throw new IllegalArgumentException("You cannot delete your own account.");
+        }
         delete(user);
         return user;
     }
@@ -282,6 +298,7 @@ public class UserServiceImpl implements UserService {
         vm.setActor(user.isActor());
         vm.setCrew(user.isCrew());
         vm.setDirectorOfPhotography(user.isDirectorOfPhotography());
+        vm.setCastingDirector(user.isCastingDirector());
         return vm;
     }
 
@@ -294,5 +311,6 @@ public class UserServiceImpl implements UserService {
         user.setActor(authorities.stream().anyMatch(a -> "ROLE_ACTOR".equals(a.getAuthority())));
         user.setCrew(authorities.stream().anyMatch(a -> "ROLE_CREW".equals(a.getAuthority())));
         user.setDirectorOfPhotography(authorities.stream().anyMatch(a -> "ROLE_DP".equals(a.getAuthority())));
+        user.setCastingDirector(authorities.stream().anyMatch(a -> "ROLE_CASTING".equals(a.getAuthority())));
     }
 }

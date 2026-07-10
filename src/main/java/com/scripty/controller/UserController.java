@@ -10,6 +10,7 @@ import com.scripty.viewmodel.user.userprofile.UserProfileViewModel;
 import com.scripty.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
+import java.security.Principal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping(value = "/user")
@@ -46,9 +48,13 @@ public class UserController {
     }
 
     @RequestMapping(value = "/delete")
-    public String delete(@RequestParam Integer id) {
-
-        userService.deleteUser(id);
+    public String delete(@RequestParam Integer id, Principal principal, RedirectAttributes redirectAttributes) {
+        try {
+            userService.deleteUser(id, principal != null ? principal.getName() : null);
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("userError", e.getMessage());
+            return "redirect:/user/list";
+        }
 
         return "redirect:/user/list";
     }

@@ -108,7 +108,7 @@ public class ActorController {
         }
 
         String userTeam = null;
-        if (!currentUser.isAdmin() && !currentUser.isDirector() && !currentUser.isProducer() && !currentUser.isWriter() && !currentUser.isActor() && !currentUser.isCrew() && !currentUser.isDirectorOfPhotography()) {
+        if (!currentUser.isAdmin() && !currentUser.isDirector() && !currentUser.isProducer() && !currentUser.isWriter() && !currentUser.isActor() && !currentUser.isCrew() && !currentUser.isDirectorOfPhotography() && !currentUser.isCastingDirector()) {
             userTeam = currentUser.getTeam();
         }
 

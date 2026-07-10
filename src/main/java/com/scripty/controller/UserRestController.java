@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
+import java.security.Principal;
+import java.util.Map;
 
 @RestController
 @RequestMapping(value = "/api/user")
@@ -74,8 +76,12 @@ public class UserRestController {
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<UserResource>> delete(@PathVariable Integer id) {
-        User user = userService.deleteUser(id);
-        return ResponseEntity.ok(userResourceAssembler.toDeleteModel(user));
+    public ResponseEntity<?> delete(@PathVariable Integer id, Principal principal) {
+        try {
+            User user = userService.deleteUser(id, principal != null ? principal.getName() : null);
+            return ResponseEntity.ok(userResourceAssembler.toDeleteModel(user));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 }

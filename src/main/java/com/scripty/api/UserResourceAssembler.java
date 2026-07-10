@@ -36,6 +36,7 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
         resource.setActor(profile.isActor());
         resource.setCrew(profile.isCrew());
         resource.setDirectorOfPhotography(profile.isDirectorOfPhotography());
+        resource.setCastingDirector(profile.isCastingDirector());
         resource.setEnabled(profile.isEnabled());
         return EntityModel.of(resource).add(userLinks(profile.getId()));
     }
@@ -54,6 +55,7 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
         resource.setActor(user.isActor());
         resource.setCrew(user.isCrew());
         resource.setDirectorOfPhotography(user.isDirectorOfPhotography());
+        resource.setCastingDirector(user.isCastingDirector());
         return EntityModel.of(resource).add(userLinks(user.getId()));
     }
 
@@ -88,6 +90,7 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
         resource.setActor(user.isActor());
         resource.setCrew(user.isCrew());
         resource.setDirectorOfPhotography(user.isDirectorOfPhotography());
+        resource.setCastingDirector(user.isCastingDirector());
         resource.setEnabled(user.isEnabled());
         return resource;
     }
@@ -97,7 +100,7 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
                 linkTo(methodOn(UserRestController.class).show(id)).withSelfRel(),
                 linkTo(methodOn(UserRestController.class).list()).withRel(ApiRel.USERS),
                 linkTo(methodOn(UserRestController.class).update(id, null, null)).withRel(ApiRel.UPDATE),
-                linkTo(methodOn(UserRestController.class).delete(id)).withRel(ApiRel.DELETE)
+                linkTo(methodOn(UserRestController.class).delete(id, null)).withRel(ApiRel.DELETE)
         };
     }
 }

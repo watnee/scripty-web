@@ -27,6 +27,7 @@ public class EditUserCommandModel {
     private boolean actor;
     private boolean crew;
     private boolean directorOfPhotography;
+    private boolean castingDirector;
 
     public Integer getId() {
         return id;
@@ -131,5 +132,13 @@ public class EditUserCommandModel {
 
     public void setDirectorOfPhotography(boolean directorOfPhotography) {
         this.directorOfPhotography = directorOfPhotography;
+    }
+
+    public boolean isCastingDirector() {
+        return castingDirector;
+    }
+
+    public void setCastingDirector(boolean castingDirector) {
+        this.castingDirector = castingDirector;
     }
 }

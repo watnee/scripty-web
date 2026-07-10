@@ -10,40 +10,90 @@
 </head>
 <body hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('users')}"></div>
-    <main>
+    <main class="user-profile-page">
         <nav aria-label="Breadcrumb">
             <ol>
                 <li><a th:href="@{/user/list}">Users</a></li>
                 <li aria-current="page" th:text="${viewModel.username}"></li>
             </ol>
         </nav>
-        <h1><span th:text="${viewModel.username}"></span> <small><a th:href="@{/user/edit(id=${viewModel.id})}" role="button">edit</a></small></h1>
-        <table>
-            <tr>
-                <th>Username</th>
-                <td th:text="${viewModel.username}"></td>
-            </tr>
-            <tr>
-                <th>First Name</th>
-                <td th:text="${viewModel.firstName}"></td>
-            </tr>
-            <tr>
-                <th>Last Name</th>
-                <td th:text="${viewModel.lastName}"></td>
-            </tr>
-            <tr>
-                <th>Team</th>
-                <td th:text="${viewModel.team}"></td>
-            </tr>
-            <tr>
-                <th>Role</th>
-                <td th:text="${viewModel.rolesLabel}"></td>
-            </tr>
-            <tr>
-                <th>Status</th>
-                <td th:text="${viewModel.enabled} ? 'Enabled' : 'Disabled'"></td>
-            </tr>
-        </table>
+
+        <div class="user-profile-header">
+            <div class="user-profile-header-main">
+                <div class="user-avatar user-avatar--profile" aria-hidden="true">
+                    <span th:text="${#strings.substring(viewModel.firstName, 0, 1)}"></span>
+                </div>
+                <div class="user-profile-header-text">
+                    <h1 th:text="${viewModel.firstName} + ' ' + ${viewModel.lastName}"></h1>
+                    <p class="user-profile-username muted" th:text="'@' + ${viewModel.username}"></p>
+                </div>
+            </div>
+            <div class="user-profile-actions">
+                <a th:href="@{/user/edit(id=${viewModel.id})}" role="button">Edit</a>
+                <a th:if="${viewModel.username != currentUserId}"
+                   th:href="@{/user/delete(id=${viewModel.id})}"
+                   role="button"
+                   class="bad"
+                   hx-boost="false"
+                   _="on click if not confirm('Are you sure you want to delete this user?') halt">Delete</a>
+            </div>
+        </div>
+
+        <div class="user-profile-grid">
+            <section class="user-profile-card">
+                <h2>Account</h2>
+                <dl class="user-profile-details">
+                    <div>
+                        <dt>Username</dt>
+                        <dd th:text="${viewModel.username}"></dd>
+                    </div>
+                    <div>
+                        <dt>Status</dt>
+                        <dd>
+                            <span class="user-list-status"
+                                  th:classappend="${viewModel.enabled} ? ' user-list-status--enabled' : ' user-list-status--disabled'"
+                                  th:text="${viewModel.enabled} ? 'Enabled' : 'Disabled'"></span>
+                        </dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="user-profile-card">
+                <h2>Profile</h2>
+                <dl class="user-profile-details">
+                    <div>
+                        <dt>First name</dt>
+                        <dd th:text="${viewModel.firstName}"></dd>
+                    </div>
+                    <div>
+                        <dt>Last name</dt>
+                        <dd th:text="${viewModel.lastName}"></dd>
+                    </div>
+                    <div>
+                        <dt>Team</dt>
+                        <dd th:text="${viewModel.team != null and !#strings.isEmpty(viewModel.team) ? viewModel.team : '—'}"></dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="user-profile-card user-profile-card--roles">
+                <h2>Roles</h2>
+                <div class="user-list-roles" th:if="${viewModel.admin or viewModel.director or viewModel.producer or viewModel.writer or viewModel.actor or viewModel.crew or viewModel.directorOfPhotography or viewModel.castingDirector}">
+                    <span class="user-role-chip" th:if="${viewModel.admin}">Admin</span>
+                    <span class="user-role-chip" th:if="${viewModel.director}">Director</span>
+                    <span class="user-role-chip" th:if="${viewModel.producer}">Producer</span>
+                    <span class="user-role-chip" th:if="${viewModel.writer}">Writer</span>
+                    <span class="user-role-chip" th:if="${viewModel.actor}">Actor</span>
+                    <span class="user-role-chip" th:if="${viewModel.crew}">Crew</span>
+                    <span class="user-role-chip" th:if="${viewModel.directorOfPhotography}">Director of Photography</span>
+                    <span class="user-role-chip" th:if="${viewModel.castingDirector}">Casting Director</span>
+                </div>
+                <p class="muted user-profile-empty"
+                   th:unless="${viewModel.admin or viewModel.director or viewModel.producer or viewModel.writer or viewModel.actor or viewModel.crew or viewModel.directorOfPhotography or viewModel.castingDirector}">
+                    No roles assigned.
+                </p>
+            </section>
+        </div>
     </main>
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>

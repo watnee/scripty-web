@@ -125,6 +125,10 @@
                             <input type="checkbox" th:field="*{directorOfPhotography}" />
                             <span>Director of Photography</span>
                         </label>
+                        <label class="user-form-role-option">
+                            <input type="checkbox" th:field="*{castingDirector}" />
+                            <span>Casting Director</span>
+                        </label>
                     </div>
                 </fieldset>
                 <span class="user-form-hint">Roles control what this user can access across projects.</span>
@@ -136,7 +140,8 @@
             </div>
         </form>
 
-        <section class="user-form-card user-form-danger">
+        <section class="user-form-card user-form-danger"
+                 th:if="${commandModel.username != currentUserId}">
             <h2>Danger Zone</h2>
             <p class="user-form-danger-text">
                 Permanently remove this user account. This cannot be undone.
@@ -146,6 +151,13 @@
                class="bad user-form-delete"
                hx-boost="false"
                onclick="return confirm('Are you sure you want to delete this user?')">Delete User</a>
+        </section>
+        <section class="user-form-card user-form-danger"
+                 th:if="${commandModel.username == currentUserId}">
+            <h2>Danger Zone</h2>
+            <p class="user-form-danger-text">
+                You cannot delete your own account. Ask another admin to remove it if needed.
+            </p>
         </section>
     </main>
     <script src="/js/htmx.min.js"></script>

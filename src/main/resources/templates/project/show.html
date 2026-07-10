@@ -91,7 +91,7 @@
             <nav aria-label="Breadcrumb">
                 <ol>
                     <li><a th:href="@{/project/list}" hx-boost="false">Projects</a></li>
-                    <li th:replace="~{fragments/projectBreadcrumbName :: item(${viewModel.id}, ${viewModel.title}, ${viewModel.lastEdited})}"></li>
+                    <li th:replace="~{fragments/projectBreadcrumbName :: item(${viewModel.id}, ${viewModel.title})}"></li>
                 </ol>
             </nav>
             <div class="project-top-bar-actions">
@@ -505,6 +505,35 @@
                            th:href="@{/project/show(id=${viewModel.id}, editionId=${edition.id})}"
                            hx-boost="false"
                            th:text="${edition.name}">Main</a>
+                        <span class="script-edition-row-edited"
+                              th:if="${edition.lastEdited != null}"
+                              th:id="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'project-last-edited' : null"
+                              th:title="${#temporals.format(edition.lastEdited, 'MMM d, yyyy, h:mm a')}">
+                            <span th:replace="~{fragments/lastEditedTime :: relativeTime(${edition.lastEdited})}"></span>
+                        </span>
+                        <button th:if="${(canEditScript == null or canEditScript) and viewModel.editionId != null and viewModel.editionId == edition.id}"
+                                id="nav-lock-toggle"
+                                type="button"
+                                class="nav-dropdown-item lock-filter-toggle script-edition-lock-toggle"
+                                role="menuitemcheckbox"
+                                aria-pressed="false"
+                                aria-checked="false"
+                                aria-label="Lock this version"
+                                title="Lock this version">
+                            <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
+                        </button>
+                        <a class="nav-dropdown-item script-edition-history-toggle"
+                           th:id="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'nav-version-history' : null"
+                           role="menuitem"
+                           th:href="@{/project/version/list(projectId=${viewModel.id}, editionId=${edition.id})}"
+                           hx-boost="false"
+                           th:aria-label="'Snapshot history for ' + ${edition.name}"
+                           th:title="'Snapshot history for ' + ${edition.name}">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </a>
                         <form th:if="${(canEditScript == null or canEditScript) and !edition.default}"
                               th:action="@{/project/edition/setDefault}"
                               method="POST"
@@ -533,31 +562,6 @@
                             type="button"
                             class="nav-dropdown-item script-edition-create-btn"
                             id="script-edition-create-open">New version…</button>
-                    <div class="nav-dropdown-divider" role="separator"></div>
-                    <button th:if="${canEditScript == null or canEditScript}"
-                            id="nav-lock-toggle"
-                            type="button"
-                            class="nav-dropdown-item lock-filter-toggle"
-                            role="menuitemcheckbox"
-                            aria-pressed="false"
-                            aria-checked="false"
-                            aria-label="Lock this version"
-                            title="Lock this version">
-                        <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
-                        <span class="lock-toggle-label">Lock this version</span>
-                    </button>
-                    <a id="nav-version-history"
-                       class="nav-dropdown-item"
-                       role="menuitem"
-                       th:href="@{/project/version/list(projectId=${viewModel.id}, editionId=${viewModel.editionId})}"
-                       hx-boost="false"
-                       title="Snapshot history">
-                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                        <span>Snapshot history</span>
-                    </a>
                 </div>
             </div>
             <div class="nav-dropdown docs-dropdown" id="project-docs-dropdown">

@@ -11,7 +11,10 @@
  * 3. single block: POST /block/setTypeAndContent and swap edit HTML in place
  * 4. multi select: POST /block/bulkSetType (page reload)
  *
- * Keyboard: ⌘/Ctrl+1–7 set the classic screenplay types (works while typing).
+ * Keyboard: ⌘⌥/Ctrl+Alt+1–7 classic types; ⌘⌥/Ctrl+Alt+letter for the rest
+ * (T Text, U Dual, Y Lyrics, M Centered, X Section, O Synopsis, N Note,
+ * B Page Break). ⌘/Ctrl+1–7 still work in the installed app. With the
+ * Elements menu open, bare 1–7 / letters also apply.
  */
 (function() {
     'use strict';
@@ -60,6 +63,27 @@
         DIALOGUE: '5',
         TRANSITION: '6',
         SHOT: '7'
+    };
+    /** Secondary types: ⌘⌥/Ctrl+Alt + letter (e.code Key*). */
+    var TYPE_BY_LETTER_CODE = {
+        KeyT: 'TEXT',
+        KeyU: 'DUAL_DIALOGUE',
+        KeyY: 'LYRICS',
+        KeyM: 'CENTERED',
+        KeyX: 'SECTION',
+        KeyO: 'SYNOPSIS',
+        KeyN: 'NOTE',
+        KeyB: 'PAGE_BREAK'
+    };
+    var TYPE_SHORTCUT_LETTER = {
+        TEXT: 'T',
+        DUAL_DIALOGUE: 'U',
+        LYRICS: 'Y',
+        CENTERED: 'M',
+        SECTION: 'X',
+        SYNOPSIS: 'O',
+        NOTE: 'N',
+        PAGE_BREAK: 'B'
     };
 
     var snapshot = null;
@@ -207,7 +231,22 @@
     }
 
     function shortcutLabelForDigit(digit) {
-        return isMacPlatform() ? '⌘' + digit : 'Ctrl+' + digit;
+        // Prefer the Option/Alt chord — Cmd/Ctrl+digit is stolen by browser tabs.
+        return isMacPlatform() ? '⌘⌥' + digit : 'Ctrl+Alt+' + digit;
+    }
+
+    function shortcutLabelForLetter(letter) {
+        return isMacPlatform() ? '⌘⌥' + letter : 'Ctrl+Alt+' + letter;
+    }
+
+    function closeElementsMenu() {
+        var dropdown = document.getElementById('project-element-type-dropdown');
+        if (!dropdown || !dropdown.classList.contains('open')) return;
+        dropdown.classList.remove('open');
+        var toggle = dropdown.querySelector('.element-type-toolbar-btn');
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', 'false');
+        }
     }
 
     function isOutlineModeOn() {
@@ -222,24 +261,33 @@
         return TYPE_BY_DIGIT[digit] || null;
     }
 
+    function typeForShortcutLetterCode(code) {
+        return TYPE_BY_LETTER_CODE[code] || null;
+    }
+
+    function shortcutHintForType(type, outline) {
+        if (outline) {
+            if (type === 'SCENE') return shortcutLabelForDigit('1');
+            if (type === 'SECTION') return shortcutLabelForDigit('2');
+            if (type === 'SYNOPSIS') return shortcutLabelForDigit('3');
+        }
+        var digit = TYPE_SHORTCUT_DIGIT[type];
+        if (digit) return shortcutLabelForDigit(digit);
+        var letter = TYPE_SHORTCUT_LETTER[type];
+        if (letter) return shortcutLabelForLetter(letter);
+        return '';
+    }
+
     function syncElementTypeShortcutLabels() {
         if (!document.querySelector('.project-script')) return;
         var outline = isOutlineModeOn();
         document.querySelectorAll('.bulk-type-btn[data-bulk-type]').forEach(function(btn) {
             var type = (btn.getAttribute('data-bulk-type') || '').toUpperCase();
-            var digit = null;
-            if (outline) {
-                if (type === 'SCENE') digit = '1';
-                else if (type === 'SECTION') digit = '2';
-                else if (type === 'SYNOPSIS') digit = '3';
-            } else {
-                digit = TYPE_SHORTCUT_DIGIT[type] || null;
-            }
+            var hint = shortcutHintForType(type, outline);
             var baseTitle = btn.getAttribute('data-base-title') || btn.title || typeLabel(type);
             if (!btn.getAttribute('data-base-title')) {
                 btn.setAttribute('data-base-title', baseTitle);
             }
-            var hint = digit ? shortcutLabelForDigit(digit) : '';
             var title = hint ? baseTitle + ' (' + hint + ')' : baseTitle;
             btn.title = title;
             btn.setAttribute('aria-label', title);
@@ -248,7 +296,7 @@
                 window.scriptySetMenuShortcut(btn, hint);
             } else {
                 var shortcutEl = btn.querySelector('.element-type-shortcut, .nav-dropdown-shortcut');
-                if (digit) {
+                if (hint) {
                     if (!shortcutEl) {
                         shortcutEl = document.createElement('span');
                         shortcutEl.className = 'element-type-shortcut nav-dropdown-shortcut';
@@ -614,26 +662,48 @@
         syncToolbar(row.getAttribute('data-block-type'));
     });
 
-    // ⌘/Ctrl+1–7 → set element type on the active/selected block(s).
-    // Intentionally works while typing in a block textarea.
+    // Element type shortcuts on the active/selected block(s):
+    // - ⌘⌥/Ctrl+Alt+1–7 classic types (browser-safe; works while typing)
+    // - ⌘⌥/Ctrl+Alt+letter secondary types (T/U/Y/M/X/O/N/B)
+    // - ⌘/Ctrl+1–7 Final Draft–style (reliable in the installed app)
+    // - bare 1–7 / letters while the Elements menu is open
     document.addEventListener('keydown', function(e) {
-        if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+        if (e.shiftKey) return;
         if (window.scriptyCanEditScript === false) return;
         if (!document.querySelector('.project-script')) return;
         if (!getActions()) return;
 
-        var digit = null;
-        if (e.key >= '1' && e.key <= '7') {
-            digit = e.key;
-        } else if (e.code && /^Numpad[1-7]$/.test(e.code)) {
-            digit = e.code.slice(-1);
-        }
-        if (!digit) return;
+        var hasMod = !!(e.metaKey || e.ctrlKey);
+        var elementsMenuOpen = !!document.querySelector('#project-element-type-dropdown.open');
+        var browserSafe = hasMod && e.altKey;
+        var classic = hasMod && !e.altKey;
+        var menuKey = elementsMenuOpen && !hasMod && !e.altKey;
+        if (!browserSafe && !classic && !menuKey) return;
 
-        var type = typeForShortcutDigit(digit);
+        var type = null;
+        var fromMenu = false;
+
+        // Prefer e.code — Option/Alt remaps e.key to symbols on many layouts.
+        if (e.code && /^Digit[1-7]$/.test(e.code)) {
+            type = typeForShortcutDigit(e.code.slice(-1));
+            fromMenu = menuKey;
+        } else if (e.code && /^Numpad[1-7]$/.test(e.code)) {
+            type = typeForShortcutDigit(e.code.slice(-1));
+            fromMenu = menuKey;
+        } else if (e.key >= '1' && e.key <= '7') {
+            type = typeForShortcutDigit(e.key);
+            fromMenu = menuKey;
+        } else if (browserSafe || menuKey) {
+            // Letter shortcuts: only Option/Alt chord or open Elements menu
+            // (plain ⌘T would conflict with browser "New Tab").
+            type = typeForShortcutLetterCode(e.code);
+            fromMenu = menuKey;
+        }
         if (!type) return;
 
         e.preventDefault();
+        e.stopPropagation();
+        if (fromMenu) closeElementsMenu();
         if (typeof window.scriptyApplyElementType === 'function') {
             window.scriptyApplyElementType(type, null);
         }

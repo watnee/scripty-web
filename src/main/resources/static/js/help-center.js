@@ -99,8 +99,22 @@
                 document.querySelectorAll('.kb-mod-' + d).forEach(function (el) {
                     el.textContent = isMac ? '⌘ ' + d : 'Ctrl + ' + d;
                 });
+                document.querySelectorAll('.kb-mod-alt-' + d).forEach(function (el) {
+                    el.textContent = isMac ? '⌘ ⌥ ' + d : 'Ctrl + Alt + ' + d;
+                });
             })(digit);
         }
+        ['t', 'u', 'y', 'm', 'x', 'o', 'n', 'b'].forEach(function (letter) {
+            document.querySelectorAll('.kb-mod-alt-' + letter).forEach(function (el) {
+                var upper = letter.toUpperCase();
+                // Help prose sometimes uses the letter alone inside a longer sentence.
+                if ((el.textContent || '').trim().length <= 1) {
+                    el.textContent = upper;
+                } else {
+                    el.textContent = isMac ? '⌘ ⌥ ' + upper : 'Ctrl + Alt + ' + upper;
+                }
+            });
+        });
         document.querySelectorAll('.kb-ctrl').forEach(function (el) {
             el.textContent = modLabel;
         });

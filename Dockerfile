@@ -15,5 +15,6 @@ ENV PORT=8080 \
     JAVA_OPTS="-XX:MaxRAMPercentage=75.0" \
     SPRING_PROFILES_ACTIVE=prod
 EXPOSE 8080
-# Avoid `$JAVA_OPTS` in the exec path — Railway startCommand does not always run via a shell.
-CMD ["sh", "-c", "java -XX:MaxRAMPercentage=75.0 -jar scripty.jar --server.port=${PORT:-8080} --spring.profiles.active=${SPRING_PROFILES_ACTIVE:-prod}"]
+# No shell vars in the command: Railway startCommand may not expand $VAR.
+# Spring reads PORT from the environment (application.yml: server.port=${PORT:8080}).
+CMD ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "scripty.jar", "--spring.profiles.active=prod"]

@@ -5,6 +5,6 @@
     "java": "17"
   },
   "deploy": {
-    "startCommand": "java -XX:MaxRAMPercentage=75.0 -jar target/scripty.jar --server.port=$PORT --spring.profiles.active=prod"
+    "startCommand": "java -XX:MaxRAMPercentage=75.0 -jar target/scripty.jar --spring.profiles.active=prod"
   }
 }

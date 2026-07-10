@@ -155,19 +155,20 @@ public class ProjectController {
             return "redirect:/project/list";
         }
 
-        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id, editionId);
-        if (viewModel == null) {
-            return "redirect:/project/list";
-        }
-
         User currentUser = principal != null ? userService.readByUsername(principal.getName()) : null;
         if (currentUser == null || !projectService.canUserAccessProject(id, currentUser)) {
             return "redirect:/project/list";
         }
 
+        boolean canEditScript = projectAccess.canEditScript(id, currentUser);
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id, editionId, canEditScript);
+        if (viewModel == null) {
+            return "redirect:/project/list";
+        }
+
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("syncRevision", projectRevision(viewModel.getLastEdited()));
-        model.addAttribute("canEditScript", projectAccess.canEditScript(id, currentUser));
+        model.addAttribute("canEditScript", canEditScript);
         model.addAttribute("shareAccessUsers", projectService.getProjectShareAccessUsers(id));
         model.addAttribute("pendingInvitations", invitationService.getPendingInvitationsForProject(id, currentUser));
         List<Team> inviteTeams = filterAssignedTeams(viewModel.getTeams(), teamService.list());
@@ -219,7 +220,8 @@ public class ProjectController {
             body.put("changed", false);
             return ResponseEntity.ok(HypermediaSupport.projectSyncStatus(body, id, since, editionId));
         }
-        ScriptEdition edition = scriptEditionService.requireForProject(id, editionId);
+        boolean canBrowseEditions = projectAccess.canEditScript(id, principal);
+        ScriptEdition edition = scriptEditionService.resolveForAccess(id, editionId, canBrowseEditions);
         long revision = projectRevision(
                 edition != null && edition.getLastEdited() != null
                         ? edition.getLastEdited()
@@ -228,7 +230,8 @@ public class ProjectController {
         body.put("revision", revision);
         body.put("title", project.getTitle());
         body.put("changed", since == null || since < revision);
-        return ResponseEntity.ok(HypermediaSupport.projectSyncStatus(body, id, since, editionId));
+        Integer resolvedEditionId = edition != null ? edition.getId() : editionId;
+        return ResponseEntity.ok(HypermediaSupport.projectSyncStatus(body, id, since, resolvedEditionId));
     }
 
     @RequestMapping(value = "/showScript")
@@ -239,12 +242,13 @@ public class ProjectController {
         if (denyProjectAccess(id, principal)) {
             return "redirect:/project/list";
         }
-        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id, editionId);
+        boolean canEditScript = projectAccess.canEditScript(id, principal);
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id, editionId, canEditScript);
         if (viewModel == null) {
             return "redirect:/project/list";
         }
         model.addAttribute("viewModel", viewModel);
-        model.addAttribute("canEditScript", projectAccess.canEditScript(id, principal));
+        model.addAttribute("canEditScript", canEditScript);
         return "project/showScript";
     }
 
@@ -256,7 +260,8 @@ public class ProjectController {
         if (denyProjectAccess(id, principal)) {
             return "redirect:/project/list";
         }
-        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id, editionId);
+        boolean canBrowseEditions = projectAccess.canEditScript(id, principal);
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id, editionId, canBrowseEditions);
         if (viewModel == null) {
             return "redirect:/project/list";
         }
@@ -474,7 +479,8 @@ public class ProjectController {
             return "redirect:/project/list";
         }
 
-        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(
+                id, null, projectAccess.canEditScript(id, currentUser));
         List<Team> teams = teamService.list();
         List<Integer> assignedTeamIds = mapAssignedTeamIds(viewModel.getTeams(), teams);
         List<ProjectViewModel> teamProductions = listTeamProductions(id, viewModel.getTeams());
@@ -644,9 +650,13 @@ public class ProjectController {
             return ResponseEntity.notFound().build();
         }
 
+        boolean canBrowseEditions = projectAccess.canEditScript(id, principal);
+        ScriptEdition edition = scriptEditionService.resolveForAccess(id, editionId, canBrowseEditions);
+        Integer resolvedEditionId = edition != null ? edition.getId() : editionId;
+
         String normalized = format == null ? "fountain" : format.trim().toLowerCase();
         if ("pdf".equals(normalized)) {
-            byte[] pdf = pdfExportService.exportProject(id, editionId);
+            byte[] pdf = pdfExportService.exportProject(id, resolvedEditionId);
             String filename = exportFilename(project, "pdf");
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)
@@ -654,7 +664,7 @@ public class ProjectController {
                     .body(pdf);
         }
         if ("docx".equals(normalized) || "word".equals(normalized)) {
-            byte[] docx = docxExportService.exportProject(id, editionId);
+            byte[] docx = docxExportService.exportProject(id, resolvedEditionId);
             String filename = exportFilename(project, "docx");
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(
@@ -663,7 +673,7 @@ public class ProjectController {
                     .body(docx);
         }
         if ("fdx".equals(normalized) || "finaldraft".equals(normalized) || "final-draft".equals(normalized)) {
-            byte[] fdx = fdxExportService.exportProject(id, editionId);
+            byte[] fdx = fdxExportService.exportProject(id, resolvedEditionId);
             String filename = exportFilename(project, "fdx");
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/x-fdx"))
@@ -671,7 +681,7 @@ public class ProjectController {
                     .body(fdx);
         }
 
-        String fountain = fountainExportService.exportProject(id, editionId);
+        String fountain = fountainExportService.exportProject(id, resolvedEditionId);
         String filename = exportFilename(project, "fountain");
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/plain; charset=UTF-8"))

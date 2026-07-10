@@ -24,7 +24,7 @@
         { id: 'text-size', title: 'Text Size Controls', keywords: 'font zoom larger smaller' },
         { id: 'spellcheck', title: 'Spellcheck & Suggestions', keywords: 'spelling typo dictionary' },
         { id: 'undo-redo', title: 'Undo, Redo & Snapshot History', keywords: 'history undo redo clock' },
-        { id: 'snapshot-history', title: 'Snapshot History', keywords: 'version restore backup revision' },
+        { id: 'snapshot-history', title: 'Snapshot History', keywords: 'version restore backup revision publish share team' },
         { id: 'casting', title: 'Actor Casting', keywords: 'actors casting roles' },
         { id: 'characters', title: 'Characters & Roles', keywords: 'character dialogue profile' },
         { id: 'teams', title: 'Team Collaboration', keywords: 'share collaborate members' },

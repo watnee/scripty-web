@@ -340,17 +340,22 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public ProjectProfileViewModel getProjectProfileViewModel(Integer id) {
-        return getProjectProfileViewModel(id, null);
+        return getProjectProfileViewModel(id, null, true);
     }
 
     @Override
     public ProjectProfileViewModel getProjectProfileViewModel(Integer id, Integer editionId) {
+        return getProjectProfileViewModel(id, editionId, true);
+    }
+
+    @Override
+    public ProjectProfileViewModel getProjectProfileViewModel(Integer id, Integer editionId, boolean canBrowseEditions) {
         Project project = projectRepository.findWithTeamsById(id).orElse(null);
         if (project == null) {
             return null;
         }
 
-        ScriptEdition edition = scriptEditionService.requireForProject(project.getId(), editionId);
+        ScriptEdition edition = scriptEditionService.resolveForAccess(project.getId(), editionId, canBrowseEditions);
         if (edition == null) {
             edition = scriptEditionService.ensureDefaultEdition(project.getId());
         }
@@ -377,7 +382,7 @@ public class ProjectServiceImpl implements ProjectService {
             vm.setEditionId(edition.getId());
             vm.setEditionName(edition.getName());
         }
-        vm.setEditions(scriptEditionService.getEditionViewModels(project.getId()));
+        vm.setEditions(scriptEditionService.getEditionViewModels(project.getId(), canBrowseEditions));
 
         List<BlockViewModel> blockViewModels = new ArrayList<>();
         Integer lastBlockId = null;

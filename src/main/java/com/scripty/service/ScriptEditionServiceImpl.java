@@ -67,6 +67,14 @@ public class ScriptEditionServiceImpl implements ScriptEditionService {
     }
 
     @Override
+    public ScriptEdition resolveForAccess(Integer projectId, Integer editionId, boolean canBrowseEditions) {
+        if (canBrowseEditions) {
+            return requireForProject(projectId, editionId);
+        }
+        return getPublishedForProject(projectId);
+    }
+
+    @Override
     public ScriptEdition getDefaultForProject(Integer projectId) {
         if (projectId == null) {
             return null;
@@ -78,10 +86,24 @@ public class ScriptEditionServiceImpl implements ScriptEditionService {
     }
 
     @Override
+    public ScriptEdition getPublishedForProject(Integer projectId) {
+        if (projectId == null) {
+            return null;
+        }
+        return scriptEditionRepository.findPublishedByProjectId(projectId)
+                .orElseGet(() -> getDefaultForProject(projectId));
+    }
+
+    @Override
     @Transactional
     public ScriptEdition ensureDefaultEdition(Integer projectId) {
         ScriptEdition existing = getDefaultForProject(projectId);
         if (existing != null) {
+            if (scriptEditionRepository.findPublishedByProjectId(projectId).isEmpty()) {
+                existing.setPublished(true);
+                existing.setUpdatedAt(LocalDateTime.now());
+                return scriptEditionRepository.save(existing);
+            }
             return existing;
         }
         Project project = projectRepository.findById(projectId).orElse(null);
@@ -93,6 +115,7 @@ public class ScriptEditionServiceImpl implements ScriptEditionService {
         edition.setProject(project);
         edition.setName(DEFAULT_EDITION_NAME);
         edition.setDefault(true);
+        edition.setPublished(true);
         edition.setCreatedAt(now);
         edition.setUpdatedAt(now);
         edition.setLastEdited(project.getLastEdited() != null ? project.getLastEdited() : now);
@@ -109,12 +132,26 @@ public class ScriptEditionServiceImpl implements ScriptEditionService {
 
     @Override
     public List<ScriptEditionViewModel> getEditionViewModels(Integer projectId) {
+        return getEditionViewModels(projectId, true);
+    }
+
+    @Override
+    public List<ScriptEditionViewModel> getEditionViewModels(Integer projectId, boolean canBrowseEditions) {
         List<ScriptEditionViewModel> result = new ArrayList<>();
-        for (ScriptEdition edition : listForProject(projectId)) {
+        List<ScriptEdition> editions = listForProject(projectId);
+        if (!canBrowseEditions) {
+            ScriptEdition published = getPublishedForProject(projectId);
+            if (published == null) {
+                return result;
+            }
+            editions = List.of(published);
+        }
+        for (ScriptEdition edition : editions) {
             ScriptEditionViewModel vm = new ScriptEditionViewModel();
             vm.setId(edition.getId());
             vm.setName(edition.getName());
             vm.setDefault(edition.isDefault());
+            vm.setPublished(edition.isPublished());
             vm.setLastEdited(edition.getLastEdited());
             vm.setBlockCount(blockRepository.countByScriptEditionId(edition.getId()));
             result.add(vm);
@@ -205,15 +242,26 @@ public class ScriptEditionServiceImpl implements ScriptEditionService {
             return false;
         }
         boolean wasDefault = edition.isDefault();
+        boolean wasPublished = edition.isPublished();
         scriptEditionRepository.delete(edition);
-        if (wasDefault) {
+        if (wasDefault || wasPublished) {
             ScriptEdition next = scriptEditionRepository.findByProjectIdOrderByNameAsc(projectId).stream()
                     .findFirst()
                     .orElse(null);
             if (next != null) {
-                next.setDefault(true);
-                next.setUpdatedAt(LocalDateTime.now());
-                scriptEditionRepository.save(next);
+                boolean changed = false;
+                if (wasDefault && !next.isDefault()) {
+                    next.setDefault(true);
+                    changed = true;
+                }
+                if (wasPublished && !next.isPublished()) {
+                    next.setPublished(true);
+                    changed = true;
+                }
+                if (changed) {
+                    next.setUpdatedAt(LocalDateTime.now());
+                    scriptEditionRepository.save(next);
+                }
             }
         }
         return true;
@@ -241,6 +289,33 @@ public class ScriptEditionServiceImpl implements ScriptEditionService {
                 projectId,
                 ProjectActivity.ACTION_SCRIPT_EDITED,
                 "set \"" + edition.getName() + "\" as default version",
+                ProjectActivity.ENTITY_PROJECT,
+                edition.getId());
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public boolean setPublishedEdition(Integer editionId, Integer projectId) {
+        ScriptEdition edition = scriptEditionRepository.findByIdAndProjectId(editionId, projectId).orElse(null);
+        if (edition == null) {
+            return false;
+        }
+        if (edition.isPublished()) {
+            return true;
+        }
+        for (ScriptEdition other : scriptEditionRepository.findByProjectIdOrderByNameAsc(projectId)) {
+            boolean shouldBePublished = other.getId().equals(editionId);
+            if (other.isPublished() != shouldBePublished) {
+                other.setPublished(shouldBePublished);
+                other.setUpdatedAt(LocalDateTime.now());
+                scriptEditionRepository.save(other);
+            }
+        }
+        projectActivityService.recordForCurrentUser(
+                projectId,
+                ProjectActivity.ACTION_SCRIPT_EDITED,
+                "shared \"" + edition.getName() + "\" with the team",
                 ProjectActivity.ENTITY_PROJECT,
                 edition.getId());
         return true;

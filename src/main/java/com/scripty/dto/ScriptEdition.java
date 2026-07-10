@@ -29,6 +29,9 @@ public class ScriptEdition {
     @Column(name = "is_default", nullable = false)
     private boolean isDefault;
 
+    @Column(name = "is_published", nullable = false)
+    private boolean isPublished;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cloned_from_edition_id")
     private ScriptEdition clonedFrom;
@@ -72,6 +75,14 @@ public class ScriptEdition {
 
     public void setDefault(boolean isDefault) {
         this.isDefault = isDefault;
+    }
+
+    public boolean isPublished() {
+        return isPublished;
+    }
+
+    public void setPublished(boolean isPublished) {
+        this.isPublished = isPublished;
     }
 
     public ScriptEdition getClonedFrom() {

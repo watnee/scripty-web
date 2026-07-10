@@ -1,5 +1,5 @@
 <div xmlns:th="http://www.thymeleaf.org" th:fragment="panel(projectId, shareAccessUsers, teams, inviteTeams, pendingInvitations, inviteCommand)" class="project-share-panel">
-    <p class="project-share-intro muted">Share this link with people who can view the project, or invite someone by email.</p>
+    <p class="project-share-intro muted">Share this link with people who can view the project, or invite someone by email. Viewers always open the screenplay version you shared with the team (eye icon in the Version menu).</p>
     <div class="project-share-link-row">
         <label class="visually-hidden" th:for="'project-share-link-' + ${projectId}">Project link</label>
         <input type="text"

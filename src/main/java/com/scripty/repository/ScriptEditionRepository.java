@@ -16,6 +16,9 @@ public interface ScriptEditionRepository extends JpaRepository<ScriptEdition, In
     @Query("SELECT e FROM ScriptEdition e WHERE e.project.id = :projectId AND e.isDefault = TRUE")
     Optional<ScriptEdition> findDefaultByProjectId(@Param("projectId") Integer projectId);
 
+    @Query("SELECT e FROM ScriptEdition e WHERE e.project.id = :projectId AND e.isPublished = TRUE")
+    Optional<ScriptEdition> findPublishedByProjectId(@Param("projectId") Integer projectId);
+
     boolean existsByProjectIdAndNameIgnoreCase(Integer projectId, String name);
 
     long countByProjectId(Integer projectId);

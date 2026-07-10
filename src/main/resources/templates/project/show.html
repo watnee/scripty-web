@@ -13,7 +13,7 @@
         if (projectId) {
             try {
                 var params = new URLSearchParams(window.location.search);
-                if (!params.has('editionId')) {
+                if (canEditScript && !params.has('editionId')) {
                     var storedEdition = localStorage.getItem('scripty-edition-project-' + projectId);
                     if (storedEdition && String(storedEdition) !== String(editionId || '')) {
                         var url = new URL(window.location.href);
@@ -22,7 +22,7 @@
                         return;
                     }
                 }
-                if (editionId) {
+                if (canEditScript && editionId) {
                     localStorage.setItem('scripty-edition-project-' + projectId, String(editionId));
                 }
             } catch (e) {}
@@ -497,6 +497,13 @@
                 </button>
                 <div class="nav-dropdown-menu script-edition-menu">
                     <div class="script-edition-menu-label">Versions</div>
+                    <div th:if="${canEditScript == null or canEditScript}"
+                         class="script-edition-menu-hint muted"
+                         th:with="publishedEdition=${viewModel.editions.?[published].![name]}">
+                        <span th:if="${!#lists.isEmpty(publishedEdition)}">
+                            Team sees: <strong th:text="${publishedEdition[0]}">Main</strong>
+                        </span>
+                    </div>
                     <div th:each="edition : ${viewModel.editions}"
                          class="script-edition-row"
                          th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'is-active'">
@@ -534,6 +541,32 @@
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
                         </a>
+                        <form th:if="${(canEditScript == null or canEditScript) and !edition.published}"
+                              th:action="@{/project/edition/setPublished}"
+                              method="POST"
+                              hx-boost="false"
+                              class="script-edition-publish-form">
+                            <input type="hidden" name="projectId" th:value="${viewModel.id}" />
+                            <input type="hidden" name="editionId" th:value="${edition.id}" />
+                            <button type="submit"
+                                    class="script-edition-publish-toggle"
+                                    th:aria-label="'Share ' + ${edition.name} + ' with the team'"
+                                    th:title="'Share with team — others will see this version'">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </form>
+                        <span th:if="${edition.published}"
+                              class="script-edition-publish-toggle is-published"
+                              aria-label="Shared with team"
+                              title="Shared with team — this is the version others see">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
+                            </svg>
+                        </span>
                         <form th:if="${(canEditScript == null or canEditScript) and !edition.default}"
                               th:action="@{/project/edition/setDefault}"
                               method="POST"

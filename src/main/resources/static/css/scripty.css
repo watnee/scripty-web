@@ -2464,6 +2464,49 @@ button.script-edition-default-toggle {
     cursor: pointer;
 }
 
+.script-edition-menu-hint {
+    padding: 0.25rem 0.75rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+.script-edition-publish-form {
+    display: inline-flex;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.script-edition-publish-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    min-width: 1.75rem;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 0.45rem;
+    background: transparent;
+    color: var(--muted-fg, #64748b);
+    cursor: default;
+}
+
+button.script-edition-publish-toggle {
+    cursor: pointer;
+}
+
+button.script-edition-publish-toggle:hover,
+button.script-edition-publish-toggle:focus-visible {
+    color: var(--fg, inherit);
+    background: var(--accent-bg, rgba(0, 0, 0, 0.05));
+}
+
+.script-edition-publish-toggle.is-published {
+    color: var(--fg, inherit);
+}
+
 .script-edition-row .script-edition-lock-toggle,
 .script-edition-row .script-edition-history-toggle {
     display: inline-flex;

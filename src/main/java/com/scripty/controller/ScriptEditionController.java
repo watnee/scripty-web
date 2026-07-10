@@ -42,7 +42,8 @@ public class ScriptEditionController {
         if (!projectAccess.canAccessProject(projectId, principal)) {
             return "redirect:/project/list";
         }
-        ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
+        boolean canBrowseEditions = projectAccess.canEditScript(projectId, principal);
+        ScriptEdition edition = scriptEditionService.resolveForAccess(projectId, editionId, canBrowseEditions);
         if (edition == null) {
             return "redirect:/project/show?id=" + projectId;
         }
@@ -84,6 +85,17 @@ public class ScriptEditionController {
             return "redirect:/project/list";
         }
         scriptEditionService.setDefaultEdition(editionId, projectId);
+        return "redirect:/project/show?id=" + projectId + "&editionId=" + editionId;
+    }
+
+    @RequestMapping(value = "/setPublished", method = RequestMethod.POST)
+    public String setPublished(@RequestParam Integer projectId,
+                               @RequestParam Integer editionId,
+                               Principal principal) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return "redirect:/project/list";
+        }
+        scriptEditionService.setPublishedEdition(editionId, projectId);
         return "redirect:/project/show?id=" + projectId + "&editionId=" + editionId;
     }
 }

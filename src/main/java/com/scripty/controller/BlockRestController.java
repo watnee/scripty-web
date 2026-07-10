@@ -58,7 +58,8 @@ public class BlockRestController {
         if (!projectAccess.canAccessProject(projectId, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
+        boolean canBrowseEditions = projectAccess.canEditScript(projectId, principal);
+        ScriptEdition edition = scriptEditionService.resolveForAccess(projectId, editionId, canBrowseEditions);
         List<Block> blocks = edition != null
                 ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
                 : blockRepository.findByProjectIdOrderByOrderAsc(projectId);

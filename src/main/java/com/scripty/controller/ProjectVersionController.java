@@ -1,7 +1,9 @@
 package com.scripty.controller;
 
+import com.scripty.dto.ScriptEdition;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ProjectVersionService;
+import com.scripty.service.ScriptEditionService;
 import com.scripty.viewmodel.project.versionhistory.VersionHistoryViewModel;
 import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,9 @@ public class ProjectVersionController {
     ProjectVersionService projectVersionService;
 
     @Autowired
+    ScriptEditionService scriptEditionService;
+
+    @Autowired
     ProjectAccessSupport projectAccess;
 
     @RequestMapping(value = "/list")
@@ -29,9 +34,15 @@ public class ProjectVersionController {
         if (!projectAccess.canAccessProject(projectId, principal)) {
             return "redirect:/project/list";
         }
-        VersionHistoryViewModel viewModel = projectVersionService.getVersionHistoryViewModel(projectId, editionId);
+        boolean canEditScript = projectAccess.canEditScript(projectId, principal);
+        Integer resolvedEditionId = editionId;
+        if (!canEditScript) {
+            ScriptEdition published = scriptEditionService.resolveForAccess(projectId, editionId, false);
+            resolvedEditionId = published != null ? published.getId() : null;
+        }
+        VersionHistoryViewModel viewModel = projectVersionService.getVersionHistoryViewModel(projectId, resolvedEditionId);
         model.addAttribute("viewModel", viewModel);
-        model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
+        model.addAttribute("canEditScript", canEditScript);
         return "project/versionHistory";
     }
 

@@ -5,6 +5,7 @@ public class ScriptEditionViewModel {
     private int id;
     private String name;
     private boolean isDefault;
+    private boolean isPublished;
     private java.time.LocalDateTime lastEdited;
     private int blockCount;
 
@@ -30,6 +31,14 @@ public class ScriptEditionViewModel {
 
     public void setDefault(boolean isDefault) {
         this.isDefault = isDefault;
+    }
+
+    public boolean isPublished() {
+        return isPublished;
+    }
+
+    public void setPublished(boolean isPublished) {
+        this.isPublished = isPublished;
     }
 
     public java.time.LocalDateTime getLastEdited() {

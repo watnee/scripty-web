@@ -2,15 +2,13 @@ package com.scripty.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
-import org.springframework.security.web.RedirectStrategy;
 
 class HtmxLoginUrlAuthenticationEntryPointTest {
 
@@ -33,6 +31,7 @@ class HtmxLoginUrlAuthenticationEntryPointTest {
 
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
         assertEquals("https://example.com/login", response.getHeader("HX-Redirect"));
+        assertNull(response.getRedirectedUrl());
     }
 
     @Test
@@ -43,15 +42,13 @@ class HtmxLoginUrlAuthenticationEntryPointTest {
         request.setServerPort(443);
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        RedirectStrategy redirectStrategy = mock(RedirectStrategy.class);
-        entryPoint.setRedirectStrategy(redirectStrategy);
-
         entryPoint.commence(
                 request,
                 response,
                 new AuthenticationCredentialsNotFoundException("unauthenticated"));
 
         assertNull(response.getHeader("HX-Redirect"));
-        verify(redirectStrategy).sendRedirect(request, response, "https://example.com/login");
+        assertTrue(response.getRedirectedUrl() != null
+                && response.getRedirectedUrl().endsWith("/login"));
     }
 }

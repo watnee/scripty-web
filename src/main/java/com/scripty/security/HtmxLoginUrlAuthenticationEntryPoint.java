@@ -22,7 +22,7 @@ public class HtmxLoginUrlAuthenticationEntryPoint extends LoginUrlAuthentication
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException, ServletException {
         if (isHtmxRequest(request)) {
-            String loginUrl = buildRedirectUrlToLoginPage(request, authException);
+            String loginUrl = buildRedirectUrlToLoginPage(request, response, authException);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setHeader("HX-Redirect", loginUrl);
             return;

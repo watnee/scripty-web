@@ -229,8 +229,24 @@
     }
 
     /**
+     * Strip a Fountain force-marker from the first line only, keeping any
+     * following lines intact. Prevents Enter/detection from deleting text the
+     * user added with Shift+Enter.
+     */
+    function stripFirstLinePrefix(trimmed, replacer) {
+        var nl = trimmed.indexOf('\n');
+        if (nl < 0) {
+            return replacer(trimmed);
+        }
+        return replacer(trimmed.slice(0, nl)) + trimmed.slice(nl);
+    }
+
+    /**
      * Detect Fountain element type from typed content.
      * Returns { type, content } when a conversion should apply, else null.
+     *
+     * Content rewrites never drop lines after the first — multi-line blocks
+     * keep their body so Enter (save + next block) cannot delete typed text.
      */
     function detectFountain(raw) {
         if (raw == null) return null;
@@ -240,6 +256,7 @@
 
         // Multi-line: only force-marker prefixes on first line
         var firstLine = trimmed.split('\n')[0].trim();
+        var singleLine = trimmed === firstLine;
 
         if (/^={3,}$/.test(trimmed)) {
             return { type: 'PAGE_BREAK', content: '===' };
@@ -248,44 +265,63 @@
             return { type: 'NOTE', content: trimmed.slice(2, -2).trim() };
         }
         if (firstLine.startsWith('#') && !firstLine.startsWith('##')) {
-            return { type: 'SECTION', content: trimmed.replace(/^#+\s*/, '') };
+            return { type: 'SECTION', content: stripFirstLinePrefix(trimmed, function(line) {
+                return line.replace(/^#+\s*/, '');
+            }) };
         }
         if (firstLine.startsWith('#') && firstLine.match(/^#+/)) {
-            return { type: 'SECTION', content: trimmed.replace(/^#+\s*/, '') };
+            return { type: 'SECTION', content: stripFirstLinePrefix(trimmed, function(line) {
+                return line.replace(/^#+\s*/, '');
+            }) };
         }
         if (firstLine.startsWith('=') && !firstLine.startsWith('==')) {
-            return { type: 'SYNOPSIS', content: trimmed.replace(/^=+\s*/, '') };
+            return { type: 'SYNOPSIS', content: stripFirstLinePrefix(trimmed, function(line) {
+                return line.replace(/^=+\s*/, '');
+            }) };
         }
         if (firstLine.startsWith('~')) {
-            return { type: 'LYRICS', content: trimmed.replace(/^~\s*/, '') };
+            return { type: 'LYRICS', content: stripFirstLinePrefix(trimmed, function(line) {
+                return line.replace(/^~\s*/, '');
+            }) };
         }
         if (firstLine.startsWith('.') && !firstLine.startsWith('..')) {
-            return { type: 'SCENE', content: trimmed.replace(/^\.\s*/, '') };
+            return { type: 'SCENE', content: stripFirstLinePrefix(trimmed, function(line) {
+                return line.replace(/^\.\s*/, '');
+            }) };
         }
         if (firstLine.startsWith('@')) {
             var cue = firstLine.slice(1).trim().replace(/\s*\^\s*$/, '');
             var dual = /\^\s*$/.test(firstLine);
+            // Character cues are a single line; keep any body lines as-is so
+            // Enter does not wipe dialogue typed under the cue in one block.
+            var cueContent = singleLine
+                ? cue.toUpperCase()
+                : (cue.toUpperCase() + trimmed.slice(trimmed.indexOf('\n')));
             return {
                 type: dual ? 'DUAL_DIALOGUE' : 'CHARACTER',
-                content: cue.toUpperCase()
+                content: cueContent
             };
         }
         if (firstLine.startsWith('>') && firstLine.endsWith('<') && firstLine.length > 2) {
+            if (!singleLine) return null;
             return { type: 'CENTERED', content: firstLine.slice(1, -1).trim() };
         }
         if (firstLine.startsWith('>')) {
+            if (!singleLine) return null;
             return { type: 'TRANSITION', content: firstLine.slice(1).trim() };
         }
-        if (SCENE_HEADING.test(firstLine)) {
+        // Heuristics that previously returned only firstLine — require a single
+        // line so multi-line action is never truncated on Enter.
+        if (singleLine && SCENE_HEADING.test(firstLine)) {
             return { type: 'SCENE', content: firstLine };
         }
-        if (TRANSITION.test(firstLine)) {
+        if (singleLine && TRANSITION.test(firstLine)) {
             return { type: 'TRANSITION', content: firstLine };
         }
-        if (SHOT.test(firstLine)) {
+        if (singleLine && SHOT.test(firstLine)) {
             return { type: 'SHOT', content: firstLine };
         }
-        if (/^\([^)]*\)$/.test(firstLine) || (firstLine.startsWith('(') && !firstLine.includes('\n'))) {
+        if (singleLine && (/^\([^)]*\)$/.test(firstLine) || firstLine.startsWith('('))) {
             var paren = firstLine.startsWith('(')
                 ? (firstLine.endsWith(')') ? firstLine.slice(1, -1).trim() : firstLine.slice(1).trim())
                 : firstLine;
@@ -293,7 +329,7 @@
         }
 
         // Character cue heuristic: single ALL-CAPS line, short, not a scene/transition
-        if (trimmed === firstLine && isCharacterCueLine(firstLine)) {
+        if (singleLine && isCharacterCueLine(firstLine)) {
             var dualCue = /\^\s*$/.test(firstLine);
             var name = firstLine.replace(/^@/, '').replace(/\s*\^\s*$/, '').trim();
             return {
@@ -546,14 +582,22 @@
         }
 
         if (detected.content !== textarea.value) {
-            var start = textarea.selectionStart;
-            textarea.value = detected.content;
-            var pos = Math.min(start, detected.content.length);
-            try {
-                textarea.setSelectionRange(pos, pos);
-            } catch (err) { /* ignore */ }
-            if (typeof window.scriptyGrowTextarea === 'function') {
-                window.scriptyGrowTextarea(textarea);
+            var original = textarea.value;
+            // Safety net: never apply a rewrite that drops lines from multi-line
+            // content (Enter used to truncate scene/transition heuristics to line 1).
+            var originalLines = String(original).replace(/\s+$/, '').split('\n').length;
+            var detectedLines = String(detected.content).replace(/\s+$/, '').split('\n').length;
+            var dropsLines = original.indexOf('\n') !== -1 && detectedLines < originalLines;
+            if (!dropsLines) {
+                var start = textarea.selectionStart;
+                textarea.value = detected.content;
+                var pos = Math.min(start, detected.content.length);
+                try {
+                    textarea.setSelectionRange(pos, pos);
+                } catch (err) { /* ignore */ }
+                if (typeof window.scriptyGrowTextarea === 'function') {
+                    window.scriptyGrowTextarea(textarea);
+                }
             }
         }
 

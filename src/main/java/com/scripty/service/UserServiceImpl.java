@@ -95,7 +95,11 @@ public class UserServiceImpl implements UserService {
         existing.setTeam(user.getTeam());
         existing.setEmail(user.getEmail());
         existing.setDefaultProjectId(user.getDefaultProjectId());
-        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+        // Only hash when the caller supplies a new plaintext password.
+        // read()+update() paths (e.g. toggleDefault) pass the existing bcrypt
+        // hash through; re-encoding it locks the user out.
+        if (user.getPassword() != null && !user.getPassword().isEmpty()
+                && !user.getPassword().equals(existing.getPassword())) {
             existing.setPassword(passwordEncoder.encode(user.getPassword()));
         }
         userRepository.save(existing);

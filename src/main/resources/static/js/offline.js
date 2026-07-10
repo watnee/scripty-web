@@ -372,6 +372,8 @@
         if (!(form instanceof HTMLFormElement)) return;
         if ((form.getAttribute('method') || 'get').toLowerCase() === 'get') return;
         var action = form.getAttribute('hx-post') || form.getAttribute('action') || '';
+        // Never block auth — login/logout must work even if probes think we're offline.
+        if (action.indexOf('/login') !== -1 || action.indexOf('/logout') !== -1) return;
         if (action.indexOf('/block/editInline') !== -1 ||
             action.indexOf('/block/createBelowInline') !== -1) return;
         e.preventDefault();

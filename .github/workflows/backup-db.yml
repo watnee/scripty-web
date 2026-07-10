@@ -1,6 +1,8 @@
 # Daily MySQL dump → Cloudflare R2
 #
-# One-time setup: see docs/BACKUP.md for secrets and Railway TCP proxy notes.
+# One-time setup: see docs/BACKUP.md
+# Uses the same MYSQL* + CLOUDFLARE_* secrets as the Cloudflare deploy job,
+# plus R2_BUCKET (e.g. scripty-db-backups). CLOUDFLARE_API_TOKEN needs R2 edit.
 
 name: Backup database
 
@@ -23,24 +25,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install mysql client and AWS CLI
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install mysql client
         run: |
           sudo apt-get update
           sudo apt-get install -y mysql-client
-          # AWS CLI is preinstalled on ubuntu-latest; ensure it is available
-          aws --version
           mysqldump --version
 
       - name: Run backup script
         env:
-          MYSQL_BACKUP_HOST: ${{ secrets.MYSQL_BACKUP_HOST }}
-          MYSQL_BACKUP_PORT: ${{ secrets.MYSQL_BACKUP_PORT }}
-          MYSQL_BACKUP_USER: ${{ secrets.MYSQL_BACKUP_USER }}
-          MYSQL_BACKUP_PASSWORD: ${{ secrets.MYSQL_BACKUP_PASSWORD }}
-          MYSQL_BACKUP_DATABASE: ${{ secrets.MYSQL_BACKUP_DATABASE }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          MYSQLHOST: ${{ secrets.MYSQLHOST }}
+          MYSQLPORT: ${{ secrets.MYSQLPORT }}
+          MYSQLUSER: ${{ secrets.MYSQLUSER }}
+          MYSQLPASSWORD: ${{ secrets.MYSQLPASSWORD }}
+          MYSQLDATABASE: ${{ secrets.MYSQLDATABASE }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
           chmod +x scripts/backup-mysql.sh

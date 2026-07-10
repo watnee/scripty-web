@@ -38,26 +38,28 @@ Script: [`scripts/backup-mysql.sh`](../scripts/backup-mysql.sh)
 
 - **Schedule:** daily at 07:00 UTC (`0 7 * * *`), plus manual **Run workflow**
 - **Format:** `scripty-YYYYMMDD-HHMMSS.sql.gz`
+- **Upload:** `wrangler r2 object put` (uses `CLOUDFLARE_API_TOKEN`)
 - **Retention:** prefer an R2 **lifecycle rule** to expire objects after 30 days
 
 ### One-time setup
 
 1. **Create an R2 bucket** (e.g. `scripty-db-backups`) in Cloudflare → R2.
-2. Create an R2 API token with Object Read & Write on that bucket.
+2. Ensure `CLOUDFLARE_API_TOKEN` can edit R2 objects (Account → Workers R2 Storage → Edit, or Object Read & Write on that bucket).
 3. On the Railway MySQL service, note the **TCP Proxy** public host and port (needed for Actions to reach the DB).
 4. Add GitHub Actions secrets (**Settings → Secrets and variables → Actions**):
 
    | Secret | Purpose |
    |--------|---------|
-   | `MYSQL_BACKUP_HOST` | Railway MySQL TCP proxy host |
-   | `MYSQL_BACKUP_PORT` | Railway MySQL TCP proxy port |
-   | `MYSQL_BACKUP_USER` | MySQL user |
-   | `MYSQL_BACKUP_PASSWORD` | MySQL password |
-   | `MYSQL_BACKUP_DATABASE` | Database name |
-   | `R2_ACCOUNT_ID` | Cloudflare account ID |
-   | `R2_ACCESS_KEY_ID` | R2 API access key ID |
-   | `R2_SECRET_ACCESS_KEY` | R2 API secret access key |
+   | `MYSQLHOST` | Railway MySQL TCP proxy host |
+   | `MYSQLPORT` | Railway MySQL TCP proxy port |
+   | `MYSQLUSER` | MySQL user |
+   | `MYSQLPASSWORD` | MySQL password |
+   | `MYSQLDATABASE` | Database name |
+   | `CLOUDFLARE_API_TOKEN` | Token with Workers + **R2 edit** |
+   | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
    | `R2_BUCKET` | Bucket name (e.g. `scripty-db-backups`) |
+
+   The `MYSQL*` / `CLOUDFLARE_*` secrets are the same ones used by the Cloudflare deploy job.
 
 5. Run **Actions → Backup database → Run workflow** once to verify upload.
 6. (Recommended) Set an R2 lifecycle rule: expire objects after **30 days**.
@@ -65,12 +67,9 @@ Script: [`scripts/backup-mysql.sh`](../scripts/backup-mysql.sh)
 ### Download a dump from R2
 
 ```bash
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export AWS_ENDPOINT_URL="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
-
-aws s3 ls "s3://${R2_BUCKET}/"
-aws s3 cp "s3://${R2_BUCKET}/scripty-YYYYMMDD-HHMMSS.sql.gz" .
+npx wrangler r2 object get scripty-db-backups/scripty-YYYYMMDD-HHMMSS.sql.gz \
+  --file ./scripty-YYYYMMDD-HHMMSS.sql.gz \
+  --remote
 ```
 
 ### Restore a dump into MySQL
@@ -79,24 +78,26 @@ Prefer restoring into a **new** empty database (or a staging MySQL) and verifyin
 
 ```bash
 gunzip -c scripty-YYYYMMDD-HHMMSS.sql.gz | mysql \
-  -h "$MYSQL_BACKUP_HOST" \
-  -P "$MYSQL_BACKUP_PORT" \
-  -u "$MYSQL_BACKUP_USER" \
-  -p"$MYSQL_BACKUP_PASSWORD" \
-  "$MYSQL_BACKUP_DATABASE"
+  -h "$MYSQLHOST" \
+  -P "$MYSQLPORT" \
+  -u "$MYSQLUSER" \
+  -p"$MYSQLPASSWORD" \
+  "$MYSQLDATABASE"
 ```
 
 Warning: restoring over a live production database replaces all data. Stop the app (or take the service offline) during restore to avoid writes mid-import.
 
 ### Manual dump (local)
 
-With the same env vars as the workflow:
+With the same env vars as the workflow (or after `npx wrangler login`):
 
 ```bash
+export R2_BUCKET=scripty-db-backups
+# MYSQLHOST/PORT/USER/PASSWORD/DATABASE = Railway TCP proxy values
 ./scripts/backup-mysql.sh
 ```
 
-Requires `mysqldump`, `gzip`, and AWS CLI v2 (or compatible) configured for R2 via `AWS_ENDPOINT_URL`.
+Requires `mysqldump`, `gzip`, and Node/`npx wrangler`.
 
 ## Snapshot History retention (app)
 
@@ -105,8 +106,9 @@ Auto-saves in Snapshot History are pruned per screenplay edition: the newest **3
 ## Checklist
 
 - [ ] Railway MySQL: Daily + Weekly volume backups enabled
-- [ ] R2 bucket + API token created
+- [ ] R2 bucket created (`scripty-db-backups`)
 - [ ] R2 30-day lifecycle rule (recommended)
-- [ ] All `MYSQL_BACKUP_*` and `R2_*` GitHub secrets set
+- [ ] `CLOUDFLARE_API_TOKEN` includes R2 edit
+- [ ] `MYSQL*` / `CLOUDFLARE_*` / `R2_BUCKET` GitHub secrets set
 - [ ] Manual **Backup database** workflow succeeded once
 - [ ] You know how to restore from Railway and from an R2 dump

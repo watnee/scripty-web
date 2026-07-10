@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# Dump Railway MySQL and upload a gzipped SQL file to Cloudflare R2.
-# Required env vars: MYSQL_BACKUP_HOST, MYSQL_BACKUP_PORT, MYSQL_BACKUP_USER,
-# MYSQL_BACKUP_PASSWORD, MYSQL_BACKUP_DATABASE, R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
-# R2_SECRET_ACCESS_KEY, R2_BUCKET
+# Dump Railway MySQL and upload a gzipped SQL file to Cloudflare R2 via wrangler.
+#
+# Required env vars (GitHub Actions already has the MYSQL* / CLOUDFLARE_* deploy secrets):
+#   MYSQLHOST, MYSQLPORT, MYSQLUSER, MYSQLPASSWORD, MYSQLDATABASE
+#   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+#   R2_BUCKET (e.g. scripty-db-backups)
+#
+# Locally you can also use wrangler OAuth (omit CLOUDFLARE_API_TOKEN) after `npx wrangler login`.
 set -euo pipefail
 
 require_var() {
@@ -13,17 +17,26 @@ require_var() {
   fi
 }
 
+# Prefer dedicated backup secrets when set; fall back to deploy secrets.
+MYSQL_BACKUP_HOST="${MYSQL_BACKUP_HOST:-${MYSQLHOST:-}}"
+MYSQL_BACKUP_PORT="${MYSQL_BACKUP_PORT:-${MYSQLPORT:-}}"
+MYSQL_BACKUP_USER="${MYSQL_BACKUP_USER:-${MYSQLUSER:-}}"
+MYSQL_BACKUP_PASSWORD="${MYSQL_BACKUP_PASSWORD:-${MYSQLPASSWORD:-}}"
+MYSQL_BACKUP_DATABASE="${MYSQL_BACKUP_DATABASE:-${MYSQLDATABASE:-}}"
+
 require_var MYSQL_BACKUP_HOST
 require_var MYSQL_BACKUP_PORT
 require_var MYSQL_BACKUP_USER
 require_var MYSQL_BACKUP_PASSWORD
 require_var MYSQL_BACKUP_DATABASE
-require_var R2_ACCOUNT_ID
-require_var R2_ACCESS_KEY_ID
-require_var R2_SECRET_ACCESS_KEY
 require_var R2_BUCKET
 
-for cmd in mysqldump gzip aws; do
+if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] && ! npx --yes wrangler whoami >/dev/null 2>&1; then
+  echo "error: set CLOUDFLARE_API_TOKEN or run: npx wrangler login" >&2
+  exit 1
+fi
+
+for cmd in mysqldump gzip; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     echo "error: required command not found: ${cmd}" >&2
     exit 1
@@ -37,7 +50,6 @@ mkdir -p "$WORKDIR"
 trap 'rm -rf "$WORKDIR"' EXIT
 
 DUMP_PATH="${WORKDIR}/${FILENAME}"
-ENDPOINT_URL="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
 OBJECT_KEY="${FILENAME}"
 
 echo "Dumping ${MYSQL_BACKUP_DATABASE} from ${MYSQL_BACKUP_HOST}:${MYSQL_BACKUP_PORT}..."
@@ -55,14 +67,11 @@ mysqldump \
   | gzip -c > "${DUMP_PATH}"
 
 SIZE="$(wc -c < "${DUMP_PATH}" | tr -d ' ')"
-echo "Created ${FILENAME} (${SIZE} bytes). Uploading to s3://${R2_BUCKET}/${OBJECT_KEY}..."
+echo "Created ${FILENAME} (${SIZE} bytes). Uploading to r2://${R2_BUCKET}/${OBJECT_KEY}..."
 
-export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
-export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
-export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
+npx --yes wrangler r2 object put "${R2_BUCKET}/${OBJECT_KEY}" \
+  --file "${DUMP_PATH}" \
+  --remote
 
-aws s3 cp "${DUMP_PATH}" "s3://${R2_BUCKET}/${OBJECT_KEY}" \
-  --endpoint-url "${ENDPOINT_URL}"
-
-echo "Upload complete: s3://${R2_BUCKET}/${OBJECT_KEY}"
+echo "Upload complete: r2://${R2_BUCKET}/${OBJECT_KEY}"
 echo "Prefer an R2 lifecycle rule to expire objects after 30 days."

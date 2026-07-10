@@ -46,4 +46,4 @@ Actions → Run workflow  →  Verify (Maven)  →  Deploy Railway ∥ Deploy Cl
 
 ## Database backups
 
-Production MySQL is backed up with Railway volume snapshots plus a daily `mysqldump` to Cloudflare R2. Setup, secrets, and restore steps: [docs/BACKUP.md](docs/BACKUP.md).
+Production MySQL is backed up with Railway volume snapshots plus a daily `mysqldump` to Cloudflare R2 (`scripty-db-backups`). Setup, secrets, and restore steps: [docs/BACKUP.md](docs/BACKUP.md).

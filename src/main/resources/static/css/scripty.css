@@ -2339,6 +2339,17 @@ h1 > small a[role="button"].versions-btn {
     font-weight: 600;
 }
 
+.script-edition-toggle-lock {
+    display: none;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+html.scripty-block-edit-locked .script-edition-toggle-lock,
+.script-edition-toggle.is-locked .script-edition-toggle-lock {
+    display: block;
+}
+
 .script-edition-toggle-caret {
     flex-shrink: 0;
     opacity: 0.7;
@@ -2352,6 +2363,34 @@ h1 > small a[role="button"].versions-btn {
     display: flex;
     align-items: center;
     gap: 0.45rem;
+}
+
+.script-edition-menu .lock-filter-toggle {
+    width: 100%;
+    font: inherit;
+    text-align: left;
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.script-edition-menu .lock-filter-toggle .lock-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.script-edition-menu .lock-filter-toggle[aria-checked="true"] {
+    color: var(--accent, #475569);
+    font-weight: 600;
+}
+
+.script-edition-menu .lock-filter-toggle[aria-checked="true"]::after {
+    content: "✓";
+    margin-left: auto;
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 .script-edition-dropdown .nav-dropdown-menu.script-edition-menu {
@@ -7477,41 +7516,6 @@ aside.block-actions {
     z-index: 1300;
 }
 
-.has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle {
-    background: var(--interactive-bg);
-    border: 1px solid var(--muted-fg);
-    border-radius: var(--border-radius);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--fg);
-    font-size: 1rem;
-    line-height: 1;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
-    width: 2.25rem;
-    height: 2.25rem;
-    padding: 0;
-    box-sizing: border-box;
-    cursor: pointer;
-}
-
-.has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle:hover,
-.has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle:focus {
-    filter: brightness(1.1);
-    background-color: var(--interactive-bg);
-}
-
-.has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle.is-active {
-    color: var(--accent, #475569);
-    border-color: var(--accent, #475569);
-}
-
-.has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle .lock-icon {
-    width: 20px;
-    height: 20px;
-}
-
 .has-toolbar-brand .project-top-bar-breadcrumb .text-size-buttons {
     display: inline-flex;
     align-items: center;
@@ -7580,6 +7584,11 @@ aside.block-actions {
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle .script-edition-toggle-caret {
+    width: 12px;
+    height: 12px;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle .script-edition-toggle-lock {
     width: 12px;
     height: 12px;
 }

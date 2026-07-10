@@ -40,7 +40,14 @@
         var showPins = localStorage.getItem('scripty-show-block-pins-project-' + projectId);
         var showSelect = localStorage.getItem('scripty-show-block-select-project-' + projectId);
         var showElementLabels = localStorage.getItem('scripty-show-block-element-labels-project-' + projectId);
-        var blockEditLocked = !canEditScript || localStorage.getItem('scripty-block-edit-locked-project-' + projectId) === 'true';
+        var blockEditLockedKey = editionId
+            ? 'scripty-block-edit-locked-edition-' + editionId
+            : 'scripty-block-edit-locked-project-' + projectId;
+        var blockEditLockedStored = localStorage.getItem(blockEditLockedKey);
+        if (blockEditLockedStored === null && editionId) {
+            blockEditLockedStored = localStorage.getItem('scripty-block-edit-locked-project-' + projectId);
+        }
+        var blockEditLocked = !canEditScript || blockEditLockedStored === 'true';
         showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
         showPins = showPins === null ? false : showPins !== 'false';
         showSelect = showSelect === null ? false : showSelect !== 'false';
@@ -122,6 +129,19 @@
                             <path d="M18 9a9 9 0 0 1-9 9"></path>
                         </svg>
                         <span class="script-edition-toggle-label" th:text="${viewModel.editionName != null ? viewModel.editionName : 'Main'}">Main</span>
+                        <svg class="script-edition-toggle-lock"
+                             viewBox="0 0 24 24"
+                             width="12"
+                             height="12"
+                             stroke="currentColor"
+                             stroke-width="2"
+                             fill="currentColor"
+                             stroke-linecap="round"
+                             stroke-linejoin="round"
+                             aria-hidden="true">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="currentColor" stroke="currentColor"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none"></path>
+                        </svg>
                         <svg class="script-edition-toggle-caret" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
@@ -165,6 +185,18 @@
                                 class="nav-dropdown-item script-edition-create-btn"
                                 id="script-edition-create-open">New version…</button>
                         <div class="nav-dropdown-divider" role="separator"></div>
+                        <button id="nav-lock-toggle"
+                                type="button"
+                                class="nav-dropdown-item lock-filter-toggle"
+                                th:if="${canEditScript == null or canEditScript}"
+                                role="menuitemcheckbox"
+                                aria-pressed="false"
+                                aria-checked="false"
+                                aria-label="Lock this version"
+                                title="Lock this version">
+                            <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
+                            <span class="lock-filter-toggle-label">Lock this version</span>
+                        </button>
                         <a id="nav-version-history"
                            class="nav-dropdown-item"
                            role="menuitem"
@@ -196,15 +228,6 @@
                         </div>
                     </form>
                 </dialog>
-                <button id="nav-lock-toggle"
-                        type="button"
-                        class="nav-dropdown-toggle lock-filter-toggle"
-                        th:if="${canEditScript == null or canEditScript}"
-                        aria-pressed="false"
-                        aria-label="Lock block text editing"
-                        title="Lock block text editing">
-                    <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
-                </button>
             </div>
             <div class="project-top-bar-controls">
                 <button id="focus-toggle"

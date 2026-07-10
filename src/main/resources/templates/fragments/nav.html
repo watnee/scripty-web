@@ -3641,16 +3641,25 @@
             var selectToggle = document.getElementById('nav-select-toggle');
             var elementLabelsToggle = document.getElementById('nav-element-labels-toggle');
             var lockToggle = document.getElementById('nav-lock-toggle');
+            var editionToggle = document.querySelector('#script-edition-dropdown .script-edition-toggle');
+            var lockToggleLabel = lockToggle ? lockToggle.querySelector('.lock-filter-toggle-label') : null;
             var bookmarksKey = 'scripty-show-block-bookmarks-project-' + projectId;
             var pinsKey = 'scripty-show-block-pins-project-' + projectId;
             var selectKey = 'scripty-show-block-select-project-' + projectId;
             var elementLabelsKey = 'scripty-show-block-element-labels-project-' + projectId;
-            var blockEditLockedKey = 'scripty-block-edit-locked-project-' + projectId;
+            var editionId = window.scriptyEditionId || null;
+            var blockEditLockedKey = editionId
+                ? 'scripty-block-edit-locked-edition-' + editionId
+                : 'scripty-block-edit-locked-project-' + projectId;
+            var blockEditLockedStored = localStorage.getItem(blockEditLockedKey);
+            if (blockEditLockedStored === null && editionId) {
+                blockEditLockedStored = localStorage.getItem('scripty-block-edit-locked-project-' + projectId);
+            }
             var showBookmarks = localStorage.getItem(bookmarksKey);
             var showPins = localStorage.getItem(pinsKey);
             var showSelect = localStorage.getItem(selectKey);
             var showElementLabels = localStorage.getItem(elementLabelsKey);
-            var blockEditLocked = !canEditScript || localStorage.getItem(blockEditLockedKey) === 'true';
+            var blockEditLocked = !canEditScript || blockEditLockedStored === 'true';
 
             showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
             showPins = showPins === null ? false : showPins !== 'false';
@@ -3797,11 +3806,25 @@
             }
 
             function syncLockToggleUi() {
-                if (!lockToggle) return;
-                lockToggle.setAttribute('aria-pressed', blockEditLocked ? 'true' : 'false');
-                lockToggle.classList.toggle('is-active', blockEditLocked);
-                lockToggle.title = blockEditLocked ? 'Unlock block text editing' : 'Lock block text editing';
-                lockToggle.setAttribute('aria-label', lockToggle.title);
+                var lockTitle = blockEditLocked ? 'Unlock this version' : 'Lock this version';
+                if (lockToggle) {
+                    lockToggle.setAttribute('aria-pressed', blockEditLocked ? 'true' : 'false');
+                    lockToggle.setAttribute('aria-checked', blockEditLocked ? 'true' : 'false');
+                    lockToggle.classList.toggle('is-active', blockEditLocked);
+                    lockToggle.title = lockTitle;
+                    lockToggle.setAttribute('aria-label', lockTitle);
+                }
+                if (lockToggleLabel) {
+                    lockToggleLabel.textContent = lockTitle;
+                }
+                if (editionToggle) {
+                    var editionName = editionToggle.querySelector('.script-edition-toggle-label');
+                    var baseLabel = editionName ? editionName.textContent.trim() : 'Main';
+                    var editionTitle = 'Screenplay version: ' + baseLabel + (blockEditLocked ? ' (locked)' : '');
+                    editionToggle.title = editionTitle;
+                    editionToggle.setAttribute('aria-label', editionTitle);
+                    editionToggle.classList.toggle('is-locked', blockEditLocked);
+                }
             }
 
             function clearBlockSelections() {

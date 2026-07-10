@@ -7191,6 +7191,44 @@ aside.block-actions {
     height: 20px;
 }
 
+.has-toolbar-brand .project-top-bar-breadcrumb .text-size-buttons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 2.25rem;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .text-size-btn {
+    background: var(--interactive-bg);
+    border: 1px solid var(--muted-fg);
+    border-radius: var(--border-radius);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg);
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0.4rem;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .text-size-btn:hover,
+.has-toolbar-brand .project-top-bar-breadcrumb .text-size-btn:focus {
+    filter: brightness(1.1);
+    background-color: var(--interactive-bg);
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .text-size-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: none;
+}
+
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .focus-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle {
@@ -8270,8 +8308,8 @@ html.scripty-toolbar-hidden body.has-toolbar-brand .project-top-bar {
 
 body.focus-mode .header-actions,
 body.focus-mode .project-top-bar-breadcrumb > nav,
-body.focus-mode .project-top-bar-actions > :not(#focus-toggle),
-body.focus-mode .text-size-control > :not(#outline-mode-toggle):not(#page-view-mode-toggle):not(#nav-full-width-toggle):not(#text-size-decrease):not(#text-size-increase):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
+body.focus-mode .project-top-bar-actions > :not(#focus-toggle):not(.text-size-buttons),
+body.focus-mode .text-size-control > :not(#outline-mode-toggle):not(#page-view-mode-toggle):not(#nav-full-width-toggle):not(#nav-toolbar-toggle):not(#project-lists-dropdown),
 body.focus-mode .project-script-toolbar,
 body.focus-mode .project-header-row,
 body.focus-mode .project-create-scene,

@@ -119,6 +119,10 @@
                         <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
                     </svg>
                 </button>
+                <span class="text-size-buttons" role="group" aria-label="Text size">
+                    <button id="text-size-decrease" type="button" class="text-size-btn" aria-label="Decrease text size">A−</button>
+                    <button id="text-size-increase" type="button" class="text-size-btn" aria-label="Increase text size">A+</button>
+                </span>
                 <div class="nav-dropdown script-edition-dropdown" id="script-edition-dropdown">
                     <button class="nav-dropdown-toggle script-edition-toggle"
                             type="button"
@@ -431,8 +435,6 @@
                     <path d="M4 18h6"></path>
                 </svg>
             </button>
-            <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
-            <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
             <span class="text-size-control-row-break" aria-hidden="true"></span>
             <a class="nav-dropdown-toggle songs-toolbar-btn"
                th:href="@{/project/documents/songs(projectId=${viewModel.id})}"

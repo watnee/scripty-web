@@ -170,42 +170,5 @@
         </div>
     </div>
 
-    <script th:fragment="shortcutsScript">
-    (function() {
-        const isMac = window.scriptyIsMac ? window.scriptyIsMac() : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
-        const modLabel = isMac ? '⌘' : 'Ctrl';
-
-        document.querySelectorAll('.kb-mod-z').forEach(function(el) {
-            el.textContent = isMac ? '⌘ Z' : 'Ctrl + Z';
-        });
-        document.querySelectorAll('.kb-mod-shift-z').forEach(function(el) {
-            el.textContent = isMac ? '⌘ ⇧ Z' : 'Ctrl + Y';
-        });
-        document.querySelectorAll('.kb-mod-f').forEach(function(el) {
-            el.textContent = isMac ? '⌘ F' : 'Ctrl + F';
-        });
-        document.querySelectorAll('.kb-mod-c').forEach(function(el) {
-            el.textContent = isMac ? '⌘ C' : 'Ctrl + C';
-        });
-        document.querySelectorAll('.kb-mod-x').forEach(function(el) {
-            el.textContent = isMac ? '⌘ X' : 'Ctrl + X';
-        });
-        document.querySelectorAll('.kb-mod-v').forEach(function(el) {
-            el.textContent = isMac ? '⌘ V' : 'Ctrl + V';
-        });
-        document.querySelectorAll('.kb-mod-plus').forEach(function(el) {
-            el.textContent = isMac ? '⌘ +' : 'Ctrl + +';
-        });
-        document.querySelectorAll('.kb-mod-minus').forEach(function(el) {
-            el.textContent = isMac ? '⌘ −' : 'Ctrl + −';
-        });
-        document.querySelectorAll('.kb-mod-period').forEach(function(el) {
-            el.textContent = isMac ? '⌘ .' : 'Ctrl + .';
-        });
-        document.querySelectorAll('.kb-ctrl').forEach(function(el) {
-            el.textContent = modLabel;
-        });
-    })();
-    </script>
 </body>
 </html>

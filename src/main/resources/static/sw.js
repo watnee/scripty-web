@@ -7,6 +7,7 @@ const ASSETS_TO_CACHE = [
   '/js/htmx.min.js',
   '/js/_hyperscript.min.js',
   '/js/shortcuts.js',
+  '/js/help-center.js',
   '/js/text-size.js',
   '/js/block-empty-guard.js',
   '/js/element-type.js',

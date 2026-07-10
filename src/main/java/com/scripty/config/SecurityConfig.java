@@ -60,6 +60,7 @@ public class SecurityConfig {
                         "/offline-project.html",
                         "/icons/**",
                         "/help",
+                        "/shortcuts",
                         "/invitation/accept")
                     .permitAll()
                 .requestMatchers(

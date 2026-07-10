@@ -6742,6 +6742,9 @@
             initProjectDeleteConfirm();
             initGlobalShortcuts();
             initEditorPositionPersistence();
+            if (window.scriptyInitHelpCenter) {
+                window.scriptyInitHelpCenter();
+            }
             document.querySelectorAll('textarea').forEach(growTextarea);
             document.querySelectorAll('input[type="text"]').forEach(autoGrowInput);
             document.querySelectorAll('.scene-blocks, #table-blocks').forEach(function(container) {
@@ -6916,6 +6919,7 @@
     })();
     </script>
     <script th:src="@{/js/shortcuts.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/help-center.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline-store.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline-edit.js(v=${assetVersion})}"></script>

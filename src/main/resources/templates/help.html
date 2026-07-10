@@ -23,10 +23,10 @@
         </div>
 
         <div class="help-tabs" id="help-tabs-container">
-            <button class="help-tab-btn active" data-tab="tab-overview">Overview</button>
-            <button class="help-tab-btn" data-tab="tab-editing">Writing &amp; Editing</button>
-            <button class="help-tab-btn" data-tab="tab-history">Shortcuts &amp; History</button>
-            <button class="help-tab-btn" data-tab="tab-collaboration">Casting &amp; Collaboration</button>
+            <button type="button" class="help-tab-btn active" data-tab="tab-overview">Overview</button>
+            <button type="button" class="help-tab-btn" data-tab="tab-editing">Writing &amp; Editing</button>
+            <button type="button" class="help-tab-btn" data-tab="tab-history">Shortcuts &amp; History</button>
+            <button type="button" class="help-tab-btn" data-tab="tab-collaboration">Casting &amp; Collaboration</button>
         </div>
 
         <!-- SEARCH RESULTS (Visible only when searching) -->
@@ -166,105 +166,5 @@
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
-    
-    <!-- Tab & Search Interaction Script -->
-    <script th:inline="javascript">
-    (function() {
-        // Tab switching logic
-        const tabsContainer = document.getElementById('help-tabs-container');
-        const tabButtons = tabsContainer.querySelectorAll('.help-tab-btn');
-        const contentSections = document.querySelectorAll('.help-content-section');
-        const searchInput = document.getElementById('help-search');
-        const searchResultsSection = document.getElementById('search-results-section');
-        const searchResultsGrid = document.getElementById('search-results-grid');
-        const searchNoResults = document.getElementById('search-no-results');
-
-        function switchTab(tabId) {
-            tabButtons.forEach(btn => {
-                if (btn.getAttribute('data-tab') === tabId) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-            contentSections.forEach(section => {
-                if (section.id === tabId) {
-                    section.classList.add('active');
-                } else {
-                    section.classList.remove('active');
-                }
-            });
-        }
-
-        tabButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Clear search when switching tabs manually
-                searchInput.value = '';
-                searchResultsSection.style.display = 'none';
-                tabsContainer.style.display = 'flex';
-                switchTab(this.getAttribute('data-tab'));
-            });
-        });
-
-        // Client-side real-time search
-        // Collect all cards and their metadata keywords
-        const cards = [];
-        document.querySelectorAll('.help-card').forEach(card => {
-            cards.push({
-                element: card,
-                title: card.querySelector('h3').textContent,
-                html: card.innerHTML,
-                keywords: (card.getAttribute('data-keywords') || '').toLowerCase(),
-                text: card.textContent.toLowerCase()
-            });
-        });
-
-        searchInput.addEventListener('input', function() {
-            const query = this.value.trim().toLowerCase();
-            
-            if (query === '') {
-                // Show current active tab section
-                searchResultsSection.style.display = 'none';
-                tabsContainer.style.display = 'flex';
-                const activeBtn = tabsContainer.querySelector('.help-tab-btn.active');
-                if (activeBtn) {
-                    switchTab(activeBtn.getAttribute('data-tab'));
-                }
-                return;
-            }
-
-            // Hide normal tabs and sections
-            tabsContainer.style.display = 'none';
-            contentSections.forEach(s => s.classList.remove('active'));
-            searchResultsSection.style.display = 'block';
-            
-            // Filter cards
-            searchResultsGrid.innerHTML = '';
-            let matchCount = 0;
-
-            cards.forEach(card => {
-                const isMatch = card.title.toLowerCase().includes(query) || 
-                                card.keywords.includes(query) || 
-                                card.text.includes(query);
-                
-                if (isMatch) {
-                    matchCount++;
-                    // Clone the card and insert
-                    const cardClone = document.createElement('div');
-                    cardClone.className = 'help-card';
-                    cardClone.innerHTML = card.html;
-                    searchResultsGrid.appendChild(cardClone);
-                }
-            });
-
-            if (matchCount === 0) {
-                searchNoResults.style.display = 'block';
-            } else {
-                searchNoResults.style.display = 'none';
-            }
-        });
-    })();
-    </script>
-    <script th:replace="~{fragments/shortcuts :: shortcutsScript}"></script>
 </body>
 </html>

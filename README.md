@@ -21,16 +21,18 @@ Actions → Run workflow  →  Verify (Maven)  →  Deploy Railway ∥ Deploy Cl
    | `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Workers Scripts Edit + Containers |
    | `CLOUDFLARE_ACCOUNT_ID` | (optional) Cloudflare account ID if the token can see multiple accounts |
    | `MYSQLHOST` / `MYSQLPORT` / `MYSQLUSER` / `MYSQLPASSWORD` / `MYSQLDATABASE` | (fallback) Railway MySQL **TCP proxy** host/port + credentials — only needed if `RAILWAY_TOKEN` is missing; CI prefers syncing these from Railway automatically |
+   | `MYSQL_SSL_MODE` / `MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL` | (optional fallback) kept in sync by `./scripts/sync-railway-cloudflare.sh push-github` |
 
 2. **Turn off Railway auto-deploy** for this service (Settings → Source / GitHub) so pushes are not deployed twice — once by Railway and once by Actions.
 
 3. **Cloudflare Worker secrets** — keep aligned with Railway via:
 
    ```bash
-   ./scripts/sync-railway-cloudflare.sh sync
+   ./scripts/sync-railway-cloudflare.sh sync    # Cloudflare Worker + GitHub MYSQL* fallback
+   ./scripts/sync-railway-cloudflare.sh check   # drift report
    ```
 
-   Details: [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md). CI also rewrites Worker MySQL secrets from Railway’s TCP proxy on each Cloudflare deploy when `RAILWAY_TOKEN` is set.
+   Details: [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md). CI rewrites Worker MySQL secrets from Railway’s TCP proxy on each Cloudflare deploy when `RAILWAY_TOKEN` is set. For a secrets-only refresh (no Maven / no image rebuild), use **Actions → Run workflow** with **sync_secrets_only**.
 
 4. **Optional:** approve the `production` environment the first time Actions asks (Settings → Environments). That gate is intentional for deploys.
 

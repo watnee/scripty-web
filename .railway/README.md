@@ -17,7 +17,8 @@ Scripty is a Spring Boot (Java 17 / Maven) app. The generated config wires:
 Cloudflare Containers use the same root `Dockerfile`. Keep MySQL secrets aligned with:
 
 ```bash
-./scripts/sync-railway-cloudflare.sh sync
+./scripts/sync-railway-cloudflare.sh sync    # Cloudflare + GitHub MYSQL*
+./scripts/sync-railway-cloudflare.sh check   # drift report
 ```
 
 Use this file to describe the Railway project you want: services, databases, buckets, custom domains, replicas, groups, and environment variables.

@@ -6,7 +6,8 @@
     "cf:deploy": "wrangler deploy --config cloudflare/wrangler.jsonc",
     "cf:dev": "wrangler dev --config cloudflare/wrangler.jsonc",
     "cf:sync": "./scripts/sync-railway-cloudflare.sh sync",
-    "cf:sync:status": "./scripts/sync-railway-cloudflare.sh status"
+    "cf:sync:status": "./scripts/sync-railway-cloudflare.sh status",
+    "cf:sync:check": "./scripts/sync-railway-cloudflare.sh check"
   },
   "dependencies": {
     "railway": "^3.5.5"

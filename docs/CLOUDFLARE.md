@@ -15,14 +15,17 @@ Railway’s `web` service talks to MySQL on the private hostname. Cloudflare nee
 ```bash
 chmod +x scripts/sync-railway-cloudflare.sh
 ./scripts/sync-railway-cloudflare.sh status          # TCP proxy + secret presence
+./scripts/sync-railway-cloudflare.sh check           # drift report (local files + CF/GH names)
 ./scripts/sync-railway-cloudflare.sh write            # → cloudflare/.deploy-secrets
 ./scripts/sync-railway-cloudflare.sh write-dev        # → cloudflare/.dev.vars
-./scripts/sync-railway-cloudflare.sh push-cloudflare  # wrangler secret bulk
-./scripts/sync-railway-cloudflare.sh push-github      # gh secret set MYSQL*
+./scripts/sync-railway-cloudflare.sh push-cloudflare  # wrangler secret bulk (no image rebuild)
+./scripts/sync-railway-cloudflare.sh push-github      # gh secret set MYSQL* (+ SSL mode)
 ./scripts/sync-railway-cloudflare.sh sync             # Cloudflare + GitHub
 ```
 
-Requires `railway login` (or `RAILWAY_TOKEN`). CI prefers this path on every Cloudflare deploy when `RAILWAY_TOKEN` is set, so Worker secrets stay aligned with Railway without hand-editing GitHub `MYSQL*` secrets.
+Requires `railway login` (or `RAILWAY_TOKEN`). Prefers a linked project (`railway link`); falls back to the known production project id. Resolves the public TCP proxy from MySQL service vars or `railway tcp-proxy list`, and refuses private `*.railway.internal` hosts.
+
+CI prefers this path on every Cloudflare deploy when `RAILWAY_TOKEN` is set. To refresh Worker secrets after a Railway MySQL password rotate **without** rebuilding the container image, use **Actions → Run workflow** with **sync_secrets_only**.
 
 ## One-time secrets (manual alternative)
 

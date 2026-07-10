@@ -4,6 +4,7 @@
 #   pull_request  →  Verify (Maven)
 #   push to main  →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
 #   Run workflow  →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
+#   Run workflow (secrets only) → Sync Cloudflare Worker MySQL secrets from Railway
 #
 # One-time setup (repo Settings → Secrets and variables → Actions):
 #   RAILWAY_TOKEN           Project token: Railway → Project → Settings → Tokens
@@ -31,6 +32,11 @@ on:
         description: "Why are you redeploying?"
         required: false
         default: "Manual redeploy from Actions"
+      sync_secrets_only:
+        description: "Only sync Railway MySQL TCP proxy → Cloudflare Worker secrets (no Maven / no image rebuild)"
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -39,6 +45,9 @@ concurrency:
 jobs:
   verify:
     name: Verify (Maven)
+    if: >
+      github.event_name != 'workflow_dispatch' ||
+      inputs.sync_secrets_only != true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -79,7 +88,8 @@ jobs:
     needs: verify
     if: >
       github.ref == 'refs/heads/main' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.event_name != 'workflow_dispatch' || inputs.sync_secrets_only != true)
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment:
@@ -178,7 +188,8 @@ jobs:
     needs: verify
     if: >
       github.ref == 'refs/heads/main' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.event_name != 'workflow_dispatch' || inputs.sync_secrets_only != true)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment:
@@ -229,6 +240,7 @@ jobs:
           fi
 
       - name: Write Worker secrets file
+        id: secrets
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           MYSQLHOST: ${{ secrets.MYSQLHOST }}
@@ -236,12 +248,20 @@ jobs:
           MYSQLUSER: ${{ secrets.MYSQLUSER }}
           MYSQLPASSWORD: ${{ secrets.MYSQLPASSWORD }}
           MYSQLDATABASE: ${{ secrets.MYSQLDATABASE }}
+          MYSQL_SSL_MODE: ${{ secrets.MYSQL_SSL_MODE }}
+          MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL: ${{ secrets.MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL }}
         run: |
           set -euo pipefail
           # Prefer live Railway TCP proxy values so Cloudflare stays aligned with MySQL.
           if [ -n "${RAILWAY_TOKEN:-}" ] && command -v railway >/dev/null 2>&1; then
             ./scripts/sync-railway-cloudflare.sh write
+            echo "source=railway" >> "$GITHUB_OUTPUT"
             echo "Synced MySQL TCP proxy secrets from Railway → cloudflare/.deploy-secrets"
+            # Non-secret summary for the job log (no password).
+            echo "MYSQLHOST=$(sed -n 's/^MYSQLHOST=//p' cloudflare/.deploy-secrets)"
+            echo "MYSQLPORT=$(sed -n 's/^MYSQLPORT=//p' cloudflare/.deploy-secrets)"
+            echo "MYSQLDATABASE=$(sed -n 's/^MYSQLDATABASE=//p' cloudflare/.deploy-secrets)"
+            echo "MYSQL_SSL_MODE=$(sed -n 's/^MYSQL_SSL_MODE=//p' cloudflare/.deploy-secrets)"
             exit 0
           fi
 
@@ -263,7 +283,10 @@ jobs:
             printf 'MYSQLUSER=%s\n' "$MYSQLUSER"
             printf 'MYSQLPASSWORD=%s\n' "$MYSQLPASSWORD"
             printf 'MYSQLDATABASE=%s\n' "$MYSQLDATABASE"
+            printf 'MYSQL_SSL_MODE=%s\n' "${MYSQL_SSL_MODE:-PREFERRED}"
+            printf 'MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=%s\n' "${MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL:-true}"
           } > cloudflare/.deploy-secrets
+          echo "source=github-fallback" >> "$GITHUB_OUTPUT"
           echo "Wrote cloudflare/.deploy-secrets from GitHub MYSQL* secrets (fallback)."
 
       - name: Deploy to Cloudflare
@@ -289,6 +312,7 @@ jobs:
         if: always()
         env:
           DEPLOY_EXIT: ${{ steps.deploy.outputs.exit_code }}
+          SECRETS_SOURCE: ${{ steps.secrets.outputs.source }}
         run: |
           {
             echo "## Deploy to Cloudflare"
@@ -298,16 +322,93 @@ jobs:
             echo "| Trigger | \`${{ github.event_name }}\` |"
             echo "| Branch | \`main\` |"
             echo "| Commit | [\`${GITHUB_SHA:0:7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |"
+            echo "| MySQL secrets | \`${SECRETS_SOURCE:-unknown}\` |"
             echo "| Result | ${{ job.status }} |"
             if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
               echo "| Reason | ${{ inputs.reason }} |"
             fi
             echo ""
             if [ "${{ job.status }}" = "success" ]; then
-              echo "\`wrangler deploy\` succeeded (Worker + container image). MySQL secrets were synced from Railway’s TCP proxy when \`RAILWAY_TOKEN\` was available. First container cold start can take a few minutes."
+              echo "\`wrangler deploy\` succeeded (Worker + container image). MySQL secrets source: \`${SECRETS_SOURCE:-unknown}\`. First container cold start can take a few minutes."
             elif [ -n "${DEPLOY_EXIT:-}" ] && [ "$DEPLOY_EXIT" != "0" ]; then
               echo "Cloudflare deploy failed (exit \`$DEPLOY_EXIT\`). Confirm \`CLOUDFLARE_API_TOKEN\`, Worker secrets, and [docs/CLOUDFLARE.md](../../docs/CLOUDFLARE.md)."
             else
               echo "Deploy did not succeed. Check the **Check Cloudflare secrets** and **Deploy to Cloudflare** steps above."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Fast path: refresh Worker MySQL secrets from Railway without rebuilding the image.
+  sync-cloudflare-secrets:
+    name: Sync Cloudflare MySQL secrets
+    if: >
+      github.event_name == 'workflow_dispatch' &&
+      inputs.sync_secrets_only == true &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          missing=0
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error title=Missing secret::Add CLOUDFLARE_API_TOKEN."
+            missing=1
+          fi
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::error title=Missing secret::Add RAILWAY_TOKEN (required for secrets-only sync)."
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@5.26.0
+
+      - name: Push Railway MySQL TCP proxy → Cloudflare Worker
+        id: sync
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          ./scripts/sync-railway-cloudflare.sh push-cloudflare
+          echo "Synced Worker secrets from Railway (no container rebuild)."
+
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "## Sync Cloudflare MySQL secrets"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Trigger | \`workflow_dispatch\` (secrets only) |"
+            echo "| Reason | ${{ inputs.reason }} |"
+            echo "| Result | ${{ job.status }} |"
+            echo ""
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "Worker MySQL secrets updated from Railway’s TCP proxy via \`wrangler secret bulk\` (no image rebuild)."
+              echo "To also refresh GitHub \`MYSQL*\` fallback secrets locally: \`./scripts/sync-railway-cloudflare.sh push-github\`."
+            else
+              echo "Sync failed. Confirm \`RAILWAY_TOKEN\`, MySQL TCP proxy, and \`CLOUDFLARE_API_TOKEN\`."
             fi
           } >> "$GITHUB_STEP_SUMMARY"

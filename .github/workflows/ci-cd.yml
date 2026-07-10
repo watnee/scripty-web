@@ -1,15 +1,19 @@
 # Scripty CI/CD
 #
 # Flow:
+#   push to cursor/* (no PR)  →  Ensure PR + Verify + Ship → dispatch deploy (skip re-verify)
+#   push to cursor/* (PR open)→  no-op here; pull_request synchronize handles verify → ship
 #   pull_request              →  Verify (Maven)
-#   pull_request (cursor/*)   →  Verify → Ship to main (auto-merge) → push triggers deploy
+#   pull_request (cursor/*)   →  Verify → Ship to main → dispatch deploy (skip re-verify)
 #   push to main              →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
 #   Run workflow              →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
 #   Run workflow (secrets only) → Sync Cloudflare Worker MySQL secrets from Railway
 #
-# Mobile Cursor cloud agents open draft PRs on cursor/* branches. Those never
-# reach Railway until they land on main. After Verify succeeds, the
-# ship-cursor-pr job squash-merges cursor/* → main (unless labeled hold / no-ship).
+# Mobile Cursor cloud agents push cursor/* branches (often without a PR). Those
+# never reach Railway until they land on main. ensure-cursor-pr opens + ships
+# orphan branches (GITHUB_TOKEN PR create does not fire pull_request workflows).
+# When a PR already exists, ship-cursor-pr squash-merges after Verify (unless
+# labeled hold / no-ship) and dispatches deploy with skip_verify.
 #
 # One-time setup (repo Settings → Secrets and variables → Actions):
 #   RAILWAY_TOKEN           Project token: Railway → Project → Settings → Tokens
@@ -31,6 +35,7 @@ on:
   push:
     branches:
       - main
+      - "cursor/**"
   workflow_dispatch:
     inputs:
       reason:
@@ -42,17 +47,149 @@ on:
         type: boolean
         required: false
         default: false
+      skip_verify:
+        description: "Skip Maven verify (already passed on the cursor/* PR before auto-ship)"
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Orphan cursor/* pushes (no PR yet) never hit pull_request → auto-ship.
+  # GITHUB_TOKEN-created PRs do not fire workflows, so verify + merge here.
+  # When a PR already exists, pull_request synchronize handles verify → ship.
+  ensure-cursor-pr:
+    name: Ensure Cursor mobile PR
+    if: >
+      github.event_name == 'push' &&
+      startsWith(github.ref, 'refs/heads/cursor/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Open PR and ship if missing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          existing="$(gh pr list --head "$HEAD_REF" --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            echo "Open PR #$existing already covers \`$HEAD_REF\` — pull_request workflow will verify + ship."
+            {
+              echo "## Ensure Cursor mobile PR"
+              echo ""
+              echo "PR [#$existing](${{ github.server_url }}/${{ github.repository }}/pull/$existing) already open for \`$HEAD_REF\`."
+              echo "Relying on **Verify** → **Ship Cursor mobile PR** from the pull_request event."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          subject="$(gh api "repos/${{ github.repository }}/commits/$SHA" --jq '.commit.message' | head -n1)"
+          [ -n "$subject" ] || subject="Ship $HEAD_REF"
+
+          url="$(gh pr create \
+            --base main \
+            --head "$HEAD_REF" \
+            --draft \
+            --title "$subject" \
+            --body "$(printf '%s\n' \
+              "Auto-opened from Cursor mobile branch \`$HEAD_REF\` (no PR existed on push)." \
+              "" \
+              "This job verifies and auto-ships because \`GITHUB_TOKEN\` PR creation does not trigger workflows." \
+              "Add label \`hold\` or \`no-ship\` on future pushes once a PR exists to skip auto-ship.")")"
+          PR_NUMBER="$(gh pr list --head "$HEAD_REF" --base main --state open --json number --jq '.[0].number')"
+          echo "Opened $url (#$PR_NUMBER)"
+
+          echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
+          echo "PR_URL=$url" >> "$GITHUB_ENV"
+          echo "SUBJECT=$subject" >> "$GITHUB_ENV"
+          echo "NEED_SHIP=1" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        if: env.NEED_SHIP == '1'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up Java 17
+        if: env.NEED_SHIP == '1'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Run Maven verify
+        if: env.NEED_SHIP == '1'
+        run: mvn -B verify
+
+      - name: Squash-merge and dispatch deploy
+        if: env.NEED_SHIP == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          echo "Shipping PR #$PR_NUMBER ($HEAD_REF → main) after orphan-branch Verify."
+
+          if gh pr view "$PR_NUMBER" --json isDraft --jq '.isDraft' | grep -q true; then
+            gh pr ready "$PR_NUMBER"
+          fi
+
+          set +e
+          gh pr merge "$PR_NUMBER" \
+            --squash \
+            --delete-branch \
+            --subject "$SUBJECT" \
+            --body "Auto-shipped from Cursor mobile branch \`$HEAD_REF\` after Maven verify (orphan push path). Triggers Railway + Cloudflare deploy on main."
+          status=$?
+          set -e
+
+          {
+            echo "## Ensure Cursor mobile PR"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| PR | [#$PR_NUMBER]($PR_URL) |"
+            echo "| Branch | \`$HEAD_REF\` |"
+            echo "| Result | $([ "$status" -eq 0 ] && echo success || echo failed) |"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$status" -ne 0 ]; then
+            body="$(printf '%s\n' \
+              '## Auto-ship blocked (orphan push)' \
+              '' \
+              'Maven verify passed, but this `cursor/*` PR could not be squash-merged into `main` (likely a conflict).' \
+              '' \
+              '**To get it on Railway:** resolve conflicts, or from desktop: `./scripts/ship-mobile-changes.sh --apply`')"
+            gh pr comment "$PR_NUMBER" --body "$body" || true
+            echo "Merge failed (exit $status)." >> "$GITHUB_STEP_SUMMARY"
+            exit "$status"
+          fi
+
+          echo "Dispatching CI/CD on main (Railway + Cloudflare, skip re-verify)…"
+          gh workflow run "CI/CD" --ref main \
+            -f reason="Auto-ship orphan PR #$PR_NUMBER ($HEAD_REF)" \
+            -f skip_verify=true
+
+          echo "Merged and dispatched deploy." >> "$GITHUB_STEP_SUMMARY"
+          gh pr comment "$PR_NUMBER" --body "Opened + shipped to \`main\` after verify (orphan \`cursor/*\` push). Dispatched **Railway** + Cloudflare deploy." || true
+
   verify:
     name: Verify (Maven)
     if: >
-      github.event_name != 'workflow_dispatch' ||
-      inputs.sync_secrets_only != true
+      (github.event_name != 'push' || github.ref == 'refs/heads/main') &&
+      (github.event_name != 'workflow_dispatch' ||
+        (inputs.sync_secrets_only != true && inputs.skip_verify != true))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -140,9 +277,11 @@ jobs:
 
           if [ "$status" -eq 0 ]; then
             # Merges via GITHUB_TOKEN do not fire the push workflow — dispatch deploy explicitly.
-            echo "Dispatching CI/CD on main (Railway + Cloudflare deploy)…"
+            # skip_verify: Maven already passed on this PR; avoid a second full verify before deploy.
+            echo "Dispatching CI/CD on main (Railway + Cloudflare deploy, skip re-verify)…"
             gh workflow run "CI/CD" --ref main \
-              -f reason="Auto-ship PR #$PR_NUMBER ($HEAD_REF)"
+              -f reason="Auto-ship PR #$PR_NUMBER ($HEAD_REF)" \
+              -f skip_verify=true
           fi
 
           {
@@ -155,7 +294,7 @@ jobs:
             echo "| Result | $([ "$status" -eq 0 ] && echo success || echo failed) |"
             echo ""
             if [ "$status" -eq 0 ]; then
-              echo "Merged to \`main\` and dispatched **CI/CD** (Verify → Railway + Cloudflare)."
+              echo "Merged to \`main\` and dispatched **CI/CD** (Railway + Cloudflare, verify skipped)."
               echo "Add label \`hold\` or \`no-ship\` on a Cursor PR to skip auto-ship."
             else
               echo "Merge failed (exit \`$status\`). Resolve conflicts or merge manually, then push to \`main\`."
@@ -171,19 +310,26 @@ jobs:
               '' \
               '**To get it on Railway:**' \
               '1. Resolve conflicts and merge into `main`, or' \
-              '2. From a desktop checkout: `./scripts/ship-mobile-changes.sh --apply`' \
+              '2. From a desktop checkout: `./scripts/ship-mobile-changes.sh --ensure-pr` then fix the PR, or' \
+              '3. `./scripts/ship-mobile-changes.sh --apply`' \
               '' \
               'Add label `hold` or `no-ship` to skip auto-ship next time.')"
             gh pr comment "$PR_NUMBER" --body "$body" || true
             exit "$status"
           fi
 
-          gh pr comment "$PR_NUMBER" --body "Shipped to \`main\` after verify. Dispatched CI/CD so **Railway** + Cloudflare deploy." || true
+          gh pr comment "$PR_NUMBER" --body "Shipped to \`main\` after verify. Dispatched CI/CD so **Railway** + Cloudflare deploy (Maven re-verify skipped)." || true
 
   deploy-railway:
     name: Deploy to Railway
     needs: verify
     if: >
+      always() &&
+      !cancelled() &&
+      (needs.verify.result == 'success' ||
+        (needs.verify.result == 'skipped' &&
+          github.event_name == 'workflow_dispatch' &&
+          inputs.skip_verify == true)) &&
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.event_name != 'workflow_dispatch' || inputs.sync_secrets_only != true)
@@ -284,6 +430,12 @@ jobs:
     name: Deploy to Cloudflare
     needs: verify
     if: >
+      always() &&
+      !cancelled() &&
+      (needs.verify.result == 'success' ||
+        (needs.verify.result == 'skipped' &&
+          github.event_name == 'workflow_dispatch' &&
+          inputs.skip_verify == true)) &&
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.event_name != 'workflow_dispatch' || inputs.sync_secrets_only != true)

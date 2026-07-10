@@ -5,22 +5,26 @@
 GitHub Actions runs Maven verify on every pull request and on `main`. After verify succeeds on `main` (or a manual **Run workflow**), the app deploys to **Railway and Cloudflare in parallel**. Each deploy job waits for its platform to finish before succeeding.
 
 ```text
+Push to cursor/* (no PR)       →  Ensure PR + Verify + Ship → Deploy Railway ∥ Cloudflare
+Push to cursor/* (PR open)     →  (no-op) pull_request sync → Verify → Ship → Deploy
 PR opened/updated              →  Verify (Maven)
-PR from cursor/* (mobile)      →  Verify → Ship to main → (push) Deploy Railway ∥ Cloudflare
+PR from cursor/* (mobile)      →  Verify → Ship to main → Deploy Railway ∥ Cloudflare (skip re-verify)
 Push to main                   →  Verify (Maven)  →  Deploy Railway ∥ Deploy Cloudflare
 Actions → Run workflow         →  Verify (Maven)  →  Deploy Railway ∥ Deploy Cloudflare
 ```
 
 ### Cursor Mobile → Railway
 
-Cursor Mobile / cloud agents push to `cursor/*` branches (often as draft PRs). Those do **not** deploy until they are on `main`.
+Cursor Mobile / cloud agents push to `cursor/*` branches. Those do **not** deploy until they are on `main`.
 
-- **Automatic:** after Maven verify on a `cursor/*` → `main` PR, CI squash-merges it (unless labeled `hold` or `no-ship`). The resulting push to `main` deploys Railway + Cloudflare.
+- **Automatic:** a push with no PR opens one, verifies, and ships; an existing PR verifies then auto-ships (unless labeled `hold` or `no-ship`). Deploy skips a second Maven run.
 - **Manual:** list or ship pending branches:
 
   ```bash
-  ./scripts/ship-mobile-changes.sh           # dry-run list
-  ./scripts/ship-mobile-changes.sh --apply   # cherry-pick onto main and push
+  ./scripts/ship-mobile-changes.sh              # dry-run list (+ PR links)
+  ./scripts/ship-mobile-changes.sh --ensure-pr  # open draft PRs; CI verifies + auto-ships
+  ./scripts/ship-mobile-changes.sh --apply      # cherry-pick onto main and push
+  ./scripts/ship-mobile-changes.sh --prune      # delete remote cursor/* already on main
   ```
 
 ### One-time setup

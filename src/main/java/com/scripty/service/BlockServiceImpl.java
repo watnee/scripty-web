@@ -204,6 +204,9 @@ public class BlockServiceImpl implements BlockService {
         Project project = existingBlock.getProject();
         ScriptEdition edition = resolveEdition(existingBlock);
         String content = PlainTextSanitizer.sanitize(cmd.getContent());
+        if (content == null) {
+            content = "";
+        }
 
         if (person == null) {
             String characterName = extractCharacterName(content);

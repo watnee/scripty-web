@@ -243,11 +243,19 @@ public class ScriptEditionServiceImpl implements ScriptEditionService {
         if (edition == null || edition.getId() == null) {
             return;
         }
+        // Reload by id. Callers often pass a lazy proxy that was detached by
+        // clearAutomatically bulk order updates (create-below, move, delete).
+        // Mutating that proxy throws LazyInitializationException and rolls back
+        // the whole create — Enter-to-new-block looks like a silent no-op.
+        ScriptEdition managed = scriptEditionRepository.findById(edition.getId()).orElse(null);
+        if (managed == null) {
+            return;
+        }
         LocalDateTime now = LocalDateTime.now();
-        edition.setLastEdited(now);
-        edition.setUpdatedAt(now);
-        scriptEditionRepository.save(edition);
-        Project project = edition.getProject();
+        managed.setLastEdited(now);
+        managed.setUpdatedAt(now);
+        scriptEditionRepository.save(managed);
+        Project project = managed.getProject();
         if (project != null) {
             project.setLastEdited(now);
             projectRepository.save(project);

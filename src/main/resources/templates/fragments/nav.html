@@ -6,9 +6,12 @@
         <button type="button" id="scripty-offline-sync-retry" class="scripty-offline-sync-retry" hidden>Retry sync</button>
     </div>
     <meta name="app-asset-version" th:content="${assetVersion}">
+    <meta name="service-worker-enabled" th:content="${serviceWorkerEnabled}">
     <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
     <script th:src="@{/js/csrf.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/scripty-project-utils.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/theme-boot.js(v=${assetVersion})}"></script>
     <script th:inline="javascript">
         (function() {
             var currentUserId = /*[[${currentUserId}]]*/ null;
@@ -18,25 +21,6 @@
                 try {
                     localStorage.setItem('scripty-offline-user-id', String(currentUserId));
                 } catch (err) { /* ignore */ }
-            }
-        })();
-    </script>
-    <script>
-        (function() {
-            const storedTheme = localStorage.getItem('theme') || 'system';
-            document.documentElement.setAttribute('data-theme-setting', storedTheme);
-            if (storedTheme === 'dark') {
-                document.documentElement.classList.add('-dark-theme');
-            } else if (storedTheme === 'light') {
-                document.documentElement.classList.add('-no-dark-theme');
-            }
-            
-            const spellcheckEnabled = localStorage.getItem('spellcheck') !== 'false';
-            document.documentElement.setAttribute('data-spellcheck', spellcheckEnabled ? 'true' : 'false');
-
-            const href = window.location.href || '';
-            if (window.location.protocol === 'safari-reader:' || href.indexOf('about:reader') === 0) {
-                document.documentElement.classList.add('safari-reader-view');
             }
         })();
     </script>
@@ -125,11 +109,24 @@
             </div>
         </div>
     </div>
-    <script th:inline="javascript">
+    <script>
     (function() {
+        // Aliases for shared helpers loaded via scripty-project-utils.js
+        var resolveProjectId = window.scriptyResolveProjectId;
+        var resolveEditionId = window.scriptyResolveEditionId;
+        var calcDropPosition = window.scriptyCalcDropPosition;
+        var findBlockRow = window.scriptyFindBlockRow;
+        var getBlockRowId = window.scriptyGetBlockRowId;
+        var reindexBlockOrders = window.scriptyReindexBlockOrders;
+        var updateMoveButtonStates = window.scriptyUpdateMoveButtonStates;
+        var runWhenHtmxIdle = window.scriptyRunWhenHtmxIdle;
+
         let lastFocusedEditable = null;
         let hoveredRow = null;
         let lastActiveBlockRow = null;
+        if (typeof window.scriptyPendingBlockCaret === 'undefined') {
+            window.scriptyPendingBlockCaret = null;
+        }
         if (typeof window.scriptyBlockEditLocked === 'undefined') {
             window.scriptyBlockEditLocked = false;
         }
@@ -137,121 +134,16 @@
             window.scriptyCanEditScript = true;
         }
 
-        // Spellcheck state management
-        function isSpellcheckEnabled() {
-            return localStorage.getItem('spellcheck') !== 'false';
-        }
-
-        function updateSpellcheckToggleButton(state) {
-            const btn = document.querySelector('.spellcheck-toggle-btn');
-            if (!btn) return;
-            const title = state ? 'Spellcheck: Enabled (click to disable)' : 'Spellcheck: Disabled (click to enable)';
-            btn.title = title;
-            btn.setAttribute('aria-label', title);
-            btn.setAttribute('aria-pressed', state ? 'true' : 'false');
-        }
-
-        function applySpellcheckToElement(el, state) {
-            if (!(el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text'))) {
-                return;
-            }
-            // Set both attribute and property — browsers differ on which they honor for rechecks.
-            el.setAttribute('spellcheck', state ? 'true' : 'false');
-            el.spellcheck = !!state;
-        }
-
-        // Chrome often keeps old underlines until the field is remounted after a toggle.
-        function remountSpellcheckField(el, state) {
-            if (!el || !el.parentNode) return el;
-            const wasFocused = document.activeElement === el;
-            const start = wasFocused ? el.selectionStart : null;
-            const end = wasFocused ? el.selectionEnd : null;
-            const clone = el.cloneNode(true);
-            applySpellcheckToElement(clone, state);
-            if (el.tagName === 'TEXTAREA') {
-                clone.value = el.value;
-            }
-            // Blur during replaceChild would otherwise fire focusout → HTMX save.
-            window.scriptySuppressSpellcheckRemountSave = true;
-            try {
-                el.parentNode.replaceChild(clone, el);
-                if (wasFocused) {
-                    clone.focus();
-                    try {
-                        if (start != null && end != null && typeof clone.setSelectionRange === 'function') {
-                            clone.setSelectionRange(start, end);
-                        }
-                    } catch (err) { /* ignore */ }
-                    if (typeof window.scriptyGrowTextarea === 'function') {
-                        window.scriptyGrowTextarea(clone);
-                    } else if (clone.tagName === 'TEXTAREA') {
-                        clone.style.height = 'auto';
-                        clone.style.height = clone.scrollHeight + 'px';
-                    }
-                }
-            } finally {
-                setTimeout(function() {
-                    window.scriptySuppressSpellcheckRemountSave = false;
-                }, 0);
-            }
-            return clone;
-        }
-
-        function updateAllSpellcheckElements(options) {
-            const state = isSpellcheckEnabled();
-            const remountFocused = !!(options && options.remountFocused);
-            const active = document.activeElement;
-            document.querySelectorAll('textarea, input[type="text"]').forEach(el => {
-                if (remountFocused && el === active) {
-                    remountSpellcheckField(el, state);
-                } else {
-                    applySpellcheckToElement(el, state);
-                }
-            });
-            return state;
-        }
-
-        window.scriptyIsSpellcheckEnabled = isSpellcheckEnabled;
-        window.scriptyApplySpellcheck = applySpellcheckToElement;
-        window.scriptyUpdateAllSpellcheckElements = updateAllSpellcheckElements;
-
-        window.toggleSpellcheck = function() {
-            const newState = !isSpellcheckEnabled();
-            localStorage.setItem('spellcheck', newState ? 'true' : 'false');
-            document.documentElement.setAttribute('data-spellcheck', newState ? 'true' : 'false');
-            // Remount the focused field so underlines appear/clear immediately.
-            updateAllSpellcheckElements({ remountFocused: true });
-            updateSpellcheckToggleButton(newState);
-        };
-
-        function initSpellcheck() {
-            const state = isSpellcheckEnabled();
-            updateAllSpellcheckElements();
-            updateSpellcheckToggleButton(state);
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initSpellcheck);
-        } else {
-            initSpellcheck();
-        }
-
-        // Apply after HTMX swaps (afterOnLoad alone misses some local/offline paths)
-        function syncSpellcheckAfterHtmx() {
-            updateAllSpellcheckElements();
-        }
-        document.body.addEventListener('htmx:afterOnLoad', syncSpellcheckAfterHtmx);
-        document.body.addEventListener('htmx:afterSwap', syncSpellcheckAfterHtmx);
-        document.body.addEventListener('htmx:afterSettle', syncSpellcheckAfterHtmx);
-
         function rememberActiveBlockRow(row) {
             if (row && row.hasAttribute('data-block-id')) {
                 lastActiveBlockRow = row;
+                window.scriptyLastActiveBlockRow = row;
             }
         }
 
         function clearActiveBlockMemory() {
             lastActiveBlockRow = null;
+            window.scriptyLastActiveBlockRow = null;
             try {
                 sessionStorage.removeItem('activeBlockId');
                 sessionStorage.removeItem('activeBlockCaretStart');
@@ -285,6 +177,7 @@
         // "active", or moving the pointer to the element toolbar retargets type changes.
         document.addEventListener('mouseover', function(e) {
             hoveredRow = findBlockRow(e.target);
+            window.scriptyHoveredRow = hoveredRow;
         });
 
         document.addEventListener('click', function(e) {
@@ -560,7 +453,7 @@
                 existingTa.setSelectionRange(len, len);
                 return;
             }
-            pendingBlockCaret = {
+            window.scriptyPendingBlockCaret = {
                 blockContent: blockContent,
                 offset: blockContent.querySelector('.script-block-text')?.textContent?.length || 0
             };
@@ -2282,7 +2175,7 @@
                     });
                 }).then(function(result) {
                     clearBlockTextEditability();
-                    updateUndoRedoButtons(resolveProjectId());
+                    window.scriptyUpdateUndoRedoButtons(resolveProjectId());
                     return result;
                 }).catch(function() {
                     return false;
@@ -2361,7 +2254,7 @@
 
                 return Promise.all(mutations.map(saveBlockContentAfterCut)).then(function() {
                     clearBlockTextEditability();
-                    updateUndoRedoButtons(resolveProjectId());
+                    window.scriptyUpdateUndoRedoButtons(resolveProjectId());
                     return true;
                 }).catch(function() {
                     return false;
@@ -2412,7 +2305,7 @@
 
                 return Promise.all(pending.map(saveBlockContentAfterCut)).then(function() {
                     clearBlockTextEditability();
-                    updateUndoRedoButtons(resolveProjectId());
+                    window.scriptyUpdateUndoRedoButtons(resolveProjectId());
                 }).catch(function() {
                     /* keep page state if cut save fails */
                 });
@@ -2863,7 +2756,7 @@
                     const dy = Math.abs(e.clientY - pointerState.startY);
                     if (dx >= DRAG_THRESHOLD || dy >= DRAG_THRESHOLD) {
                         pointerState.moved = true;
-                        pendingBlockCaret = null;
+                        window.scriptyPendingBlockCaret = null;
                         window.scriptySuppressBlockEditClick = true;
                         setBlockTextSelecting(true);
                     }
@@ -2898,14 +2791,14 @@
                         if (window.scriptyClearBlockCaretPreview) {
                             window.scriptyClearBlockCaretPreview();
                         }
-                        pendingBlockCaret = null;
+                        window.scriptyPendingBlockCaret = null;
                         finishBlockTextSelection(state, endX, endY);
                         return;
                     }
 
-                    if (pendingBlockCaret && pendingBlockCaret.blockContent) {
-                        const deferredCaret = pendingBlockCaret;
-                        pendingBlockCaret = null;
+                    if (window.scriptyPendingBlockCaret && window.scriptyPendingBlockCaret.blockContent) {
+                        const deferredCaret = window.scriptyPendingBlockCaret;
+                        window.scriptyPendingBlockCaret = null;
                         scheduleDeferredBlockEdit(function() {
                             if (hasActiveBlockTextSelection()) {
                                 finishBlockTextSelection(null, endX, endY);
@@ -2927,7 +2820,7 @@
                             }
 
                             if (previewBlockContent.querySelector('form textarea[name="content"]')) {
-                                pendingBlockCaret = deferredCaret;
+                                window.scriptyPendingBlockCaret = deferredCaret;
                                 requestAnimationFrame(function() {
                                     requestAnimationFrame(focusBlockTextareaFromClick);
                                 });
@@ -3114,7 +3007,7 @@
                                 return;
                             }
                             createTypedBlocksBelowChain(savedRow, trailing).then(function() {
-                                updateUndoRedoButtons(resolveProjectId());
+                                window.scriptyUpdateUndoRedoButtons(resolveProjectId());
                                 resolve(true);
                             });
                         }).catch(function() {
@@ -3147,7 +3040,7 @@
                     ) || row;
                     return createTypedBlocksBelowChain(savedRow, trailing);
                 }).then(function() {
-                    updateUndoRedoButtons(resolveProjectId());
+                    window.scriptyUpdateUndoRedoButtons(resolveProjectId());
                     return true;
                 }).catch(function() {
                     return false;
@@ -3603,146 +3496,8 @@
             return true;
         }
 
-        function resolveProjectId() {
-            const params = new URLSearchParams(window.location.search);
-            if (window.location.pathname.startsWith('/project/show') && params.has('id')) {
-                return params.get('id');
-            }
-            if (params.has('projectId')) {
-                return params.get('projectId');
-            }
-            const projectLink = document.querySelector('a[href*="/project/show?id="], a[href*="/project/show/"]');
-            if (projectLink) {
-                const href = projectLink.getAttribute('href');
-                const match = href.match(/[\?&]id=(\d+)/);
-                if (match) {
-                    return match[1];
-                }
-            }
-            return null;
-        }
-        window.scriptyResolveProjectId = resolveProjectId;
-
-        function resolveEditionId() {
-            if (window.scriptyEditionId) {
-                return String(window.scriptyEditionId);
-            }
-            const params = new URLSearchParams(window.location.search);
-            if (params.has('editionId')) {
-                return params.get('editionId');
-            }
-            const projectId = resolveProjectId();
-            if (projectId) {
-                try {
-                    const stored = localStorage.getItem('scripty-edition-project-' + projectId);
-                    if (stored) return stored;
-                } catch (e) {}
-            }
-            return null;
-        }
-        window.scriptyResolveEditionId = resolveEditionId;
+        window.scriptyIsInlineTextEdit = isInlineTextEdit;
         window.scriptyFlushOpenBlockEdits = flushOpenBlockEdits;
-
-        function abortUndoStatusFetch() {
-            if (window._undoStatusAbort) {
-                window._undoStatusAbort.abort();
-                window._undoStatusAbort = null;
-            }
-        }
-
-        function calcDropPosition(dragRow, targetRow, clientY) {
-            const dragOrder = parseInt(dragRow.getAttribute('data-block-order'), 10);
-            const targetOrder = parseInt(targetRow.getAttribute('data-block-order'), 10);
-            if (Number.isNaN(dragOrder) || Number.isNaN(targetOrder)) {
-                return null;
-            }
-            const rect = targetRow.getBoundingClientRect();
-            const effectiveHeight = Math.max(rect.height, 24);
-            const insertBefore = clientY < rect.top + effectiveHeight / 2;
-            let newOrder = insertBefore ? targetOrder : targetOrder + 1;
-            if (dragOrder < newOrder) {
-                newOrder--;
-            }
-            return newOrder;
-        }
-
-        window.scriptyAbortUndoStatusFetch = abortUndoStatusFetch;
-        window.scriptyCalcDropPosition = calcDropPosition;
-
-        function findBlockRow(el) {
-            if (!el) return null;
-            return el.closest('tr[data-block-id], .block-row[data-block-id]');
-        }
-
-        function getBlockRowId(row) {
-            if (!row || !row.isConnected || row.classList.contains('filtered-out') || row.style.display === 'none') {
-                return null;
-            }
-            const id = row.getAttribute('data-block-id');
-            return id && /^\d+$/.test(id) ? id : null;
-        }
-
-        window.scriptyGetActiveBlockId = function(triggerEl) {
-            function findEditingBlockRow() {
-                const focused = document.activeElement;
-                if (focused && focused.name === 'content') {
-                    const row = findBlockRow(focused);
-                    if (row && row.querySelector('.block-content form[hx-post*="/block/editInline"]')) {
-                        return row;
-                    }
-                }
-                const form = document.querySelector(
-                    '.block-content form[hx-post*="/block/editInline"]:focus-within'
-                );
-                return form ? findBlockRow(form) : null;
-            }
-
-            function findCaretPreviewBlockRow() {
-                const preview = window.scriptyBlockCaretPreviewActive;
-                if (preview && preview.row && preview.row.isConnected) {
-                    return preview.row;
-                }
-                // Prefer the row whose + type menu is open (the new block), not
-                // an earlier source row that still has controls revealed.
-                const openCreate = document.querySelector('.create-below-menu-dropdown.open');
-                if (openCreate) {
-                    const pinnedId = openCreate.dataset.createBelowTargetId;
-                    if (pinnedId) {
-                        const pinned = document.querySelector(
-                            '.block-row[data-block-id="' + pinnedId + '"], tr[data-block-id="' + pinnedId + '"]'
-                        );
-                        if (pinned) return pinned;
-                    }
-                    const openRow = openCreate.closest('.block-row[data-block-id], tr[data-block-id]');
-                    if (openRow) return openRow;
-                }
-                return document.querySelector('.block-row.block-controls-revealed[data-block-id], tr.block-controls-revealed[data-block-id]');
-            }
-
-            const focusedEditableRow = (function() {
-                if (!lastFocusedEditable || !lastFocusedEditable.isConnected) return null;
-                if (document.activeElement === lastFocusedEditable) {
-                    return findBlockRow(lastFocusedEditable);
-                }
-                // Stale blur target — only trust it when nothing more recent is active.
-                return null;
-            })();
-
-            const candidates = [
-                findEditingBlockRow(),
-                findCaretPreviewBlockRow(),
-                findBlockRow(document.activeElement),
-                focusedEditableRow,
-                lastActiveBlockRow,
-                hoveredRow,
-                findBlockRow(triggerEl)
-            ];
-            for (let i = 0; i < candidates.length; i++) {
-                const id = getBlockRowId(candidates[i]);
-                if (id) return id;
-            }
-            return null;
-        };
 
         function findAnyBlockRow(el) {
             if (!el) return null;
@@ -3760,24 +3515,6 @@
                 sibling = isUp ? sibling.previousElementSibling : sibling.nextElementSibling;
             }
             return null;
-        }
-
-        function reindexBlockOrders(container) {
-            if (!container) return;
-            container.querySelectorAll('[data-block-id]').forEach(function(row, index) {
-                row.setAttribute('data-block-order', String(index + 1));
-            });
-        }
-
-        function updateMoveButtonStates(container) {
-            if (!container) return;
-            const rows = container.querySelectorAll('[data-block-id]');
-            rows.forEach(function(row, index) {
-                const up = row.querySelector('.block-move-up');
-                const down = row.querySelector('.block-move-down');
-                if (up) up.style.display = index === 0 ? 'none' : '';
-                if (down) down.style.display = index === rows.length - 1 ? 'none' : '';
-            });
         }
 
         function swapBlockRows(row, direction) {
@@ -3828,7 +3565,7 @@
 
         function executeMove(blockId, direction, targetRow) {
             sessionStorage.setItem('activeBlockId', blockId);
-            rememberActiveBlockCaret(blockId);
+            window.scriptyRememberActiveBlockCaret(blockId);
             if (window.scriptyAbortUndoStatusFetch) {
                 window.scriptyAbortUndoStatusFetch();
             }
@@ -3845,7 +3582,7 @@
             }).then(function(response) {
                 if (response.ok || response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
                     if (targetRow && swapBlockRows(targetRow, direction)) {
-                        updateUndoRedoButtons(projectId);
+                        window.scriptyUpdateUndoRedoButtons(projectId);
                         return;
                     }
                 }
@@ -3876,14 +3613,6 @@
             } else {
                 executeMove(blockId, direction, targetRow);
             }
-        }
-
-        function runWhenHtmxIdle(fn) {
-            if (!document.querySelector('.htmx-request')) {
-                fn();
-                return;
-            }
-            setTimeout(function() { runWhenHtmxIdle(fn); }, 50);
         }
 
         window.scriptyInitBlockMarkerToggles = function(options) {
@@ -5404,7 +5133,7 @@
                     reindexBlockOrders(sceneContainer);
                     updateMoveButtonStates(sceneContainer);
                 }
-                updateUndoRedoButtons(resolveProjectId());
+                window.scriptyUpdateUndoRedoButtons(resolveProjectId());
                 return ensureEmptyCreateRow(sceneContainer);
             }).catch(function() {
                 delete row.dataset.deleting;
@@ -5744,7 +5473,7 @@
                         body: params.toString()
                     }).then(function(response) {
                         if (response.ok || response.redirected) {
-                            updateUndoRedoButtons(projectId);
+                            window.scriptyUpdateUndoRedoButtons(projectId);
                             return;
                         }
                         window.location.reload();
@@ -5755,7 +5484,6 @@
             });
         };
 
-        window.scriptyUpdateMoveButtonStates = updateMoveButtonStates;
 
         window.scriptyInitProjectLiveSync = function(options) {
             options = options || {};
@@ -5975,339 +5703,6 @@
             bumpRevisionFromServer();
         };
 
-        function setHistoryButtonState(btn, available) {
-            btn.disabled = false;
-            btn.classList.toggle('is-unavailable', !available);
-            btn.setAttribute('aria-disabled', available ? 'false' : 'true');
-        }
-
-        function updateUndoRedoButtons(projectId) {
-            const undoBtn = document.getElementById('nav-undo');
-            const redoBtn = document.getElementById('nav-redo');
-            if (!undoBtn || !redoBtn || !projectId) return;
-
-            abortUndoStatusFetch();
-            const controller = new AbortController();
-            window._undoStatusAbort = controller;
-
-            var statusUrl = '/project/undoRedoStatus?projectId=' + projectId;
-            var editionId = resolveEditionId();
-            if (editionId) {
-                statusUrl += '&editionId=' + encodeURIComponent(editionId);
-            }
-
-            fetch(statusUrl, {
-                cache: 'no-store',
-                credentials: 'same-origin',
-                signal: controller.signal
-            })
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
-                    if (window._undoStatusAbort !== controller) return;
-                    setHistoryButtonState(undoBtn, data.canUndo);
-                    setHistoryButtonState(redoBtn, data.canRedo);
-                })
-                .catch(function(err) {
-                    if (err && err.name === 'AbortError') return;
-                    setHistoryButtonState(undoBtn, false);
-                    setHistoryButtonState(redoBtn, false);
-                })
-                .finally(function() {
-                    if (window._undoStatusAbort === controller) {
-                        window._undoStatusAbort = null;
-                    }
-                });
-        }
-
-        function performHistoryAction(action) {
-            const dropdown = document.getElementById('history-dropdown');
-            if (dropdown) {
-                dropdown.classList.remove('open');
-                const toggle = dropdown.querySelector('.nav-dropdown-toggle');
-                if (toggle) toggle.setAttribute('aria-expanded', 'false');
-            }
-
-            const activeEl = document.activeElement;
-            if (isInlineTextEdit(activeEl)) {
-                activeEl.focus();
-                document.execCommand(action);
-                return;
-            }
-
-            const projectId = resolveProjectId();
-            if (!projectId) return;
-            var editionId = resolveEditionId();
-            var actionUrl = '/project/' + action + '?projectId=' + projectId;
-            if (editionId) {
-                actionUrl += '&editionId=' + encodeURIComponent(editionId);
-            }
-
-            fetch(actionUrl, {
-                method: 'POST',
-                credentials: 'same-origin',
-                cache: 'no-store',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-            }).then(function(response) { return response.json(); })
-              .then(function(data) {
-                  if (data.success) {
-                      if (data.moveOnly) {
-                          window.location.reload();
-                      } else {
-                          var showUrl = '/project/show?id=' + projectId;
-                          if (editionId) {
-                              showUrl += '&editionId=' + encodeURIComponent(editionId);
-                          }
-                          window.location.href = showUrl;
-                      }
-                  } else {
-                      updateUndoRedoButtons(projectId);
-                  }
-              })
-              .catch(function() {
-                  updateUndoRedoButtons(projectId);
-              });
-        }
-
-        // Global keyboard shortcuts for undo and redo
-        document.addEventListener('keydown', function(e) {
-            const undoBtn = document.getElementById('nav-undo');
-            const redoBtn = document.getElementById('nav-redo');
-            if (!undoBtn || !redoBtn) return;
-
-            const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
-            const hasCmd = e.metaKey;
-            const hasCtrl = e.ctrlKey;
-            const hasValidModifier = hasCmd || hasCtrl;
-
-            if (hasValidModifier) {
-                let action = null;
-                if (e.key.toLowerCase() === 'z') {
-                    action = e.shiftKey ? 'redo' : 'undo';
-                } else if (e.key.toLowerCase() === 'y') {
-                    if (hasCtrl || (hasCmd && !isMac)) {
-                        action = 'redo';
-                    }
-                }
-
-                if (action) {
-                    e.preventDefault();
-                    const activeEl = document.activeElement;
-                    if (isInlineTextEdit(activeEl)) {
-                        activeEl.focus();
-                        document.execCommand(action);
-                    } else {
-                        performHistoryAction(action);
-                    }
-                }
-            }
-        });
-
-        function initHistoryDropdown() {
-            const dropdown = document.getElementById('history-dropdown');
-            const undoBtn = document.getElementById('nav-undo');
-            const redoBtn = document.getElementById('nav-redo');
-
-            if (!undoBtn || !redoBtn) return;
-
-            if (!undoBtn.classList.contains('history-action-btn')) {
-                undoBtn.classList.add('history-action-btn');
-            }
-            if (!redoBtn.classList.contains('history-action-btn')) {
-                redoBtn.classList.add('history-action-btn');
-            }
-
-            // Dynamically display keyboard shortcuts based on OS
-            const isMac = /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
-            const undoShortcut = isMac ? ' (⌘Z)' : ' (Ctrl+Z)';
-            const redoShortcut = isMac ? ' (⌘⇧Z)' : ' (Ctrl+Y)';
-
-            const undoLabel = undoBtn.classList.contains('nav-dropdown-item') ? 'Undo' + undoShortcut : '← Undo';
-            const redoLabel = redoBtn.classList.contains('nav-dropdown-item') ? 'Redo' + redoShortcut : 'Redo →';
-
-            if (undoBtn.classList.contains('nav-dropdown-item')) {
-                undoBtn.textContent = undoLabel;
-            }
-            if (redoBtn.classList.contains('nav-dropdown-item')) {
-                redoBtn.textContent = redoLabel;
-            }
-            undoBtn.title = 'Undo' + undoShortcut;
-            undoBtn.setAttribute('aria-label', 'Undo' + undoShortcut);
-            redoBtn.title = 'Redo' + redoShortcut;
-            redoBtn.setAttribute('aria-label', 'Redo' + redoShortcut);
-
-            undoBtn.onclick = function(e) {
-                e.preventDefault();
-                performHistoryAction('undo');
-            };
-
-            redoBtn.onclick = function(e) {
-                e.preventDefault();
-                performHistoryAction('redo');
-            };
-
-            const projectId = resolveProjectId();
-            if (!dropdown) {
-                updateUndoRedoButtons(projectId);
-                return;
-            }
-
-            const toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
-            if (!toggleBtn) {
-                updateUndoRedoButtons(projectId);
-                return;
-            }
-
-            // Toggle dropdown open/close
-            toggleBtn.onclick = function(e) {
-                e.stopPropagation();
-                const isOpen = dropdown.classList.contains('open');
-                // Close all first
-                document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
-                toggleBtn.setAttribute('aria-expanded', !isOpen);
-                if (!isOpen) {
-                    dropdown.classList.add('open');
-                }
-            };
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!dropdown.contains(e.target)) {
-                    dropdown.classList.remove('open');
-                    toggleBtn.setAttribute('aria-expanded', 'false');
-                }
-            });
-
-            if (projectId) {
-                dropdown.style.display = 'inline-block';
-                updateUndoRedoButtons(projectId);
-            } else if (dropdown.style.display !== 'inline-block') {
-                dropdown.style.display = 'none';
-            }
-        }
-
-        function initUserDropdown() {
-            const dropdown = document.getElementById('user-dropdown');
-            if (!dropdown) return;
-
-            const toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
-            if (!toggleBtn) return;
-
-            toggleBtn.onclick = function(e) {
-                e.stopPropagation();
-                const isOpen = dropdown.classList.contains('open');
-                document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
-                document.querySelectorAll('.nav-dropdown-toggle').forEach(btn => btn.setAttribute('aria-expanded', 'false'));
-                toggleBtn.setAttribute('aria-expanded', !isOpen);
-                if (!isOpen) {
-                    dropdown.classList.add('open');
-                }
-            };
-
-            document.addEventListener('click', function(e) {
-                if (!dropdown.contains(e.target)) {
-                    dropdown.classList.remove('open');
-                    toggleBtn.setAttribute('aria-expanded', 'false');
-                }
-            });
-        }
-
-        function initHelpDropdown() {
-            const dropdown = document.getElementById('help-dropdown');
-            if (!dropdown) return;
-
-            const toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
-            if (!toggleBtn) return;
-
-            toggleBtn.onclick = function(e) {
-                e.stopPropagation();
-                const isOpen = dropdown.classList.contains('open');
-                document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
-                document.querySelectorAll('.nav-dropdown-toggle').forEach(btn => btn.setAttribute('aria-expanded', 'false'));
-                toggleBtn.setAttribute('aria-expanded', !isOpen);
-                if (!isOpen) {
-                    dropdown.classList.add('open');
-                }
-            };
-
-            document.addEventListener('click', function(e) {
-                if (!dropdown.contains(e.target)) {
-                    dropdown.classList.remove('open');
-                    toggleBtn.setAttribute('aria-expanded', 'false');
-                }
-            });
-        }
-
-        function initSettingsDropdown() {
-            const dropdown = document.getElementById('settings-dropdown');
-            if (!dropdown) return;
-
-            const toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
-            if (!toggleBtn) return;
-
-            toggleBtn.onclick = function(e) {
-                e.stopPropagation();
-                const isOpen = dropdown.classList.contains('open');
-                document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
-                document.querySelectorAll('.nav-dropdown-toggle').forEach(btn => btn.setAttribute('aria-expanded', 'false'));
-                toggleBtn.setAttribute('aria-expanded', !isOpen);
-                if (!isOpen) {
-                    dropdown.classList.add('open');
-                }
-            };
-
-            document.addEventListener('click', function(e) {
-                if (!dropdown.contains(e.target)) {
-                    dropdown.classList.remove('open');
-                    toggleBtn.setAttribute('aria-expanded', 'false');
-                }
-            });
-        }
-
-        function initThemeToggle() {
-            const dropdown = document.getElementById('settings-dropdown');
-            if (!dropdown) return;
-
-            const items = dropdown.querySelectorAll('[data-theme]');
-            if (!items.length) return;
-
-            function applyTheme(theme) {
-                const root = document.documentElement;
-                root.setAttribute('data-theme-setting', theme);
-                
-                if (theme === 'dark') {
-                    root.classList.add('-dark-theme');
-                    root.classList.remove('-no-dark-theme');
-                } else if (theme === 'light') {
-                    root.classList.add('-no-dark-theme');
-                    root.classList.remove('-dark-theme');
-                } else {
-                    root.classList.remove('-dark-theme');
-                    root.classList.remove('-no-dark-theme');
-                }
-
-                items.forEach(item => {
-                    const isActive = item.getAttribute('data-theme') === theme;
-                    item.classList.toggle('active', isActive);
-                    item.setAttribute('aria-checked', isActive ? 'true' : 'false');
-                });
-            }
-
-            items.forEach(item => {
-                item.onclick = function(e) {
-                    e.preventDefault();
-                    const selectedTheme = this.getAttribute('data-theme');
-                    localStorage.setItem('theme', selectedTheme);
-                    applyTheme(selectedTheme);
-                    dropdown.classList.remove('open');
-                    const toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
-                    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
-                };
-            });
-
-            const currentTheme = localStorage.getItem('theme') || 'system';
-            applyTheme(currentTheme);
-        }
-
         function autoGrowTextarea(textarea) {
             if (!textarea) return;
             textarea.style.height = 'auto';
@@ -6333,8 +5728,6 @@
             return total;
         }
 
-        let pendingBlockCaret = null;
-
         document.body.addEventListener('mousedown', function(e) {
             if (e.button !== 0) return;
             if (e.target.closest('a') && !e.target.closest('.character-name, .reader-visible-character-name')) return;
@@ -6353,7 +5746,7 @@
             const resolvedOffset = clickOffset.textEl ? clickOffset.offset : textEl.textContent.length;
 
             if (shouldDeferBlockEditForClick() && isBlockContentViewMode(blockContent)) {
-                pendingBlockCaret = {
+                window.scriptyPendingBlockCaret = {
                     blockContent: blockContent,
                     textEl: resolvedTextEl,
                     offset: resolvedOffset
@@ -6366,7 +5759,7 @@
             const form = blockContent.querySelector('.block-inline-edit-form, form[hx-post*="/block/editInline"]');
             if (form && form.contains(document.activeElement)) return;
 
-            pendingBlockCaret = {
+            window.scriptyPendingBlockCaret = {
                 blockContent: blockContent,
                 textEl: resolvedTextEl,
                 offset: resolvedOffset
@@ -6374,9 +5767,9 @@
         }, true);
 
         function focusBlockTextareaFromClick() {
-            if (!pendingBlockCaret) return;
-            const pending = pendingBlockCaret;
-            pendingBlockCaret = null;
+            if (!window.scriptyPendingBlockCaret) return;
+            const pending = window.scriptyPendingBlockCaret;
+            window.scriptyPendingBlockCaret = null;
             if (!pending.blockContent.isConnected) return;
 
             const textarea = pending.blockContent.querySelector('textarea[name="content"]');
@@ -6521,371 +5914,9 @@
             input.style.width = computedWidth + 'px';
         }
 
-        function parseLastEditedTimestamp(timestamp) {
-            if (!timestamp) return null;
-            const normalized = timestamp.replace(/\.\d+/, '');
-            let date = new Date(normalized);
-            if (!isNaN(date.getTime())) return date;
-            const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
-            if (!match) return null;
-            date = new Date(+match[1], +match[2] - 1, +match[3], +match[4], +match[5], +match[6]);
-            return isNaN(date.getTime()) ? null : date;
-        }
-
-        function updateLastEditedTimes() {
-            document.querySelectorAll('.last-edited-time').forEach(function(el) {
-                const timestamp = el.getAttribute('data-timestamp');
-                const date = parseLastEditedTimestamp(timestamp);
-                if (!date) return;
-                
-                const now = new Date();
-                const diffMs = now - date;
-                const diffSec = Math.floor(diffMs / 1000);
-                const diffMin = Math.floor(diffSec / 60);
-                const diffHr = Math.floor(diffMin / 60);
-                const diffDays = Math.floor(diffHr / 24);
-                
-                let text = '';
-                if (diffSec < 60) {
-                    text = 'just now';
-                } else if (diffMin < 60) {
-                    text = diffMin + 'm ago';
-                } else if (diffHr < 24) {
-                    text = diffHr + 'h ago';
-                } else if (diffDays === 1) {
-                    text = 'yesterday';
-                } else if (diffDays < 7) {
-                    text = diffDays + 'd ago';
-                } else {
-                    text = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-                }
-                
-                el.textContent = text;
-            });
-        }
-
-        var editorPositionRestoredForProjectId = null;
-        var editorPositionSaveTimer = null;
-
-        function isProjectShowPage() {
-            return window.location.pathname.startsWith('/project/show');
-        }
-
-        function editorPositionStorageKey(projectId) {
-            return 'scripty-editor-position-project-' + projectId;
-        }
-
-        function readEditorPosition(projectId) {
-            if (!projectId) return null;
-            try {
-                var raw = localStorage.getItem(editorPositionStorageKey(projectId));
-                if (!raw) return null;
-                var parsed = JSON.parse(raw);
-                return parsed && typeof parsed === 'object' ? parsed : null;
-            } catch (e) {
-                return null;
-            }
-        }
-
-        function writeEditorPosition(projectId, position) {
-            if (!projectId || !position) return;
-            try {
-                localStorage.setItem(editorPositionStorageKey(projectId), JSON.stringify(position));
-            } catch (e) {
-                /* quota / private mode */
-            }
-        }
-
-        function captureEditorPosition() {
-            if (!isProjectShowPage()) return null;
-            var projectId = resolveProjectId();
-            if (!projectId) return null;
-
-            var blockId = null;
-            var caretStart = null;
-            var caretEnd = null;
-            var active = document.activeElement;
-            if (active && active.tagName === 'TEXTAREA' && active.name === 'content') {
-                var activeRow = findBlockRow(active);
-                blockId = getBlockRowId(activeRow);
-                if (blockId) {
-                    caretStart = active.selectionStart;
-                    caretEnd = active.selectionEnd;
-                }
-            }
-            if (!blockId && window.scriptyGetActiveBlockId) {
-                blockId = window.scriptyGetActiveBlockId(null);
-            }
-
-            return {
-                blockId: blockId,
-                caretStart: caretStart,
-                caretEnd: caretEnd,
-                editing: caretStart != null,
-                scrollY: window.scrollY,
-                updatedAt: Date.now()
-            };
-        }
-
-        function saveEditorPosition() {
-            var projectId = resolveProjectId();
-            if (!projectId || !isProjectShowPage()) return;
-            var position = captureEditorPosition();
-            if (!position) return;
-            var prev = readEditorPosition(projectId);
-            if (!position.blockId && prev && prev.blockId) {
-                position.blockId = prev.blockId;
-                position.caretStart = prev.caretStart;
-                position.caretEnd = prev.caretEnd;
-                // Keep last known caret, but only reopen edit if still editing.
-            } else if (position.blockId && position.caretStart == null && prev &&
-                       String(prev.blockId) === String(position.blockId) && prev.caretStart != null) {
-                position.caretStart = prev.caretStart;
-                position.caretEnd = prev.caretEnd;
-            }
-            writeEditorPosition(projectId, position);
-        }
-
-        function scheduleSaveEditorPosition(delayMs) {
-            if (editorPositionSaveTimer) clearTimeout(editorPositionSaveTimer);
-            editorPositionSaveTimer = setTimeout(function() {
-                editorPositionSaveTimer = null;
-                saveEditorPosition();
-            }, delayMs == null ? 200 : delayMs);
-        }
-
-        function rememberActiveBlockCaret(blockId) {
-            sessionStorage.removeItem('activeBlockCaretStart');
-            sessionStorage.removeItem('activeBlockCaretEnd');
-            if (!blockId) return;
-            var row = document.querySelector(
-                '.block-row[data-block-id="' + blockId + '"], tr[data-block-id="' + blockId + '"]'
-            );
-            if (!row) return;
-            var textarea = row.querySelector('textarea[name="content"]');
-            if (!textarea) return;
-            sessionStorage.setItem('activeBlockCaretStart', String(textarea.selectionStart));
-            sessionStorage.setItem('activeBlockCaretEnd', String(textarea.selectionEnd));
-            saveEditorPosition();
-        }
-
-        function focusRestoredBlock(row, caretStartRaw, caretEndRaw, scrollY) {
-            if (!row) return;
-            var blockContent = row.querySelector('.block-content');
-            if (!blockContent) return;
-
-            var textEl = blockContent.querySelector('.reader-visible-text, .script-block-text:not(textarea)');
-            var offset = caretStartRaw != null ? parseInt(caretStartRaw, 10) : null;
-            if (textEl && offset != null && !isNaN(offset)) {
-                pendingBlockCaret = {
-                    blockContent: blockContent,
-                    textEl: textEl,
-                    offset: Math.max(0, offset),
-                    endOffset: caretEndRaw != null ? Math.max(0, parseInt(caretEndRaw, 10)) : null
-                };
-            }
-
-            blockContent.click();
-
-            setTimeout(function() {
-                var textarea = row.querySelector('textarea[name="content"]');
-                if (textarea) {
-                    growTextarea(textarea);
-                    textarea.focus({ preventScroll: true });
-                    if (caretStartRaw != null) {
-                        var len = textarea.value.length;
-                        var start = Math.max(0, Math.min(parseInt(caretStartRaw, 10), len));
-                        var end = Math.max(start, Math.min(parseInt(caretEndRaw != null ? caretEndRaw : caretStartRaw, 10), len));
-                        textarea.setSelectionRange(start, end);
-                    } else {
-                        var endLen = textarea.value.length;
-                        textarea.setSelectionRange(endLen, endLen);
-                    }
-                }
-                if (typeof scrollY === 'number') {
-                    window.scrollTo(0, scrollY);
-                }
-            }, 100);
-        }
-
-        function restoreActiveBlock() {
-            const activeBlockId = sessionStorage.getItem('activeBlockId');
-            const caretStartRaw = sessionStorage.getItem('activeBlockCaretStart');
-            const caretEndRaw = sessionStorage.getItem('activeBlockCaretEnd');
-            if (activeBlockId) {
-                sessionStorage.removeItem('activeBlockId');
-                sessionStorage.removeItem('activeBlockCaretStart');
-                sessionStorage.removeItem('activeBlockCaretEnd');
-                const row = document.querySelector('tr[data-block-id="' + activeBlockId + '"], .block-row[data-block-id="' + activeBlockId + '"]');
-                focusRestoredBlock(row, caretStartRaw, caretEndRaw, null);
-            }
-        }
-
-        function restoreEditorPosition() {
-            if (!isProjectShowPage()) {
-                editorPositionRestoredForProjectId = null;
-                return;
-            }
-            var projectId = resolveProjectId();
-            if (!projectId) return;
-            if (editorPositionRestoredForProjectId === String(projectId)) return;
-            editorPositionRestoredForProjectId = String(projectId);
-
-            // One-shot session restore (block move / bulk type) wins over persisted position.
-            if (sessionStorage.getItem('activeBlockId')) {
-                restoreActiveBlock();
-                return;
-            }
-
-            var position = readEditorPosition(projectId);
-            if (!position) return;
-
-            if (typeof position.scrollY === 'number') {
-                window.scrollTo(0, position.scrollY);
-            }
-
-            if (!position.editing || !position.blockId || position.caretStart == null ||
-                window.scriptyBlockEditLocked) {
-                return;
-            }
-
-            var row = document.querySelector(
-                'tr[data-block-id="' + position.blockId + '"], .block-row[data-block-id="' + position.blockId + '"]'
-            );
-            if (!row) return;
-            focusRestoredBlock(
-                row,
-                String(position.caretStart),
-                position.caretEnd != null ? String(position.caretEnd) : String(position.caretStart),
-                typeof position.scrollY === 'number' ? position.scrollY : null
-            );
-        }
-
-        function initEditorPositionPersistence() {
-            if (window._scriptyEditorPositionPersistenceInit) return;
-            window._scriptyEditorPositionPersistenceInit = true;
-
-            window.addEventListener('scroll', function() {
-                if (!isProjectShowPage()) return;
-                scheduleSaveEditorPosition(200);
-            }, { passive: true });
-
-            document.addEventListener('selectionchange', function() {
-                if (!isProjectShowPage()) return;
-                var active = document.activeElement;
-                if (!active || active.tagName !== 'TEXTAREA' || active.name !== 'content') return;
-                scheduleSaveEditorPosition(300);
-            });
-
-            document.addEventListener('focusin', function(e) {
-                if (!isProjectShowPage()) return;
-                if (e.target && e.target.tagName === 'TEXTAREA' && e.target.name === 'content') {
-                    scheduleSaveEditorPosition(0);
-                }
-            });
-
-            document.addEventListener('visibilitychange', function() {
-                if (document.hidden && isProjectShowPage()) {
-                    saveEditorPosition();
-                }
-            });
-
-            window.addEventListener('pagehide', function() {
-                if (isProjectShowPage()) {
-                    saveEditorPosition();
-                }
-            });
-        }
-
-        function initProjectDeleteConfirm() {
-            if (window._scriptyProjectDeleteInit) return;
-            window._scriptyProjectDeleteInit = true;
-
-            const modal = document.getElementById('project-delete-modal');
-            if (!modal) return;
-
-            const nameEl = document.getElementById('project-delete-name');
-            const cancelBtn = document.getElementById('project-delete-cancel');
-            const confirmBtn = document.getElementById('project-delete-confirm');
-            let pendingUrl = null;
-
-            function closeModal() {
-                modal.hidden = true;
-                pendingUrl = null;
-            }
-
-            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-            if (confirmBtn) {
-                confirmBtn.addEventListener('click', function() {
-                    if (pendingUrl) window.location.href = pendingUrl;
-                    closeModal();
-                });
-            }
-
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) closeModal();
-            });
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && !modal.hidden) closeModal();
-            });
-
-            document.addEventListener('click', function(e) {
-                const btn = e.target.closest('.project-list-delete-btn[data-delete-url], .project-delete-btn[data-delete-url]');
-                if (!btn) return;
-                e.preventDefault();
-                e.stopPropagation();
-
-                pendingUrl = btn.dataset.deleteUrl;
-                const row = btn.closest('.project-list-row, .project-title-container, h1');
-                const titleEl = row ? row.querySelector('.project-list-title, span') : null;
-                const title = titleEl && titleEl.textContent ? titleEl.textContent.trim() : 'this project';
-                if (nameEl) nameEl.textContent = title;
-                modal.hidden = false;
-                if (confirmBtn) confirmBtn.focus();
-            });
-        }
-
-        function syncStylesheetVersion() {
-            const meta = document.querySelector('meta[name="app-asset-version"]');
-            const link = document.querySelector('link[href*="/css/scripty.css"]');
-            if (!meta || !link) return;
-            const expected = meta.getAttribute('content');
-            if (!expected) return;
-            const href = link.getAttribute('href') || '';
-            if (href.indexOf('v=' + expected) !== -1) return;
-            link.href = '/css/scripty.css?v=' + expected;
-        }
-
-        function prepareBreadcrumbLinks() {
-            document.querySelectorAll('nav[aria-label="Breadcrumb"] a[href]').forEach(function(link) {
-                link.setAttribute('hx-boost', 'false');
-            });
-        }
-
-        function syncBodyPageClasses() {
-            var path = window.location.pathname || '';
-            document.body.classList.toggle('has-toolbar-brand', path === '/project/show');
-            document.body.classList.toggle('login-body', path === '/login');
-            document.body.classList.toggle('landing-body', path === '/');
-        }
-
-        function initGlobalShortcuts() {
-            document.addEventListener('keydown', function(e) {
-                if (e.key !== '?' || e.metaKey || e.ctrlKey || e.altKey) return;
-                const active = document.activeElement;
-                if (isEditable(active)) return;
-                if (window.location.pathname === '/shortcuts') return;
-                e.preventDefault();
-                window.location.href = '/shortcuts';
-            });
-        }
-
         // Run on initial load
         function initAll() {
-            syncBodyPageClasses();
-            prepareBreadcrumbLinks();
-            syncStylesheetVersion();
+            if (window.scriptyInitPageChrome) window.scriptyInitPageChrome();
             // Insert redirects land with #block-…; clear any leftover click-suppress from prior page.
             window.scriptySuppressBlockEditClick = false;
             window.scriptyBlockTextSelectionClickSuppress = false;
@@ -6894,14 +5925,11 @@
             initBlockEditGuards();
             initBlockTextSelection();
             initBlockControlsReveal();
-            initHistoryDropdown();
-            initUserDropdown();
-            initHelpDropdown();
-            initSettingsDropdown();
-            initThemeToggle();
-            initProjectDeleteConfirm();
-            initGlobalShortcuts();
-            initEditorPositionPersistence();
+            if (window.scriptyInitHistoryDropdown) window.scriptyInitHistoryDropdown();
+            if (window.scriptyInitNavDropdowns) window.scriptyInitNavDropdowns();
+            if (window.scriptyInitThemeToggle) window.scriptyInitThemeToggle();
+            if (window.scriptyInitProjectDeleteConfirm) window.scriptyInitProjectDeleteConfirm();
+            if (window.scriptyInitEditorPositionPersistence) window.scriptyInitEditorPositionPersistence();
             if (window.scriptyInitHelpCenter) {
                 window.scriptyInitHelpCenter();
             }
@@ -6915,8 +5943,8 @@
                     window.scriptyUpdateMoveButtonStates(container);
                 }
             });
-            updateLastEditedTimes();
-            restoreEditorPosition();
+            if (window.scriptyUpdateLastEditedTimes) window.scriptyUpdateLastEditedTimes();
+            if (window.scriptyRestoreEditorPosition) window.scriptyRestoreEditorPosition();
             if (window.scriptySyncProjectNameDisplay) {
                 window.scriptySyncProjectNameDisplay();
             }
@@ -6925,15 +5953,16 @@
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initAll);
         } else {
-            initAll();
+            // Defer so script tags below this IIFE can register window.scriptyInit* first.
+            setTimeout(initAll, 0);
         }
 
         // Run on HTMX content swaps
         document.body.addEventListener('htmx:afterSwap', initAll);
         document.body.addEventListener('htmx:afterSettle', function(e) {
-            syncBodyPageClasses();
-            syncStylesheetVersion();
-            updateLastEditedTimes();
+            if (window.scriptySyncBodyPageClasses) window.scriptySyncBodyPageClasses();
+            if (window.scriptySyncStylesheetVersion) window.scriptySyncStylesheetVersion();
+            if (window.scriptyUpdateLastEditedTimes) window.scriptyUpdateLastEditedTimes();
             window.scriptyInitProjectPageScripts();
             requestAnimationFrame(focusBlockTextareaFromClick);
             var path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
@@ -6944,7 +5973,7 @@
                 var editTextarea = swapTarget && swapTarget.querySelector
                     ? swapTarget.querySelector('.block-content textarea[name="content"]')
                     : null;
-                if (editTextarea && !pendingBlockCaret) {
+                if (editTextarea && !window.scriptyPendingBlockCaret) {
                     syncBlockTextLayout(editTextarea);
                     editTextarea.focus({ preventScroll: true });
                     var len = editTextarea.value.length;
@@ -6957,7 +5986,7 @@
             if (!e.detail.successful) return;
             const path = (e.detail.pathInfo && e.detail.pathInfo.requestPath) || '';
             if (path.indexOf('/block/') !== -1 || path.indexOf('/project/undo') !== -1 || path.indexOf('/project/redo') !== -1) {
-                updateUndoRedoButtons(resolveProjectId());
+                window.scriptyUpdateUndoRedoButtons(resolveProjectId());
             }
         });
 
@@ -6986,99 +6015,26 @@
 
         document.addEventListener('visibilitychange', function() {
             if (document.hidden) {
-                if (isProjectShowPage()) {
-                    saveEditorPosition();
+                if (window.location.pathname.indexOf('/project/show') === 0 &&
+                    window.scriptySaveEditorPosition) {
+                    window.scriptySaveEditorPosition();
                 }
                 commitOpenBlockEdits();
             }
         });
 
-        // Register Service Worker for PWA
-        if ('serviceWorker' in navigator) {
-            const serviceWorkerEnabled = /*[[${serviceWorkerEnabled}]]*/ true;
-            const SW_MIGRATION_KEY = 'sw-migration-v27';
-            let refreshingForSw = false;
-
-            async function clearServiceWorkerState() {
-                if ('caches' in window) {
-                    const keys = await caches.keys();
-                    await Promise.all(keys.map((key) => caches.delete(key)));
-                }
-                const regs = await navigator.serviceWorker.getRegistrations();
-                await Promise.all(regs.map((reg) => reg.unregister()));
-            }
-
-            async function needsServiceWorkerMigration() {
-                return !localStorage.getItem(SW_MIGRATION_KEY);
-            }
-
-            async function migrateServiceWorker() {
-                await clearServiceWorkerState();
-                localStorage.setItem(SW_MIGRATION_KEY, '1');
-                window.location.reload();
-            }
-
-            function activateWaitingWorker(reg) {
-                if (reg.waiting) {
-                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                }
-            }
-
-            function registerServiceWorker() {
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (refreshingForSw) return;
-                    refreshingForSw = true;
-                    window.location.reload();
-                });
-
-                navigator.serviceWorker.register('/sw.js?v=' + /*[[${assetVersion}]]*/ '140')
-                    .then((reg) => {
-                        console.log('SW registered:', reg.scope);
-                        if (reg.waiting) {
-                            activateWaitingWorker(reg);
-                        }
-                        reg.addEventListener('updatefound', () => {
-                            const installing = reg.installing;
-                            if (!installing) return;
-                            installing.addEventListener('statechange', () => {
-                                if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-                                    activateWaitingWorker(reg);
-                                }
-                            });
-                        });
-                        reg.update();
-                    })
-                    .catch((err) => console.error('SW registration failed:', err));
-            }
-
-            const initServiceWorker = async () => {
-                try {
-                    if (!serviceWorkerEnabled) {
-                        await clearServiceWorkerState();
-                        return;
-                    }
-                    if (await needsServiceWorkerMigration()) {
-                        await migrateServiceWorker();
-                        return;
-                    }
-                    registerServiceWorker();
-                } catch (err) {
-                    console.error('SW migration check failed:', err);
-                    if (serviceWorkerEnabled) {
-                        registerServiceWorker();
-                    }
-                }
-            };
-
-            if (document.readyState === 'complete') {
-                initServiceWorker();
-            } else {
-                window.addEventListener('load', initServiceWorker);
-            }
-        }
     })();
     </script>
     <script th:src="@{/js/shortcuts.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/browser-spellcheck.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/nav-dropdowns.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/theme-toggle.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/project-delete-confirm.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/page-chrome.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/last-edited-times.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/undo-redo.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/editor-position.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/service-worker-register.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/help-center.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline-store.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline.js(v=${assetVersion})}"></script>

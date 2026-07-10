@@ -46,6 +46,9 @@
     }
 
     function resolveProjectId() {
+        if (typeof window.scriptyResolveProjectId === 'function') {
+            return window.scriptyResolveProjectId();
+        }
         if (window.scriptyProjectId) return String(window.scriptyProjectId);
         var params = new URLSearchParams(window.location.search);
         if (window.location.pathname.indexOf('/project/show') === 0 && params.has('id')) {

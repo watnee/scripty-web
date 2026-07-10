@@ -202,6 +202,7 @@ public class UserServiceImpl implements UserService {
         commandModel.setActor(user.isActor());
         commandModel.setCrew(user.isCrew());
         commandModel.setDirectorOfPhotography(user.isDirectorOfPhotography());
+        commandModel.setCastingDirector(user.isCastingDirector());
         vm.setEditUserCommandModel(commandModel);
         return vm;
     }
@@ -222,6 +223,7 @@ public class UserServiceImpl implements UserService {
         user.setActor(cmd.isActor());
         user.setCrew(cmd.isCrew());
         user.setDirectorOfPhotography(cmd.isDirectorOfPhotography());
+        user.setCastingDirector(cmd.isCastingDirector());
         return create(user);
     }
 
@@ -240,6 +242,7 @@ public class UserServiceImpl implements UserService {
         user.setActor(cmd.isActor());
         user.setCrew(cmd.isCrew());
         user.setDirectorOfPhotography(cmd.isDirectorOfPhotography());
+        user.setCastingDirector(cmd.isCastingDirector());
         update(user);
         return user;
     }
@@ -295,6 +298,7 @@ public class UserServiceImpl implements UserService {
         vm.setActor(user.isActor());
         vm.setCrew(user.isCrew());
         vm.setDirectorOfPhotography(user.isDirectorOfPhotography());
+        vm.setCastingDirector(user.isCastingDirector());
         return vm;
     }
 
@@ -307,5 +311,6 @@ public class UserServiceImpl implements UserService {
         user.setActor(authorities.stream().anyMatch(a -> "ROLE_ACTOR".equals(a.getAuthority())));
         user.setCrew(authorities.stream().anyMatch(a -> "ROLE_CREW".equals(a.getAuthority())));
         user.setDirectorOfPhotography(authorities.stream().anyMatch(a -> "ROLE_DP".equals(a.getAuthority())));
+        user.setCastingDirector(authorities.stream().anyMatch(a -> "ROLE_CASTING".equals(a.getAuthority())));
     }
 }

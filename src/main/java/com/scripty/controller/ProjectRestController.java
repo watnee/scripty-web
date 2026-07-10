@@ -47,7 +47,7 @@ public class ProjectRestController {
         if (user != null
                 && !user.isAdmin() && !user.isDirector() && !user.isProducer()
                 && !user.isWriter() && !user.isActor() && !user.isCrew()
-                && !user.isDirectorOfPhotography()) {
+                && !user.isDirectorOfPhotography() && !user.isCastingDirector()) {
             viewModel = projectService.getProjectListViewModel(user.getTeam());
         } else {
             viewModel = projectService.getProjectListViewModel();

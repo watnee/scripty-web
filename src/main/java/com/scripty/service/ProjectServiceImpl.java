@@ -119,7 +119,7 @@ public class ProjectServiceImpl implements ProjectService {
         if (project == null || user == null || !user.isEnabled()) {
             return false;
         }
-        if (user.isAdmin() || user.isDirector() || user.isProducer() || user.isWriter() || user.isActor() || user.isCrew() || user.isDirectorOfPhotography()) {
+        if (user.isAdmin() || user.isDirector() || user.isProducer() || user.isWriter() || user.isActor() || user.isCrew() || user.isDirectorOfPhotography() || user.isCastingDirector()) {
             return true;
         }
         String userTeam = user.getTeam();
@@ -194,6 +194,9 @@ public class ProjectServiceImpl implements ProjectService {
         }
         if (user.isDirectorOfPhotography()) {
             return "Director of Photography";
+        }
+        if (user.isCastingDirector()) {
+            return "Casting Director";
         }
         String team = user.getTeam();
         if (team == null || team.trim().isEmpty()) {

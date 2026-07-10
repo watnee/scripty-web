@@ -55,6 +55,8 @@ public class User {
     private boolean crew;
     @Transient
     private boolean directorOfPhotography;
+    @Transient
+    private boolean castingDirector;
 
     public Integer getId() {
         return id;
@@ -174,6 +176,14 @@ public class User {
 
     public void setDirectorOfPhotography(boolean directorOfPhotography) {
         this.directorOfPhotography = directorOfPhotography;
+    }
+
+    public boolean isCastingDirector() {
+        return castingDirector;
+    }
+
+    public void setCastingDirector(boolean castingDirector) {
+        this.castingDirector = castingDirector;
     }
 
     public Integer getDefaultProjectId() {

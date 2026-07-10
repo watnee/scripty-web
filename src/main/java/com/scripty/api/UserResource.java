@@ -18,6 +18,7 @@ public class UserResource extends RepresentationModel<UserResource> {
     private Boolean actor;
     private Boolean crew;
     private Boolean directorOfPhotography;
+    private Boolean castingDirector;
     private Boolean enabled;
 
     public Integer getId() {
@@ -114,6 +115,14 @@ public class UserResource extends RepresentationModel<UserResource> {
 
     public void setDirectorOfPhotography(Boolean directorOfPhotography) {
         this.directorOfPhotography = directorOfPhotography;
+    }
+
+    public Boolean getCastingDirector() {
+        return castingDirector;
+    }
+
+    public void setCastingDirector(Boolean castingDirector) {
+        this.castingDirector = castingDirector;
     }
 
     public Boolean getEnabled() {

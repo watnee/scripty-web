@@ -41,6 +41,7 @@
             <div class="nav-dropdown-menu">
                 <a class="nav-dropdown-item" th:href="@{/help}" th:classappend="${currentPage == 'help'} ? 'active'">Scripty Help</a>
                 <a class="nav-dropdown-item" th:href="@{/shortcuts}" th:classappend="${currentPage == 'shortcuts'} ? 'active'">Keyboard Shortcuts</a>
+                <button type="button" class="nav-dropdown-item" data-scripty-install-app hidden>Install App</button>
             </div>
         </div>
         <div class="nav-dropdown settings-dropdown" id="settings-dropdown">
@@ -6094,6 +6095,7 @@
     <script th:src="@{/js/undo-redo.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/editor-position.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/service-worker-register.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/pwa-install.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/help-center.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline-store.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline.js(v=${assetVersion})}"></script>

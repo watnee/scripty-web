@@ -140,6 +140,26 @@
             searchNoResults.style.display = matchCount === 0 ? 'block' : 'none';
         };
 
+        function focusHelpHash() {
+            var hash = (window.location.hash || '').replace(/^#/, '');
+            if (!hash) return;
+            var target = document.getElementById(hash);
+            if (!target || !target.classList.contains('help-card')) return;
+            var section = target.closest('.help-content-section');
+            if (section && section.id) {
+                searchInput.value = '';
+                searchResultsSection.style.display = 'none';
+                tabsContainer.style.display = 'flex';
+                switchTab(section.id);
+            }
+            window.setTimeout(function () {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+        }
+
+        focusHelpHash();
+        window.addEventListener('hashchange', focusHelpHash);
+
         initShortcutLabels();
     }
 

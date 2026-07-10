@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v38';
+const CACHE_NAME = 'scripty-cache-v39';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/offline-project.html',
@@ -26,11 +26,13 @@ const ASSETS_TO_CACHE = [
   '/js/offline-store.js',
   '/js/offline.js',
   '/js/offline-edit.js',
+  '/js/pwa-install.js',
   '/dictionaries/en_US/en_US.aff',
   '/dictionaries/en_US/en_US.dic',
   '/favicon.ico',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
   '/manifest.json'
 ];
 

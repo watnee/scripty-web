@@ -9632,6 +9632,159 @@ html.scripty-outline-mode .element-type-actions .element-type-expand-btn {
     transform: translateX(-50%) translateY(0);
 }
 
+.scripty-pwa-install-banner {
+    position: fixed;
+    left: 50%;
+    bottom: 1.25rem;
+    z-index: 10002;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    width: min(34rem, calc(100vw - 1.5rem));
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    background: #1a1f24;
+    color: #f3f5f7;
+    border: 1px solid #334155;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.35);
+}
+
+.scripty-pwa-install-banner[hidden] {
+    display: none !important;
+}
+
+.scripty-pwa-install-banner-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+    flex: 1 1 12rem;
+    font-size: 0.875rem;
+    line-height: 1.35;
+}
+
+.scripty-pwa-install-banner-copy strong {
+    font-size: 0.95rem;
+}
+
+.scripty-pwa-install-banner-copy span {
+    color: #cbd5e1;
+}
+
+.scripty-pwa-install-banner-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 0 0 auto;
+}
+
+.scripty-pwa-install-banner-install,
+.scripty-pwa-install-guide-close {
+    appearance: none;
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    background: #e8eef5;
+    color: #111827;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.scripty-pwa-install-banner-install:hover,
+.scripty-pwa-install-guide-close:hover {
+    background: #ffffff;
+}
+
+.scripty-pwa-install-banner-dismiss {
+    appearance: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 0.4rem 0.65rem;
+    background: transparent;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.scripty-pwa-install-banner-dismiss:hover {
+    color: #ffffff;
+    border-color: #475569;
+}
+
+.scripty-pwa-install-guide {
+    position: fixed;
+    inset: 0;
+    z-index: 10003;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.scripty-pwa-install-guide[hidden] {
+    display: none !important;
+}
+
+.scripty-pwa-install-guide-card {
+    width: min(26rem, 100%);
+    padding: 1.25rem 1.35rem 1.15rem;
+    border-radius: 12px;
+    background: var(--bg, #fff);
+    color: var(--fg, #111);
+    border: 1px solid var(--border, #cbd5e1);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
+}
+
+.scripty-pwa-install-guide-card h2 {
+    margin: 0 0 0.4rem;
+    font-size: 1.2rem;
+}
+
+.scripty-pwa-install-guide-lead {
+    margin: 0 0 0.85rem;
+    color: var(--muted-fg, #64748b);
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.scripty-pwa-install-guide-steps {
+    margin: 0 0 0.85rem;
+    padding-left: 1.25rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.scripty-pwa-install-guide-steps li + li {
+    margin-top: 0.35rem;
+}
+
+.scripty-pwa-install-guide-note {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+}
+
+.scripty-pwa-install-guide-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.scripty-pwa-install-guide-help {
+    color: var(--muted-fg, #64748b);
+    font-size: 0.875rem;
+}
+
+html.scripty-pwa-standalone [data-scripty-install-app] {
+    display: none !important;
+}
+
 .scripty-offline-sync-retry {
     background: rgba(255, 255, 255, 0.14);
     color: inherit;

@@ -28,7 +28,7 @@ public interface UserService {
 
     void changePassword(String username, String currentPassword, String newPassword);
 
-    User deleteUser(Integer id);
+    User deleteUser(Integer id, String actingUsername);
 
     UserProfileViewModel getUserProfileViewModel(Integer id);
 }

@@ -11188,3 +11188,18 @@ body.focus-mode #project-lists-dropdown {
         text-decoration: none !important;
     }
 }
+
+/* User list flash (self-delete guard) */
+.user-list-flash {
+    margin: 0.75rem 0 0;
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.user-list-flash-error {
+    color: #991b1b;
+    background: rgba(185, 28, 28, 0.08);
+    border: 1px solid rgba(185, 28, 28, 0.25);
+}

@@ -62,6 +62,9 @@ public class UserServiceImpl implements UserService {
         if (user.isDirectorOfPhotography()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_DP"));
         }
+        if (user.isCastingDirector()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_CASTING"));
+        }
         return saved;
     }
 
@@ -126,6 +129,9 @@ public class UserServiceImpl implements UserService {
         if (user.isDirectorOfPhotography()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_DP"));
         }
+        if (user.isCastingDirector()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_CASTING"));
+        }
     }
 
     @Override
@@ -164,6 +170,7 @@ public class UserServiceImpl implements UserService {
             uvm.setActor(user.isActor());
             uvm.setCrew(user.isCrew());
             uvm.setDirectorOfPhotography(user.isDirectorOfPhotography());
+            uvm.setCastingDirector(user.isCastingDirector());
             userViewModels.add(uvm);
         }
         vm.setUsers(userViewModels);
@@ -259,8 +266,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public User deleteUser(Integer id) {
+    public User deleteUser(Integer id, String actingUsername) {
         User user = read(id);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found.");
+        }
+        if (actingUsername != null && actingUsername.equalsIgnoreCase(user.getUsername())) {
+            throw new IllegalArgumentException("You cannot delete your own account.");
+        }
         delete(user);
         return user;
     }

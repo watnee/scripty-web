@@ -244,18 +244,22 @@
             btn.title = title;
             btn.setAttribute('aria-label', title);
 
-            var shortcutEl = btn.querySelector('.element-type-shortcut');
-            if (digit) {
-                if (!shortcutEl) {
-                    shortcutEl = document.createElement('span');
-                    shortcutEl.className = 'element-type-shortcut';
-                    shortcutEl.setAttribute('aria-hidden', 'true');
-                    btn.appendChild(shortcutEl);
+            if (typeof window.scriptySetMenuShortcut === 'function') {
+                window.scriptySetMenuShortcut(btn, hint);
+            } else {
+                var shortcutEl = btn.querySelector('.element-type-shortcut, .nav-dropdown-shortcut');
+                if (digit) {
+                    if (!shortcutEl) {
+                        shortcutEl = document.createElement('span');
+                        shortcutEl.className = 'element-type-shortcut nav-dropdown-shortcut';
+                        shortcutEl.setAttribute('aria-hidden', 'true');
+                        btn.appendChild(shortcutEl);
+                    }
+                    shortcutEl.textContent = hint;
+                    shortcutEl.hidden = false;
+                } else if (shortcutEl) {
+                    shortcutEl.hidden = true;
                 }
-                shortcutEl.textContent = hint;
-                shortcutEl.hidden = false;
-            } else if (shortcutEl) {
-                shortcutEl.hidden = true;
             }
         });
     }

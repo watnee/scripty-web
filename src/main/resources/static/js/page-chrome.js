@@ -47,17 +47,39 @@
         var isMac = window.scriptyIsMac
             ? window.scriptyIsMac()
             : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
-        var songsShortcut = isMac ? ' (⌘⇧S)' : ' (Ctrl+Shift+S)';
-        var draftsShortcut = isMac ? ' (⌘⇧D)' : ' (Ctrl+Shift+D)';
+        var songsHint = isMac ? '⌘⇧S' : 'Ctrl+Shift+S';
+        var draftsHint = isMac ? '⌘⇧D' : 'Ctrl+Shift+D';
         var songsBtn = document.querySelector('a.songs-toolbar-btn');
         var draftsBtn = document.querySelector('a.drafts-toolbar-btn');
         if (songsBtn) {
-            songsBtn.title = 'Songs' + songsShortcut;
-            songsBtn.setAttribute('aria-label', 'Songs' + songsShortcut);
+            if (!songsBtn.querySelector('.nav-dropdown-item-label') &&
+                !songsBtn.querySelector('.nav-dropdown-shortcut')) {
+                var songsLabel = document.createElement('span');
+                songsLabel.className = 'nav-dropdown-item-label';
+                songsLabel.textContent = (songsBtn.textContent || 'Songs').trim() || 'Songs';
+                songsBtn.textContent = '';
+                songsBtn.appendChild(songsLabel);
+            }
+            songsBtn.title = 'Songs (' + songsHint + ')';
+            songsBtn.setAttribute('aria-label', 'Songs (' + songsHint + ')');
+            if (typeof window.scriptySetMenuShortcut === 'function') {
+                window.scriptySetMenuShortcut(songsBtn, songsHint);
+            }
         }
         if (draftsBtn) {
-            draftsBtn.title = 'Drafts' + draftsShortcut;
-            draftsBtn.setAttribute('aria-label', 'Drafts' + draftsShortcut);
+            if (!draftsBtn.querySelector('.nav-dropdown-item-label') &&
+                !draftsBtn.querySelector('.nav-dropdown-shortcut')) {
+                var draftsLabel = document.createElement('span');
+                draftsLabel.className = 'nav-dropdown-item-label';
+                draftsLabel.textContent = (draftsBtn.textContent || 'Drafts').trim() || 'Drafts';
+                draftsBtn.textContent = '';
+                draftsBtn.appendChild(draftsLabel);
+            }
+            draftsBtn.title = 'Drafts (' + draftsHint + ')';
+            draftsBtn.setAttribute('aria-label', 'Drafts (' + draftsHint + ')');
+            if (typeof window.scriptySetMenuShortcut === 'function') {
+                window.scriptySetMenuShortcut(draftsBtn, draftsHint);
+            }
         }
     }
 

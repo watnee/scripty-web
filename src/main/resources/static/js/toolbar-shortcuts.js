@@ -44,9 +44,13 @@
                 base = (btn.getAttribute('aria-label') || btn.title || letter).replace(/\s*\([^)]*\)\s*$/, '');
                 btn.setAttribute('data-base-title', base);
             }
-            var title = base + ' (' + formatHint(letter) + ')';
+            var hint = formatHint(letter);
+            var title = base + ' (' + hint + ')';
             btn.title = title;
             btn.setAttribute('aria-label', title);
+            if (typeof window.scriptySetMenuShortcut === 'function') {
+                window.scriptySetMenuShortcut(btn, hint);
+            }
         });
     }
 

@@ -128,13 +128,24 @@
         var isMac = window.scriptyIsMac
             ? window.scriptyIsMac()
             : /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
-        var searchShortcut = isMac ? ' (⌘F)' : ' (Ctrl+F)';
+        var searchHint = isMac ? '⌘F' : 'Ctrl+F';
+        var searchShortcut = ' (' + searchHint + ')';
         if (searchInput) {
             searchInput.title = 'Search script' + searchShortcut;
             searchInput.setAttribute('aria-label', 'Search blocks, character names, or tags' + searchShortcut);
         }
         if (menuItem) {
-            menuItem.textContent = 'Search' + searchShortcut;
+            if (!menuItem.querySelector('.nav-dropdown-item-label') &&
+                !menuItem.querySelector('.nav-dropdown-shortcut, .element-type-shortcut')) {
+                var labelEl = document.createElement('span');
+                labelEl.className = 'nav-dropdown-item-label';
+                labelEl.textContent = (menuItem.textContent || 'Search').trim() || 'Search';
+                menuItem.textContent = '';
+                menuItem.appendChild(labelEl);
+            }
+            if (typeof window.scriptySetMenuShortcut === 'function') {
+                window.scriptySetMenuShortcut(menuItem, searchHint);
+            }
             menuItem.title = 'Search script' + searchShortcut;
             menuItem.setAttribute('aria-label', 'Search script' + searchShortcut);
         }

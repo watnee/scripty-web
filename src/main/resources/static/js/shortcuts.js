@@ -29,7 +29,34 @@
         return isMac() ? '⌘' : 'Ctrl';
     }
 
+    /**
+     * Right-aligned shortcut hint inside a toolbar dropdown item.
+     * Pass an empty/falsy hint to hide the span.
+     */
+    function setMenuShortcut(el, hint) {
+        if (!el) return null;
+        var shortcutEl = el.querySelector('.nav-dropdown-shortcut, .element-type-shortcut');
+        if (!hint) {
+            if (shortcutEl) {
+                shortcutEl.textContent = '';
+                shortcutEl.hidden = true;
+            }
+            return shortcutEl;
+        }
+        if (!shortcutEl) {
+            shortcutEl = document.createElement('span');
+            shortcutEl.className = 'nav-dropdown-shortcut';
+            shortcutEl.setAttribute('aria-hidden', 'true');
+            el.appendChild(shortcutEl);
+        }
+        shortcutEl.classList.add('nav-dropdown-shortcut');
+        shortcutEl.textContent = hint;
+        shortcutEl.hidden = false;
+        return shortcutEl;
+    }
+
     window.scriptyIsMac = isMac;
     window.scriptyModLabel = modLabel;
     window.scriptyIsTypingContext = isTypingContext;
+    window.scriptySetMenuShortcut = setMenuShortcut;
 })();

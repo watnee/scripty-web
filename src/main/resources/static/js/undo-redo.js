@@ -158,13 +158,14 @@
         var isMac = typeof window.scriptyIsMac === 'function'
             ? window.scriptyIsMac()
             : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
-        var undoShortcut = isMac ? ' (⌘Z)' : ' (Ctrl+Z)';
-        var redoShortcut = isMac ? ' (⌘⇧Z)' : ' (Ctrl+Y)';
+        var undoHint = isMac ? '⌘Z' : 'Ctrl+Z';
+        var redoHint = isMac ? '⌘⇧Z' : 'Ctrl+Y';
+        var undoShortcut = ' (' + undoHint + ')';
+        var redoShortcut = ' (' + redoHint + ')';
 
         if (undoBtn) {
-            var undoLabel = undoBtn.classList.contains('nav-dropdown-item') ? 'Undo' + undoShortcut : '← Undo';
-            if (undoBtn.classList.contains('nav-dropdown-item')) {
-                undoBtn.textContent = undoLabel;
+            if (typeof window.scriptySetMenuShortcut === 'function') {
+                window.scriptySetMenuShortcut(undoBtn, undoHint);
             }
             undoBtn.title = 'Undo' + undoShortcut;
             undoBtn.setAttribute('aria-label', 'Undo' + undoShortcut);
@@ -175,9 +176,8 @@
         }
 
         if (redoBtn) {
-            var redoLabel = redoBtn.classList.contains('nav-dropdown-item') ? 'Redo' + redoShortcut : 'Redo →';
-            if (redoBtn.classList.contains('nav-dropdown-item')) {
-                redoBtn.textContent = redoLabel;
+            if (typeof window.scriptySetMenuShortcut === 'function') {
+                window.scriptySetMenuShortcut(redoBtn, redoHint);
             }
             redoBtn.title = 'Redo' + redoShortcut;
             redoBtn.setAttribute('aria-label', 'Redo' + redoShortcut);

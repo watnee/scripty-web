@@ -49,8 +49,12 @@
             btn.setAttribute('aria-checked', on ? 'true' : 'false');
             btn.classList.toggle('is-active', on);
             var base = on ? 'Exit page view' : 'View screenplay as pages';
-            btn.title = base + ' (' + shortcutHint() + ')';
+            var hint = shortcutHint();
+            btn.title = base + ' (' + hint + ')';
             btn.setAttribute('aria-label', btn.title);
+            if (typeof window.scriptySetMenuShortcut === 'function') {
+                window.scriptySetMenuShortcut(btn, hint);
+            }
         }
         if (on) {
             enterAnimPending = true;

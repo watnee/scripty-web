@@ -31,8 +31,12 @@
             btn.setAttribute('aria-checked', on ? 'true' : 'false');
             btn.classList.toggle('is-active', on);
             var base = on ? 'Exit focus mode' : 'Hide distractions while writing';
-            btn.title = base + ' (' + shortcutHint() + ')';
+            var hint = shortcutHint();
+            btn.title = base + ' (' + hint + ')';
             btn.setAttribute('aria-label', btn.title);
+            if (typeof window.scriptySetMenuShortcut === 'function') {
+                window.scriptySetMenuShortcut(btn, hint);
+            }
         }
     }
 

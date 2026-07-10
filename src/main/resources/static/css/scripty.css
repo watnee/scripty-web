@@ -2722,7 +2722,7 @@ h1:hover > small .project-delete-btn,
     display: none;
     left: 0;
     right: auto;
-    min-width: 10.5rem;
+    min-width: 12.5rem;
     padding: 0.35rem;
     transform-origin: top left;
     z-index: 1300;
@@ -2736,6 +2736,32 @@ h1:hover > small .project-delete-btn,
 .history-menu .nav-dropdown-item {
     font-size: 0.84rem;
     font-weight: 500;
+    justify-content: flex-start;
+    gap: 0.75rem;
+}
+
+.history-menu .nav-dropdown-item-label {
+    min-width: 0;
+}
+
+.nav-dropdown-item .nav-dropdown-shortcut,
+.nav-dropdown-item .element-type-shortcut {
+    margin-left: auto;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    opacity: 0.55;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* When a shortcut is present, keep the checkmark after it instead of pushing left. */
+.nav-dropdown-item[aria-checked="true"]:has(.nav-dropdown-shortcut:not([hidden]))::after,
+.nav-dropdown-item[aria-checked="true"]:has(.element-type-shortcut:not([hidden]))::after,
+.nav-dropdown-item.is-active:has(.nav-dropdown-shortcut:not([hidden]))::after,
+.nav-dropdown-item.is-active:has(.element-type-shortcut:not([hidden]))::after {
+    margin-left: 0;
 }
 
 .text-size-control .nav-dropdown-toggle {
@@ -10352,27 +10378,27 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     background: var(--accent-bg, rgba(0, 0, 0, 0.05));
 }
 
-.element-type-menu .element-type-shortcut {
+.element-type-menu .bulk-type-btn::after {
+    content: "";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0.9rem;
     margin-left: auto;
-    font-size: 0.72rem;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    opacity: 0.55;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 .element-type-menu .bulk-type-btn.is-active::after,
 .element-type-menu .bulk-type-btn[aria-checked="true"]::after {
     content: "✓";
-    margin-left: 0;
-    font-size: 0.8rem;
-    font-weight: 700;
 }
 
-.element-type-menu .bulk-type-btn.is-active .element-type-shortcut,
-.element-type-menu .bulk-type-btn[aria-checked="true"] .element-type-shortcut {
-    margin-left: auto;
+/* Keep shortcuts in one column; checkmark sits in a fixed trailing slot. */
+.element-type-menu .bulk-type-btn:has(.element-type-shortcut:not([hidden]))::after,
+.element-type-menu .bulk-type-btn:has(.nav-dropdown-shortcut:not([hidden]))::after {
+    margin-left: 0;
 }
 
 .project-toolbar-row.project-bulk-row:not(:has(.tags-bulk-action:not([hidden]))) {

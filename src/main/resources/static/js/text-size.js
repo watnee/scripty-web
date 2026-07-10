@@ -13,7 +13,7 @@
     var STORAGE_KEY = 'scripty-text-size';
     var DEFAULT_SIZE = 100;
     var MIN_SIZE = 80;
-    var MAX_SIZE = 140;
+    var MAX_SIZE = 200;
     var STEP = 10;
 
     function getSize() {

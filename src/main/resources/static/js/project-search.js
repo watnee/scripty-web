@@ -134,13 +134,10 @@
             return;
         }
 
+        // ⌘F / Ctrl+F always opens project search (even while editing a block).
         if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
         if (e.key.toLowerCase() !== 'f') return;
         if (!searchInput) return;
-        var active = document.activeElement;
-        if (window.scriptyIsTypingContext && window.scriptyIsTypingContext(active)) {
-            if (active !== searchInput) return;
-        }
         e.preventDefault();
         focusSearch();
     });

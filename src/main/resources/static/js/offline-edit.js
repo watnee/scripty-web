@@ -312,7 +312,7 @@
                 showBanner();
                 window.scriptyOfflineStore.countPendingEdits(projectId).then(function (count) {
                     if (count > 0) {
-                        setBannerMessage('Some edits failed to sync. Check your connection and retry.', {
+                        setBannerMessage('Some edits are still syncing. Tap retry if this persists.', {
                             error: true,
                             showRetry: true
                         });
@@ -330,7 +330,9 @@
         }
 
         showBanner();
-        var baseText = "You're offline — edits save locally and sync when you're back online.";
+        var baseText = navigator.onLine
+            ? "Can't reach Scripty right now — edits save locally and sync when it returns."
+            : "You're offline — edits save locally and sync when you're back online.";
         if (!window.scriptyOfflineStore || !projectId) {
             setBannerMessage(baseText);
             return;
@@ -338,7 +340,7 @@
 
         window.scriptyOfflineStore.countPendingEdits(projectId).then(function (count) {
             if (syncFailed) {
-                setBannerMessage('Some edits failed to sync. Check your connection and retry.', { error: true, showRetry: true });
+                setBannerMessage('Some edits are still syncing. Tap retry if this persists.', { error: true, showRetry: true });
                 return;
             }
             if (count > 0) {
@@ -700,14 +702,12 @@
         syncFailed = false;
 
         try {
-            // Probe may fail once during a cold start; only abort if we are
-            // actually marked offline after the consecutive-failure threshold.
-            if (window.scriptyProbeConnectivity) {
-                await window.scriptyProbeConnectivity();
-            }
+            // Don't await a long cold-start probe before syncing. If we already
+            // believe we're online, try the queue; network errors retry later.
+            // Only abort when the dedicated probe has already marked us offline.
             if (window.scriptyIsOffline && window.scriptyIsOffline()) {
                 syncFailed = true;
-                setBannerMessage('Still offline — will retry when your connection returns.', {
+                setBannerMessage('Still reconnecting to Scripty — will retry automatically.', {
                     error: true,
                     showRetry: true
                 });
@@ -742,6 +742,9 @@
                 }
 
                 if (result.ok) {
+                    if (window.scriptyReportServerReachable) {
+                        window.scriptyReportServerReachable(true);
+                    }
                     await window.scriptyOfflineStore.removePendingOperation(op.id);
                     synced += 1;
                     continue;
@@ -789,7 +792,7 @@
                 setBannerMessage(
                     'Synced ' + synced + ' change' + (synced === 1 ? '' : 's') +
                     (remaining ? '; ' + remaining + ' still pending.' : '.') +
-                    ' Retry when your connection is stable.',
+                    ' Retrying…',
                     { error: true, showRetry: true }
                 );
                 if (shouldRetryLater) {
@@ -799,7 +802,7 @@
             }
         } catch (err) {
             syncFailed = true;
-            setBannerMessage('Sync failed. Retry when your connection is stable.', { error: true, showRetry: true });
+            setBannerMessage('Sync paused — retrying shortly.', { error: true, showRetry: true });
             scheduleSyncRetry(8000);
             registerBackgroundSync();
         } finally {

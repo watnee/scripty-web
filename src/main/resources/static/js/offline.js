@@ -6,7 +6,8 @@
     var consecutiveFailures = 0;
     var PROBE_INTERVAL_MS = 30000;
     var PROBE_RETRY_MS = 5000;
-    var PROBE_TIMEOUT_MS = 8000;
+    // Cloudflare container cold starts can exceed 30s; keep this above that.
+    var PROBE_TIMEOUT_MS = 45000;
     // Require several failed probes before flipping offline so brief
     // deploy/cold-start blips don't kill live sync on a stable client network.
     var OFFLINE_FAILURE_THRESHOLD = 3;
@@ -36,6 +37,11 @@
         }
     }
 
+    /**
+     * Confirm reachability from a dedicated probe (or a successful app request).
+     * Live-sync HTTP errors must NOT call this with false — auth/5xx blips are
+     * not the same as "no network" and were flipping clients offline incorrectly.
+     */
     function reportServerReachable(reachable) {
         if (reachable) {
             consecutiveFailures = 0;
@@ -49,20 +55,22 @@
         return assumedOnline;
     }
 
-    function probeConnectivity() {
+    function probeConnectivity(options) {
         if (!navigator.onLine) {
             consecutiveFailures = OFFLINE_FAILURE_THRESHOLD;
             setOnlineState(false);
             return Promise.resolve(false);
         }
 
-        var url = '/manifest.json?scripty-online-probe=' + Date.now();
+        var timeoutMs = (options && options.timeoutMs) || PROBE_TIMEOUT_MS;
+        // /health is permitAll + cheap; query marks it as a network-only SW probe.
+        var url = '/health?scripty-online-probe=' + Date.now();
         var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
         var timeoutId = null;
         if (controller) {
             timeoutId = setTimeout(function () {
                 try { controller.abort(); } catch (e) { /* ignore */ }
-            }, PROBE_TIMEOUT_MS);
+            }, timeoutMs);
         }
 
         return fetch(url, {
@@ -72,8 +80,13 @@
             headers: { 'Cache-Control': 'no-cache' },
             signal: controller ? controller.signal : undefined
         }).then(function (response) {
-            reportServerReachable(response.ok);
-            return response.ok;
+            // Any HTTP response means the user's network reached us. Cold-start
+            // 502/500s must not flip the client offline — only true network loss.
+            if (response.ok) {
+                reportServerReachable(true);
+                return true;
+            }
+            return false;
         }).catch(function () {
             reportServerReachable(false);
             return false;

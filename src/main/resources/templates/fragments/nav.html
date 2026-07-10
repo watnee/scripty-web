@@ -5836,9 +5836,12 @@
                 window.dispatchEvent(new CustomEvent('scripty:project-script-refreshed', { detail: { projectId: projectId } }));
             }
 
-            function noteReachable(ok) {
+            // Only confirm online on success. Do not treat live-sync HTTP
+            // failures as offline — those are often auth/5xx/cold-start blips
+            // while the user's internet is fine. Dedicated /health probes own offline.
+            function noteReachable() {
                 if (window.scriptyReportServerReachable) {
-                    window.scriptyReportServerReachable(!!ok);
+                    window.scriptyReportServerReachable(true);
                 }
             }
 
@@ -5858,7 +5861,7 @@
                     headers: { 'Accept': 'text/html' }
                 }).then(function(response) {
                     if (!response.ok) throw new Error('refresh failed');
-                    noteReachable(true);
+                    noteReachable();
                     return response.text();
                 }).then(function(html) {
                     // User may have started editing while the refresh was in flight.
@@ -5883,7 +5886,6 @@
                         window.scriptySaveProjectSnapshot();
                     }
                 }).catch(function() {
-                    noteReachable(false);
                     if (typeof targetRevision === 'number') {
                         pendingRevision = targetRevision;
                     }
@@ -5893,13 +5895,14 @@
             }
 
             function bumpRevisionFromServer() {
-                if (window.scriptyIsOffline && window.scriptyIsOffline()) return;
+                // Allow recovery attempts while marked offline if the browser is online.
+                if (window.scriptyIsOffline && window.scriptyIsOffline() && !navigator.onLine) return;
                 fetch('/project/syncStatus?id=' + encodeURIComponent(projectId) + '&since=0', {
                     credentials: 'same-origin',
                     cache: 'no-store'
                 }).then(function(r) {
                     if (!r.ok) throw new Error('sync status ' + r.status);
-                    noteReachable(true);
+                    noteReachable();
                     return r.json();
                 }).then(function(data) {
                     if (data && typeof data.revision === 'number') {
@@ -5911,13 +5914,11 @@
                     if (data && data.title != null) {
                         applyTitle(data.title);
                     }
-                }).catch(function() {
-                    noteReachable(false);
-                });
+                }).catch(function() {});
             }
 
             function poll() {
-                if (window.scriptyIsOffline && window.scriptyIsOffline()) return;
+                if (window.scriptyIsOffline && window.scriptyIsOffline() && !navigator.onLine) return;
                 if (document.hidden || refreshInProgress) return;
 
                 // Apply a deferred refresh once local editing has stopped.
@@ -5935,7 +5936,7 @@
                     cache: 'no-store'
                 }).then(function(r) {
                     if (!r.ok) throw new Error('sync status ' + r.status);
-                    noteReachable(true);
+                    noteReachable();
                     return r.json();
                 }).then(function(data) {
                     if (!data || !data.changed) return;
@@ -5945,9 +5946,7 @@
                         return;
                     }
                     refreshScript(data.revision);
-                }).catch(function() {
-                    noteReachable(false);
-                });
+                }).catch(function() {});
             }
 
             function onAfterLoad(e) {
@@ -6997,7 +6996,7 @@
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
             const serviceWorkerEnabled = /*[[${serviceWorkerEnabled}]]*/ true;
-            const SW_MIGRATION_KEY = 'sw-migration-v24';
+            const SW_MIGRATION_KEY = 'sw-migration-v25';
             let refreshingForSw = false;
 
             async function clearServiceWorkerState() {

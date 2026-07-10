@@ -380,29 +380,6 @@
                     <line x1="16" y1="17" x2="8" y2="17"></line>
                 </svg>
             </a>
-            <a class="nav-dropdown-toggle songs-toolbar-btn"
-               th:href="@{/project/documents/songs(projectId=${viewModel.id})}"
-               hx-boost="false"
-               aria-label="Songs"
-               title="Songs">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M9 18V5l12-2v13"></path>
-                    <circle cx="6" cy="18" r="3"></circle>
-                    <circle cx="18" cy="16" r="3"></circle>
-                </svg>
-            </a>
-            <a class="nav-dropdown-toggle drafts-toolbar-btn"
-               th:href="@{/project/documents/drafts(projectId=${viewModel.id})}"
-               hx-boost="false"
-               aria-label="Drafts"
-               title="Drafts">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M16 3H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path>
-                    <line x1="10" y1="8" x2="14" y2="8"></line>
-                    <line x1="10" y1="12" x2="14" y2="12"></line>
-                    <line x1="10" y1="16" x2="12" y2="16"></line>
-                </svg>
-            </a>
             <button id="outline-mode-toggle"
                     type="button"
                     class="nav-dropdown-toggle outline-mode-toolbar-btn"
@@ -450,6 +427,29 @@
             <button id="text-size-decrease" type="button" aria-label="Decrease text size">A−</button>
             <button id="text-size-increase" type="button" aria-label="Increase text size">A+</button>
             <span class="text-size-control-row-break" aria-hidden="true"></span>
+            <a class="nav-dropdown-toggle songs-toolbar-btn"
+               th:href="@{/project/documents/songs(projectId=${viewModel.id})}"
+               hx-boost="false"
+               aria-label="Songs"
+               title="Songs">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 18V5l12-2v13"></path>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <circle cx="18" cy="16" r="3"></circle>
+                </svg>
+            </a>
+            <a class="nav-dropdown-toggle drafts-toolbar-btn"
+               th:href="@{/project/documents/drafts(projectId=${viewModel.id})}"
+               hx-boost="false"
+               aria-label="Drafts"
+               title="Drafts">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 3H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path>
+                    <line x1="10" y1="8" x2="14" y2="8"></line>
+                    <line x1="10" y1="12" x2="14" y2="12"></line>
+                    <line x1="10" y1="16" x2="12" y2="16"></line>
+                </svg>
+            </a>
             <div class="nav-dropdown lists-dropdown" id="project-lists-dropdown">
                 <button id="nav-lists"
                         type="button"

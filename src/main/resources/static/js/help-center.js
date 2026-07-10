@@ -46,6 +46,12 @@
         document.querySelectorAll('.kb-mod-f').forEach(function (el) {
             el.textContent = isMac ? '⌘ F' : 'Ctrl + F';
         });
+        document.querySelectorAll('.kb-mod-shift-s').forEach(function (el) {
+            el.textContent = isMac ? '⌘ ⇧ S' : 'Ctrl + Shift + S';
+        });
+        document.querySelectorAll('.kb-mod-shift-d').forEach(function (el) {
+            el.textContent = isMac ? '⌘ ⇧ D' : 'Ctrl + Shift + D';
+        });
         document.querySelectorAll('.kb-mod-c').forEach(function (el) {
             el.textContent = isMac ? '⌘ C' : 'Ctrl + C';
         });

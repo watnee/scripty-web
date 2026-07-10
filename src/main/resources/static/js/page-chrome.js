@@ -1,5 +1,6 @@
 /**
- * Page chrome helpers: stylesheet version, breadcrumbs, body classes, ? shortcut.
+ * Page chrome helpers: stylesheet version, breadcrumbs, body classes,
+ * ? / Songs / Drafts keyboard shortcuts.
  *
  * Loaded from nav.html so handlers survive HTMX-boosted navigation.
  */
@@ -33,22 +34,57 @@
         document.body.classList.toggle('landing-body', path === '/');
     }
 
+    function isTypingTarget(el) {
+        if (typeof window.scriptyIsTypingContext === 'function') {
+            return window.scriptyIsTypingContext(el);
+        }
+        if (!el) return false;
+        var tag = el.tagName;
+        return tag === 'TEXTAREA' || tag === 'INPUT' || !!el.isContentEditable;
+    }
+
+    function syncSongsDraftsShortcutLabels() {
+        var isMac = window.scriptyIsMac
+            ? window.scriptyIsMac()
+            : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+        var songsShortcut = isMac ? ' (⌘⇧S)' : ' (Ctrl+Shift+S)';
+        var draftsShortcut = isMac ? ' (⌘⇧D)' : ' (Ctrl+Shift+D)';
+        var songsBtn = document.querySelector('a.songs-toolbar-btn');
+        var draftsBtn = document.querySelector('a.drafts-toolbar-btn');
+        if (songsBtn) {
+            songsBtn.title = 'Songs' + songsShortcut;
+            songsBtn.setAttribute('aria-label', 'Songs' + songsShortcut);
+        }
+        if (draftsBtn) {
+            draftsBtn.title = 'Drafts' + draftsShortcut;
+            draftsBtn.setAttribute('aria-label', 'Drafts' + draftsShortcut);
+        }
+    }
+
     function initGlobalShortcuts() {
         if (window._scriptyGlobalShortcutsInit) return;
         window._scriptyGlobalShortcutsInit = true;
 
         document.addEventListener('keydown', function (e) {
             if (e.key !== '?' || e.metaKey || e.ctrlKey || e.altKey) return;
-            var active = document.activeElement;
-            if (typeof window.scriptyIsTypingContext === 'function') {
-                if (window.scriptyIsTypingContext(active)) return;
-            } else if (active) {
-                var tag = active.tagName;
-                if (tag === 'TEXTAREA' || tag === 'INPUT' || active.isContentEditable) return;
-            }
+            if (isTypingTarget(document.activeElement)) return;
             if (window.location.pathname === '/shortcuts') return;
             e.preventDefault();
             window.location.href = '/shortcuts';
+        });
+
+        // ⌘⇧S / Ctrl+Shift+S → Songs, ⌘⇧D / Ctrl+Shift+D → Drafts (project page).
+        document.addEventListener('keydown', function (e) {
+            if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.altKey) return;
+            var key = (e.key || '').toLowerCase();
+            if (key !== 's' && key !== 'd') return;
+            if (isTypingTarget(document.activeElement)) return;
+            var link = document.querySelector(
+                key === 's' ? 'a.songs-toolbar-btn' : 'a.drafts-toolbar-btn'
+            );
+            if (!link || !link.getAttribute('href')) return;
+            e.preventDefault();
+            window.location.href = link.href;
         });
     }
 
@@ -56,6 +92,7 @@
         syncBodyPageClasses();
         prepareBreadcrumbLinks();
         syncStylesheetVersion();
+        syncSongsDraftsShortcutLabels();
         initGlobalShortcuts();
     }
 
@@ -68,6 +105,7 @@
     document.body.addEventListener('htmx:afterSettle', function () {
         syncBodyPageClasses();
         prepareBreadcrumbLinks();
+        syncSongsDraftsShortcutLabels();
     });
 
     if (document.readyState === 'loading') {

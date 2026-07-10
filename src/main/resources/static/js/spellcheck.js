@@ -194,6 +194,16 @@
         return overlay;
     }
 
+    function findReaderMirror(form) {
+        if (!form) return null;
+        var blockContent = form.closest('.block-content');
+        if (blockContent) {
+            var sibling = blockContent.querySelector(':scope > .reader-visible-text');
+            if (sibling) return sibling;
+        }
+        return form.querySelector('.reader-visible-text');
+    }
+
     function clearOverlay(form) {
         var overlay = form.querySelector('.scripty-spell-overlay');
         if (overlay) {
@@ -201,7 +211,7 @@
             overlay.hidden = true;
         }
         form.classList.remove('scripty-spell-active');
-        var mirror = form.querySelector('.reader-visible-text');
+        var mirror = findReaderMirror(form);
         var ta = form.querySelector('textarea.block-input-textarea[name="content"]');
         if (mirror && ta && mirror.getAttribute('data-scripty-spell-mirror') === '1') {
             mirror.textContent = ta.value || '\u00a0';
@@ -248,7 +258,7 @@
 
         var text = textarea.value || '';
         var overlay = ensureOverlay(form);
-        var mirror = form.querySelector('.reader-visible-text');
+        var mirror = findReaderMirror(form);
         form.classList.add('scripty-spell-active');
         textarea.setAttribute('data-scripty-spell', '1');
         // Prefer custom underlines over browser double-underlines on this field
@@ -646,7 +656,7 @@
             if (form.matches(':focus-within')) return;
             var errors = lastErrors.get(textarea);
             if (errors && errors.length) {
-                var mirror = form.querySelector('.reader-visible-text');
+                var mirror = findReaderMirror(form);
                 if (mirror) {
                     mirror.innerHTML = buildMarkedHtml(textarea.value || '', errors);
                     mirror.setAttribute('data-scripty-spell-mirror', '1');

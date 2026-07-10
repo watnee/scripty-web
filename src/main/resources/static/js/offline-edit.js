@@ -109,13 +109,13 @@
         var enterHandler = "if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.stopPropagation;" +
             "if(window.scriptyCreateBlockFromSavedEdit){window.scriptyCreateBlockFromSavedEdit(this);}return false;}";
         return (ctx.characterHtml || '') +
-            '<form class="hide-in-reader-view block-inline-edit-form" hx-post="/block/editInline" ' +
+            renderMirrorTextHtml(ctx.content) +
+            '<form class="hide-in-reader-view sidebar menu block-inline-edit-form" hx-post="/block/editInline" ' +
             'hx-target="closest .block-content" hx-swap="innerHTML" ' +
             'hx-trigger="change from:find select, focusout[target.value.trim()!=\'\'] from:find textarea">' +
             '<input type="hidden" name="id" value="' + escAttr(ctx.blockId) + '" />' +
             '<input type="hidden" name="personId" id="block-person-id-' + escAttr(ctx.blockId) + '" value="' + escAttr(ctx.personId) + '" />' +
             '<input type="hidden" name="tags" value="' + escAttr(ctx.tags) + '" />' +
-            renderMirrorTextHtml(ctx.content) +
             '<textarea spellcheck="' + spellcheckAttr() + '" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" ' +
             'onkeydown="' + enterHandler + '">' + escText(ctx.content) + '</textarea>' +
             renderTagsHtml(ctx.tags) +

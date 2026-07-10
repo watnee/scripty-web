@@ -11,7 +11,7 @@
        hx-boost="false"
        class="character-name hide-in-reader-view sidebar menu"
        title="Edit character name"
-       th:text="${block.personName}"></a>
+       th:attr="aria-label=|Edit character name: ${block.personName}|"></a>
 </p>
 <input xmlns:th="http://www.thymeleaf.org"
        th:if="${updateInlinePersonInput == true}"

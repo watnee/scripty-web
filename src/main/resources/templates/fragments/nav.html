@@ -4088,6 +4088,18 @@
                 return activeId ? [String(activeId)] : [];
             }
 
+            // Keep focus in the active block (same as element-type) so align/style
+            // work from the caret without checkbox selection. Also covers the
+            // text-align dropdown toggle, which would otherwise blur before pick.
+            document.body.addEventListener('mousedown', function(e) {
+                if (!document.querySelector('.project-script')) return;
+                var formatControl = e.target.closest(
+                    '.bulk-align-btn, .bulk-style-btn, .text-align-toolbar-btn'
+                );
+                if (!formatControl) return;
+                e.preventDefault();
+            }, true);
+
             document.body.addEventListener('click', function(e) {
                 if (!document.querySelector('.project-script')) return;
                 // Element type buttons are handled by /js/element-type.js
@@ -5808,8 +5820,9 @@
 
         function syncReaderVisibleText(textarea) {
             if (!textarea) return;
-            const mirror = textarea.closest('form') &&
-                textarea.closest('form').querySelector('.reader-visible-text');
+            const blockContent = textarea.closest('.block-content');
+            const mirror = (blockContent && blockContent.querySelector(':scope > .reader-visible-text')) ||
+                (textarea.closest('form') && textarea.closest('form').querySelector('.reader-visible-text'));
             if (mirror) {
                 mirror.textContent = textarea.value || '\u00a0';
             }
@@ -5819,7 +5832,9 @@
             if (!textarea || textarea.name !== 'content') return;
             const form = textarea.closest('form');
             if (!form) return;
-            const mirror = form.querySelector('.reader-visible-text');
+            const blockContent = textarea.closest('.block-content');
+            const mirror = (blockContent && blockContent.querySelector(':scope > .reader-visible-text')) ||
+                form.querySelector('.reader-visible-text');
             if (!mirror) return;
 
             syncReaderVisibleText(textarea);
@@ -5835,8 +5850,10 @@
 
         function growTextarea(textarea) {
             if (!textarea) return;
-            if (textarea.name === 'content' && textarea.closest('form') &&
-                textarea.closest('form').querySelector('.reader-visible-text')) {
+            const blockContent = textarea.closest('.block-content');
+            const hasMirror = blockContent && blockContent.querySelector(':scope > .reader-visible-text');
+            if (textarea.name === 'content' && (hasMirror ||
+                (textarea.closest('form') && textarea.closest('form').querySelector('.reader-visible-text')))) {
                 syncBlockTextLayout(textarea);
             } else {
                 autoGrowTextarea(textarea);

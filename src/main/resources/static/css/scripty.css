@@ -2782,27 +2782,36 @@ form[hx-post*="/block/"] textarea:focus-visible {
 .block-content form {
     margin: 0;
     padding: 0;
+}
+
+/* Stack reader-visible mirror + edit form so Safari can extract the mirror
+   while the form (sidebar/menu) stays out of Reader. */
+.block-content:has(> .reader-visible-text):has(> .block-inline-edit-form),
+.block-content:has(> .reader-visible-text):has(> form[hx-post*="/block/editInline"]) {
     display: grid;
     grid-template-columns: minmax(0, 100%);
 }
 
-.block-content form .reader-visible-text,
-.block-content form .block-input-textarea.script-block-text {
+.block-content > .reader-visible-text,
+.block-content > .block-inline-edit-form,
+.block-content > form[hx-post*="/block/editInline"],
+.block-content > .block-inline-edit-form .block-input-textarea.script-block-text,
+.block-content > form[hx-post*="/block/editInline"] .block-input-textarea.script-block-text {
     grid-area: 1 / 1;
     width: 100%;
     margin: 0;
     padding: 0;
 }
 
-.block-content:has(.block-inline-edit-form) .reader-visible-text,
-.block-content:has(form[hx-post*="/block/editInline"]) .reader-visible-text {
+.block-content:has(.block-inline-edit-form) > .reader-visible-text,
+.block-content:has(form[hx-post*="/block/editInline"]) > .reader-visible-text {
     display: block;
     white-space: pre-wrap;
     user-select: text;
 }
 
-.block-content:has(.block-inline-edit-form:focus-within) .reader-visible-text,
-.block-content:has(form[hx-post*="/block/editInline"]:focus-within) .reader-visible-text {
+.block-content:has(.block-inline-edit-form:focus-within) > .reader-visible-text,
+.block-content:has(form[hx-post*="/block/editInline"]:focus-within) > .reader-visible-text {
     visibility: hidden;
     pointer-events: none;
 }
@@ -7946,16 +7955,24 @@ html:not(.safari-reader-view) .block-content .reader-visible-character-name {
     margin: 0 0 0.15em;
 }
 
+/* Transparent click overlay — no link text (avoids Reader link-density drops) */
 html:not(.safari-reader-view):not(.scripty-page-view-mode) .block-content .character-name.hide-in-reader-view {
     position: absolute;
     left: 0;
     right: 0;
     top: 0;
+    bottom: 0;
     margin: 0;
+    padding: 0;
+    border: 0;
     text-align: center;
     z-index: 1;
-    /* Match the editor surface, not the letter-page sheet */
-    background: var(--bg, #fff);
+    background: transparent;
+    color: transparent;
+    font-size: 0;
+    line-height: 0;
+    text-decoration: none;
+    cursor: pointer;
 }
 
 html.safari-reader-view .hide-in-reader-view {
@@ -8041,12 +8058,14 @@ html.safari-reader-view .block-content form[hx-post*="/block/editInline"] {
     display: none !important;
 }
 
+html.safari-reader-view .block-content > .reader-visible-text,
 html.safari-reader-view .block-content .reader-visible-text {
     display: block !important;
+    visibility: visible !important;
     position: static !important;
     width: auto !important;
     height: auto !important;
-    margin: 0 !important;
+    margin: 0 0 1rem !important;
     overflow: visible !important;
     clip: auto !important;
     white-space: pre-wrap !important;

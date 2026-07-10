@@ -1,4 +1,7 @@
-<div xmlns:th="http://www.thymeleaf.org" th:fragment="blockRow (block, projectId, canMoveUp, canMoveDown, canEditScript)" class="block-row" th:attr="data-block-id=${block.id},data-block-order=${block.order},data-block-type=${block.type},data-tags=${block.tags},data-bookmarked=${block.bookmarked},data-pinned=${block.pinned}">
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="blockRow (block, projectId, canMoveUp, canMoveDown, canEditScript)"
+     class="block-row"
+     th:classappend="${(block.type == 'SYNOPSIS' or block.type == 'NOTE') ? ' hide-in-reader-view sidebar menu' : ''}"
+     th:attr="data-block-id=${block.id},data-block-order=${block.order},data-block-type=${block.type},data-tags=${block.tags},data-bookmarked=${block.bookmarked},data-pinned=${block.pinned},aria-hidden=${(block.type == 'SYNOPSIS' or block.type == 'NOTE') ? 'true' : null}">
     <span class="block-element-label hide-in-reader-view sidebar menu"
           th:text="${block.typeLabel}"
           th:attr="data-block-type=${block.type}"

@@ -8096,6 +8096,41 @@ html.scripty-page-view-mode body.focus-mode .project-script {
     max-width: none;
 }
 
+/* Full-width must win over page-view's fixed 6in vars (same specificity, later rule). */
+html.scripty-screenplay-full-width.scripty-page-view-mode .project-script,
+html.scripty-screenplay-full-width.scripty-page-view-mode .script-content.entry-content {
+    --screenplay-action-width: 100%;
+    --screenplay-dialogue-width: 58.333%;
+    --screenplay-character-indent: 36.667%;
+    --screenplay-dialogue-indent: 16.667%;
+    --screenplay-parenthetical-indent: 25%;
+}
+
+html.scripty-screenplay-full-width.scripty-page-view-mode .project-script .screenplay-pages {
+    align-items: stretch;
+}
+
+html.scripty-screenplay-full-width.scripty-page-view-mode .project-script .screenplay-page {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    aspect-ratio: 8.5 / 11;
+}
+
+html.scripty-screenplay-full-width.scripty-page-view-mode .project-script .screenplay-page.screenplay-page--measure {
+    /* Keep measure probe off-screen but sized like a live full-width page. */
+    width: 100%;
+    max-width: none;
+    height: auto;
+    aspect-ratio: 8.5 / 11;
+}
+
+html.scripty-screenplay-full-width.scripty-page-view-mode .project-script .block-content.block-type-parenthetical .script-block-text,
+html.scripty-screenplay-full-width.scripty-page-view-mode .project-script .block-content.block-type-parenthetical .reader-visible-text,
+html.scripty-screenplay-full-width.scripty-page-view-mode .project-script .block-content.block-type-parenthetical .block-input-textarea {
+    max-width: 33.333%;
+}
+
 html.scripty-page-view-mode .project-script::after {
     content: 'Page view — US Letter layout';
     display: block;
@@ -8103,6 +8138,10 @@ html.scripty-page-view-mode .project-script::after {
     text-align: center;
     font-size: 0.85rem;
     color: var(--muted-fg, #64748b);
+}
+
+html.scripty-screenplay-full-width.scripty-page-view-mode .project-script::after {
+    content: 'Page view — full width';
 }
 
 @media (max-width: 720px) {

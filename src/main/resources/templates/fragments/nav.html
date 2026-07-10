@@ -877,14 +877,23 @@
         }
 
         function submitCreateRowFromEnter(textarea, options) {
-            if (!isBlockContentTextarea(textarea) || !isCreateBlockTextarea(textarea)) return;
+            options = options || {};
+            const onDone = typeof options.onDone === 'function' ? options.onDone : null;
+            if (!isBlockContentTextarea(textarea) || !isCreateBlockTextarea(textarea)) {
+                if (onDone) onDone();
+                return;
+            }
             const form = textarea.closest('form');
             const row = findAnyBlockRow(textarea);
-            if (!form || !row || row.dataset.enterCreatingBelow === 'true') return;
-            options = options || {};
+            if (!form || !row || row.dataset.enterCreatingBelow === 'true') {
+                if (onDone) onDone();
+                return;
+            }
             const focusSaved = !!options.focusSaved;
             const openTypeMenu = !!options.openTypeMenu;
-            const onDone = typeof options.onDone === 'function' ? options.onDone : null;
+            // Quiet save: persist the create row as a block without focusing,
+            // opening edit, or restoring a trailing empty create row (used by lock).
+            const quiet = !!options.quiet;
             if (window.scriptyIsOffline && window.scriptyIsOffline() && window.scriptySaveCreateBelowOffline) {
                 row.dataset.enterCreatingBelow = 'true';
                 window.scriptySaveCreateBelowOffline(form, row, function() {
@@ -907,7 +916,7 @@
                 // Stale/deleted anchor ids return a full page redirect — never
                 // replace the create row with that, or the + looks like a no-op.
                 if (!isBlockFragmentHtml(html) || !row.parentNode) {
-                    focusBlockContentEnd(row);
+                    if (!quiet) focusBlockContentEnd(row);
                     return;
                 }
                 const template = document.createElement('template');
@@ -918,7 +927,7 @@
                     );
                 });
                 if (newRows.length === 0) {
-                    focusBlockContentEnd(row);
+                    if (!quiet) focusBlockContentEnd(row);
                     return;
                 }
                 const savedRow = newRows.find(function(newRow) {
@@ -928,9 +937,10 @@
                     return !newRow.hasAttribute('data-block-id') && newRow.querySelector('textarea[name="content"]');
                 });
                 // Replace the create row with only the new saved block when this
-                // came from the + type menu. The trailing create row is restored
-                // separately so we never leave a second empty mid-list block.
-                if (focusSaved && savedRow) {
+                // came from the + type menu or a quiet lock save. The trailing
+                // create row is restored separately so we never leave a second
+                // empty mid-list block.
+                if ((focusSaved || quiet) && savedRow) {
                     row.replaceWith(savedRow);
                     if (typeof htmx !== 'undefined') {
                         htmx.process(savedRow);
@@ -942,6 +952,10 @@
                             htmx.process(newRow);
                         });
                     }
+                }
+                if (quiet) {
+                    window.scriptyPendingCreateType = null;
+                    return;
                 }
                 dedupeTrailingCreateRows(savedRow && savedRow.parentNode);
                 ensureTrailingCreateRow((savedRow && savedRow.parentNode) || row.parentNode);
@@ -977,7 +991,7 @@
                     focusBlockContentEnd(newRows[0]);
                 }
             }).catch(function() {
-                focusBlockContentEnd(row);
+                if (!quiet) focusBlockContentEnd(row);
             }).finally(function() {
                 delete row.dataset.enterCreatingBelow;
                 if (onDone) onDone();
@@ -3914,28 +3928,71 @@
             }
 
             function cleanupUnsavedCreateRows() {
-                document.querySelectorAll('.block-row:not([data-block-id]), tr:not([data-block-id])').forEach(function(row) {
-                    if (row.querySelector('textarea[name="content"]')) {
+                // Only drop empty create rows. Rows with typed text are saved first
+                // via saveCreateRowsForLock; never discard that content on lock.
+                document.querySelectorAll('.block-row:not([data-block-id]):not(.project-script-select-row), tr:not([data-block-id])').forEach(function(row) {
+                    var ta = row.querySelector('textarea[name="content"]');
+                    if (ta && ta.value.trim() === '') {
                         row.remove();
                     }
                 });
             }
 
+            function saveCreateRowsForLock(done) {
+                var attempted = typeof WeakSet !== 'undefined' ? new WeakSet() : null;
+                var attemptedList = attempted ? null : [];
+                function wasAttempted(row) {
+                    if (!row) return true;
+                    if (attempted) return attempted.has(row);
+                    return attemptedList.indexOf(row) !== -1;
+                }
+                function markAttempted(row) {
+                    if (!row) return;
+                    if (attempted) attempted.add(row);
+                    else attemptedList.push(row);
+                }
+                function next() {
+                    var ta = Array.from(document.querySelectorAll(
+                        '.block-row:not([data-block-id]):not(.project-script-select-row) textarea[name="content"], ' +
+                        'tr:not([data-block-id]) textarea[name="content"]'
+                    )).find(function(candidate) {
+                        if (!candidate.isConnected || candidate.value.trim() === '') return false;
+                        var row = candidate.closest('.block-row, tr');
+                        return !wasAttempted(row);
+                    });
+                    if (!ta) {
+                        cleanupUnsavedCreateRows();
+                        if (done) done();
+                        return;
+                    }
+                    markAttempted(ta.closest('.block-row, tr'));
+                    submitCreateRowFromEnter(ta, {
+                        quiet: true,
+                        onDone: next
+                    });
+                }
+                next();
+            }
+
             function closeBlockEditsForLock(done) {
                 var forms = Array.from(document.querySelectorAll('.block-content form[hx-post*="/block/editInline"]'));
+                var afterEdits = function() {
+                    saveCreateRowsForLock(done);
+                };
                 if (forms.length === 0) {
-                    cleanupUnsavedCreateRows();
-                    if (done) done();
+                    afterEdits();
                     return;
                 }
                 var pending = forms.length;
                 forms.forEach(function(form) {
                     var textarea = form.querySelector('textarea[name="content"]');
+                    if (textarea) {
+                        syncReaderVisibleText(textarea);
+                    }
                     var finish = function() {
                         pending--;
                         if (pending === 0) {
-                            cleanupUnsavedCreateRows();
-                            if (done) done();
+                            afterEdits();
                         }
                     };
                     if (textarea && textarea.value.trim() !== '') {
@@ -4123,6 +4180,10 @@
                     localStorage.setItem(blockEditLockedKey, 'false');
                     syncLockToggleUi();
                     applyBlockEditLock();
+                    document.querySelectorAll('.project-script .scene-blocks, #table-blocks, .table-blocks-all').forEach(function(container) {
+                        ensureTrailingCreateRow(container);
+                    });
+                    focusTextCursorWhenControlsHidden();
                 });
             }
 

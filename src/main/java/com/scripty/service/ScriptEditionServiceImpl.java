@@ -226,6 +226,9 @@ public class ScriptEditionServiceImpl implements ScriptEditionService {
         if (edition == null) {
             return false;
         }
+        if (edition.isDefault()) {
+            return true;
+        }
         for (ScriptEdition other : scriptEditionRepository.findByProjectIdOrderByNameAsc(projectId)) {
             boolean shouldBeDefault = other.getId().equals(editionId);
             if (other.isDefault() != shouldBeDefault) {
@@ -234,6 +237,12 @@ public class ScriptEditionServiceImpl implements ScriptEditionService {
                 scriptEditionRepository.save(other);
             }
         }
+        projectActivityService.recordForCurrentUser(
+                projectId,
+                ProjectActivity.ACTION_SCRIPT_EDITED,
+                "set \"" + edition.getName() + "\" as default version",
+                ProjectActivity.ENTITY_PROJECT,
+                edition.getId());
         return true;
     }
 

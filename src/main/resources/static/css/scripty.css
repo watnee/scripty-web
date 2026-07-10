@@ -1985,7 +1985,7 @@ h1 > small a[role="button"].versions-btn {
     display: none;
     right: 0;
     left: auto;
-    min-width: 12rem;
+    min-width: 14rem;
     padding: 0.35rem;
     transform-origin: top right;
     z-index: 1100;
@@ -2003,6 +2003,47 @@ h1 > small a[role="button"].versions-btn {
     text-transform: uppercase;
     color: var(--muted, #888);
     user-select: none;
+}
+
+.script-edition-row {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    border-radius: 0.45rem;
+}
+
+.script-edition-row.is-active {
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
+}
+
+.script-edition-row .script-edition-switch {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.script-edition-row.is-active .script-edition-switch:hover,
+.script-edition-row.is-active .script-edition-switch:focus-visible {
+    background: transparent;
+}
+
+.script-edition-default-form {
+    display: inline-flex;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.script-edition-default-toggle {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 1rem;
+    flex-shrink: 0;
+    cursor: default;
+}
+
+button.script-edition-default-toggle {
+    cursor: pointer;
 }
 
 .script-edition-menu .nav-dropdown-item.active {

@@ -124,12 +124,37 @@
                     </button>
                     <div class="nav-dropdown-menu script-edition-menu">
                         <div class="script-edition-menu-label">Versions</div>
-                        <a th:each="edition : ${viewModel.editions}"
-                           class="nav-dropdown-item"
-                           th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'active'"
-                           th:href="@{/project/show(id=${viewModel.id}, editionId=${edition.id})}"
-                           hx-boost="false"
-                           th:text="${edition.name + (edition.default ? ' (default)' : '')}">Main</a>
+                        <div th:each="edition : ${viewModel.editions}"
+                             class="script-edition-row"
+                             th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'is-active'">
+                            <a class="nav-dropdown-item script-edition-switch"
+                               th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'active'"
+                               th:href="@{/project/show(id=${viewModel.id}, editionId=${edition.id})}"
+                               hx-boost="false"
+                               th:text="${edition.name}">Main</a>
+                            <form th:if="${(canEditScript == null or canEditScript) and !edition.default}"
+                                  th:action="@{/project/edition/setDefault}"
+                                  method="POST"
+                                  hx-boost="false"
+                                  class="script-edition-default-form">
+                                <input type="hidden" name="projectId" th:value="${viewModel.id}" />
+                                <input type="hidden" name="editionId" th:value="${edition.id}" />
+                                <button type="submit"
+                                        class="default-project-toggle script-edition-default-toggle"
+                                        th:aria-label="'Set ' + ${edition.name} + ' as default version'"
+                                        th:title="'Set as default version'">
+                                    <span class="icon-outline" aria-hidden="true">☆</span>
+                                    <span class="icon-filled" aria-hidden="true">★</span>
+                                </button>
+                            </form>
+                            <span th:if="${edition.default}"
+                                  class="default-project-toggle script-edition-default-toggle is-default"
+                                  aria-label="Default version"
+                                  title="Default version">
+                                <span class="icon-outline" aria-hidden="true">☆</span>
+                                <span class="icon-filled" aria-hidden="true">★</span>
+                            </span>
+                        </div>
                         <div class="nav-dropdown-divider" th:if="${canEditScript == null or canEditScript}"></div>
                         <button th:if="${canEditScript == null or canEditScript}"
                                 type="button"

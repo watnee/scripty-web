@@ -1633,6 +1633,10 @@ body.login-body main.login-page {
     align-self: center;
 }
 
+html.scripty-word-count-hidden .project-script-stats {
+    display: none;
+}
+
 .project-toolbar-main .block-bulk-actions {
     margin-top: 0.35rem;
 }

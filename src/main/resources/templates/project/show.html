@@ -55,6 +55,8 @@
         root.classList.toggle('scripty-script-readonly', !canEditScript);
         var toolbarHidden = localStorage.getItem('scripty-toolbar-hidden') === 'true';
         root.classList.toggle('scripty-toolbar-hidden', toolbarHidden);
+        var wordCountHidden = localStorage.getItem('scripty-word-count-hidden') === 'true';
+        root.classList.toggle('scripty-word-count-hidden', wordCountHidden);
         var fullWidth = localStorage.getItem('scripty-screenplay-full-width') === 'true';
         root.classList.toggle('scripty-screenplay-full-width', fullWidth);
         var outlineMode = localStorage.getItem('scripty-outline-mode') === '1';
@@ -282,6 +284,23 @@
                             title="Show element labels in blocks">
                         <span th:replace="~{fragments/elementLabelIcon :: toolbarIcon}"></span>
                         <span>Element labels</span>
+                    </button>
+                    <button id="nav-word-count-toggle"
+                            type="button"
+                            class="nav-dropdown-item word-count-filter-toggle"
+                            role="menuitemcheckbox"
+                            aria-pressed="false"
+                            aria-checked="true"
+                            aria-label="Hide word count"
+                            title="Hide word count">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 19V5"></path>
+                            <path d="M4 19h16"></path>
+                            <path d="M8 15V9"></path>
+                            <path d="M12 15v-3"></path>
+                            <path d="M16 15V7"></path>
+                        </svg>
+                        <span>Word count</span>
                     </button>
                 </div>
             </div>
@@ -602,6 +621,7 @@
     <script th:src="@{/js/page-view-mode.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/full-width-toggle.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/toolbar-toggle.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/word-count-toggle.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/import-script.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/block-empty-guard.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/element-type.js(v=${assetVersion})}"></script>

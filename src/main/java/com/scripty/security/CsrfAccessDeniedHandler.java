@@ -14,8 +14,14 @@ import org.springframework.security.web.csrf.MissingCsrfTokenException;
  * CSRF failures on login (and other browser form posts) otherwise fall through to
  * Spring Boot's Whitelabel {@code /error} with a bare 403. Send the user back to
  * sign-in with a clear message instead.
+ *
+ * <p>For HTMX requests, use {@code HX-Redirect} instead of a 302. A normal redirect
+ * is followed by the XHR and swapped into the current page (e.g. the project editor),
+ * which leaves the URL on {@code /project/show} while showing the login form.
  */
 public class CsrfAccessDeniedHandler implements AccessDeniedHandler {
+
+    private static final String LOGIN_CSRF_ERROR = "/login?csrf_error=1";
 
     private final AccessDeniedHandler fallback = new AccessDeniedHandlerImpl();
 
@@ -23,7 +29,13 @@ public class CsrfAccessDeniedHandler implements AccessDeniedHandler {
     public void handle(HttpServletRequest request, HttpServletResponse response,
             AccessDeniedException accessDeniedException) throws IOException, ServletException {
         if (isCsrfFailure(accessDeniedException) && acceptsHtml(request)) {
-            response.sendRedirect(request.getContextPath() + "/login?csrf_error=1");
+            String loginUrl = request.getContextPath() + LOGIN_CSRF_ERROR;
+            if (isHtmxRequest(request)) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setHeader("HX-Redirect", loginUrl);
+                return;
+            }
+            response.sendRedirect(loginUrl);
             return;
         }
         fallback.handle(request, response, accessDeniedException);
@@ -36,5 +48,9 @@ public class CsrfAccessDeniedHandler implements AccessDeniedHandler {
     private static boolean acceptsHtml(HttpServletRequest request) {
         String accept = request.getHeader("Accept");
         return accept == null || accept.contains("text/html") || accept.contains("*/*");
+    }
+
+    private static boolean isHtmxRequest(HttpServletRequest request) {
+        return "true".equalsIgnoreCase(request.getHeader("HX-Request"));
     }
 }

@@ -28,6 +28,30 @@
         }
     }
 
+    function isLoginPagePath() {
+        return (window.location.pathname || '') === '/login';
+    }
+
+    function looksLikeLoginHtml(html) {
+        if (!html) {
+            return false;
+        }
+        return html.indexOf('id="login-brand"') !== -1
+            || html.indexOf("id='login-brand'") !== -1
+            || html.indexOf('id="login-heading"') !== -1
+            || html.indexOf('class="login-body"') !== -1
+            || html.indexOf("class='login-body'") !== -1
+            || html.indexOf('class="login-panel"') !== -1
+            || html.indexOf("class='login-panel'") !== -1;
+    }
+
+    function forceFullLoginNavigation() {
+        if (isLoginPagePath()) {
+            return;
+        }
+        window.location.href = '/login';
+    }
+
     /** Inject _csrf into a form so native form.submit() works in prod. */
     window.scriptyAppendCsrfToForm = function (form) {
         if (!form) return;
@@ -54,28 +78,38 @@
     });
 
     /**
-     * If an unauthenticated HTMX response still returns login HTML (e.g. older
-     * servers that 302 to /login), do a full navigation instead of swapping
-     * "Please sign in" into /project/show while the URL stays put.
+     * If an unauthenticated / CSRF-failed HTMX response still returns login HTML
+     * (e.g. a 302 that XHR follows), do a full navigation instead of swapping
+     * the sign-in page into /project/show while the URL stays put.
      */
     document.addEventListener('htmx:beforeSwap', function (event) {
-        if (!event.detail || event.detail.shouldSwap === false) {
-            return;
-        }
-        var path = window.location.pathname || '';
-        if (path === '/login') {
+        if (!event.detail || isLoginPagePath()) {
             return;
         }
         var xhr = event.detail.xhr;
-        var html = xhr && xhr.responseText ? xhr.responseText : '';
-        if (html.indexOf('id="login-brand"') === -1
-                && html.indexOf('class="login-body"') === -1
-                && html.indexOf("class='login-body'") === -1) {
+        var html = (xhr && xhr.responseText) || event.detail.serverResponse || '';
+        if (!looksLikeLoginHtml(html)) {
             return;
         }
         event.detail.shouldSwap = false;
-        window.location.href = '/login';
+        forceFullLoginNavigation();
     });
+
+    /**
+     * Safety net: if login markup still lands in the DOM on a non-login URL
+     * (stale csrf.js, missed beforeSwap, etc.), bounce to a real /login load.
+     */
+    function reclaimSwappedLogin() {
+        if (isLoginPagePath()) {
+            return;
+        }
+        if (document.getElementById('login-brand') || document.querySelector('main.login-page, .login-panel')) {
+            forceFullLoginNavigation();
+        }
+    }
+
+    document.body.addEventListener('htmx:afterSwap', reclaimSwappedLogin);
+    document.body.addEventListener('htmx:afterSettle', reclaimSwappedLogin);
 
     if (typeof window.fetch !== 'function') {
         return;

@@ -2,6 +2,7 @@ package com.scripty.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -25,6 +26,7 @@ class CsrfAccessDeniedHandlerTest {
 
         assertEquals(302, response.getStatus());
         assertEquals("/login?csrf_error=1", response.getRedirectedUrl());
+        assertNull(response.getHeader("HX-Redirect"));
     }
 
     @Test
@@ -37,6 +39,20 @@ class CsrfAccessDeniedHandlerTest {
         handler.handle(request, response, new InvalidCsrfTokenException(expected, "actual"));
 
         assertEquals("/login?csrf_error=1", response.getRedirectedUrl());
+    }
+
+    @Test
+    void usesHxRedirectForHtmxCsrfFailure() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/block/createInline");
+        request.addHeader("Accept", "text/html");
+        request.addHeader("HX-Request", "true");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        handler.handle(request, response, new MissingCsrfTokenException(null));
+
+        assertEquals(403, response.getStatus());
+        assertEquals("/login?csrf_error=1", response.getHeader("HX-Redirect"));
+        assertNull(response.getRedirectedUrl());
     }
 
     @Test

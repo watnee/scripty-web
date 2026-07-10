@@ -7684,21 +7684,18 @@ main h3 {
     --screenplay-action-width: 6in;
     --screenplay-dialogue-width: 3.5in;
     --screenplay-chrome-gap: 1rem;
-    --screenplay-paper: color-mix(in srgb, var(--box-bg, #fff) 92%, var(--accent-bg, #f1f5f9));
-    --screenplay-desk: color-mix(in srgb, var(--accent-bg, #f1f5f9) 70%, var(--bg, #fff));
+    --screenplay-paper: var(--box-bg, #fff);
+    --screenplay-desk: transparent;
     width: 100%;
     max-width: 100%;
 }
 
-/* Continuous edit: script column reads as a sheet on a quiet desk */
+/* Continuous edit: no tinted desk — script sits on the page background */
 html:not(.scripty-page-view-mode) .project-script {
     padding: 1.25rem 0.75rem 2.5rem;
-    border-radius: 10px;
-    background:
-        linear-gradient(180deg, color-mix(in srgb, var(--screenplay-paper) 88%, transparent) 0%, transparent 42%),
-        radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in srgb, var(--accent, #475569) 8%, transparent), transparent 70%),
-        var(--screenplay-desk);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--border, #cbd5e1) 55%, transparent);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
 :root.-dark-theme:not(.scripty-page-view-mode) .project-script {
@@ -8024,7 +8021,6 @@ html.scripty-block-text-selecting .block-actions-controls {
 
     html:not(.scripty-page-view-mode) .project-script {
         padding: 0.85rem 0.35rem 1.75rem;
-        border-radius: 6px;
     }
 }
 
@@ -8520,32 +8516,39 @@ html.scripty-page-view-mode .project-script .scene-blocks {
     grid-column: unset;
 }
 
+/* Escape Missing.css main max-inline-size so Letter sheets can render larger. */
+html.scripty-page-view-mode main {
+    max-inline-size: none;
+    inline-size: 100%;
+    width: 100%;
+}
+
 html.scripty-page-view-mode .project-script .screenplay-pages {
-    --screenplay-desk: #d6cfc4;
-    --screenplay-desk-deep: #c4bbb0;
-    --screenplay-paper: #fffcf7;
+    --screenplay-desk: #e8e8e8;
+    --screenplay-desk-deep: #dcdcdc;
+    --screenplay-paper: #ffffff;
     --screenplay-ink: #1a1a1a;
-    --screenplay-edge: rgba(90, 78, 62, 0.2);
+    --screenplay-edge: rgba(0, 0, 0, 0.12);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
-    padding: 2rem 1.25rem 3.5rem;
+    gap: 2.25rem;
+    padding: 2.25rem 1.5rem 3.75rem;
     background:
-        radial-gradient(ellipse 85% 50% at 50% -8%, rgba(255, 255, 255, 0.4), transparent 58%),
-        radial-gradient(ellipse 60% 35% at 85% 100%, rgba(0, 0, 0, 0.06), transparent 55%),
+        radial-gradient(ellipse 85% 50% at 50% -8%, rgba(255, 255, 255, 0.55), transparent 58%),
+        radial-gradient(ellipse 60% 35% at 85% 100%, rgba(0, 0, 0, 0.04), transparent 55%),
         linear-gradient(180deg, var(--screenplay-desk) 0%, var(--screenplay-desk-deep) 100%);
     border-radius: 12px;
     margin-top: 0.5rem;
-    border: 1px solid rgba(90, 78, 62, 0.1);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 :root.-dark-theme.scripty-page-view-mode .project-script .screenplay-pages {
     --screenplay-desk: #1a1f27;
     --screenplay-desk-deep: #12161c;
-    --screenplay-paper: #1e1e1e;
-    --screenplay-ink: #e8edf2;
+    --screenplay-paper: #ffffff;
+    --screenplay-ink: #1a1a1a;
     --screenplay-edge: rgba(148, 163, 184, 0.28);
     background:
         radial-gradient(ellipse 85% 50% at 50% -8%, rgba(255, 255, 255, 0.05), transparent 58%),
@@ -8559,8 +8562,8 @@ html.scripty-page-view-mode .project-script .screenplay-pages {
     :root:not(.-no-dark-theme).scripty-page-view-mode .project-script .screenplay-pages {
         --screenplay-desk: #1a1f27;
         --screenplay-desk-deep: #12161c;
-        --screenplay-paper: #1e1e1e;
-        --screenplay-ink: #e8edf2;
+        --screenplay-paper: #ffffff;
+        --screenplay-ink: #1a1a1a;
         --screenplay-edge: rgba(148, 163, 184, 0.28);
         background:
             radial-gradient(ellipse 85% 50% at 50% -8%, rgba(255, 255, 255, 0.05), transparent 58%),
@@ -8574,22 +8577,22 @@ html.scripty-page-view-mode .project-script .screenplay-pages {
 html.scripty-page-view-mode .project-script .screenplay-page {
     position: relative;
     box-sizing: border-box;
-    width: min(8.5in, 100%);
-    height: 11in;
+    /* Larger on-screen sheets (still Letter aspect); full-width can go wider. */
+    width: min(10.5in, 100%);
     max-width: 100%;
+    height: auto;
+    aspect-ratio: 8.5 / 11;
     /* % of page width so margins stay proportional when the sheet shrinks */
     padding: 11.7647% 11.7647% 11.7647% 17.647%;
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, transparent 16%),
-        var(--screenplay-paper, #fffcf7);
+    background: var(--screenplay-paper, #ffffff);
     color: var(--screenplay-ink, #1a1a1a);
-    border: 1px solid var(--screenplay-edge, rgba(90, 78, 62, 0.2));
+    border: 1px solid var(--screenplay-edge, rgba(0, 0, 0, 0.12));
     border-radius: 1px;
     box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.65) inset,
-        0 1px 2px rgba(0, 0, 0, 0.05),
-        0 10px 28px rgba(0, 0, 0, 0.1),
-        0 24px 52px rgba(0, 0, 0, 0.1);
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 1px 2px rgba(0, 0, 0, 0.04),
+        0 12px 32px rgba(0, 0, 0, 0.1),
+        0 28px 56px rgba(0, 0, 0, 0.08);
     overflow: hidden;
     font-family: 'Courier New', Courier, monospace;
     font-size: calc(12pt * var(--scripty-text-scale, 1));
@@ -8630,10 +8633,10 @@ html.scripty-page-view-mode .project-script .screenplay-pages:not(.screenplay-pa
 html.scripty-page-view-mode .project-script .screenplay-page.screenplay-page--active {
     border-color: color-mix(in srgb, var(--accent, #475569) 50%, var(--screenplay-edge, #94a3b8));
     box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.65) inset,
-        0 1px 2px rgba(0, 0, 0, 0.05),
-        0 12px 32px rgba(0, 0, 0, 0.12),
-        0 28px 56px rgba(0, 0, 0, 0.14),
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 1px 2px rgba(0, 0, 0, 0.04),
+        0 14px 36px rgba(0, 0, 0, 0.12),
+        0 32px 60px rgba(0, 0, 0, 0.12),
         0 0 0 2px color-mix(in srgb, var(--accent, #475569) 26%, transparent);
     z-index: 1;
 }
@@ -8644,28 +8647,30 @@ html.scripty-page-view-mode .project-script .screenplay-page.screenplay-page--me
     pointer-events: none;
     left: -9999px;
     top: 0;
+    width: min(10.5in, 100%);
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 8.5 / 11;
     animation: none !important;
     transition: none;
     box-shadow: none;
 }
 
 :root.-dark-theme.scripty-page-view-mode .project-script .screenplay-page {
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 16%),
-        var(--screenplay-paper, #1e1e1e);
-    color: var(--screenplay-ink, #e8edf2);
+    background: var(--screenplay-paper, #ffffff);
+    color: var(--screenplay-ink, #1a1a1a);
     border-color: var(--screenplay-edge, rgba(148, 163, 184, 0.28));
     box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.04) inset,
-        0 1px 2px rgba(0, 0, 0, 0.3),
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 1px 2px rgba(0, 0, 0, 0.2),
         0 12px 32px rgba(0, 0, 0, 0.42),
         0 28px 56px rgba(0, 0, 0, 0.35);
 }
 
 :root.-dark-theme.scripty-page-view-mode .project-script .screenplay-page.screenplay-page--active {
     box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.04) inset,
-        0 1px 2px rgba(0, 0, 0, 0.3),
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 1px 2px rgba(0, 0, 0, 0.2),
         0 14px 36px rgba(0, 0, 0, 0.48),
         0 28px 56px rgba(0, 0, 0, 0.4),
         0 0 0 2px color-mix(in srgb, var(--accent, #94a3b8) 32%, transparent);
@@ -8673,22 +8678,20 @@ html.scripty-page-view-mode .project-script .screenplay-page.screenplay-page--me
 
 @media (prefers-color-scheme: dark) {
     :root:not(.-no-dark-theme).scripty-page-view-mode .project-script .screenplay-page {
-        background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 16%),
-            var(--screenplay-paper, #1e1e1e);
-        color: var(--screenplay-ink, #e8edf2);
+        background: var(--screenplay-paper, #ffffff);
+        color: var(--screenplay-ink, #1a1a1a);
         border-color: var(--screenplay-edge, rgba(148, 163, 184, 0.28));
         box-shadow:
-            0 1px 0 rgba(255, 255, 255, 0.04) inset,
-            0 1px 2px rgba(0, 0, 0, 0.3),
+            0 1px 0 rgba(255, 255, 255, 0.9) inset,
+            0 1px 2px rgba(0, 0, 0, 0.2),
             0 12px 32px rgba(0, 0, 0, 0.42),
             0 28px 56px rgba(0, 0, 0, 0.35);
     }
 
     :root:not(.-no-dark-theme).scripty-page-view-mode .project-script .screenplay-page.screenplay-page--active {
         box-shadow:
-            0 1px 0 rgba(255, 255, 255, 0.04) inset,
-            0 1px 2px rgba(0, 0, 0, 0.3),
+            0 1px 0 rgba(255, 255, 255, 0.9) inset,
+            0 1px 2px rgba(0, 0, 0, 0.2),
             0 14px 36px rgba(0, 0, 0, 0.48),
             0 28px 56px rgba(0, 0, 0, 0.4),
             0 0 0 2px color-mix(in srgb, var(--accent, #94a3b8) 32%, transparent);
@@ -8760,17 +8763,19 @@ html.scripty-page-view-mode .project-script .screenplay-page .reader-visible-cha
 html.scripty-page-view-mode .project-script .screenplay-page .script-character-name,
 html.scripty-page-view-mode .project-script .screenplay-page .block-input-textarea {
     color: inherit;
-    caret-color: currentColor;
+    /* Use page ink explicitly — currentColor is transparent under spellcheck overlay */
+    caret-color: var(--screenplay-ink, #1a1a1a);
     /* Global color transitions make the caret flicker/vanish on page ink changes */
     transition: none;
 }
 
 html.scripty-page-view-mode .project-script .screenplay-page .block-caret-preview {
-    background-color: currentColor;
+    background-color: var(--screenplay-ink, #1a1a1a);
 }
 
+/* Spellcheck hides textarea ink (overlay paints text); keep caret on page ink */
 html.scripty-page-view-mode .project-script .screenplay-page .block-content form.scripty-spell-active:focus-within .block-input-textarea.script-block-text {
-    caret-color: currentColor;
+    caret-color: var(--screenplay-ink, #1a1a1a);
 }
 
 html.scripty-page-view-mode .project-script .block-row[data-block-type="PAGE_BREAK"] {
@@ -8866,7 +8871,7 @@ html.scripty-screenplay-full-width.scripty-page-view-mode .project-script .block
 }
 
 html.scripty-page-view-mode .project-script::after {
-    content: 'US Letter · 8.5 × 11 in';
+    content: 'Page view · Letter';
     display: block;
     margin: 1rem 0 0.35rem;
     text-align: center;

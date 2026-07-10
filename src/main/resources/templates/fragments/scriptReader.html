@@ -22,14 +22,23 @@
 <body>
 
 <th:block th:fragment="blocks(blocks)">
-    <div th:each="block : ${blocks}"
-         class="script-block block-content"
-         th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (block.textAlign != null ? ' block-text-align-' + #strings.toLowerCase(block.textAlign) : '') + (block.textBold ? ' block-text-bold' : '') + (block.textItalic ? ' block-text-italic' : '') + (block.textUnderline ? ' block-text-underline' : '') + (block.type == 'DIALOGUE' ? ' script-block--dialogue' : ' script-block--action')}">
-        <p th:if="${not #strings.isEmpty(block.personName) and block.type != 'CHARACTER' and block.type != 'DUAL_DIALOGUE'}" class="script-character-name">
-            <strong th:text="${#strings.toUpperCase(block.personName)}"></strong>
-        </p>
-        <p class="script-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></p>
-    </div>
+    <th:block th:each="block : ${blocks}">
+        <th:block th:if="${block.type == 'SCENE'}">
+            <h2 class="scene-header"
+                th:text="${#strings.isEmpty(block.content) ? 'Untitled Scene' : block.content}">Scene</h2>
+        </th:block>
+        <th:block th:if="${block.type == 'SECTION'}">
+            <h3 th:text="${#strings.isEmpty(block.content) ? 'Section' : block.content}">Section</h3>
+        </th:block>
+        <div th:if="${block.type != 'SCENE' and block.type != 'SECTION' and block.type != 'SYNOPSIS' and block.type != 'NOTE'}"
+             class="script-block block-content"
+             th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (block.textAlign != null ? ' block-text-align-' + #strings.toLowerCase(block.textAlign) : '') + (block.textBold ? ' block-text-bold' : '') + (block.textItalic ? ' block-text-italic' : '') + (block.textUnderline ? ' block-text-underline' : '') + (block.type == 'DIALOGUE' ? ' script-block--dialogue' : ' script-block--action')}">
+            <p th:if="${not #strings.isEmpty(block.personName) and block.type != 'CHARACTER' and block.type != 'DUAL_DIALOGUE'}" class="script-character-name">
+                <strong th:text="${#strings.toUpperCase(block.personName)}"></strong>
+            </p>
+            <p class="script-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></p>
+        </div>
+    </th:block>
 </th:block>
 
 <th:block th:fragment="scenes(scenes)">
@@ -44,9 +53,9 @@
 
 <footer th:fragment="sceneFooter(scene)" class="script-reader-footer">
     <p>
-        <a th:href="@{/scene/show(id=${scene.id})}">← Back to scene</a>
+        <a th:href="@{/project/show(id=${scene.projectId})}">← Back to project</a>
         ·
-        <a th:href="@{/scene/all(projectId=${scene.projectId})}">Read full script</a>
+        <a th:href="@{/project/read(id=${scene.projectId})}">Read full script</a>
     </p>
 </footer>
 

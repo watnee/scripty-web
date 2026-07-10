@@ -237,11 +237,19 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/read")
-    public String read(@RequestParam Integer id, Principal principal) {
+    public String read(@RequestParam Integer id,
+                       @RequestParam(required = false) Integer editionId,
+                       Model model,
+                       Principal principal) {
         if (denyProjectAccess(id, principal)) {
             return "redirect:/project/list";
         }
-        return "redirect:/scene/all?projectId=" + id;
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id, editionId);
+        if (viewModel == null) {
+            return "redirect:/project/list";
+        }
+        model.addAttribute("viewModel", viewModel);
+        return "project/read";
     }
 
     @RequestMapping(value = "/undo", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)

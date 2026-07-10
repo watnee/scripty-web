@@ -42,9 +42,16 @@
         return match ? Number(match[1]) : null;
     }
 
-    function renderBlockTextHtml(content) {
+    function renderBlockTextHtml(content, blockType) {
         var text = escText(content || '');
-        return '<p class="script-block-text">' + (text || '&#160;') + '</p>';
+        var body = text || '&#160;';
+        if (blockType === 'SCENE') {
+            return '<h2 class="script-block-text scene-header">' + body + '</h2>';
+        }
+        if (blockType === 'SECTION') {
+            return '<h3 class="script-block-text">' + body + '</h3>';
+        }
+        return '<p class="script-block-text">' + body + '</p>';
     }
 
     function renderMirrorTextHtml(content) {
@@ -74,6 +81,7 @@
     function getBlockEditContext(blockContent) {
         var row = blockContent.closest('[data-block-id]');
         var blockId = row ? row.getAttribute('data-block-id') : '';
+        var blockType = row ? (row.getAttribute('data-block-type') || '') : '';
         var form = blockContent.querySelector('form[hx-post*="/block/editInline"], form[hx-post*="/block/createBelowInline"]');
         var textarea = form ? form.querySelector('textarea[name="content"]') : null;
         var contentP = blockContent.querySelector('.script-block-text');
@@ -89,6 +97,7 @@
         }
         return {
             blockId: blockId,
+            blockType: blockType,
             content: content,
             tags: tags,
             personId: personId,
@@ -115,7 +124,7 @@
 
     function renderShowInline(ctx) {
         return (ctx.characterHtml || '') +
-            renderBlockTextHtml(ctx.content) +
+            renderBlockTextHtml(ctx.content, ctx.blockType) +
             renderTagsHtml(ctx.tags);
     }
 

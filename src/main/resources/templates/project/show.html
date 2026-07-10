@@ -302,6 +302,18 @@
                         </svg>
                         <span>Word count</span>
                     </button>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/read(id=${viewModel.id}, editionId=${viewModel.editionId})}"
+                       hx-boost="false"
+                       title="Open a minimal read-only view (works with Safari Reader)">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        <span>Read Script</span>
+                    </a>
                 </div>
             </div>
             <span th:if="${canEditScript == null or canEditScript}" th:replace="~{fragments/spellcheckToggle :: toolbarButton}"></span>
@@ -602,13 +614,13 @@
              th:text="${documentInsertMessage}"
              role="status"></div>
         <article class="entry-content script-content project-script" role="article">
-            <header class="project-script-header">
+            <div class="project-script-header">
                 <h1 class="project-header-title entry-title">
                     <span class="reader-visible-project-title"
                           id="reader-visible-project-title"
                           th:text="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim()) ? 'Untitled Project' : viewModel.title}">Project</span>
                 </h1>
-            </header>
+            </div>
             <div th:replace="~{project/showScriptBody :: scriptBody(${viewModel})}"></div>
         </article>
     </main>

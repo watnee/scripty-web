@@ -1,7 +1,9 @@
 <th:block xmlns:th="http://www.thymeleaf.org">
 <th:block th:replace="~{block/showCharacterNameInline :: characterName(${block})}"></th:block>
-<p class="script-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></p>
-<div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu">
+<h2 th:if="${block.type == 'SCENE'}" class="script-block-text scene-header"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></h2>
+<h3 th:if="${block.type == 'SECTION'}" class="script-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></h3>
+<p th:if="${block.type != 'SCENE' and block.type != 'SECTION'}" class="script-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></p>
+<div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu" aria-hidden="true">
     <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
           th:if="${not #strings.isEmpty(#strings.trim(tag))}"
           th:attr="title=${'Search: ' + #strings.trim(tag)}"

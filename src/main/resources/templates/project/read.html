@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/scriptReader :: head(${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim()) ? 'Untitled Project' : viewModel.title})}"></head>
+<body class="script-reader-page">
+    <main role="main">
+        <article class="entry-content" role="article">
+            <h1 class="entry-title"
+                th:text="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim()) ? 'Untitled Project' : viewModel.title}">Project</h1>
+            <th:block th:replace="~{fragments/scriptReader :: scenes(${viewModel.scenes})}"></th:block>
+        </article>
+    </main>
+    <footer th:replace="~{fragments/scriptReader :: projectFooter(${viewModel.id})}"></footer>
+</body>
+</html>

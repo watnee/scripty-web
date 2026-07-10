@@ -1,0 +1,23 @@
+# Local Cloudflare Worker / Container secrets (never commit).
+# Copy to .dev.vars and fill in before `wrangler dev` / first deploy.
+#
+# Required (application-prod.yml datasource):
+MYSQLHOST=
+MYSQLPORT=3306
+MYSQLUSER=
+MYSQLPASSWORD=
+MYSQLDATABASE=
+MYSQL_SSL_MODE=PREFERRED
+MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true
+#
+# Optional:
+# APP_BASE_URL=https://scripty.<your-subdomain>.workers.dev
+# JAVA_OPTS=-XX:MaxRAMPercentage=75.0
+# MAIL_ENABLED=false
+# MAIL_HOST=
+# MAIL_PORT=587
+# MAIL_USERNAME=
+# MAIL_PASSWORD=
+# MAIL_FROM=
+# MAIL_SMTP_AUTH=true
+# MAIL_SMTP_STARTTLS=true

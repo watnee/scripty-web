@@ -300,6 +300,16 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# Cloudflare / Wrangler local secrets
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+cloudflare/.dev.vars
+cloudflare/.dev.vars.*
+!cloudflare/.dev.vars.example
+.wrangler/
+cloudflare/.wrangler/
+
 # Visual Studio 6 build log
 *.plg
 

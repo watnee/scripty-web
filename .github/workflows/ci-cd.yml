@@ -2,16 +2,19 @@
 #
 # Flow:
 #   pull_request  →  Verify (Maven)
-#   push to main  →  Verify (Maven)  →  Deploy to Railway
-#   Run workflow  →  Verify (Maven)  →  Deploy to Railway  (manual redeploy)
+#   push to main  →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
+#   Run workflow  →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
 #
 # One-time setup (repo Settings → Secrets and variables → Actions):
-#   RAILWAY_TOKEN       Project token: Railway → Project → Settings → Tokens
-#                       (scope to the production environment)
-#   RAILWAY_SERVICE_ID  Service ID: Railway → service → Settings → copy ID
+#   RAILWAY_TOKEN           Project token: Railway → Project → Settings → Tokens
+#                           (scope to the production environment)
+#   RAILWAY_SERVICE_ID      Service ID: Railway → service → Settings → copy ID
+#   CLOUDFLARE_API_TOKEN    API token with Workers Scripts Edit + Containers write
+#                           (optional CLOUDFLARE_ACCOUNT_ID if the token spans accounts)
 #
 # Also disable Railway's automatic GitHub deploys for this service so pushes
-# are not deployed twice (Actions + Railway).
+# are not deployed twice (Actions + Railway). Cloudflare deploys only via this
+# workflow (or manual `wrangler deploy`).
 
 name: CI/CD
 
@@ -65,11 +68,11 @@ jobs:
             if [ "${{ github.event_name }}" = "pull_request" ]; then
               echo "PRs only run verify. Merge to \`main\` (or use **Run workflow**) to deploy."
             else
-              echo "Next: **Deploy to Railway** runs only after this job succeeds."
+              echo "Next: **Deploy to Railway** and **Deploy to Cloudflare** run in parallel after this job succeeds."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-  deploy:
+  deploy-railway:
     name: Deploy to Railway
     needs: verify
     if: >
@@ -99,7 +102,7 @@ jobs:
           fi
           if [ "$missing" -ne 0 ]; then
             {
-              echo "## Deploy blocked — secrets missing"
+              echo "## Deploy blocked — Railway secrets missing"
               echo ""
               echo "Add these under **Settings → Secrets and variables → Actions**:"
               echo ""
@@ -165,5 +168,94 @@ jobs:
               echo "Railway reported a failed deploy (exit \`$DEPLOY_EXIT\`). Open the service’s latest deployment in the Railway dashboard for build/runtime logs."
             else
               echo "Deploy did not succeed. Check the **Check Railway secrets** and **Deploy to Railway** steps above."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-cloudflare:
+    name: Deploy to Cloudflare
+    needs: verify
+    if: >
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Cloudflare secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            {
+              echo "## Deploy blocked — Cloudflare secrets missing"
+              echo ""
+              echo "Add \`CLOUDFLARE_API_TOKEN\` under **Settings → Secrets and variables → Actions**."
+              echo ""
+              echo "Token needs Workers Scripts Edit (and Containers) on the Scripty account."
+              echo "Also put MySQL/app secrets on the Worker once (see [docs/CLOUDFLARE.md](../../docs/CLOUDFLARE.md))."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=Missing secret::Add CLOUDFLARE_API_TOKEN (Workers Scripts Edit + Containers)."
+            exit 1
+          fi
+          echo "Cloudflare API token is present."
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Deploy to Cloudflare
+        id: deploy
+        working-directory: cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          echo "Deploying commit ${{ github.sha }} via wrangler deploy (builds Dockerfile + Worker)"
+          set +e
+          npx wrangler deploy
+          status=$?
+          set -e
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          if [ "$status" -ne 0 ]; then
+            echo "::error title=Cloudflare deploy failed::wrangler deploy exited $status. Check Worker secrets (MYSQL*) and Containers provisioning in the Cloudflare dashboard."
+            exit "$status"
+          fi
+
+      - name: Summarize
+        if: always()
+        env:
+          DEPLOY_EXIT: ${{ steps.deploy.outputs.exit_code }}
+        run: |
+          {
+            echo "## Deploy to Cloudflare"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Trigger | \`${{ github.event_name }}\` |"
+            echo "| Branch | \`main\` |"
+            echo "| Commit | [\`${GITHUB_SHA:0:7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |"
+            echo "| Result | ${{ job.status }} |"
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "| Reason | ${{ inputs.reason }} |"
+            fi
+            echo ""
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "\`wrangler deploy\` succeeded (Worker + container image). First container cold start can take a few minutes."
+            elif [ -n "${DEPLOY_EXIT:-}" ] && [ "$DEPLOY_EXIT" != "0" ]; then
+              echo "Cloudflare deploy failed (exit \`$DEPLOY_EXIT\`). Confirm \`CLOUDFLARE_API_TOKEN\`, Worker secrets, and [docs/CLOUDFLARE.md](../../docs/CLOUDFLARE.md)."
+            else
+              echo "Deploy did not succeed. Check the **Check Cloudflare secrets** and **Deploy to Cloudflare** steps above."
             fi
           } >> "$GITHUB_STEP_SUMMARY"

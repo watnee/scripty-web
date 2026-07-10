@@ -2009,7 +2009,8 @@ h1 > small a[role="button"].versions-btn {
     font-weight: 700;
 }
 
-.text-size-control .script-edition-toggle svg {
+.text-size-control .script-edition-toggle svg,
+.project-top-bar-breadcrumb .script-edition-toggle svg {
     display: block;
     flex-shrink: 0;
 }
@@ -3725,7 +3726,6 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
 .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] {
     flex: 1 1 auto;
     min-width: 0;
-    padding-right: 6rem;
 }
 
 .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol {
@@ -6730,19 +6730,23 @@ aside.block-actions {
     min-height: 2.5rem;
 }
 
-.has-toolbar-brand .project-top-bar-breadcrumb .project-share-dropdown {
-    position: absolute;
-    top: 0;
-    right: calc(var(--toolbar-brand-header-actions-space, 7.5rem) + 0.35rem + 2.25rem + 0.5rem);
+.has-toolbar-brand .project-top-bar-breadcrumb .project-top-bar-actions {
+    margin-left: auto;
+    flex-shrink: 0;
     z-index: 1001;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    height: 2.25rem;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .project-share-dropdown,
+.has-toolbar-brand .project-top-bar-breadcrumb .script-edition-dropdown {
+    position: relative;
     height: 2.25rem;
 }
 
 .has-toolbar-brand .project-top-bar-breadcrumb #nav-version-history {
-    position: absolute;
-    top: 0;
-    right: calc(var(--toolbar-brand-header-actions-space, 7.5rem) + 0.5rem);
-    z-index: 1001;
     background: var(--interactive-bg);
     border: 1px solid var(--muted-fg);
     border-radius: var(--border-radius);
@@ -6772,7 +6776,8 @@ aside.block-actions {
     height: 20px;
 }
 
-.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn {
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn,
+.has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle {
     background: var(--interactive-bg);
     border: 1px solid var(--muted-fg);
     border-radius: var(--border-radius);
@@ -6783,24 +6788,38 @@ aside.block-actions {
     font-size: 0.85rem;
     min-width: 2.25rem;
     min-height: 2.25rem;
-    width: 2.25rem;
     height: 2.25rem;
     padding: 0;
     box-sizing: border-box;
 }
 
+.has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle {
+    gap: 0.35rem;
+    width: auto;
+    max-width: 10rem;
+    padding: 0 0.55rem;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn {
+    width: 2.25rem;
+}
+
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn:hover,
-.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn:focus {
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn:focus,
+.has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle:hover,
+.has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle:focus {
     filter: brightness(1.1);
     background-color: var(--interactive-bg);
 }
 
-.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn[aria-expanded="true"] {
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn[aria-expanded="true"],
+.has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle[aria-expanded="true"] {
     box-shadow: 0 2px 4px -1px var(--fg) inset;
     background: var(--pressed-interactive-bg);
 }
 
-.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn svg {
+.has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn svg,
+.has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle svg {
     display: block;
     width: 20px;
     height: 20px;
@@ -6815,6 +6834,8 @@ aside.block-actions {
 
 .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] {
     max-width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol {

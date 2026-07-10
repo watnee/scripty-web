@@ -1,20 +1,36 @@
 # Cloudflare Containers deploy for Scripty (Spring Boot jar).
 
-Config and Worker live under `cloudflare/`; the container image is the repo-root `Dockerfile`.
+Config and Worker live under `cloudflare/`; the container image is the repo-root `Dockerfile` (same image Railway uses via `railway.json`).
 
 ## Prerequisites
 
 1. Cloudflare account with **Workers Paid** (Containers requirement).
 2. Docker available wherever you run `wrangler deploy` (local or CI).
-3. MySQL reachable from the container (public host/port, or Hyperdrive later). Railway private networking is **not** reachable from Cloudflare — use the MySQL **TCP Proxy** host/port, same idea as the R2 backup workflow.
+3. MySQL reachable from the container. Railway private networking is **not** reachable from Cloudflare — use the MySQL **TCP Proxy** host/port (same idea as the R2 backup workflow).
 
-## One-time secrets
+## Keep Railway ↔ Cloudflare MySQL secrets in sync
+
+Railway’s `web` service talks to MySQL on the private hostname. Cloudflare needs the **public TCP proxy** host/port plus the same credentials. Do not copy `MYSQLHOST=mysql.railway.internal` into the Worker.
+
+```bash
+chmod +x scripts/sync-railway-cloudflare.sh
+./scripts/sync-railway-cloudflare.sh status          # TCP proxy + secret presence
+./scripts/sync-railway-cloudflare.sh write            # → cloudflare/.deploy-secrets
+./scripts/sync-railway-cloudflare.sh write-dev        # → cloudflare/.dev.vars
+./scripts/sync-railway-cloudflare.sh push-cloudflare  # wrangler secret bulk
+./scripts/sync-railway-cloudflare.sh push-github      # gh secret set MYSQL*
+./scripts/sync-railway-cloudflare.sh sync             # Cloudflare + GitHub
+```
+
+Requires `railway login` (or `RAILWAY_TOKEN`). CI prefers this path on every Cloudflare deploy when `RAILWAY_TOKEN` is set, so Worker secrets stay aligned with Railway without hand-editing GitHub `MYSQL*` secrets.
+
+## One-time secrets (manual alternative)
 
 From `cloudflare/`:
 
 ```bash
 cd cloudflare
-cp .dev.vars.example .dev.vars   # local only
+cp .dev.vars.example .dev.vars   # local only — or: ../scripts/sync-railway-cloudflare.sh write-dev
 npx wrangler secret put MYSQLHOST
 npx wrangler secret put MYSQLPORT
 npx wrangler secret put MYSQLUSER
@@ -32,11 +48,11 @@ Or set them in the dashboard: Workers & Pages → **scripty** → Settings → V
 For a **first** deploy (Worker does not exist yet), pass secrets in one shot:
 
 ```bash
+./scripts/sync-railway-cloudflare.sh write
 cd cloudflare
 npx wrangler deploy --secrets-file .deploy-secrets
+rm -f .deploy-secrets
 ```
-
-where `.deploy-secrets` has `MYSQLHOST=…` lines (gitignored). CI does this automatically when the `MYSQL*` Actions secrets are set (Railway MySQL **TCP proxy** host/port, not the private hostname).
 
 ## Deploy
 
@@ -45,7 +61,7 @@ cd cloudflare
 npx wrangler deploy
 ```
 
-CI deploys this in parallel with Railway when `CLOUDFLARE_API_TOKEN` and `MYSQL*` secrets are set (see root README).
+CI deploys this in parallel with Railway when `CLOUDFLARE_API_TOKEN` is set (see root README). MySQL secrets come from Railway via the sync script when `RAILWAY_TOKEN` is present, otherwise from GitHub `MYSQL*` secrets.
 
 ## Notes
 

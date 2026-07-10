@@ -1,5 +1,6 @@
 # Local Cloudflare Worker / Container secrets (never commit).
-# Copy to .dev.vars and fill in before `wrangler dev` / first deploy.
+# Prefer generating from Railway (TCP proxy host/port, not private hostname):
+#   ../scripts/sync-railway-cloudflare.sh write-dev
 #
 # Required (application-prod.yml datasource):
 MYSQLHOST=

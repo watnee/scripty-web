@@ -12,8 +12,12 @@ import {
 /**
  * Scripty — Spring Boot 3.4 / Java 17 on Railway.
  *
- * Deploy-time overrides still live in railway.json + railpack.json until you
- * migrate fully to IaC (a service cannot be managed by both). To migrate:
+ * Deploy-time settings still live in root railway.json (Dockerfile builder +
+ * healthcheck) until you migrate fully to IaC (a service cannot be managed by
+ * both). Cloudflare Containers use the same root Dockerfile; keep MySQL secrets
+ * aligned with `./scripts/sync-railway-cloudflare.sh`.
+ *
+ * To migrate:
  *   1. Link a Railway project: `railway link`
  *   2. Confirm this file matches production intent
  *   3. Remove railway.json (and clear any custom config-file path in Settings)
@@ -28,9 +32,9 @@ export default defineRailway(() => {
 
   const web = service("web", {
     source: github("watnee/scripty", { branch: "main" }),
-    // Railpack builds from pom.xml (Java 17 via railpack.json / RAILPACK_JDK_VERSION).
+    // Same image layout as root Dockerfile / railway.json (jar at /app/scripty.jar).
     start:
-      "java -XX:MaxRAMPercentage=75.0 -jar target/scripty.jar --spring.profiles.active=prod",
+      "java -XX:MaxRAMPercentage=75.0 -jar scripty.jar --spring.profiles.active=prod",
     healthcheck: "/health",
     healthcheckTimeout: 300,
     volumeMounts: {
@@ -38,9 +42,8 @@ export default defineRailway(() => {
     },
     env: {
       JAVA_OPTS: "-XX:MaxRAMPercentage=75.0",
-      RAILPACK_JDK_VERSION: "17",
 
-      // application-prod.yml datasource
+      // application-prod.yml datasource (private Railway networking)
       MYSQLHOST: db.env.MYSQLHOST,
       MYSQLPORT: db.env.MYSQLPORT,
       MYSQLUSER: db.env.MYSQLUSER,

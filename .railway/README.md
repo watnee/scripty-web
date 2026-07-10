@@ -8,11 +8,17 @@ This project defines its Railway infrastructure in code.
 
 Scripty is a Spring Boot (Java 17 / Maven) app. The generated config wires:
 
-- `web` — GitHub `watnee/scripty`, Railpack build, `/health` check, prod start command
+- `web` — GitHub `watnee/scripty`, Dockerfile image layout (`scripty.jar`), `/health` check, prod start command
 - `MySQL` — managed MySQL with JDBC vars for `application-prod.yml` (volume backups: Daily / Weekly / Monthly via `./scripts/railway-mysql-backups.sh ensure`)
 - `uploads` — volume mounted at `/app/uploads`
 
-**Coexistence note:** Deploy-time settings still live in root `railway.json` + `railpack.json` (used by GitHub Actions `railway up`). A service cannot be managed by both Config-as-Code and IaC. Keep `railway.json` until you intentionally migrate (see docs below).
+**Coexistence note:** Deploy-time settings still live in root `railway.json` (used by GitHub Actions `railway up`). A service cannot be managed by both Config-as-Code and IaC. Keep `railway.json` until you intentionally migrate (see docs below).
+
+Cloudflare Containers use the same root `Dockerfile`. Keep MySQL secrets aligned with:
+
+```bash
+./scripts/sync-railway-cloudflare.sh sync
+```
 
 Use this file to describe the Railway project you want: services, databases, buckets, custom domains, replicas, groups, and environment variables.
 

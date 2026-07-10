@@ -20,11 +20,17 @@ Actions → Run workflow  →  Verify (Maven)  →  Deploy Railway ∥ Deploy Cl
    | `RAILWAY_SERVICE_ID` | Railway → your web service → Settings → copy service ID |
    | `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Workers Scripts Edit + Containers |
    | `CLOUDFLARE_ACCOUNT_ID` | (optional) Cloudflare account ID if the token can see multiple accounts |
-   | `MYSQLHOST` / `MYSQLPORT` / `MYSQLUSER` / `MYSQLPASSWORD` / `MYSQLDATABASE` | Railway MySQL **TCP proxy** host/port + credentials (for Cloudflare first deploy) |
+   | `MYSQLHOST` / `MYSQLPORT` / `MYSQLUSER` / `MYSQLPASSWORD` / `MYSQLDATABASE` | (fallback) Railway MySQL **TCP proxy** host/port + credentials — only needed if `RAILWAY_TOKEN` is missing; CI prefers syncing these from Railway automatically |
 
 2. **Turn off Railway auto-deploy** for this service (Settings → Source / GitHub) so pushes are not deployed twice — once by Railway and once by Actions.
 
-3. **Cloudflare Worker secrets** (MySQL, etc.) — one-time on the Worker, not GitHub: see [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md).
+3. **Cloudflare Worker secrets** — keep aligned with Railway via:
+
+   ```bash
+   ./scripts/sync-railway-cloudflare.sh sync
+   ```
+
+   Details: [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md). CI also rewrites Worker MySQL secrets from Railway’s TCP proxy on each Cloudflare deploy when `RAILWAY_TOKEN` is set.
 
 4. **Optional:** approve the `production` environment the first time Actions asks (Settings → Environments). That gate is intentional for deploys.
 
@@ -38,11 +44,11 @@ Actions → Run workflow  →  Verify (Maven)  →  Deploy Railway ∥ Deploy Cl
 
 ### Deploy config
 
-- `railway.json` — Railpack builder, start command, `/health` healthcheck, restart policy (Config as Code; used by `railway up`)
-- `railpack.json` — Java 17 + start command for Railpack
+- `railway.json` — Dockerfile builder, start command, `/health` healthcheck, restart policy (Config as Code; used by `railway up`)
 - `.railwayignore` — keeps `railway up` uploads small (skips `target/`, local DBs, logs, etc.)
 - `.railway/railway.ts` — Infrastructure as Code (web + MySQL + uploads volume). Preview with `railway config plan`; apply only after `railway link` and migrating off `railway.json` (a service cannot be managed by both)
 - `Dockerfile` + `cloudflare/` — Cloudflare Containers Worker that proxies to the Spring Boot image; details in [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md)
+- `scripts/sync-railway-cloudflare.sh` — copies Railway MySQL **TCP proxy** credentials into Cloudflare Worker / GitHub Actions secrets so both platforms stay aligned
 
 ## Database backups
 

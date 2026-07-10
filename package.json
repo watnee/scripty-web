@@ -4,7 +4,9 @@
   "description": "Scripty — Railway IaC + Cloudflare Containers deploy support for the Spring Boot app.",
   "scripts": {
     "cf:deploy": "wrangler deploy --config cloudflare/wrangler.jsonc",
-    "cf:dev": "wrangler dev --config cloudflare/wrangler.jsonc"
+    "cf:dev": "wrangler dev --config cloudflare/wrangler.jsonc",
+    "cf:sync": "./scripts/sync-railway-cloudflare.sh sync",
+    "cf:sync:status": "./scripts/sync-railway-cloudflare.sh status"
   },
   "dependencies": {
     "railway": "^3.5.5"

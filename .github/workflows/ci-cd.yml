@@ -11,6 +11,8 @@
 #   RAILWAY_SERVICE_ID      Service ID: Railway → service → Settings → copy ID
 #   CLOUDFLARE_API_TOKEN    API token with Workers Scripts Edit + Containers write
 #                           (optional CLOUDFLARE_ACCOUNT_ID if the token spans accounts)
+#   MYSQL*                  Optional fallback if RAILWAY_TOKEN is unset; CI prefers
+#                           scripts/sync-railway-cloudflare.sh (Railway TCP proxy → Worker)
 #
 # Also disable Railway's automatic GitHub deploys for this service so pushes
 # are not deployed twice (Actions + Railway). Cloudflare deploys only via this
@@ -196,7 +198,7 @@ jobs:
               echo "Add \`CLOUDFLARE_API_TOKEN\` under **Settings → Secrets and variables → Actions**."
               echo ""
               echo "Token needs Workers Scripts Edit (and Containers) on the Scripty account."
-              echo "Also put MySQL/app secrets on the Worker once (see [docs/CLOUDFLARE.md](../../docs/CLOUDFLARE.md))."
+              echo "MySQL secrets sync from Railway when \`RAILWAY_TOKEN\` is set (see [docs/CLOUDFLARE.md](../../docs/CLOUDFLARE.md))."
             } >> "$GITHUB_STEP_SUMMARY"
             echo "::error title=Missing secret::Add CLOUDFLARE_API_TOKEN (Workers Scripts Edit + Containers)."
             exit 1
@@ -215,19 +217,38 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Write Worker secrets file
-        working-directory: cloudflare
+      - name: Install Railway CLI
         env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            npm install -g @railway/cli@5.26.0
+            echo "Railway CLI installed (will sync MySQL TCP proxy secrets)."
+          else
+            echo "RAILWAY_TOKEN unset — will fall back to GitHub MYSQL* secrets."
+          fi
+
+      - name: Write Worker secrets file
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           MYSQLHOST: ${{ secrets.MYSQLHOST }}
           MYSQLPORT: ${{ secrets.MYSQLPORT }}
           MYSQLUSER: ${{ secrets.MYSQLUSER }}
           MYSQLPASSWORD: ${{ secrets.MYSQLPASSWORD }}
           MYSQLDATABASE: ${{ secrets.MYSQLDATABASE }}
         run: |
+          set -euo pipefail
+          # Prefer live Railway TCP proxy values so Cloudflare stays aligned with MySQL.
+          if [ -n "${RAILWAY_TOKEN:-}" ] && command -v railway >/dev/null 2>&1; then
+            ./scripts/sync-railway-cloudflare.sh write
+            echo "Synced MySQL TCP proxy secrets from Railway → cloudflare/.deploy-secrets"
+            exit 0
+          fi
+
           missing=0
           for name in MYSQLHOST MYSQLPORT MYSQLUSER MYSQLPASSWORD MYSQLDATABASE; do
             if [ -z "${!name}" ]; then
-              echo "::error title=Missing secret::Add $name (Railway MySQL TCP proxy values) under Actions secrets."
+              echo "::error title=Missing secret::Add $name (Railway MySQL TCP proxy) or RAILWAY_TOKEN under Actions secrets."
               missing=1
             fi
           done
@@ -235,14 +256,15 @@ jobs:
             exit 1
           fi
           # First-time Worker deploy requires --secrets-file (see docs/CLOUDFLARE.md).
+          umask 077
           {
             printf 'MYSQLHOST=%s\n' "$MYSQLHOST"
             printf 'MYSQLPORT=%s\n' "$MYSQLPORT"
             printf 'MYSQLUSER=%s\n' "$MYSQLUSER"
             printf 'MYSQLPASSWORD=%s\n' "$MYSQLPASSWORD"
             printf 'MYSQLDATABASE=%s\n' "$MYSQLDATABASE"
-          } > .deploy-secrets
-          echo "Wrote cloudflare/.deploy-secrets for wrangler."
+          } > cloudflare/.deploy-secrets
+          echo "Wrote cloudflare/.deploy-secrets from GitHub MYSQL* secrets (fallback)."
 
       - name: Deploy to Cloudflare
         id: deploy
@@ -282,7 +304,7 @@ jobs:
             fi
             echo ""
             if [ "${{ job.status }}" = "success" ]; then
-              echo "\`wrangler deploy\` succeeded (Worker + container image). First container cold start can take a few minutes."
+              echo "\`wrangler deploy\` succeeded (Worker + container image). MySQL secrets were synced from Railway’s TCP proxy when \`RAILWAY_TOKEN\` was available. First container cold start can take a few minutes."
             elif [ -n "${DEPLOY_EXIT:-}" ] && [ "$DEPLOY_EXIT" != "0" ]; then
               echo "Cloudflare deploy failed (exit \`$DEPLOY_EXIT\`). Confirm \`CLOUDFLARE_API_TOKEN\`, Worker secrets, and [docs/CLOUDFLARE.md](../../docs/CLOUDFLARE.md)."
             else

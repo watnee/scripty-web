@@ -16,8 +16,7 @@
         { id: 'project-view-dropdown', toggle: '.view-toolbar-btn', keepOpenOnItemClick: true },
         { id: 'script-edition-dropdown', toggle: '.script-edition-toggle' },
         { id: 'project-share-dropdown', toggle: '.project-share-toggle' },
-        { id: 'project-text-align-dropdown', toggle: '.text-align-toolbar-btn' },
-        { id: 'project-text-style-dropdown', toggle: '.text-style-toolbar-btn', keepOpenOnItemClick: true }
+        { id: 'project-text-format-dropdown', toggle: '.text-format-toolbar-btn', keepOpenOnItemClick: true }
     ];
 
     var ALIGN_ICONS = {
@@ -27,7 +26,7 @@
     };
 
     function syncTextAlignToggleIcon(align) {
-        var icon = document.querySelector('#project-text-align-dropdown .text-align-toolbar-icon');
+        var icon = document.querySelector('#project-text-format-dropdown .text-align-toolbar-icon');
         if (!icon || !ALIGN_ICONS[align]) return;
         icon.setAttribute('data-align-icon', align);
         icon.innerHTML = ALIGN_ICONS[align];
@@ -51,7 +50,7 @@
     function syncTextAlignMenu(align) {
         var current = normalizeAlign(align);
         syncTextAlignToggleIcon(current);
-        var menu = document.querySelector('#project-text-align-dropdown .text-align-menu');
+        var menu = document.querySelector('#project-text-format-dropdown .text-format-menu');
         if (!menu) return;
         menu.querySelectorAll('.bulk-align-btn').forEach(function (btn) {
             var btnAlign = normalizeAlign(btn.getAttribute('data-bulk-align'));
@@ -68,12 +67,12 @@
         var italic = !!(content && content.classList.contains('block-text-italic'));
         var underline = !!(content && content.classList.contains('block-text-underline'));
         var anyOn = bold || italic || underline;
-        var toggle = document.querySelector('#project-text-style-dropdown .text-style-toolbar-btn');
+        var toggle = document.querySelector('#project-text-format-dropdown .text-format-toolbar-btn');
         if (toggle) {
             toggle.classList.toggle('is-active', anyOn);
             toggle.setAttribute('aria-pressed', anyOn ? 'true' : 'false');
         }
-        document.querySelectorAll('#project-text-style-dropdown .bulk-style-btn').forEach(function (btn) {
+        document.querySelectorAll('#project-text-format-dropdown .bulk-style-btn').forEach(function (btn) {
             var style = (btn.getAttribute('data-bulk-style') || '').toUpperCase();
             var on = (style === 'BOLD' && bold)
                 || (style === 'ITALIC' && italic)
@@ -238,15 +237,15 @@
                         break;
                     }
                 }
-                if (!keepOpen && parentDropdown.querySelector('.file-toolbar-btn, .lists-toolbar-btn, .view-toolbar-btn, .script-edition-toggle, .project-share-toggle, .text-align-toolbar-btn, .text-style-toolbar-btn')) {
+                if (!keepOpen && parentDropdown.querySelector('.file-toolbar-btn, .lists-toolbar-btn, .view-toolbar-btn, .script-edition-toggle, .project-share-toggle, .text-format-toolbar-btn')) {
                     setOpen(parentDropdown, parentDropdown.querySelector('.nav-dropdown-toggle'), false);
                 }
                 var alignItem = item.classList.contains('bulk-align-btn') ? item : null;
-                if (alignItem && parentDropdown && parentDropdown.id === 'project-text-align-dropdown') {
+                if (alignItem && parentDropdown && parentDropdown.id === 'project-text-format-dropdown') {
                     syncTextAlignMenu(alignItem.getAttribute('data-bulk-align'));
                 }
                 var styleItem = item.classList.contains('bulk-style-btn') ? item : null;
-                if (styleItem && parentDropdown && parentDropdown.id === 'project-text-style-dropdown') {
+                if (styleItem && parentDropdown && parentDropdown.id === 'project-text-format-dropdown') {
                     var next = !(styleItem.getAttribute('aria-checked') === 'true');
                     styleItem.classList.toggle('is-active', next);
                     styleItem.setAttribute('aria-checked', next ? 'true' : 'false');
@@ -255,7 +254,7 @@
                     parentDropdown.querySelectorAll('.bulk-style-btn').forEach(function (btn) {
                         if (btn.getAttribute('aria-checked') === 'true') anyOn = true;
                     });
-                    var styleToggle = parentDropdown.querySelector('.text-style-toolbar-btn');
+                    var styleToggle = parentDropdown.querySelector('.text-format-toolbar-btn');
                     if (styleToggle) {
                         styleToggle.classList.toggle('is-active', anyOn);
                         styleToggle.setAttribute('aria-pressed', anyOn ? 'true' : 'false');

@@ -1,5 +1,5 @@
 /**
- * Project script search (inline field beside last-edited).
+ * Project script search (icon button + expandable field beside toolbar actions).
  *
  * Loaded from nav.html so handlers survive HTMX-boosted navigation into
  * /project/show (page scripts are not executed when allowScriptTags is false).
@@ -22,13 +22,52 @@
         return document.getElementById('project-search-clear');
     }
 
+    function getToggle() {
+        return document.getElementById('project-search-toggle');
+    }
+
+    function setOpen(open) {
+        var searchDropdown = getDropdown();
+        var searchInput = getInput();
+        var toggle = getToggle();
+        if (!searchDropdown || !searchInput) return;
+        searchDropdown.classList.toggle('is-open', !!open);
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        searchInput.tabIndex = open ? 0 : -1;
+        if (!open && !searchInput.value) {
+            searchDropdown.classList.remove('has-value');
+        }
+    }
+
+    function isOpen() {
+        var searchDropdown = getDropdown();
+        return !!(searchDropdown && searchDropdown.classList.contains('is-open'));
+    }
+
     function focusSearch() {
         var searchInput = getInput();
         if (!searchInput) return;
+        setOpen(true);
         setTimeout(function () {
             searchInput.focus();
             searchInput.select();
         }, 0);
+    }
+
+    function closeSearch() {
+        var searchInput = getInput();
+        var toggle = getToggle();
+        if (searchInput && searchInput.value) {
+            // Keep open while a query is active so results stay filterable
+            setOpen(true);
+            searchInput.blur();
+            return;
+        }
+        setOpen(false);
+        if (searchInput) searchInput.blur();
+        if (toggle) toggle.focus();
     }
 
     function rowMatchesSearch(row, query) {
@@ -58,6 +97,7 @@
         }
         if (searchDropdown) {
             searchDropdown.classList.toggle('has-value', !!query);
+            if (query) setOpen(true);
         }
         document.querySelectorAll('.project-script .scene-blocks .block-row[data-block-id]').forEach(function (row) {
             var matches = rowMatchesSearch(row, query);
@@ -74,13 +114,20 @@
 
     function syncShortcutLabel() {
         var searchInput = getInput();
-        if (!searchInput) return;
+        var toggle = getToggle();
+        if (!searchInput && !toggle) return;
         var isMac = window.scriptyIsMac
             ? window.scriptyIsMac()
             : /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
         var searchShortcut = isMac ? ' (⌘F)' : ' (Ctrl+F)';
-        searchInput.title = 'Search script' + searchShortcut;
-        searchInput.setAttribute('aria-label', 'Search blocks, character names, or tags' + searchShortcut);
+        if (searchInput) {
+            searchInput.title = 'Search script' + searchShortcut;
+            searchInput.setAttribute('aria-label', 'Search blocks, character names, or tags' + searchShortcut);
+        }
+        if (toggle) {
+            toggle.title = 'Search script' + searchShortcut;
+            toggle.setAttribute('aria-label', 'Search script' + searchShortcut);
+        }
     }
 
     window.scriptyOpenProjectSearch = function () {
@@ -104,6 +151,17 @@
             return;
         }
 
+        var toggle = target.closest('#project-search-toggle');
+        if (toggle) {
+            e.preventDefault();
+            if (isOpen() && !(getInput() && getInput().value)) {
+                closeSearch();
+            } else {
+                focusSearch();
+            }
+            return;
+        }
+
         var clearBtn = target.closest('#project-search-clear');
         if (clearBtn) {
             e.preventDefault();
@@ -112,6 +170,15 @@
             input.value = '';
             performSearch();
             input.focus();
+            return;
+        }
+
+        var searchDropdown = getDropdown();
+        if (searchDropdown && isOpen() && !searchDropdown.contains(target)) {
+            var inputEl = getInput();
+            if (inputEl && !inputEl.value) {
+                setOpen(false);
+            }
         }
     });
 
@@ -124,13 +191,15 @@
     document.addEventListener('keydown', function (e) {
         var searchInput = getInput();
 
-        if (e.key === 'Escape' && searchInput && document.activeElement === searchInput) {
+        if (e.key === 'Escape' && searchInput && (document.activeElement === searchInput || isOpen())) {
             if (searchInput.value) {
                 searchInput.value = '';
                 performSearch();
+                searchInput.focus();
             } else {
-                searchInput.blur();
+                closeSearch();
             }
+            e.preventDefault();
             return;
         }
 
@@ -145,14 +214,17 @@
     function sync() {
         if (!getInput()) return;
         syncShortcutLabel();
+        var input = getInput();
+        if (input && input.value) {
+            setOpen(true);
+        } else if (!isOpen()) {
+            setOpen(false);
+        }
         performSearch();
     }
 
     document.body.addEventListener('htmx:afterSwap', sync);
     document.body.addEventListener('htmx:afterSettle', sync);
-    window.addEventListener('beforeprint', performSearch);
-    window.addEventListener('afterprint', performSearch);
-    window.addEventListener('scripty:project-script-refreshed', performSearch);
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', sync);

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <span th:fragment="display(projectId, title)"
+          id="reader-visible-project-title"
+          class="project-header-name-display reader-visible-project-title"
+          th:attr="hx-get=@{/project/editNameInline(id=${projectId},surface='header')}"
+          hx-trigger="click, keyup[key=='Enter']"
+          hx-target="closest .project-header-name-wrap"
+          hx-swap="innerHTML"
+          title="Click to rename project"
+          role="button"
+          tabindex="0">
+        <th:block th:if="${#strings.isEmpty(title) || #strings.isEmpty(title.trim())}">
+            <span class="project-name-placeholder">Untitled Project</span>
+        </th:block>
+        <th:block th:unless="${#strings.isEmpty(title) || #strings.isEmpty(title.trim())}" th:text="${title}"></th:block>
+    </span>
+</body>
+</html>

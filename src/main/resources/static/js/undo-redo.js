@@ -31,7 +31,7 @@
             (tag === 'INPUT' && ['text', 'search', 'url', 'tel', 'email', 'password', 'number'].indexOf(el.type) !== -1) ||
             el.isContentEditable;
         if (!editable) return false;
-        if (!el.closest || !el.closest('.block-content, .scene-name-wrap, .project-breadcrumb-name-wrap')) {
+        if (!el.closest || !el.closest('.block-content, .scene-name-wrap, .project-breadcrumb-name-wrap, .project-header-name-wrap')) {
             return false;
         }
         var row = el.closest('.scene-blocks .block-row, #table-blocks tr, tbody tr');

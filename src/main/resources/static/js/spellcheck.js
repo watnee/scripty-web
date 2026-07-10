@@ -261,25 +261,29 @@
         var mirror = findReaderMirror(form);
         form.classList.add('scripty-spell-active');
         textarea.setAttribute('data-scripty-spell', '1');
-        // Prefer custom underlines over browser double-underlines on this field
-        textarea.setAttribute('spellcheck', 'false');
-        textarea.spellcheck = false;
 
         var marked = buildMarkedHtml(text, errors);
         var focused = form.matches(':focus-within') || document.activeElement === textarea;
 
+        // While focused: keep textarea ink + native caret. Custom marks live on the
+        // mirror and show after blur (overlay stays hidden during edit).
+        overlay.innerHTML = '';
+        overlay.hidden = true;
+
         if (focused) {
-            overlay.innerHTML = marked;
-            overlay.hidden = false;
-            if (mirror) {
-                // Keep plain text for layout/sync; overlay paints while editing
+            // Browser underlines while typing; custom marks return on blur
+            textarea.setAttribute('spellcheck', 'true');
+            textarea.spellcheck = true;
+        } else {
+            textarea.setAttribute('spellcheck', 'false');
+            textarea.spellcheck = false;
+        }
+
+        if (mirror) {
+            if (focused) {
                 mirror.textContent = text || '\u00a0';
                 mirror.removeAttribute('data-scripty-spell-mirror');
-            }
-        } else {
-            overlay.innerHTML = '';
-            overlay.hidden = true;
-            if (mirror) {
+            } else {
                 mirror.innerHTML = marked;
                 mirror.setAttribute('data-scripty-spell-mirror', '1');
             }
@@ -508,12 +512,6 @@
     document.addEventListener('input', function(e) {
         if (!isScriptPage()) return;
         if (isBlockTextarea(e.target)) {
-            // Keep overlay text in sync while debouncing the full spell pass
-            var form = e.target.closest('form');
-            if (form && form.classList.contains('scripty-spell-active')) {
-                var overlay = form.querySelector('.scripty-spell-overlay');
-                if (overlay) overlay.textContent = e.target.value || '\u00a0';
-            }
             scheduleCheck(e.target);
             if (popupTarget === e.target) hidePopup();
         }

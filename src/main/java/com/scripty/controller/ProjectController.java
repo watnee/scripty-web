@@ -405,6 +405,9 @@ public class ProjectController {
         if ("breadcrumb".equals(surface)) {
             return "project/showBreadcrumbEditNameInline";
         }
+        if ("header".equals(surface)) {
+            return "project/showHeaderEditNameInline";
+        }
         return "project/editNameInline";
     }
 
@@ -420,6 +423,9 @@ public class ProjectController {
             if ("breadcrumb".equals(surface)) {
                 return "project/showBreadcrumbEditNameInline";
             }
+            if ("header".equals(surface)) {
+                return "project/showHeaderEditNameInline";
+            }
             return "project/editNameInline";
         }
         Project project = projectService.saveEditProjectCommandModel(commandModel);
@@ -428,6 +434,9 @@ public class ProjectController {
         addDefaultProjectId(model, principal);
         if ("breadcrumb".equals(surface)) {
             return "project/showBreadcrumbNameInline";
+        }
+        if ("header".equals(surface)) {
+            return "project/showHeaderNameInline";
         }
         return "project/showNameInline";
     }

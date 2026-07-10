@@ -373,7 +373,10 @@
                             class="nav-dropdown-item"
                             role="menuitem"
                             th:if="${canEditScript == null or canEditScript}">Import</button>
-                    <div class="nav-dropdown-divider" role="separator" th:if="${canEditScript == null or canEditScript}"></div>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/titlePage(id=${viewModel.id})}">Title page</a>
+                    <div class="nav-dropdown-divider" role="separator"></div>
                     <div class="file-menu-label" aria-hidden="true">Export</div>
                     <a class="nav-dropdown-item"
                        role="menuitem"
@@ -417,17 +420,6 @@
                        aria-hidden="true"
                        tabindex="-1" />
             </form>
-            <a class="nav-dropdown-toggle title-page-toolbar-btn"
-               th:href="@{/project/titlePage(id=${viewModel.id})}"
-               aria-label="Title page"
-               title="Title page">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                </svg>
-            </a>
             <button id="page-view-mode-toggle"
                     type="button"
                     class="nav-dropdown-toggle page-view-mode-toolbar-btn"
@@ -441,6 +433,99 @@
                     <line x1="8" y1="16" x2="13" y2="16"></line>
                 </svg>
             </button>
+            <div class="text-format-actions hide-in-reader-view sidebar menu">
+                    <div class="nav-dropdown text-format-dropdown" id="project-text-format-dropdown">
+                        <button type="button"
+                                class="nav-dropdown-toggle text-format-toolbar-btn"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                aria-pressed="false"
+                                aria-label="Text format"
+                                title="Text format">
+                            <svg class="text-align-toolbar-icon" data-align-icon="LEFT" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <line x1="3" y1="12" x2="15" y2="12"></line>
+                                <line x1="3" y1="18" x2="18" y2="18"></line>
+                            </svg>
+                            <span class="text-format-toolbar-label" aria-hidden="true"><strong>B</strong></span>
+                        </button>
+                        <div class="nav-dropdown-menu text-format-menu" role="menu" aria-label="Text format">
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-align-btn"
+                                    role="menuitemradio"
+                                    aria-checked="true"
+                                    data-bulk-align="LEFT"
+                                    title="Align left"
+                                    aria-label="Align left">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <line x1="3" y1="12" x2="15" y2="12"></line>
+                                    <line x1="3" y1="18" x2="18" y2="18"></line>
+                                </svg>
+                                <span>Left</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-align-btn"
+                                    role="menuitemradio"
+                                    aria-checked="false"
+                                    data-bulk-align="CENTER"
+                                    title="Align center"
+                                    aria-label="Align center">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <line x1="6" y1="12" x2="18" y2="12"></line>
+                                    <line x1="4" y1="18" x2="20" y2="18"></line>
+                                </svg>
+                                <span>Center</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-align-btn"
+                                    role="menuitemradio"
+                                    aria-checked="false"
+                                    data-bulk-align="RIGHT"
+                                    title="Align right"
+                                    aria-label="Align right">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <line x1="9" y1="12" x2="21" y2="12"></line>
+                                    <line x1="6" y1="18" x2="21" y2="18"></line>
+                                </svg>
+                                <span>Right</span>
+                            </button>
+                            <div class="nav-dropdown-separator" role="separator"></div>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-style-btn"
+                                    role="menuitemcheckbox"
+                                    aria-checked="false"
+                                    data-bulk-style="BOLD"
+                                    title="Toggle bold"
+                                    aria-label="Bold">
+                                <strong>B</strong>
+                                <span>Bold</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-style-btn"
+                                    role="menuitemcheckbox"
+                                    aria-checked="false"
+                                    data-bulk-style="ITALIC"
+                                    title="Toggle italic"
+                                    aria-label="Italic">
+                                <em>I</em>
+                                <span>Italic</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-style-btn bulk-style-btn--underline"
+                                    role="menuitemcheckbox"
+                                    aria-checked="false"
+                                    data-bulk-style="UNDERLINE"
+                                    title="Toggle underline"
+                                    aria-label="Underline">
+                                <span class="text-style-menu-mark">U</span>
+                                <span>Underline</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             <span class="text-size-control-row-break" aria-hidden="true"></span>
             <a class="nav-dropdown-toggle songs-toolbar-btn"
                th:href="@{/project/documents/songs(projectId=${viewModel.id})}"
@@ -551,109 +636,6 @@
                             title="Show more element types"
                             aria-label="Show more element types">More</button>
                 </div>
-                <div class="text-format-actions hide-in-reader-view sidebar menu">
-                    <div class="nav-dropdown text-align-dropdown" id="project-text-align-dropdown">
-                        <button type="button"
-                                class="nav-dropdown-toggle text-align-toolbar-btn"
-                                aria-haspopup="true"
-                                aria-expanded="false"
-                                aria-label="Text alignment"
-                                title="Text alignment">
-                            <svg class="text-align-toolbar-icon" data-align-icon="LEFT" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <line x1="3" y1="6" x2="21" y2="6"></line>
-                                <line x1="3" y1="12" x2="15" y2="12"></line>
-                                <line x1="3" y1="18" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                        <div class="nav-dropdown-menu text-align-menu" role="menu" aria-label="Text alignment">
-                            <button type="button"
-                                    class="nav-dropdown-item bulk-align-btn"
-                                    role="menuitemradio"
-                                    aria-checked="true"
-                                    data-bulk-align="LEFT"
-                                    title="Align left"
-                                    aria-label="Align left">
-                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                                    <line x1="3" y1="12" x2="15" y2="12"></line>
-                                    <line x1="3" y1="18" x2="18" y2="18"></line>
-                                </svg>
-                                <span>Left</span>
-                            </button>
-                            <button type="button"
-                                    class="nav-dropdown-item bulk-align-btn"
-                                    role="menuitemradio"
-                                    aria-checked="false"
-                                    data-bulk-align="CENTER"
-                                    title="Align center"
-                                    aria-label="Align center">
-                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                                    <line x1="6" y1="12" x2="18" y2="12"></line>
-                                    <line x1="4" y1="18" x2="20" y2="18"></line>
-                                </svg>
-                                <span>Center</span>
-                            </button>
-                            <button type="button"
-                                    class="nav-dropdown-item bulk-align-btn"
-                                    role="menuitemradio"
-                                    aria-checked="false"
-                                    data-bulk-align="RIGHT"
-                                    title="Align right"
-                                    aria-label="Align right">
-                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                                    <line x1="9" y1="12" x2="21" y2="12"></line>
-                                    <line x1="6" y1="18" x2="21" y2="18"></line>
-                                </svg>
-                                <span>Right</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="nav-dropdown text-style-dropdown" id="project-text-style-dropdown">
-                        <button type="button"
-                                class="nav-dropdown-toggle text-style-toolbar-btn"
-                                aria-haspopup="true"
-                                aria-expanded="false"
-                                aria-pressed="false"
-                                aria-label="Text style"
-                                title="Text style">
-                            <span class="text-style-toolbar-label" aria-hidden="true"><strong>B</strong></span>
-                        </button>
-                        <div class="nav-dropdown-menu text-style-menu" role="menu" aria-label="Text style">
-                            <button type="button"
-                                    class="nav-dropdown-item bulk-style-btn"
-                                    role="menuitemcheckbox"
-                                    aria-checked="false"
-                                    data-bulk-style="BOLD"
-                                    title="Toggle bold"
-                                    aria-label="Bold">
-                                <strong>B</strong>
-                                <span>Bold</span>
-                            </button>
-                            <button type="button"
-                                    class="nav-dropdown-item bulk-style-btn"
-                                    role="menuitemcheckbox"
-                                    aria-checked="false"
-                                    data-bulk-style="ITALIC"
-                                    title="Toggle italic"
-                                    aria-label="Italic">
-                                <em>I</em>
-                                <span>Italic</span>
-                            </button>
-                            <button type="button"
-                                    class="nav-dropdown-item bulk-style-btn bulk-style-btn--underline"
-                                    role="menuitemcheckbox"
-                                    aria-checked="false"
-                                    data-bulk-style="UNDERLINE"
-                                    title="Toggle underline"
-                                    aria-label="Underline">
-                                <span class="text-style-menu-mark">U</span>
-                                <span>Underline</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="project-toolbar-right">
                 <div id="project-script-stats"
@@ -680,9 +662,9 @@
         <article class="entry-content script-content project-script" role="article">
             <div class="project-script-header">
                 <h1 class="project-header-title entry-title">
-                    <span class="reader-visible-project-title"
-                          id="reader-visible-project-title"
-                          th:text="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim()) ? 'Untitled Project' : viewModel.title}">Project</span>
+                    <span class="project-header-name-wrap" id="project-header-name-wrap">
+                        <span th:replace="~{fragments/projectHeaderName :: display(${viewModel.id}, ${viewModel.title})}"></span>
+                    </span>
                 </h1>
             </div>
             <div th:replace="~{project/showScriptBody :: scriptBody(${viewModel})}"></div>

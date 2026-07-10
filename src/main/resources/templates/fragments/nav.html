@@ -3504,7 +3504,7 @@
 
         function isInlineTextEdit(el) {
             if (!isEditable(el)) return false;
-            if (!el.closest('.block-content, .scene-name-wrap, .project-breadcrumb-name-wrap')) return false;
+            if (!el.closest('.block-content, .scene-name-wrap, .project-breadcrumb-name-wrap, .project-header-name-wrap')) return false;
             // Empty create-row uses structural undo, not browser text undo
             if (isCreateBlockTextarea(el)) return false;
             return true;
@@ -4108,7 +4108,7 @@
             document.body.addEventListener('mousedown', function(e) {
                 if (!document.querySelector('.project-script')) return;
                 var formatControl = e.target.closest(
-                    '.bulk-align-btn, .bulk-style-btn, .text-align-toolbar-btn, .text-style-toolbar-btn'
+                    '.bulk-align-btn, .bulk-style-btn, .text-format-toolbar-btn'
                 );
                 if (!formatControl) return;
                 e.preventDefault();
@@ -5572,6 +5572,7 @@
                 if (window.scriptyBlockCaretPreviewActive) return true;
                 if (window.scriptyBlockEditOpenInFlight) return true;
                 if (document.querySelector('.project-breadcrumb-name-wrap input[name="title"]')) return true;
+                if (document.querySelector('.project-header-name-wrap input[name="title"]')) return true;
                 if (document.querySelector('.scene-name-wrap input[name="name"]')) return true;
                 if (document.querySelector('.block-content textarea:focus')) return true;
                 if (document.querySelector('.block-content form')) return true;
@@ -5600,9 +5601,13 @@
                     }
                 }
                 var readerTitle = document.getElementById('reader-visible-project-title');
-                if (readerTitle) {
+                if (readerTitle && !document.querySelector('.project-header-name-wrap input[name="title"]')) {
                     var readerTrimmed = (title || '').trim();
-                    readerTitle.textContent = readerTrimmed === '' ? 'Untitled Project' : title;
+                    if (readerTrimmed === '') {
+                        readerTitle.innerHTML = '<span class="project-name-placeholder">Untitled Project<\/span>';
+                    } else {
+                        readerTitle.textContent = title;
+                    }
                 }
                 if (window.scriptySyncProjectNameDisplay) {
                     window.scriptySyncProjectNameDisplay();
@@ -5853,7 +5858,7 @@
 
         function syncProjectNameDisplay() {
             const readerTitle = document.getElementById('reader-visible-project-title');
-            if (!readerTitle) return;
+            if (!readerTitle || document.querySelector('.project-header-name-wrap input[name="title"]')) return;
             const title = (readerTitle.textContent || '').trim();
             const breadcrumbDisplay = document.querySelector('.project-breadcrumb-name-display');
             if (breadcrumbDisplay && !document.querySelector('.project-breadcrumb-name-wrap input[name="title"]')) {
@@ -5887,6 +5892,8 @@
             if (!mirror) return;
 
             syncReaderVisibleText(textarea);
+            // Clear prior min-heights so a previous tall measure can't ratchet the block taller
+            mirror.style.minHeight = '';
             textarea.style.height = 'auto';
             autoGrowTextarea(textarea);
 
@@ -5950,6 +5957,7 @@
             if (!input) return;
             const isSceneName = input.closest('.scene-name-wrap') || 
                                 input.closest('.project-breadcrumb-name-wrap') ||
+                                input.closest('.project-header-name-wrap') ||
                                 input.closest('#create-scene-row') || 
                                 input.closest('#create-scene-below-form');
             const hasAutoGrowClass = input.classList.contains('auto-grow');

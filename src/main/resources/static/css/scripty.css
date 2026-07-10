@@ -3320,21 +3320,44 @@ input.project-list-search:focus-visible {
 }
 
 .project-search-dropdown {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     position: relative;
+    flex-shrink: 0;
 }
 
 .project-search-dropdown .nav-dropdown-menu {
     display: none;
-    right: 0;
-    left: auto;
+    left: 0;
+    right: auto;
     min-width: min(22rem, calc(100vw - 2rem));
     padding: 0.5rem;
-    transform-origin: top right;
+    transform-origin: top left;
 }
 
 .project-search-dropdown.open .nav-dropdown-menu {
     display: block;
+}
+
+.breadcrumb-name-meta .project-search-toggle {
+    padding: 0.15rem;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+    color: var(--muted-fg, #64748b);
+    justify-content: center;
+}
+
+.breadcrumb-name-meta .project-search-toggle:hover,
+.breadcrumb-name-meta .project-search-toggle:focus-visible,
+.breadcrumb-name-meta .project-search-dropdown.open .project-search-toggle,
+.breadcrumb-name-meta .project-search-toggle.is-active {
+    color: var(--accent, #475569);
+}
+
+.breadcrumb-name-meta .project-search-toggle svg {
+    display: block;
+    width: 14px;
+    height: 14px;
 }
 
 .project-share-dropdown {
@@ -3880,7 +3903,6 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
     text-decoration: none;
 }
 
-.text-size-control .project-search-toggle.is-active,
 .text-size-control .outline-mode-toolbar-btn.is-active {
     color: var(--accent, #475569);
     border-color: var(--accent, #475569);
@@ -4097,7 +4119,8 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
 }
 
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-breadcrumb-name-wrap,
-.project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line {
+.project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line,
+.project-top-bar-breadcrumb .breadcrumb-name-meta .project-search-dropdown {
     display: inline-flex;
     align-items: center;
     line-height: 1.2;
@@ -6961,11 +6984,11 @@ kbd {
         justify-content: center !important;
     }
 
-    /* Search panel in toolbar */
+    /* Search panel beside last-edited */
     .project-search-dropdown .nav-dropdown-menu {
         min-width: calc(100vw - 2rem) !important;
-        right: 0 !important;
-        left: auto !important;
+        left: 0 !important;
+        right: auto !important;
     }
 
     .project-share-dropdown .nav-dropdown-menu {

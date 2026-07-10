@@ -317,30 +317,6 @@
                 </div>
             </div>
             <span th:if="${canEditScript == null or canEditScript}" th:replace="~{fragments/spellcheckToggle :: toolbarButton}"></span>
-            <div class="nav-dropdown project-search-dropdown" id="project-search-dropdown">
-                <button class="nav-dropdown-toggle project-search-toggle" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Search script" title="Search script">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="11" cy="11" r="7"></circle>
-                        <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
-                    </svg>
-                </button>
-                <div class="nav-dropdown-menu project-search-panel">
-                    <div class="project-search-wrap">
-                        <label class="visually-hidden" for="project-search">Search blocks, character names, or tags</label>
-                        <input type="search"
-                               id="project-search"
-                               class="project-search-input"
-                               placeholder="Search blocks, tags..."
-                               autocomplete="off"
-                               enterkeyhint="search" />
-                        <button type="button"
-                                id="project-search-clear"
-                                class="project-search-clear"
-                                aria-label="Clear search"
-                                hidden>&times;</button>
-                    </div>
-                </div>
-            </div>
             <span th:if="${canEditScript == null or canEditScript}" th:replace="~{fragments/historyToolbarButtons :: buttons}"></span>
             <div class="nav-dropdown file-dropdown" id="project-file-dropdown">
                 <button id="nav-file"

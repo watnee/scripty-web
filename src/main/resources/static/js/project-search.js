@@ -1,5 +1,5 @@
 /**
- * Project script search (toolbar magnifying glass).
+ * Project script search (magnifying glass beside last-edited).
  *
  * Loaded from nav.html so handlers survive HTMX-boosted navigation into
  * /project/show (page scripts are not executed when allowScriptTags is false).

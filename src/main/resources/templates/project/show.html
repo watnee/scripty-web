@@ -106,36 +106,6 @@
                     <div th:replace="~{fragments/projectSharePanel :: panel(${viewModel.id}, ${shareAccessUsers}, ${viewModel.teams}, ${inviteTeams}, ${pendingInvitations}, ${inviteCommand})}"></div>
                 </div>
             </div>
-            <div class="nav-dropdown script-edition-dropdown" id="script-edition-dropdown">
-                <button class="nav-dropdown-toggle script-edition-toggle"
-                        type="button"
-                        aria-haspopup="true"
-                        aria-expanded="false"
-                        th:aria-label="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}"
-                        th:title="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                    </svg>
-                    <span class="script-edition-toggle-label" th:text="${viewModel.editionName != null ? viewModel.editionName : 'Main'}">Main</span>
-                </button>
-                <div class="nav-dropdown-menu script-edition-menu">
-                    <div class="script-edition-menu-label">Versions</div>
-                    <a th:each="edition : ${viewModel.editions}"
-                       class="nav-dropdown-item"
-                       th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'active'"
-                       th:href="@{/project/show(id=${viewModel.id}, editionId=${edition.id})}"
-                       hx-boost="false"
-                       th:text="${edition.name + (edition.default ? ' (default)' : '')}">Main</a>
-                    <div class="nav-dropdown-divider" th:if="${canEditScript == null or canEditScript}"></div>
-                    <button th:if="${canEditScript == null or canEditScript}"
-                            type="button"
-                            class="nav-dropdown-item script-edition-create-btn"
-                            id="script-edition-create-open">New version…</button>
-                </div>
-            </div>
             <a id="nav-version-history"
                class="nav-dropdown-toggle version-history-toolbar-btn"
                th:href="@{/project/version/list(projectId=${viewModel.id}, editionId=${viewModel.editionId})}"
@@ -148,41 +118,6 @@
                 </svg>
             </a>
         </div>
-        <dialog id="script-edition-create-dialog" class="script-edition-dialog">
-            <form th:if="${canEditScript == null or canEditScript}"
-                  th:action="@{/project/edition/create}" method="POST" hx-boost="false" class="script-edition-create-form">
-                <h2>New screenplay version</h2>
-                <p class="muted">Creates an editable copy of the current version. Songs, drafts, and casting stay shared.</p>
-                <input type="hidden" name="projectId" th:value="${viewModel.id}" />
-                <input type="hidden" name="copyFromEditionId" th:value="${viewModel.editionId}" />
-                <label>
-                    Name
-                    <input type="text" name="name" required maxlength="100" placeholder="e.g. Workshop Draft, Alt Ending" autofocus />
-                </label>
-                <div class="script-edition-dialog-actions">
-                    <button type="button" class="script-edition-dialog-cancel" value="cancel">Cancel</button>
-                    <button type="submit">Create version</button>
-                </div>
-            </form>
-        </dialog>
-        <script th:inline="javascript">
-        (function() {
-            var openBtn = document.getElementById('script-edition-create-open');
-            var dialog = document.getElementById('script-edition-create-dialog');
-            if (!openBtn || !dialog || typeof dialog.showModal !== 'function') return;
-            openBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                dialog.showModal();
-                var input = dialog.querySelector('input[name="name"]');
-                if (input) setTimeout(function() { input.focus(); }, 0);
-            });
-            var cancel = dialog.querySelector('.script-edition-dialog-cancel');
-            if (cancel) {
-                cancel.addEventListener('click', function() { dialog.close(); });
-            }
-        })();
-        </script>
         <div class="text-size-control">
             <button id="nav-toolbar-toggle"
                     type="button"
@@ -292,6 +227,53 @@
                 </div>
             </div>
             <span th:if="${canEditScript == null or canEditScript}" th:replace="~{fragments/historyToolbarButtons :: buttons}"></span>
+            <div class="nav-dropdown script-edition-dropdown" id="script-edition-dropdown">
+                <button class="nav-dropdown-toggle script-edition-toggle"
+                        type="button"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        th:aria-label="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}"
+                        th:title="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="6" y1="3" x2="6" y2="15"></line>
+                        <circle cx="18" cy="6" r="3"></circle>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <path d="M18 9a9 9 0 0 1-9 9"></path>
+                    </svg>
+                    <span class="script-edition-toggle-label" th:text="${viewModel.editionName != null ? viewModel.editionName : 'Main'}">Main</span>
+                </button>
+                <div class="nav-dropdown-menu script-edition-menu">
+                    <div class="script-edition-menu-label">Versions</div>
+                    <a th:each="edition : ${viewModel.editions}"
+                       class="nav-dropdown-item"
+                       th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'active'"
+                       th:href="@{/project/show(id=${viewModel.id}, editionId=${edition.id})}"
+                       hx-boost="false"
+                       th:text="${edition.name + (edition.default ? ' (default)' : '')}">Main</a>
+                    <div class="nav-dropdown-divider" th:if="${canEditScript == null or canEditScript}"></div>
+                    <button th:if="${canEditScript == null or canEditScript}"
+                            type="button"
+                            class="nav-dropdown-item script-edition-create-btn"
+                            id="script-edition-create-open">New version…</button>
+                </div>
+            </div>
+            <dialog id="script-edition-create-dialog" class="script-edition-dialog">
+                <form th:if="${canEditScript == null or canEditScript}"
+                      th:action="@{/project/edition/create}" method="POST" hx-boost="false" class="script-edition-create-form">
+                    <h2>New screenplay version</h2>
+                    <p class="muted">Creates an editable copy of the current version. Songs, drafts, and casting stay shared.</p>
+                    <input type="hidden" name="projectId" th:value="${viewModel.id}" />
+                    <input type="hidden" name="copyFromEditionId" th:value="${viewModel.editionId}" />
+                    <label>
+                        Name
+                        <input type="text" name="name" required maxlength="100" placeholder="e.g. Workshop Draft, Alt Ending" autofocus />
+                    </label>
+                    <div class="script-edition-dialog-actions">
+                        <button type="button" class="script-edition-dialog-cancel" value="cancel">Cancel</button>
+                        <button type="submit">Create version</button>
+                    </div>
+                </form>
+            </dialog>
             <div class="nav-dropdown file-dropdown" id="project-file-dropdown">
                 <button id="nav-file"
                         type="button"
@@ -784,6 +766,24 @@
         wireToolbarDropdown('project-file-dropdown', '.file-toolbar-btn');
         wireToolbarDropdown('project-lists-dropdown', '.lists-toolbar-btn');
         wireToolbarDropdown('project-view-dropdown', '.view-toolbar-btn', { keepOpenOnItemClick: true });
+        wireToolbarDropdown('script-edition-dropdown', '.script-edition-toggle');
+
+        (function() {
+            var openBtn = document.getElementById('script-edition-create-open');
+            var dialog = document.getElementById('script-edition-create-dialog');
+            if (!openBtn || !dialog || typeof dialog.showModal !== 'function') return;
+            openBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dialog.showModal();
+                var input = dialog.querySelector('input[name="name"]');
+                if (input) setTimeout(function() { input.focus(); }, 0);
+            });
+            var cancel = dialog.querySelector('.script-edition-dialog-cancel');
+            if (cancel) {
+                cancel.addEventListener('click', function() { dialog.close(); });
+            }
+        })();
     })();
     </script>
     <script th:inline="javascript">

@@ -1962,15 +1962,15 @@ h1 > small a[role="button"].versions-btn {
 }
 
 .script-edition-dropdown {
-    display: inline-flex;
-    align-items: center;
+    display: inline-block;
+    position: relative;
 }
 
 .script-edition-toggle {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    max-width: 12rem;
+    max-width: 10rem;
 }
 
 .script-edition-toggle-label {
@@ -1981,20 +1981,37 @@ h1 > small a[role="button"].versions-btn {
     font-weight: 600;
 }
 
-.script-edition-menu {
+.script-edition-dropdown .nav-dropdown-menu.script-edition-menu {
+    display: none;
+    right: 0;
+    left: auto;
     min-width: 12rem;
+    padding: 0.35rem;
+    transform-origin: top right;
+    z-index: 1100;
+}
+
+.script-edition-dropdown.open .nav-dropdown-menu.script-edition-menu {
+    display: block;
 }
 
 .script-edition-menu-label {
-    padding: 0.4rem 0.75rem 0.2rem;
-    font-size: 0.75rem;
-    text-transform: uppercase;
+    padding: 0.35rem 0.65rem 0.15rem;
+    font-size: 0.7rem;
+    font-weight: 600;
     letter-spacing: 0.04em;
-    color: var(--muted);
+    text-transform: uppercase;
+    color: var(--muted, #888);
+    user-select: none;
 }
 
 .script-edition-menu .nav-dropdown-item.active {
     font-weight: 700;
+}
+
+.text-size-control .script-edition-toggle svg {
+    display: block;
+    flex-shrink: 0;
 }
 
 .script-edition-dialog {

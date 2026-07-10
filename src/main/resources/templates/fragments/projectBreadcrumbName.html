@@ -45,29 +45,23 @@
         </button>
     </div>
 
-    <li th:fragment="item(projectId, title, lastEdited)"
+    <li th:fragment="item(projectId, title)"
         id="project-breadcrumb-title"
         aria-current="page">
         <span class="breadcrumb-name-meta">
             <span class="project-breadcrumb-name-wrap" id="project-breadcrumb-name-wrap">
                 <span th:replace="~{:: display(${projectId}, ${title})}"></span>
             </span>
-            <span class="project-last-edited-line" th:if="${lastEdited != null}" id="project-last-edited">
-                <span th:replace="~{fragments/lastEditedLine :: line(${lastEdited})}"></span>
-            </span>
         </span>
     </li>
 
-    <li th:fragment="itemOob(projectId, title, lastEdited)"
+    <li th:fragment="itemOob(projectId, title)"
         id="project-breadcrumb-title"
         aria-current="page"
         hx-swap-oob="true">
         <span class="breadcrumb-name-meta">
             <span class="project-breadcrumb-name-wrap" id="project-breadcrumb-name-wrap">
                 <span th:replace="~{:: display(${projectId}, ${title})}"></span>
-            </span>
-            <span class="project-last-edited-line" th:if="${lastEdited != null}" id="project-last-edited">
-                <span th:replace="~{fragments/lastEditedLine :: line(${lastEdited})}"></span>
             </span>
         </span>
     </li>

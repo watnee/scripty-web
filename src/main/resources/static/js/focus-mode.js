@@ -16,6 +16,13 @@
         return localStorage.getItem(STORAGE_KEY) === '1';
     }
 
+    function shortcutHint() {
+        var isMac = window.scriptyIsMac
+            ? window.scriptyIsMac()
+            : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+        return isMac ? '⌘⇧F' : 'Ctrl+Shift+F';
+    }
+
     function apply(on) {
         document.body.classList.toggle('focus-mode', on);
         var btn = document.getElementById('focus-toggle');
@@ -23,7 +30,8 @@
             btn.setAttribute('aria-pressed', on ? 'true' : 'false');
             btn.setAttribute('aria-checked', on ? 'true' : 'false');
             btn.classList.toggle('is-active', on);
-            btn.title = on ? 'Exit focus mode' : 'Hide distractions while writing';
+            var base = on ? 'Exit focus mode' : 'Hide distractions while writing';
+            btn.title = base + ' (' + shortcutHint() + ')';
             btn.setAttribute('aria-label', btn.title);
         }
     }
@@ -36,12 +44,20 @@
         }
     }
 
+    window.scriptyIsFocusMode = isOn;
+    window.scriptySetFocusMode = function (on) {
+        var next = !!on;
+        localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
+        apply(next);
+    };
+    window.scriptyToggleFocusMode = function () {
+        window.scriptySetFocusMode(!isOn());
+    };
+
     document.body.addEventListener('click', function (e) {
         var btn = e.target && e.target.closest && e.target.closest('#focus-toggle');
         if (!btn) return;
-        var next = !isOn();
-        localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
-        apply(next);
+        window.scriptySetFocusMode(!isOn());
     });
 
     document.body.addEventListener('htmx:afterSwap', sync);

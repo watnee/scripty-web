@@ -16,6 +16,13 @@
         return localStorage.getItem(STORAGE_KEY) === '1';
     }
 
+    function shortcutHint() {
+        var isMac = window.scriptyIsMac
+            ? window.scriptyIsMac()
+            : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+        return isMac ? '⌘⇧O' : 'Ctrl+Shift+O';
+    }
+
     function apply(on) {
         document.documentElement.classList.toggle('scripty-outline-mode', on);
         document.body.classList.toggle('outline-mode', on);
@@ -24,7 +31,8 @@
             btn.setAttribute('aria-pressed', on ? 'true' : 'false');
             btn.setAttribute('aria-checked', on ? 'true' : 'false');
             btn.classList.toggle('is-active', on);
-            btn.title = on ? 'Exit outline mode' : 'Show only scenes, sections, and synopses';
+            var base = on ? 'Exit outline mode' : 'Show only scenes, sections, and synopses';
+            btn.title = base + ' (' + shortcutHint() + ')';
             btn.setAttribute('aria-label', btn.title);
         }
         try {
@@ -52,6 +60,9 @@
         if (next && !(options && options.skipPeer) && typeof window.scriptySetPageViewMode === 'function') {
             window.scriptySetPageViewMode(false, { skipPeer: true });
         }
+    };
+    window.scriptyToggleOutlineMode = function () {
+        window.scriptySetOutlineMode(!isOn());
     };
 
     document.body.addEventListener('click', function (e) {

@@ -46,6 +46,30 @@
         document.querySelectorAll('.kb-mod-f').forEach(function (el) {
             el.textContent = isMac ? '⌘ F' : 'Ctrl + F';
         });
+        document.querySelectorAll('.kb-mod-shift-f').forEach(function (el) {
+            el.textContent = isMac ? '⌘ ⇧ F' : 'Ctrl + Shift + F';
+        });
+        document.querySelectorAll('.kb-mod-shift-o').forEach(function (el) {
+            el.textContent = isMac ? '⌘ ⇧ O' : 'Ctrl + Shift + O';
+        });
+        document.querySelectorAll('.kb-mod-shift-p').forEach(function (el) {
+            el.textContent = isMac ? '⌘ ⇧ P' : 'Ctrl + Shift + P';
+        });
+        document.querySelectorAll('.kb-mod-shift-l').forEach(function (el) {
+            el.textContent = isMac ? '⌘ ⇧ L' : 'Ctrl + Shift + L';
+        });
+        document.querySelectorAll('.kb-mod-backslash').forEach(function (el) {
+            el.textContent = isMac ? '⌘ \\' : 'Ctrl + \\';
+        });
+        document.querySelectorAll('.kb-mod-b').forEach(function (el) {
+            el.textContent = isMac ? '⌘ B' : 'Ctrl + B';
+        });
+        document.querySelectorAll('.kb-mod-i').forEach(function (el) {
+            el.textContent = isMac ? '⌘ I' : 'Ctrl + I';
+        });
+        document.querySelectorAll('.kb-mod-u').forEach(function (el) {
+            el.textContent = isMac ? '⌘ U' : 'Ctrl + U';
+        });
         document.querySelectorAll('.kb-mod-shift-s').forEach(function (el) {
             el.textContent = isMac ? '⌘ ⇧ S' : 'Ctrl + Shift + S';
         });

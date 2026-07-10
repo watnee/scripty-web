@@ -1377,6 +1377,13 @@
         listsBtn.setAttribute('aria-pressed', anyOpen ? 'true' : 'false');
     }
 
+    function listShortcutHint(chord) {
+        var isMac = window.scriptyIsMac
+            ? window.scriptyIsMac()
+            : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+        return isMac ? chord.mac : chord.other;
+    }
+
     function setOutlineOpen(open) {
         var el = ensureOutline();
         el.hidden = !open;
@@ -1385,6 +1392,9 @@
         if (btn) {
             btn.setAttribute('aria-pressed', open ? 'true' : 'false');
             btn.classList.toggle('is-active', open);
+            var hint = listShortcutHint({ mac: '⌘⇧L', other: 'Ctrl+Shift+L' });
+            btn.title = 'Outline (' + hint + ')';
+            btn.setAttribute('aria-label', btn.title);
         }
         try {
             localStorage.setItem('scripty-fountain-outline', open ? 'true' : 'false');
@@ -2040,7 +2050,15 @@
             preferOpen = localStorage.getItem('scripty-fountain-outline') === 'true';
         } catch (err) { /* ignore */ }
         if (preferOpen) setOutlineOpen(true);
-        else ensureOutline().hidden = true;
+        else {
+            ensureOutline().hidden = true;
+            var outlineBtn = document.getElementById('nav-outline-toggle');
+            if (outlineBtn) {
+                var hint = listShortcutHint({ mac: '⌘⇧L', other: 'Ctrl+Shift+L' });
+                outlineBtn.title = 'Outline (' + hint + ')';
+                outlineBtn.setAttribute('aria-label', outlineBtn.title);
+            }
+        }
     }
 
     function initCharacterListButton() {

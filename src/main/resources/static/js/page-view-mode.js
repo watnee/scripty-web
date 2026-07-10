@@ -34,6 +34,13 @@
         return document.querySelector('.project-script .scene-blocks');
     }
 
+    function shortcutHint() {
+        var isMac = window.scriptyIsMac
+            ? window.scriptyIsMac()
+            : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+        return isMac ? '⌘⇧P' : 'Ctrl+Shift+P';
+    }
+
     function apply(on) {
         document.documentElement.classList.toggle(CLASS_NAME, on);
         var btn = getToggleBtn();
@@ -41,7 +48,8 @@
             btn.setAttribute('aria-pressed', on ? 'true' : 'false');
             btn.setAttribute('aria-checked', on ? 'true' : 'false');
             btn.classList.toggle('is-active', on);
-            btn.title = on ? 'Exit page view' : 'View screenplay as pages';
+            var base = on ? 'Exit page view' : 'View screenplay as pages';
+            btn.title = base + ' (' + shortcutHint() + ')';
             btn.setAttribute('aria-label', btn.title);
         }
         if (on) {
@@ -480,6 +488,9 @@
         if (next && !(options && options.skipPeer) && typeof window.scriptySetOutlineMode === 'function') {
             window.scriptySetOutlineMode(false, { skipPeer: true });
         }
+    };
+    window.scriptyTogglePageViewMode = function () {
+        window.scriptySetPageViewMode(!isOn());
     };
 
     document.body.addEventListener('click', function (e) {

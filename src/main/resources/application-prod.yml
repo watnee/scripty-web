@@ -43,6 +43,6 @@ app:
   base-url: ${APP_BASE_URL:}
   mail-from: ${MAIL_FROM:Scripty <noreply@scripty.app>}
   mail-enabled: ${MAIL_ENABLED:false}
-  asset-version: ${APP_ASSET_VERSION:155}
+  asset-version: ${APP_ASSET_VERSION:156}
   # Static assets + public offline shells only; project HTML lives in IndexedDB.
   service-worker-enabled: true

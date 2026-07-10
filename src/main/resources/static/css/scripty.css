@@ -4212,24 +4212,39 @@ html.scripty-hide-block-select .table-blocks-all aside.block-actions {
     pointer-events: none;
 }
 
-html.scripty-hide-block-select .block-row:hover:not(.project-script-select-row) .block-select-checkbox,
-html.scripty-hide-block-select .block-row:hover:not(.project-script-select-row) a.create-below[role="button"],
-html.scripty-hide-block-select .block-row:hover:not(.project-script-select-row) .create-below-menu-dropdown,
-html.scripty-hide-block-select .block-row:hover:not(.project-script-select-row) button.create-below.create-below-menu-toggle,
-html.scripty-hide-block-select .block-row:hover:not(.project-script-select-row) .drag-handle,
-html.scripty-hide-block-select .block-row:hover:not(.project-script-select-row) .block-drag-menu-dropdown,
+/* Hover reveals only when no block has the text cursor — otherwise the
+   focused/cursor block wins (important after Enter creates a new row while
+   the pointer is still over the previous one). */
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) .block-select-checkbox,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) a.create-below[role="button"],
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) .create-below-menu-dropdown,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) button.create-below.create-below-menu-toggle,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) .drag-handle,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) .block-drag-menu-dropdown,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover .block-select-checkbox,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover a.create-below[role="button"],
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover .create-below-menu-dropdown,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover button.create-below.create-below-menu-toggle,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover .drag-handle,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover .block-drag-menu-dropdown,
+html.scripty-hide-block-select .block-row:focus-within:not(.project-script-select-row) .block-select-checkbox,
+html.scripty-hide-block-select .block-row:focus-within:not(.project-script-select-row) a.create-below[role="button"],
+html.scripty-hide-block-select .block-row:focus-within:not(.project-script-select-row) .create-below-menu-dropdown,
+html.scripty-hide-block-select .block-row:focus-within:not(.project-script-select-row) button.create-below.create-below-menu-toggle,
+html.scripty-hide-block-select .block-row:focus-within:not(.project-script-select-row) .drag-handle,
+html.scripty-hide-block-select .block-row:focus-within:not(.project-script-select-row) .block-drag-menu-dropdown,
 html.scripty-hide-block-select .block-row.block-controls-revealed .block-select-checkbox,
 html.scripty-hide-block-select .block-row.block-controls-revealed a.create-below[role="button"],
 html.scripty-hide-block-select .block-row.block-controls-revealed .create-below-menu-dropdown,
 html.scripty-hide-block-select .block-row.block-controls-revealed button.create-below.create-below-menu-toggle,
 html.scripty-hide-block-select .block-row.block-controls-revealed .drag-handle,
 html.scripty-hide-block-select .block-row.block-controls-revealed .block-drag-menu-dropdown,
-html.scripty-hide-block-select tr:hover .block-select-checkbox,
-html.scripty-hide-block-select tr:hover a.create-below[role="button"],
-html.scripty-hide-block-select tr:hover .create-below-menu-dropdown,
-html.scripty-hide-block-select tr:hover button.create-below.create-below-menu-toggle,
-html.scripty-hide-block-select tr:hover .drag-handle,
-html.scripty-hide-block-select tr:hover .block-drag-menu-dropdown,
+html.scripty-hide-block-select tr:focus-within .block-select-checkbox,
+html.scripty-hide-block-select tr:focus-within a.create-below[role="button"],
+html.scripty-hide-block-select tr:focus-within .create-below-menu-dropdown,
+html.scripty-hide-block-select tr:focus-within button.create-below.create-below-menu-toggle,
+html.scripty-hide-block-select tr:focus-within .drag-handle,
+html.scripty-hide-block-select tr:focus-within .block-drag-menu-dropdown,
 html.scripty-hide-block-select tr.block-controls-revealed .block-select-checkbox,
 html.scripty-hide-block-select tr.block-controls-revealed a.create-below[role="button"],
 html.scripty-hide-block-select tr.block-controls-revealed .create-below-menu-dropdown,
@@ -4240,28 +4255,36 @@ html.scripty-hide-block-select tr.block-controls-revealed .block-drag-menu-dropd
     pointer-events: auto;
 }
 
-html.scripty-hide-block-select .block-row:hover:not(.project-script-select-row) aside.block-left-controls,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) aside.block-left-controls,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover td.block-left-controls,
+html.scripty-hide-block-select .block-row:focus-within:not(.project-script-select-row) aside.block-left-controls,
 html.scripty-hide-block-select .block-row.block-controls-revealed aside.block-left-controls,
-html.scripty-hide-block-select tr:hover td.block-left-controls,
+html.scripty-hide-block-select tr:focus-within td.block-left-controls,
 html.scripty-hide-block-select tr.block-controls-revealed td.block-left-controls {
     visibility: visible;
     pointer-events: auto;
 }
 
-html.scripty-hide-block-select .block-row:hover:not(.project-script-select-row) a.create-below[role="button"],
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) a.create-below[role="button"],
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover a.create-below[role="button"],
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) button.create-below.create-below-menu-toggle,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover button.create-below.create-below-menu-toggle,
+html.scripty-hide-block-select .block-row:focus-within:not(.project-script-select-row) a.create-below[role="button"],
 html.scripty-hide-block-select .block-row.block-controls-revealed a.create-below[role="button"],
-html.scripty-hide-block-select tr:hover a.create-below[role="button"],
+html.scripty-hide-block-select tr:focus-within a.create-below[role="button"],
 html.scripty-hide-block-select tr.block-controls-revealed a.create-below[role="button"],
-html.scripty-hide-block-select .block-row:hover:not(.project-script-select-row) button.create-below.create-below-menu-toggle,
+html.scripty-hide-block-select .block-row:focus-within:not(.project-script-select-row) button.create-below.create-below-menu-toggle,
 html.scripty-hide-block-select .block-row.block-controls-revealed button.create-below.create-below-menu-toggle,
-html.scripty-hide-block-select tr:hover button.create-below.create-below-menu-toggle,
+html.scripty-hide-block-select tr:focus-within button.create-below.create-below-menu-toggle,
 html.scripty-hide-block-select tr.block-controls-revealed button.create-below.create-below-menu-toggle {
     opacity: 1;
 }
 
-html.scripty-hide-block-select .block-row:hover:not(.project-script-select-row) button.block-drag-menu-toggle.nav-dropdown-toggle,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) button.block-drag-menu-toggle.nav-dropdown-toggle,
+html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover button.block-drag-menu-toggle.nav-dropdown-toggle,
+html.scripty-hide-block-select .block-row:focus-within:not(.project-script-select-row) button.block-drag-menu-toggle.nav-dropdown-toggle,
 html.scripty-hide-block-select .block-row.block-controls-revealed button.block-drag-menu-toggle.nav-dropdown-toggle,
-html.scripty-hide-block-select tr:hover button.block-drag-menu-toggle.nav-dropdown-toggle,
+html.scripty-hide-block-select tr:focus-within button.block-drag-menu-toggle.nav-dropdown-toggle,
 html.scripty-hide-block-select tr.block-controls-revealed button.block-drag-menu-toggle.nav-dropdown-toggle {
     color: var(--accent, #475569);
     background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));

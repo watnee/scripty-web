@@ -3319,8 +3319,12 @@
             var blockId = row.getAttribute('data-block-id');
 
             clearBlockCaretPreview();
-            if (row.classList.contains('block-controls-revealed')) {
-                row.classList.remove('block-controls-revealed');
+            // Keep +, drag, and select on the block that receives the text cursor.
+            if (!row.classList.contains('block-controls-revealed') &&
+                document.documentElement.classList.contains('scripty-hide-block-select')) {
+                clearRevealedBlockControls();
+                row.classList.add('block-controls-revealed');
+                rememberActiveBlockRow(row);
             }
 
             if (!blockId || !blockContent.isConnected) return;
@@ -3399,15 +3403,8 @@
                 rememberActiveBlockRow(row);
             }
 
-            function hideRevealedBlockControls(row) {
-                if (row) {
-                    row.classList.remove('block-controls-revealed');
-                } else {
-                    clearRevealedBlockControls();
-                }
-            }
-
             window.scriptyClearRevealedBlockControls = clearRevealedBlockControls;
+            window.scriptyRevealBlockControls = revealBlockControls;
             window.scriptyClearBlockCaretPreview = clearBlockCaretPreview;
 
             document.body.addEventListener('mousedown', function(e) {
@@ -3442,6 +3439,13 @@
                 }
             }, true);
 
+            // Keep +, drag, and select on the block that owns the text cursor
+            // (including after Enter creates/focuses a new row).
+            document.addEventListener('focusin', function(e) {
+                if (!isGloballyHidden() || !isBlockContentTextarea(e.target)) return;
+                revealBlockControls(resolveControlRow(e.target));
+            }, true);
+
             document.addEventListener('keydown', function(e) {
                 if (!window.scriptyBlockCaretPreviewActive || !isGloballyHidden()) return;
                 if (!isBlockPreviewTypingKey(e)) return;
@@ -3458,7 +3462,8 @@
 
             document.addEventListener('input', function(e) {
                 if (!isGloballyHidden() || !isBlockContentTextarea(e.target)) return;
-                hideRevealedBlockControls(resolveControlRow(e.target));
+                // Keep controls revealed on the focused/cursor block while typing.
+                revealBlockControls(resolveControlRow(e.target));
                 clearBlockCaretPreview();
             }, true);
 

@@ -2424,8 +2424,8 @@ form[hx-post*="/block/"] textarea,
     line-height: inherit;
     letter-spacing: inherit;
     word-spacing: inherit;
-    /* Room for browser spellcheck underlines on the last line */
-    padding: 0 0 0.2em;
+    /* Keep padding 0 so view (<p>) and edit (textarea) heights match on focus/blur */
+    padding: 0;
     margin: 0;
     font: inherit;
     color: inherit;
@@ -2486,8 +2486,7 @@ form[hx-post*="/block/"] textarea:focus-visible {
     grid-area: 1 / 1;
     width: 100%;
     margin: 0;
-    /* Match textarea bottom padding so mirror/edit overlay stays aligned */
-    padding: 0 0 0.2em;
+    padding: 0;
 }
 
 .block-content:has(.block-inline-edit-form) .reader-visible-text,
@@ -8779,7 +8778,7 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
     grid-area: 1 / 1;
     width: 100%;
     margin: 0;
-    padding: 0 0 0.2em;
+    padding: 0;
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-wrap: break-word;
@@ -8810,7 +8809,12 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 }
 
 .scripty-spell-error {
-    border-bottom: 2px solid color-mix(in srgb, var(--bad-fg-color, #e11d48) 85%, transparent);
+    /* Underline without border-bottom so line boxes (and block height) stay stable */
+    text-decoration-line: underline;
+    text-decoration-style: wavy;
+    text-decoration-thickness: 1.5px;
+    text-decoration-color: color-mix(in srgb, var(--bad-fg-color, #e11d48) 85%, transparent);
+    text-underline-offset: 2px;
     background: color-mix(in srgb, var(--bad-fg-color, #e11d48) 8%, transparent);
 }
 

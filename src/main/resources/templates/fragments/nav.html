@@ -4401,6 +4401,14 @@
             document.querySelectorAll('.project-script .scene-blocks').forEach(function(container) {
                 dedupeTrailingCreateRows(container);
             });
+            var projectId = resolveProjectId();
+            if (projectId && window.scriptyInitBlockMarkerToggles) {
+                window.scriptyProjectId = projectId;
+                window.scriptyInitBlockMarkerToggles({
+                    projectId: projectId,
+                    canEditScript: window.scriptyCanEditScript !== false
+                });
+            }
             if (window.scriptyInitProjectBulkActions) {
                 window.scriptyInitProjectBulkActions();
             }

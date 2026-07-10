@@ -3808,13 +3808,17 @@
                 var lockTitle = blockEditLocked ? 'Unlock this version' : 'Lock this version';
                 if (lockToggle) {
                     lockToggle.setAttribute('aria-pressed', blockEditLocked ? 'true' : 'false');
+                    lockToggle.setAttribute('aria-checked', blockEditLocked ? 'true' : 'false');
                     lockToggle.classList.toggle('is-active', blockEditLocked);
                     lockToggle.title = lockTitle;
                     lockToggle.setAttribute('aria-label', lockTitle);
+                    var lockLabel = lockToggle.querySelector('.lock-toggle-label');
+                    if (lockLabel) {
+                        lockLabel.textContent = lockTitle;
+                    }
                 }
                 if (editionToggle) {
-                    var editionName = editionToggle.querySelector('.script-edition-toggle-label');
-                    var baseLabel = editionName ? editionName.textContent.trim() : 'Main';
+                    var baseLabel = (editionToggle.getAttribute('data-edition-name') || '').trim() || 'Main';
                     var editionTitle = 'Screenplay version: ' + baseLabel + (blockEditLocked ? ' (locked)' : '');
                     editionToggle.title = editionTitle;
                     editionToggle.setAttribute('aria-label', editionTitle);

@@ -22,7 +22,7 @@
         if (btn) {
             btn.setAttribute('aria-pressed', hidden ? 'true' : 'false');
             btn.classList.toggle('is-active', hidden);
-            btn.title = hidden ? 'Show toolbar' : 'Hide toolbar';
+            btn.title = hidden ? 'Show tools' : 'Hide tools';
             btn.setAttribute('aria-label', btn.title);
         }
     }

@@ -15,7 +15,7 @@
         { id: 'inline-editing', title: 'Inline Editing & Auto-Save', keywords: 'edit block save typing' },
         { id: 'offline-editing', title: 'Offline Editing', keywords: 'offline sync cache airplane' },
         { id: 'adding-blocks', title: 'Adding Blocks', keywords: 'insert create plus enter' },
-        { id: 'fountain-features', title: 'Fountain Power Features', keywords: 'tab element autocomplete outline page view import export pdf fountain paste' },
+        { id: 'fountain-features', title: 'Fountain Power Features', keywords: 'tab element autocomplete outline page view import export pdf fountain paste shortcut keyboard' },
         { id: 'songs-drafts', title: 'Songs & Drafts', keywords: 'lyrics notes music documents' },
         { id: 'drag-drop', title: 'Drag & Drop Reordering', keywords: 'move reorder handle' },
         { id: 'bookmarks-pins', title: 'Bookmarks & Pinned Blocks', keywords: 'star pin favorite outline' },
@@ -70,6 +70,13 @@
         document.querySelectorAll('.kb-mod-period').forEach(function (el) {
             el.textContent = isMac ? '⌘ .' : 'Ctrl + .';
         });
+        for (var digit = 1; digit <= 7; digit++) {
+            (function (d) {
+                document.querySelectorAll('.kb-mod-' + d).forEach(function (el) {
+                    el.textContent = isMac ? '⌘ ' + d : 'Ctrl + ' + d;
+                });
+            })(digit);
+        }
         document.querySelectorAll('.kb-ctrl').forEach(function (el) {
             el.textContent = modLabel;
         });

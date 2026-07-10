@@ -22,6 +22,7 @@
         var btn = document.getElementById('nav-full-width-toggle');
         if (btn) {
             btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+            btn.setAttribute('aria-checked', on ? 'true' : 'false');
             btn.classList.toggle('is-active', on);
             btn.title = on ? 'Use standard screenplay width' : 'Use full page width';
             btn.setAttribute('aria-label', btn.title);

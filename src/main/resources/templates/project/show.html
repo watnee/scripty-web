@@ -94,7 +94,6 @@
                     <li th:replace="~{fragments/projectBreadcrumbName :: item(${viewModel.id}, ${viewModel.title}, ${viewModel.lastEdited})}"></li>
                 </ol>
             </nav>
-            <div th:replace="~{fragments/projectBreadcrumbName :: search}"></div>
             <div class="project-top-bar-actions">
                 <div class="nav-dropdown project-share-dropdown" id="project-share-dropdown">
                     <button class="nav-dropdown-toggle project-share-toggle share-toolbar-btn"
@@ -115,99 +114,6 @@
                         <div th:replace="~{fragments/projectSharePanel :: panel(${viewModel.id}, ${shareAccessUsers}, ${viewModel.teams}, ${inviteTeams}, ${pendingInvitations}, ${inviteCommand})}"></div>
                     </div>
                 </div>
-                <div class="nav-dropdown script-edition-dropdown" id="script-edition-dropdown">
-                    <button class="nav-dropdown-toggle script-edition-toggle"
-                            type="button"
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                            th:aria-label="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}"
-                            th:title="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}">
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <line x1="6" y1="3" x2="6" y2="15"></line>
-                            <circle cx="18" cy="6" r="3"></circle>
-                            <circle cx="6" cy="18" r="3"></circle>
-                            <path d="M18 9a9 9 0 0 1-9 9"></path>
-                        </svg>
-                        <span class="script-edition-toggle-label" th:text="${viewModel.editionName != null ? viewModel.editionName : 'Main'}">Main</span>
-                        <svg class="script-edition-toggle-lock"
-                             viewBox="0 0 24 24"
-                             width="12"
-                             height="12"
-                             stroke="currentColor"
-                             stroke-width="2"
-                             fill="currentColor"
-                             stroke-linecap="round"
-                             stroke-linejoin="round"
-                             aria-hidden="true">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="currentColor" stroke="currentColor"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none"></path>
-                        </svg>
-                        <svg class="script-edition-toggle-caret" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
-                    <div class="nav-dropdown-menu script-edition-menu">
-                        <div class="script-edition-menu-label">Versions</div>
-                        <div th:each="edition : ${viewModel.editions}"
-                             class="script-edition-row"
-                             th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'is-active'">
-                            <a class="nav-dropdown-item script-edition-switch"
-                               th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'active'"
-                               th:href="@{/project/show(id=${viewModel.id}, editionId=${edition.id})}"
-                               hx-boost="false"
-                               th:text="${edition.name}">Main</a>
-                            <form th:if="${(canEditScript == null or canEditScript) and !edition.default}"
-                                  th:action="@{/project/edition/setDefault}"
-                                  method="POST"
-                                  hx-boost="false"
-                                  class="script-edition-default-form">
-                                <input type="hidden" name="projectId" th:value="${viewModel.id}" />
-                                <input type="hidden" name="editionId" th:value="${edition.id}" />
-                                <button type="submit"
-                                        class="default-project-toggle script-edition-default-toggle"
-                                        th:aria-label="'Set ' + ${edition.name} + ' as default version'"
-                                        th:title="'Set as default version'">
-                                    <span class="icon-outline" aria-hidden="true">☆</span>
-                                    <span class="icon-filled" aria-hidden="true">★</span>
-                                </button>
-                            </form>
-                            <span th:if="${edition.default}"
-                                  class="default-project-toggle script-edition-default-toggle is-default"
-                                  aria-label="Default version"
-                                  title="Default version">
-                                <span class="icon-outline" aria-hidden="true">☆</span>
-                                <span class="icon-filled" aria-hidden="true">★</span>
-                            </span>
-                        </div>
-                        <div class="nav-dropdown-divider" th:if="${canEditScript == null or canEditScript}"></div>
-                        <button th:if="${canEditScript == null or canEditScript}"
-                                type="button"
-                                class="nav-dropdown-item script-edition-create-btn"
-                                id="script-edition-create-open">New version…</button>
-                        <div class="nav-dropdown-divider" role="separator"></div>
-                        <a id="nav-version-history"
-                           class="nav-dropdown-item"
-                           role="menuitem"
-                           th:href="@{/project/version/list(projectId=${viewModel.id}, editionId=${viewModel.editionId})}"
-                           hx-boost="false"
-                           title="Snapshot history">
-                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polyline points="12 6 12 12 16 14"></polyline>
-                            </svg>
-                            <span>Snapshot history</span>
-                        </a>
-                    </div>
-                </div>
-                <button id="nav-lock-toggle"
-                        type="button"
-                        class="nav-dropdown-toggle lock-filter-toggle"
-                        th:if="${canEditScript == null or canEditScript}"
-                        aria-pressed="false"
-                        aria-label="Lock this version"
-                        title="Lock this version">
-                    <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
-                </button>
                 <dialog id="script-edition-create-dialog" class="script-edition-dialog">
                     <form th:if="${canEditScript == null or canEditScript}"
                           th:action="@{/project/edition/create}" method="POST" hx-boost="false" class="script-edition-create-form">
@@ -226,74 +132,14 @@
                     </form>
                 </dialog>
             </div>
-            <div class="project-top-bar-controls">
-                <button id="focus-toggle"
-                        type="button"
-                        class="nav-dropdown-toggle focus-toolbar-btn"
-                        aria-pressed="false"
-                        aria-label="Focus mode"
-                        title="Hide distractions while writing">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                    </svg>
-                </button>
-                <button id="nav-full-width-toggle"
-                        type="button"
-                        class="nav-dropdown-toggle full-width-toolbar-btn"
-                        aria-pressed="false"
-                        aria-label="Use full page width"
-                        title="Use full page width">
-                    <svg class="full-width-icon full-width-icon--expand" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <polyline points="15 3 21 3 21 9"></polyline>
-                        <polyline points="9 21 3 21 3 15"></polyline>
-                        <line x1="21" y1="3" x2="14" y2="10"></line>
-                        <line x1="3" y1="21" x2="10" y2="14"></line>
-                    </svg>
-                    <svg class="full-width-icon full-width-icon--compress" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <polyline points="4 14 10 14 10 20"></polyline>
-                        <polyline points="20 10 14 10 14 4"></polyline>
-                        <line x1="14" y1="10" x2="21" y2="3"></line>
-                        <line x1="3" y1="21" x2="10" y2="14"></line>
-                    </svg>
-                </button>
-                <button id="outline-mode-toggle"
-                        type="button"
-                        class="nav-dropdown-toggle outline-mode-toolbar-btn"
-                        aria-pressed="false"
-                        aria-label="Show only scenes, sections, and synopses"
-                        title="Show only scenes, sections, and synopses">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M4 6h16"></path>
-                        <path d="M4 12h10"></path>
-                        <path d="M4 18h6"></path>
-                    </svg>
-                </button>
-                <button id="page-view-mode-toggle"
-                        type="button"
-                        class="nav-dropdown-toggle page-view-mode-toolbar-btn"
-                        aria-pressed="false"
-                        aria-label="View screenplay as pages"
-                        title="View screenplay as pages">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <rect x="5" y="3" width="14" height="18" rx="1.5"></rect>
-                        <line x1="8" y1="8" x2="16" y2="8"></line>
-                        <line x1="8" y1="12" x2="16" y2="12"></line>
-                        <line x1="8" y1="16" x2="13" y2="16"></line>
-                    </svg>
-                </button>
-                <span class="text-size-buttons" role="group" aria-label="Text size">
-                    <button id="text-size-decrease" type="button" class="text-size-btn" aria-label="Decrease text size">A−</button>
-                    <button id="text-size-increase" type="button" class="text-size-btn" aria-label="Increase text size">A+</button>
-                </span>
-            </div>
         </div>
         <div class="text-size-control">
             <button id="nav-toolbar-toggle"
                     type="button"
                     class="nav-dropdown-toggle toolbar-visibility-toggle"
                     aria-pressed="false"
-                    aria-label="Hide toolbar"
-                    title="Hide toolbar">
+                    aria-label="Hide tools"
+                    title="Hide tools">
                 <svg class="toolbar-visibility-icon toolbar-visibility-icon--shown" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <rect x="3" y="4" width="18" height="5" rx="1"></rect>
                     <line x1="3" y1="14" x2="21" y2="14"></line>
@@ -304,7 +150,88 @@
                     <polyline points="8 14 12 18 16 14"></polyline>
                     <line x1="12" y1="18" x2="12" y2="21"></line>
                 </svg>
+                <span class="toolbar-visibility-label">Tools</span>
             </button>
+            <div class="project-script-stats project-script-stats--top-bar"
+                 id="project-script-stats"
+                 th:if="${canEditScript != null and !canEditScript}"
+                 role="status"
+                 aria-live="polite"
+                 title="Word count and estimated pages (≈250 words/page)">
+                <span data-stat="words">0</span> words
+                <span class="project-script-stats-sep" aria-hidden="true">·</span>
+                ~<span data-stat="pages">0</span> pages
+            </div>
+        </div>
+    </aside>
+    <aside class="project-script-toolbar hide-in-reader-view sidebar menu">
+        <div class="project-toolbar-row project-tools-row">
+            <div class="project-toolbar-main">
+            <div class="project-tools-group" role="group" aria-label="Project tools">
+            <div class="nav-dropdown file-dropdown" id="project-file-dropdown">
+                <button id="nav-file"
+                        type="button"
+                        class="nav-dropdown-toggle file-toolbar-btn"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        th:aria-label="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}"
+                        th:title="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}">
+                    File
+                </button>
+                <div class="nav-dropdown-menu file-menu" role="menu" th:aria-label="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}">
+                    <button id="nav-import"
+                            type="button"
+                            class="nav-dropdown-item"
+                            role="menuitem"
+                            th:if="${canEditScript == null or canEditScript}">Import</button>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/titlePage(id=${viewModel.id})}">Title page</a>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <div class="file-menu-label" aria-hidden="true">Export</div>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=pdf, editionId=${viewModel.editionId})}"
+                       hx-boost="false">PDF</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=docx, editionId=${viewModel.editionId})}"
+                       hx-boost="false">Word (.docx)</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=fdx, editionId=${viewModel.editionId})}"
+                       hx-boost="false">Final Draft (.fdx)</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=fountain, editionId=${viewModel.editionId})}"
+                       hx-boost="false">Fountain</a>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <button id="nav-print"
+                            type="button"
+                            class="nav-dropdown-item"
+                            role="menuitem"
+                            onclick="window.print()">Print</button>
+                </div>
+            </div>
+            <form id="project-import-form"
+                  th:if="${canEditScript == null or canEditScript}"
+                  th:action="@{/project/import(id=${viewModel.id})}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  hx-boost="false"
+                  hidden>
+                <input type="hidden"
+                       name="editionId"
+                       th:if="${viewModel.editionId != null}"
+                       th:value="${viewModel.editionId}" />
+                <input type="file"
+                       id="project-import-file"
+                       name="file"
+                       accept=".fountain,.txt,.doc,.docx,.fdx,.pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml,application/pdf"
+                       aria-hidden="true"
+                       tabindex="-1" />
+            </form>
+            <span th:if="${canEditScript == null or canEditScript}" th:replace="~{fragments/historyToolbarButtons :: buttons}"></span>
             <div class="nav-dropdown view-dropdown" id="project-view-dropdown">
                 <button id="nav-view"
                         type="button"
@@ -313,12 +240,83 @@
                         aria-expanded="false"
                         aria-label="View"
                         title="View">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
+                    View
                 </button>
                 <div class="nav-dropdown-menu view-menu" role="menu" aria-label="View">
+                    <button id="focus-toggle"
+                            type="button"
+                            class="nav-dropdown-item focus-toolbar-btn"
+                            role="menuitemcheckbox"
+                            aria-pressed="false"
+                            aria-checked="false"
+                            aria-label="Focus mode"
+                            title="Hide distractions while writing">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                        </svg>
+                        <span>Focus mode</span>
+                    </button>
+                    <button id="nav-full-width-toggle"
+                            type="button"
+                            class="nav-dropdown-item full-width-toolbar-btn"
+                            role="menuitemcheckbox"
+                            aria-pressed="false"
+                            aria-checked="false"
+                            aria-label="Use full page width"
+                            title="Use full page width">
+                        <svg class="full-width-icon full-width-icon--expand" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                        <svg class="full-width-icon full-width-icon--compress" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="4 14 10 14 10 20"></polyline>
+                            <polyline points="20 10 14 10 14 4"></polyline>
+                            <line x1="14" y1="10" x2="21" y2="3"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                        <span>Full width</span>
+                    </button>
+                    <button id="outline-mode-toggle"
+                            type="button"
+                            class="nav-dropdown-item outline-mode-toolbar-btn"
+                            role="menuitemcheckbox"
+                            aria-pressed="false"
+                            aria-checked="false"
+                            aria-label="Show only scenes, sections, and synopses"
+                            title="Show only scenes, sections, and synopses">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 6h16"></path>
+                            <path d="M4 12h10"></path>
+                            <path d="M4 18h6"></path>
+                        </svg>
+                        <span>Outline mode</span>
+                    </button>
+                    <button id="page-view-mode-toggle"
+                            type="button"
+                            class="nav-dropdown-item page-view-mode-toolbar-btn"
+                            role="menuitemcheckbox"
+                            aria-pressed="false"
+                            aria-checked="false"
+                            aria-label="View screenplay as pages"
+                            title="View screenplay as pages">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="5" y="3" width="14" height="18" rx="1.5"></rect>
+                            <line x1="8" y1="8" x2="16" y2="8"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                            <line x1="8" y1="16" x2="13" y2="16"></line>
+                        </svg>
+                        <span>Page view</span>
+                    </button>
+                    <div class="view-menu-text-size" role="group" aria-label="Text size">
+                        <span class="view-menu-text-size-label">Text size</span>
+                        <span class="text-size-buttons">
+                            <button id="text-size-decrease" type="button" class="text-size-btn" aria-label="Decrease text size">A−</button>
+                            <button id="text-size-increase" type="button" class="text-size-btn" aria-label="Increase text size">A+</button>
+                        </span>
+                    </div>
+                    <div class="nav-dropdown-divider" role="separator"></div>
                     <button id="nav-bookmarks-toggle"
                             type="button"
                             class="nav-dropdown-item bookmark-filter-toggle is-active"
@@ -394,72 +392,6 @@
                 </div>
             </div>
 
-            <span th:if="${canEditScript == null or canEditScript}" th:replace="~{fragments/historyToolbarButtons :: buttons}"></span>
-            <div class="nav-dropdown file-dropdown" id="project-file-dropdown">
-                <button id="nav-file"
-                        type="button"
-                        class="nav-dropdown-toggle file-toolbar-btn"
-                        aria-haspopup="true"
-                        aria-expanded="false"
-                        th:aria-label="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}"
-                        th:title="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                </button>
-                <div class="nav-dropdown-menu file-menu" role="menu" th:aria-label="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}">
-                    <button id="nav-import"
-                            type="button"
-                            class="nav-dropdown-item"
-                            role="menuitem"
-                            th:if="${canEditScript == null or canEditScript}">Import</button>
-                    <a class="nav-dropdown-item"
-                       role="menuitem"
-                       th:href="@{/project/titlePage(id=${viewModel.id})}">Title page</a>
-                    <div class="nav-dropdown-divider" role="separator"></div>
-                    <div class="file-menu-label" aria-hidden="true">Export</div>
-                    <a class="nav-dropdown-item"
-                       role="menuitem"
-                       th:href="@{/project/export(id=${viewModel.id}, format=pdf, editionId=${viewModel.editionId})}"
-                       hx-boost="false">PDF</a>
-                    <a class="nav-dropdown-item"
-                       role="menuitem"
-                       th:href="@{/project/export(id=${viewModel.id}, format=docx, editionId=${viewModel.editionId})}"
-                       hx-boost="false">Word (.docx)</a>
-                    <a class="nav-dropdown-item"
-                       role="menuitem"
-                       th:href="@{/project/export(id=${viewModel.id}, format=fdx, editionId=${viewModel.editionId})}"
-                       hx-boost="false">Final Draft (.fdx)</a>
-                    <a class="nav-dropdown-item"
-                       role="menuitem"
-                       th:href="@{/project/export(id=${viewModel.id}, format=fountain, editionId=${viewModel.editionId})}"
-                       hx-boost="false">Fountain</a>
-                    <div class="nav-dropdown-divider" role="separator"></div>
-                    <button id="nav-print"
-                            type="button"
-                            class="nav-dropdown-item"
-                            role="menuitem"
-                            onclick="window.print()">Print</button>
-                </div>
-            </div>
-            <form id="project-import-form"
-                  th:if="${canEditScript == null or canEditScript}"
-                  th:action="@{/project/import(id=${viewModel.id})}"
-                  method="post"
-                  enctype="multipart/form-data"
-                  hx-boost="false"
-                  hidden>
-                <input type="hidden"
-                       name="editionId"
-                       th:if="${viewModel.editionId != null}"
-                       th:value="${viewModel.editionId}" />
-                <input type="file"
-                       id="project-import-file"
-                       name="file"
-                       accept=".fountain,.txt,.doc,.docx,.fdx,.pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml,application/pdf"
-                       aria-hidden="true"
-                       tabindex="-1" />
-            </form>
             <div class="text-format-actions hide-in-reader-view sidebar menu">
                     <div class="nav-dropdown text-format-dropdown" id="project-text-format-dropdown">
                         <button type="button"
@@ -469,12 +401,7 @@
                                 aria-pressed="false"
                                 aria-label="Text format"
                                 title="Text format">
-                            <svg class="text-align-toolbar-icon" data-align-icon="LEFT" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <line x1="3" y1="6" x2="21" y2="6"></line>
-                                <line x1="3" y1="12" x2="15" y2="12"></line>
-                                <line x1="3" y1="18" x2="18" y2="18"></line>
-                            </svg>
-                            <span class="text-format-toolbar-label" aria-hidden="true"><strong>B</strong></span>
+                            Format
                         </button>
                         <div class="nav-dropdown-menu text-format-menu" role="menu" aria-label="Text format">
                             <button type="button"
@@ -553,29 +480,132 @@
                         </div>
                     </div>
                 </div>
-            <a class="nav-dropdown-toggle songs-toolbar-btn"
-               th:href="@{/project/documents/songs(projectId=${viewModel.id})}"
-               hx-boost="false"
-               aria-label="Songs"
-               title="Songs">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M9 18V5l12-2v13"></path>
-                    <circle cx="6" cy="18" r="3"></circle>
-                    <circle cx="18" cy="16" r="3"></circle>
-                </svg>
-            </a>
-            <a class="nav-dropdown-toggle drafts-toolbar-btn"
-               th:href="@{/project/documents/drafts(projectId=${viewModel.id})}"
-               hx-boost="false"
-               aria-label="Drafts"
-               title="Drafts">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M16 3H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path>
-                    <line x1="10" y1="8" x2="14" y2="8"></line>
-                    <line x1="10" y1="12" x2="14" y2="12"></line>
-                    <line x1="10" y1="16" x2="12" y2="16"></line>
-                </svg>
-            </a>
+            <div class="nav-dropdown script-edition-dropdown" id="script-edition-dropdown">
+                <button class="nav-dropdown-toggle script-edition-toggle"
+                        type="button"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        th:attr="data-edition-name=${viewModel.editionName != null ? viewModel.editionName : 'Main'}"
+                        th:aria-label="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}"
+                        th:title="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="6" y1="3" x2="6" y2="15"></line>
+                        <circle cx="18" cy="6" r="3"></circle>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <path d="M18 9a9 9 0 0 1-9 9"></path>
+                    </svg>
+                    <span class="script-edition-toggle-label">Version</span>
+                    <svg class="script-edition-toggle-lock"
+                         viewBox="0 0 24 24"
+                         width="12"
+                         height="12"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         fill="currentColor"
+                         stroke-linecap="round"
+                         stroke-linejoin="round"
+                         aria-hidden="true">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="currentColor" stroke="currentColor"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none"></path>
+                    </svg>
+                    <svg class="script-edition-toggle-caret" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="nav-dropdown-menu script-edition-menu">
+                    <div class="script-edition-menu-label">Versions</div>
+                    <div th:each="edition : ${viewModel.editions}"
+                         class="script-edition-row"
+                         th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'is-active'">
+                        <a class="nav-dropdown-item script-edition-switch"
+                           th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'active'"
+                           th:href="@{/project/show(id=${viewModel.id}, editionId=${edition.id})}"
+                           hx-boost="false"
+                           th:text="${edition.name}">Main</a>
+                        <form th:if="${(canEditScript == null or canEditScript) and !edition.default}"
+                              th:action="@{/project/edition/setDefault}"
+                              method="POST"
+                              hx-boost="false"
+                              class="script-edition-default-form">
+                            <input type="hidden" name="projectId" th:value="${viewModel.id}" />
+                            <input type="hidden" name="editionId" th:value="${edition.id}" />
+                            <button type="submit"
+                                    class="default-project-toggle script-edition-default-toggle"
+                                    th:aria-label="'Set ' + ${edition.name} + ' as default version'"
+                                    th:title="'Set as default version'">
+                                <span class="icon-outline" aria-hidden="true">☆</span>
+                                <span class="icon-filled" aria-hidden="true">★</span>
+                            </button>
+                        </form>
+                        <span th:if="${edition.default}"
+                              class="default-project-toggle script-edition-default-toggle is-default"
+                              aria-label="Default version"
+                              title="Default version">
+                            <span class="icon-outline" aria-hidden="true">☆</span>
+                            <span class="icon-filled" aria-hidden="true">★</span>
+                        </span>
+                    </div>
+                    <div class="nav-dropdown-divider" th:if="${canEditScript == null or canEditScript}"></div>
+                    <button th:if="${canEditScript == null or canEditScript}"
+                            type="button"
+                            class="nav-dropdown-item script-edition-create-btn"
+                            id="script-edition-create-open">New version…</button>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <button th:if="${canEditScript == null or canEditScript}"
+                            id="nav-lock-toggle"
+                            type="button"
+                            class="nav-dropdown-item lock-filter-toggle"
+                            role="menuitemcheckbox"
+                            aria-pressed="false"
+                            aria-checked="false"
+                            aria-label="Lock this version"
+                            title="Lock this version">
+                        <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
+                        <span class="lock-toggle-label">Lock this version</span>
+                    </button>
+                    <a id="nav-version-history"
+                       class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/version/list(projectId=${viewModel.id}, editionId=${viewModel.editionId})}"
+                       hx-boost="false"
+                       title="Snapshot history">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>Snapshot history</span>
+                    </a>
+                </div>
+            </div>
+            <div class="nav-dropdown docs-dropdown" id="project-docs-dropdown">
+                <button id="nav-docs"
+                        type="button"
+                        class="nav-dropdown-toggle docs-toolbar-btn"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-label="Songs and drafts"
+                        title="Songs and drafts">
+                    Docs
+                </button>
+                <div class="nav-dropdown-menu docs-menu" role="menu" aria-label="Songs and drafts">
+                    <a class="nav-dropdown-item songs-toolbar-btn"
+                       role="menuitem"
+                       th:href="@{/project/documents/songs(projectId=${viewModel.id})}"
+                       hx-boost="false"
+                       aria-label="Songs"
+                       title="Songs">
+                        Songs
+                    </a>
+                    <a class="nav-dropdown-item drafts-toolbar-btn"
+                       role="menuitem"
+                       th:href="@{/project/documents/drafts(projectId=${viewModel.id})}"
+                       hx-boost="false"
+                       aria-label="Drafts"
+                       title="Drafts">
+                        Drafts
+                    </a>
+                </div>
+            </div>
             <div class="nav-dropdown lists-dropdown" id="project-lists-dropdown">
                 <button id="nav-lists"
                         type="button"
@@ -584,14 +614,7 @@
                         aria-expanded="false"
                         aria-label="Outline, characters, locations, and songs"
                         title="Outline, characters, locations, and songs">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <line x1="8" y1="6" x2="21" y2="6"></line>
-                        <line x1="8" y1="12" x2="21" y2="12"></line>
-                        <line x1="8" y1="18" x2="21" y2="18"></line>
-                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                    </svg>
+                    Lists
                 </button>
                 <div class="nav-dropdown-menu lists-menu" role="menu" aria-label="Outline, characters, locations, and songs">
                     <button id="nav-outline-toggle"
@@ -616,54 +639,43 @@
                             aria-pressed="false">Song list</button>
                 </div>
             </div>
-            <div class="project-script-stats project-script-stats--top-bar"
-                 id="project-script-stats"
-                 th:if="${canEditScript != null and !canEditScript}"
-                 role="status"
-                 aria-live="polite"
-                 title="Word count and estimated pages (≈250 words/page)">
-                <span data-stat="words">0</span> words
-                <span class="project-script-stats-sep" aria-hidden="true">·</span>
-                ~<span data-stat="pages">0</span> pages
-            </div>
-        </div>
-    </aside>
-    <aside class="project-script-toolbar hide-in-reader-view sidebar menu" th:if="${canEditScript == null or canEditScript}">
-        <div class="project-toolbar-row">
-            <div class="project-toolbar-main">
-                <div class="tags-bulk-action tags-bulk-action--compact block-bulk-actions" id="project-bulk-bar" hidden>
-                    <span class="bulk-selection-count" id="project-bulk-count">0 selected</span>
-                    <input type="text" id="project-bulk-tags-input" placeholder="Add tags…" aria-label="Tags to add to selected blocks" />
-                    <button type="button" id="project-bulk-add-tags-btn" title="Add tags to selected blocks">Tag</button>
-                    <button type="button" id="project-bulk-copy-btn" title="Copy selected block text">Copy</button>
-                    <button type="button" id="project-bulk-delete-btn" class="bad" title="Delete selected blocks">Delete</button>
-                </div>
-                <div class="element-type-actions hide-in-reader-view sidebar menu" id="element-type-actions">
-                    <button type="button" class="bulk-type-btn" data-bulk-type="SCENE" title="Turn active or selected rows into scene headings">Scene</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="ACTION" title="Turn active or selected rows into action">Action</button>
-                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="TEXT" title="Turn active or selected rows into plain text">Text</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="CHARACTER" title="Turn active or selected rows into character cues">Character</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="DIALOGUE" title="Turn active or selected rows into dialogue">Dialogue</button>
-                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="DUAL_DIALOGUE" title="Turn active or selected rows into dual-dialogue character cues (Fountain ^)">Dual</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="PARENTHETICAL" title="Turn active or selected rows into parentheticals">(Paren)</button>
-                    <button type="button" class="bulk-type-btn" data-bulk-type="TRANSITION" title="Turn active or selected rows into transitions">Transition</button>
-                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="SHOT" title="Turn active or selected rows into shots">Shot</button>
-                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="LYRICS" title="Turn active or selected rows into lyrics">Lyrics</button>
-                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="CENTERED" title="Turn active or selected rows into centered text">Centered</button>
-                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="SECTION" title="Turn active or selected rows into outline sections (non-printing)">Section</button>
-                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="SYNOPSIS" title="Turn active or selected rows into synopses (non-printing)">Synopsis</button>
-                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="NOTE" title="Turn active or selected rows into notes (non-printing)">Note</button>
-                    <button type="button" class="bulk-type-btn bulk-type-btn--secondary" data-bulk-type="PAGE_BREAK" title="Turn active or selected rows into page breaks">Page Break</button>
-                    <button type="button"
-                            class="element-type-expand-btn"
-                            id="element-type-expand-btn"
-                            aria-expanded="false"
-                            aria-controls="element-type-actions"
-                            title="Show more element types"
-                            aria-label="Show more element types">More</button>
+            <div class="nav-dropdown element-type-dropdown hide-in-reader-view sidebar menu"
+                 id="project-element-type-dropdown"
+                 th:if="${canEditScript == null or canEditScript}">
+                <button id="nav-element-type"
+                        type="button"
+                        class="nav-dropdown-toggle element-type-toolbar-btn"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-label="Elements"
+                        title="Elements">
+                    <span class="element-type-toolbar-label">Elements</span>
+                </button>
+                <div class="nav-dropdown-menu element-type-menu element-type-actions"
+                     id="element-type-actions"
+                     role="menu"
+                     aria-label="Elements">
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="SCENE" title="Turn active or selected rows into scene headings">Scene</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="true" data-bulk-type="ACTION" title="Turn active or selected rows into action">Action</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="TEXT" title="Turn active or selected rows into plain text">Text</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="CHARACTER" title="Turn active or selected rows into character cues">Character</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="DIALOGUE" title="Turn active or selected rows into dialogue">Dialogue</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="DUAL_DIALOGUE" title="Turn active or selected rows into dual-dialogue character cues (Fountain ^)">Dual</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="PARENTHETICAL" title="Turn active or selected rows into parentheticals">(Paren)</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="TRANSITION" title="Turn active or selected rows into transitions">Transition</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="SHOT" title="Turn active or selected rows into shots">Shot</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="LYRICS" title="Turn active or selected rows into lyrics">Lyrics</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="CENTERED" title="Turn active or selected rows into centered text">Centered</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="SECTION" title="Turn active or selected rows into outline sections (non-printing)">Section</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="SYNOPSIS" title="Turn active or selected rows into synopses (non-printing)">Synopsis</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="NOTE" title="Turn active or selected rows into notes (non-printing)">Note</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="PAGE_BREAK" title="Turn active or selected rows into page breaks">Page Break</button>
                 </div>
             </div>
-            <div class="project-toolbar-right">
+            <div th:replace="~{fragments/projectBreadcrumbName :: search}"></div>
+            </div>
+            </div>
+            <div class="project-toolbar-right" th:if="${canEditScript == null or canEditScript}">
                 <div id="project-script-stats"
                      class="project-script-stats"
                      role="status"
@@ -672,6 +684,17 @@
                     <span data-stat="words">0</span> words
                     <span class="project-script-stats-sep" aria-hidden="true">·</span>
                     ~<span data-stat="pages">0</span> pages
+                </div>
+            </div>
+        </div>
+        <div class="project-toolbar-row project-bulk-row" th:if="${canEditScript == null or canEditScript}">
+            <div class="project-toolbar-main">
+                <div class="tags-bulk-action tags-bulk-action--compact block-bulk-actions" id="project-bulk-bar" hidden>
+                    <span class="bulk-selection-count" id="project-bulk-count">0 selected</span>
+                    <input type="text" id="project-bulk-tags-input" placeholder="Add tags…" aria-label="Tags to add to selected blocks" />
+                    <button type="button" id="project-bulk-add-tags-btn" title="Add tags to selected blocks">Tag</button>
+                    <button type="button" id="project-bulk-copy-btn" title="Copy selected block text">Copy</button>
+                    <button type="button" id="project-bulk-delete-btn" class="bad" title="Delete selected blocks">Delete</button>
                 </div>
             </div>
         </div>

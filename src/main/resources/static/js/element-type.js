@@ -10,6 +10,8 @@
  * 2. click: apply type using the snapshot (never trust a wiped textarea)
  * 3. single block: POST /block/setTypeAndContent and swap edit HTML in place
  * 4. multi select: POST /block/bulkSetType (page reload)
+ *
+ * Keyboard: ⌘/Ctrl+1–7 set the classic screenplay types (works while typing).
  */
 (function() {
     'use strict';
@@ -33,6 +35,31 @@
         SYNOPSIS: 'Synopsis',
         NOTE: 'Note',
         PAGE_BREAK: 'Page Break'
+    };
+
+    /** Final Draft–style digit map (matches Tab cycle order). */
+    var TYPE_BY_DIGIT = {
+        '1': 'SCENE',
+        '2': 'ACTION',
+        '3': 'CHARACTER',
+        '4': 'PARENTHETICAL',
+        '5': 'DIALOGUE',
+        '6': 'TRANSITION',
+        '7': 'SHOT'
+    };
+    var OUTLINE_TYPE_BY_DIGIT = {
+        '1': 'SCENE',
+        '2': 'SECTION',
+        '3': 'SYNOPSIS'
+    };
+    var TYPE_SHORTCUT_DIGIT = {
+        SCENE: '1',
+        ACTION: '2',
+        CHARACTER: '3',
+        PARENTHETICAL: '4',
+        DIALOGUE: '5',
+        TRANSITION: '6',
+        SHOT: '7'
     };
 
     var snapshot = null;
@@ -173,12 +200,86 @@
         }
     }
 
+    function isMacPlatform() {
+        return window.scriptyIsMac
+            ? window.scriptyIsMac()
+            : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+    }
+
+    function shortcutLabelForDigit(digit) {
+        return isMacPlatform() ? '⌘' + digit : 'Ctrl+' + digit;
+    }
+
+    function isOutlineModeOn() {
+        return !!(window.scriptyIsOutlineMode && window.scriptyIsOutlineMode())
+            || document.documentElement.classList.contains('scripty-outline-mode');
+    }
+
+    function typeForShortcutDigit(digit) {
+        if (isOutlineModeOn()) {
+            return OUTLINE_TYPE_BY_DIGIT[digit] || null;
+        }
+        return TYPE_BY_DIGIT[digit] || null;
+    }
+
+    function syncElementTypeShortcutLabels() {
+        if (!document.querySelector('.project-script')) return;
+        var outline = isOutlineModeOn();
+        document.querySelectorAll('.bulk-type-btn[data-bulk-type]').forEach(function(btn) {
+            var type = (btn.getAttribute('data-bulk-type') || '').toUpperCase();
+            var digit = null;
+            if (outline) {
+                if (type === 'SCENE') digit = '1';
+                else if (type === 'SECTION') digit = '2';
+                else if (type === 'SYNOPSIS') digit = '3';
+            } else {
+                digit = TYPE_SHORTCUT_DIGIT[type] || null;
+            }
+            var baseTitle = btn.getAttribute('data-base-title') || btn.title || typeLabel(type);
+            if (!btn.getAttribute('data-base-title')) {
+                btn.setAttribute('data-base-title', baseTitle);
+            }
+            var hint = digit ? shortcutLabelForDigit(digit) : '';
+            var title = hint ? baseTitle + ' (' + hint + ')' : baseTitle;
+            btn.title = title;
+            btn.setAttribute('aria-label', title);
+
+            var shortcutEl = btn.querySelector('.element-type-shortcut');
+            if (digit) {
+                if (!shortcutEl) {
+                    shortcutEl = document.createElement('span');
+                    shortcutEl.className = 'element-type-shortcut';
+                    shortcutEl.setAttribute('aria-hidden', 'true');
+                    btn.appendChild(shortcutEl);
+                }
+                shortcutEl.textContent = hint;
+                shortcutEl.hidden = false;
+            } else if (shortcutEl) {
+                shortcutEl.hidden = true;
+            }
+        });
+    }
+    window.scriptySyncElementTypeShortcutLabels = syncElementTypeShortcutLabels;
+
     function syncToolbar(type) {
+        var current = type ? String(type).toUpperCase() : '';
         document.querySelectorAll('.bulk-type-btn').forEach(function(btn) {
-            var active = !!(type && btn.getAttribute('data-bulk-type') === type);
+            var active = !!(current && btn.getAttribute('data-bulk-type') === current);
             btn.classList.toggle('is-active', active);
             btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            btn.setAttribute('aria-checked', active ? 'true' : 'false');
         });
+        var label = document.querySelector('#project-element-type-dropdown .element-type-toolbar-label');
+        if (label) {
+            label.textContent = 'Elements';
+        }
+        var toggle = document.querySelector('#project-element-type-dropdown .element-type-toolbar-btn');
+        if (toggle) {
+            var title = 'Elements' + (current ? ': ' + typeLabel(current) : '');
+            toggle.title = title;
+            toggle.setAttribute('aria-label', title);
+        }
+        syncElementTypeShortcutLabels();
     }
     window.scriptySyncElementTypeToolbar = syncToolbar;
 
@@ -462,35 +563,6 @@
             || document.querySelector('.element-type-actions');
     }
 
-    function getExpandBtn(actions) {
-        return (actions && actions.querySelector('.element-type-expand-btn'))
-            || document.getElementById('element-type-expand-btn');
-    }
-
-    function setExpanded(expanded) {
-        var actions = getActions();
-        if (!actions) return;
-        var btn = getExpandBtn(actions);
-        actions.classList.toggle('is-expanded', expanded);
-        if (btn) {
-            btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-            btn.textContent = expanded ? 'Less' : 'More';
-            btn.title = expanded ? 'Show fewer element types' : 'Show more element types';
-            btn.setAttribute('aria-label', btn.title);
-        }
-    }
-
-    document.body.addEventListener('click', function(e) {
-        var expandBtn = e.target.closest('.element-type-expand-btn');
-        if (!expandBtn || !document.querySelector('.project-script')) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        var actions = expandBtn.closest('.element-type-actions') || getActions();
-        setExpanded(!(actions && actions.classList.contains('is-expanded')));
-    });
-
     document.body.addEventListener('mousedown', function(e) {
         var btn = e.target.closest('.bulk-type-btn');
         if (!btn || !document.querySelector('.project-script')) return;
@@ -537,4 +609,39 @@
         if (!row || row.classList.contains('project-script-select-row')) return;
         syncToolbar(row.getAttribute('data-block-type'));
     });
+
+    // ⌘/Ctrl+1–7 → set element type on the active/selected block(s).
+    // Intentionally works while typing in a block textarea.
+    document.addEventListener('keydown', function(e) {
+        if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+        if (window.scriptyCanEditScript === false) return;
+        if (!document.querySelector('.project-script')) return;
+        if (!getActions()) return;
+
+        var digit = null;
+        if (e.key >= '1' && e.key <= '7') {
+            digit = e.key;
+        } else if (e.code && /^Numpad[1-7]$/.test(e.code)) {
+            digit = e.code.slice(-1);
+        }
+        if (!digit) return;
+
+        var type = typeForShortcutDigit(digit);
+        if (!type) return;
+
+        e.preventDefault();
+        if (typeof window.scriptyApplyElementType === 'function') {
+            window.scriptyApplyElementType(type, null);
+        }
+    });
+
+    document.body.addEventListener('htmx:afterSwap', syncElementTypeShortcutLabels);
+    document.body.addEventListener('htmx:afterSettle', syncElementTypeShortcutLabels);
+    window.addEventListener('scripty:outline-mode-changed', syncElementTypeShortcutLabels);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncElementTypeShortcutLabels);
+    } else {
+        syncElementTypeShortcutLabels();
+    }
 })();

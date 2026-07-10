@@ -22,6 +22,7 @@
         var btn = document.getElementById('outline-mode-toggle');
         if (btn) {
             btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+            btn.setAttribute('aria-checked', on ? 'true' : 'false');
             btn.classList.toggle('is-active', on);
             btn.title = on ? 'Exit outline mode' : 'Show only scenes, sections, and synopses';
             btn.setAttribute('aria-label', btn.title);

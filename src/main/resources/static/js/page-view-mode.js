@@ -39,6 +39,7 @@
         var btn = getToggleBtn();
         if (btn) {
             btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+            btn.setAttribute('aria-checked', on ? 'true' : 'false');
             btn.classList.toggle('is-active', on);
             btn.title = on ? 'Exit page view' : 'View screenplay as pages';
             btn.setAttribute('aria-label', btn.title);

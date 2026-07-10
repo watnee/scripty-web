@@ -89,6 +89,7 @@
                     <li th:replace="~{fragments/projectBreadcrumbName :: item(${viewModel.id}, ${viewModel.title}, ${viewModel.lastEdited})}"></li>
                 </ol>
             </nav>
+            <div th:replace="~{fragments/projectBreadcrumbName :: search}"></div>
             <div class="project-top-bar-actions">
                 <div class="nav-dropdown project-share-dropdown" id="project-share-dropdown">
                     <button class="nav-dropdown-toggle project-share-toggle share-toolbar-btn"
@@ -562,9 +563,10 @@
                         <div class="nav-dropdown-menu text-align-menu" role="menu" aria-label="Text alignment">
                             <button type="button"
                                     class="nav-dropdown-item bulk-align-btn"
-                                    role="menuitem"
+                                    role="menuitemradio"
+                                    aria-checked="true"
                                     data-bulk-align="LEFT"
-                                    title="Align selected blocks left"
+                                    title="Align left"
                                     aria-label="Align left">
                                 <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -575,9 +577,10 @@
                             </button>
                             <button type="button"
                                     class="nav-dropdown-item bulk-align-btn"
-                                    role="menuitem"
+                                    role="menuitemradio"
+                                    aria-checked="false"
                                     data-bulk-align="CENTER"
-                                    title="Align selected blocks center"
+                                    title="Align center"
                                     aria-label="Align center">
                                 <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -588,9 +591,10 @@
                             </button>
                             <button type="button"
                                     class="nav-dropdown-item bulk-align-btn"
-                                    role="menuitem"
+                                    role="menuitemradio"
+                                    aria-checked="false"
                                     data-bulk-align="RIGHT"
-                                    title="Align selected blocks right"
+                                    title="Align right"
                                     aria-label="Align right">
                                 <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -602,9 +606,9 @@
                         </div>
                     </div>
                     <span class="text-style-actions" aria-label="Text style">
-                        <button type="button" class="bulk-style-btn" data-bulk-style="BOLD" title="Toggle bold on selected blocks" aria-label="Bold"><strong>B</strong></button>
-                        <button type="button" class="bulk-style-btn" data-bulk-style="ITALIC" title="Toggle italic on selected blocks" aria-label="Italic"><em>I</em></button>
-                        <button type="button" class="bulk-style-btn bulk-style-btn--underline" data-bulk-style="UNDERLINE" title="Toggle underline on selected blocks" aria-label="Underline">U</button>
+                        <button type="button" class="bulk-style-btn" data-bulk-style="BOLD" title="Toggle bold" aria-label="Bold" aria-pressed="false"><strong>B</strong></button>
+                        <button type="button" class="bulk-style-btn" data-bulk-style="ITALIC" title="Toggle italic" aria-label="Italic" aria-pressed="false"><em>I</em></button>
+                        <button type="button" class="bulk-style-btn bulk-style-btn--underline" data-bulk-style="UNDERLINE" title="Toggle underline" aria-label="Underline" aria-pressed="false">U</button>
                     </span>
                 </div>
             </div>

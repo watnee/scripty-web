@@ -54,8 +54,16 @@
             searchDropdown.classList.toggle('has-value', !!query);
         }
         document.querySelectorAll('.project-script .scene-blocks .block-row[data-block-id]').forEach(function (row) {
-            row.style.display = rowMatchesSearch(row, query) ? '' : 'none';
+            var matches = rowMatchesSearch(row, query);
+            row.classList.toggle('filtered-out', !matches);
+            // Clear legacy inline hides from older search runs.
+            if (row.style.display === 'none') {
+                row.style.display = '';
+            }
         });
+        if (typeof window.scriptyReflowPageView === 'function') {
+            window.scriptyReflowPageView();
+        }
     }
 
     function syncShortcutLabel() {

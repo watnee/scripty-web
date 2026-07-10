@@ -3955,18 +3955,14 @@
         };
 
         window.scriptyBulkSelectionAlert = function() {
-            if (document.documentElement.classList.contains('scripty-hide-block-select')) {
-                alert('Turn on block checkboxes first using the select icon in the toolbar.');
-                return;
-            }
             var orphanChecked = document.querySelectorAll(
                 '.block-select-checkbox:checked:not(.block-select-all-checkbox)'
             ).length > 0 && window.scriptyGetSelectedBlockIds().length === 0;
             if (orphanChecked) {
-                alert('That row is not saved yet. Use the checkboxes beside saved blocks.');
+                alert('That row is not saved yet. Click into a saved block, or use checkboxes beside saved blocks.');
                 return;
             }
-            alert('Please select at least one block.');
+            alert('Click into a block first, or select blocks with the checkboxes.');
         };
 
         window.scriptyInitProjectBulkActions = function() {
@@ -4082,6 +4078,16 @@
                 }
             }
 
+            function resolveAlignStyleTargetIds(triggerEl) {
+                var ids = window.scriptyGetSelectedBlockIds();
+                if (ids.length > 0) return ids;
+                // Match element-type: apply to the focused/active block when nothing is checked.
+                var activeId = window.scriptyGetActiveBlockId
+                    ? window.scriptyGetActiveBlockId(triggerEl)
+                    : null;
+                return activeId ? [String(activeId)] : [];
+            }
+
             document.body.addEventListener('click', function(e) {
                 if (!document.querySelector('.project-script')) return;
                 // Element type buttons are handled by /js/element-type.js
@@ -4089,7 +4095,7 @@
                 var alignBtn = e.target.closest('.bulk-align-btn');
                 if (alignBtn) {
                     e.preventDefault();
-                    var alignIds = window.scriptyGetSelectedBlockIds();
+                    var alignIds = resolveAlignStyleTargetIds(alignBtn);
                     if (alignIds.length === 0) {
                         window.scriptyBulkSelectionAlert();
                         return;
@@ -4108,7 +4114,7 @@
                 var styleBtn = e.target.closest('.bulk-style-btn');
                 if (styleBtn) {
                     e.preventDefault();
-                    var styleIds = window.scriptyGetSelectedBlockIds();
+                    var styleIds = resolveAlignStyleTargetIds(styleBtn);
                     if (styleIds.length === 0) {
                         window.scriptyBulkSelectionAlert();
                         return;

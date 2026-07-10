@@ -32,6 +32,56 @@
         icon.innerHTML = ALIGN_ICONS[align];
     }
 
+    function normalizeAlign(value) {
+        if (!value) return 'LEFT';
+        var key = String(value).toUpperCase();
+        return ALIGN_ICONS[key] ? key : 'LEFT';
+    }
+
+    function readBlockAlign(row) {
+        if (!row) return 'LEFT';
+        var content = row.querySelector('.block-content') || row;
+        if (content.classList.contains('block-text-align-center')) return 'CENTER';
+        if (content.classList.contains('block-text-align-right')) return 'RIGHT';
+        if (content.classList.contains('block-text-align-left')) return 'LEFT';
+        return 'LEFT';
+    }
+
+    function syncTextAlignMenu(align) {
+        var current = normalizeAlign(align);
+        syncTextAlignToggleIcon(current);
+        var menu = document.querySelector('#project-text-align-dropdown .text-align-menu');
+        if (!menu) return;
+        menu.querySelectorAll('.bulk-align-btn').forEach(function (btn) {
+            var btnAlign = normalizeAlign(btn.getAttribute('data-bulk-align'));
+            var isActive = btnAlign === current;
+            btn.classList.toggle('is-active', isActive);
+            btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            btn.setAttribute('role', 'menuitemradio');
+        });
+    }
+
+    function syncTextStyleButtons(row) {
+        var content = row && (row.querySelector('.block-content') || row);
+        var bold = !!(content && content.classList.contains('block-text-bold'));
+        var italic = !!(content && content.classList.contains('block-text-italic'));
+        var underline = !!(content && content.classList.contains('block-text-underline'));
+        document.querySelectorAll('.text-style-actions .bulk-style-btn').forEach(function (btn) {
+            var style = (btn.getAttribute('data-bulk-style') || '').toUpperCase();
+            var on = (style === 'BOLD' && bold)
+                || (style === 'ITALIC' && italic)
+                || (style === 'UNDERLINE' && underline);
+            btn.classList.toggle('is-active', on);
+            btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+    }
+
+    function syncFormatToolbarFromRow(row) {
+        if (!row) return;
+        syncTextAlignMenu(readBlockAlign(row));
+        syncTextStyleButtons(row);
+    }
+
     function closeAllDropdowns() {
         document.querySelectorAll('.nav-dropdown').forEach(function (d) {
             d.classList.remove('open');
@@ -178,7 +228,7 @@
                 }
                 var alignItem = item.classList.contains('bulk-align-btn') ? item : null;
                 if (alignItem && parentDropdown && parentDropdown.id === 'project-text-align-dropdown') {
-                    syncTextAlignToggleIcon(alignItem.getAttribute('data-bulk-align'));
+                    syncTextAlignMenu(alignItem.getAttribute('data-bulk-align'));
                 }
             }
         }
@@ -203,8 +253,25 @@
         });
     });
 
+    // Keep align/style toolbar in sync with the focused block (mirrors element-type).
+    document.addEventListener('focusin', function (e) {
+        if (!e.target || e.target.name !== 'content') return;
+        var row = e.target.closest('.block-row, tr[data-block-id], tr:not([data-block-id])');
+        if (!row || row.classList.contains('project-script-select-row')) return;
+        syncFormatToolbarFromRow(row);
+    });
+
     function sync() {
         syncShareLink();
+        var activeId = window.scriptyGetActiveBlockId
+            ? window.scriptyGetActiveBlockId(null)
+            : null;
+        if (activeId) {
+            var row = document.querySelector(
+                '.block-row[data-block-id="' + activeId + '"], tr[data-block-id="' + activeId + '"]'
+            );
+            if (row) syncFormatToolbarFromRow(row);
+        }
     }
 
     document.body.addEventListener('htmx:afterSwap', sync);

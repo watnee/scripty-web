@@ -138,7 +138,12 @@
         if (!el || !el.classList) return false;
         return el.classList.contains('project-script-select-row')
             || el.classList.contains('hide-in-reader-view')
+            || el.classList.contains('filtered-out')
             || (!el.getAttribute('data-block-id') && el.querySelector && el.querySelector('.block-input-textarea, .create-below, .project-create-inline'));
+    }
+
+    function isSearchFilteredOut(el) {
+        return !!(el && el.classList && el.classList.contains('filtered-out'));
     }
 
     function updateRealPageCount(count) {
@@ -296,12 +301,14 @@
                 var forcedBreak = isForcedBreak(child);
 
                 current.body.appendChild(child);
-                var height = child.offsetHeight || 0;
+                // Search-filtered rows stay in the DOM (order-preserving) but
+                // contribute no height while .filtered-out hides them.
+                var height = isSearchFilteredOut(child) ? 0 : (child.offsetHeight || 0);
 
                 if (!forcedBreak && currentHeight > 0 && currentHeight + height > usableHeight + 0.5) {
                     startPage();
                     current.body.appendChild(child);
-                    height = child.offsetHeight || 0;
+                    height = isSearchFilteredOut(child) ? 0 : (child.offsetHeight || 0);
                 }
 
                 if (forcedBreak) {
@@ -358,6 +365,22 @@
                     }
                 }
                 last.remove();
+                pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
+            }
+            // Middle empties (e.g. search filtered out a whole page of blocks)
+            for (var p = 1; p < pages.length - 1; ) {
+                var midBody = pages[p].querySelector(':scope > .' + PAGE_BODY_CLASS);
+                if (pageHasVisibleContent(midBody)) {
+                    p += 1;
+                    continue;
+                }
+                var mergeInto = pages[p - 1].querySelector(':scope > .' + PAGE_BODY_CLASS);
+                if (midBody && mergeInto) {
+                    while (midBody.firstChild) {
+                        mergeInto.appendChild(midBody.firstChild);
+                    }
+                }
+                pages[p].remove();
                 pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
             }
 

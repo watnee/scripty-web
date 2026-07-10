@@ -6647,32 +6647,38 @@ a.project-list-team:hover {
 }
 
 /* Actor Create / Edit Form */
-.actor-form-page {
+.actor-form-page,
+.user-form-page {
     max-width: 560px;
     margin: 0 auto;
     padding: 0 1.25rem 2.5rem;
     line-height: 1.5;
 }
 
-.actor-form-header {
+.actor-form-header,
+.user-form-header {
     margin-bottom: 1.5rem;
 }
 
-.actor-form-header h1 {
+.actor-form-header h1,
+.user-form-header h1 {
     margin: 0 0 0.35rem;
     line-height: 1.25;
 }
 
-.actor-form-header-text p {
+.actor-form-header-text p,
+.user-form-header-text p {
     margin: 0;
 }
 
-.actor-form {
+.actor-form,
+.user-form {
     display: grid;
     gap: 1rem;
 }
 
-.actor-form-card {
+.actor-form-card,
+.user-form-card {
     border: 1px solid var(--border, #cbd5e1);
     border-radius: 12px;
     background: var(--box-bg, #ffffff);
@@ -6680,7 +6686,8 @@ a.project-list-team:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
-.actor-form-card h2 {
+.actor-form-card h2,
+.user-form-card h2 {
     margin: 0 0 1rem;
     font-size: 0.85rem;
     font-weight: 700;
@@ -6689,30 +6696,44 @@ a.project-list-team:hover {
     color: var(--muted-fg, #64748b);
 }
 
-.actor-form-fields {
+.actor-form-fields,
+.user-form-fields {
     display: grid;
     gap: 1rem;
 }
 
-.actor-form-row {
+.actor-form-row,
+.user-form-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.actor-form-field {
+.user-form-profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.user-form-profile-grid .user-form-field:last-child {
+    grid-column: 1 / -1;
+}
+
+.actor-form-field,
+.user-form-field {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
     min-width: 0;
 }
 
-.actor-form-field label {
+.actor-form-field label,
+.user-form-field label {
     font-size: 0.875rem;
     font-weight: 600;
     line-height: 1.35;
 }
 
 .actor-form-field input,
-.actor-form-field select {
+.actor-form-field select,
+.user-form-field input,
+.user-form-field select {
     width: 100%;
     padding: 0.65rem 0.75rem;
     border-radius: 8px;
@@ -6725,27 +6746,38 @@ a.project-list-team:hover {
     box-sizing: border-box;
 }
 
-.actor-form-field input::placeholder {
+.actor-form-field input::placeholder,
+.user-form-field input::placeholder {
     color: var(--muted-fg, #94a3b8);
 }
 
 .actor-form-field input:focus-visible,
-.actor-form-field select:focus-visible {
+.actor-form-field select:focus-visible,
+.user-form-field input:focus-visible,
+.user-form-field select:focus-visible {
     outline: 2px solid var(--accent, #475569);
     outline-offset: 1px;
 }
 
-.actor-form-hint {
+.actor-form-hint,
+.user-form-hint {
     font-size: 0.8125rem;
     color: var(--muted-fg, #64748b);
     line-height: 1.45;
 }
 
-.actor-form-hint a {
+.user-form-role-fieldset + .user-form-hint {
+    display: block;
+    margin-top: 0.75rem;
+}
+
+.actor-form-hint a,
+.user-form-hint a {
     color: inherit;
 }
 
-.actor-form-error {
+.actor-form-error,
+.user-form-error {
     color: #dc2626;
     font-size: 0.8125rem;
     line-height: 1.4;
@@ -6779,7 +6811,8 @@ a.project-list-team:hover {
     color: var(--accent, #475569);
 }
 
-.actor-form-actions {
+.actor-form-actions,
+.user-form-actions {
     display: flex;
     justify-content: flex-end;
     align-items: center;
@@ -6789,7 +6822,9 @@ a.project-list-team:hover {
 }
 
 .actor-form-cancel,
-.actor-form-submit {
+.actor-form-submit,
+.user-form-cancel,
+.user-form-submit {
     min-width: 7.5rem;
     text-align: center;
     padding: 0.65rem 1.1rem !important;
@@ -6797,28 +6832,33 @@ a.project-list-team:hover {
     border-radius: 8px !important;
 }
 
-.actor-form-submit {
+.actor-form-submit,
+.user-form-submit {
     font-weight: 600;
 }
 
-.actor-form-danger {
+.actor-form-danger,
+.user-form-danger {
     margin-top: 0.5rem;
     border-color: rgba(220, 38, 38, 0.25);
     background: rgba(220, 38, 38, 0.03);
 }
 
-.actor-form-danger h2 {
+.actor-form-danger h2,
+.user-form-danger h2 {
     color: #b91c1c;
 }
 
-.actor-form-danger-text {
+.actor-form-danger-text,
+.user-form-danger-text {
     margin: 0 0 1rem;
     font-size: 0.875rem;
     color: var(--muted-fg, #64748b);
     line-height: 1.5;
 }
 
-.actor-form-delete {
+.actor-form-delete,
+.user-form-delete {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -6827,18 +6867,25 @@ a.project-list-team:hover {
     border-radius: 8px !important;
 }
 
-.actor-form-project-fieldset {
+.actor-form-project-fieldset,
+.user-form-role-fieldset {
     margin: 0;
     padding: 0;
     border: 0;
 }
 
-.actor-form-project-list {
+.actor-form-project-list,
+.user-form-role-list {
     display: grid;
     gap: 0.55rem;
 }
 
-.actor-form-project-option {
+.user-form-role-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.actor-form-project-option,
+.user-form-role-option {
     display: flex;
     align-items: center;
     gap: 0.65rem;
@@ -6851,12 +6898,14 @@ a.project-list-team:hover {
     cursor: pointer;
 }
 
-.actor-form-project-option:has(input:checked) {
+.actor-form-project-option:has(input:checked),
+.user-form-role-option:has(input:checked) {
     border-color: var(--accent, #475569);
     background: rgba(71, 85, 105, 0.08);
 }
 
-.actor-form-project-option input {
+.actor-form-project-option input,
+.user-form-role-option input {
     margin: 0;
     flex-shrink: 0;
 }
@@ -6889,17 +6938,23 @@ a.project-list-team:hover {
 }
 
 @media (max-width: 640px) {
-    .actor-form-row {
+    .actor-form-row,
+    .user-form-row,
+    .user-form-profile-grid,
+    .user-form-role-list {
         grid-template-columns: 1fr;
     }
 
-    .actor-form-actions {
+    .actor-form-actions,
+    .user-form-actions {
         flex-direction: column-reverse;
         align-items: stretch;
     }
 
     .actor-form-cancel,
-    .actor-form-submit {
+    .actor-form-submit,
+    .user-form-cancel,
+    .user-form-submit {
         width: 100%;
         min-width: 0;
     }

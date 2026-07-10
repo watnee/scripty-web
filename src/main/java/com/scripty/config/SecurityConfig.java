@@ -1,5 +1,6 @@
 package com.scripty.config;
 
+import com.scripty.security.HtmxLoginUrlAuthenticationEntryPoint;
 import javax.sql.DataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -90,6 +91,9 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                 .permitAll()
+            )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(new HtmxLoginUrlAuthenticationEntryPoint("/login"))
             )
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))

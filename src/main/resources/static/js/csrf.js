@@ -53,6 +53,28 @@
         event.detail.headers[csrf.header] = csrf.token;
     });
 
+    /**
+     * If an unauthenticated HTMX response still returns login HTML (e.g. older
+     * servers that 302 to /login), do a full navigation instead of swapping
+     * "Please sign in" into /project/show while the URL stays put.
+     */
+    document.addEventListener('htmx:beforeSwap', function (event) {
+        if (!event.detail || event.detail.shouldSwap === false) {
+            return;
+        }
+        var path = window.location.pathname || '';
+        if (path === '/login') {
+            return;
+        }
+        var xhr = event.detail.xhr;
+        var html = xhr && xhr.responseText ? xhr.responseText : '';
+        if (html.indexOf('id="login-heading"') === -1) {
+            return;
+        }
+        event.detail.shouldSwap = false;
+        window.location.href = '/login';
+    });
+
     if (typeof window.fetch !== 'function') {
         return;
     }

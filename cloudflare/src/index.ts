@@ -91,4 +91,17 @@ export default {
     // Single sticky instance keeps sessions + uploads directory coherent.
     return getContainer(env.SCRIPTY_CONTAINER, "scripty").fetch(request);
   },
+
+  async scheduled(
+    _controller: ScheduledController,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<void> {
+    // Keep the sticky JVM warm; resets Container sleepAfter.
+    ctx.waitUntil(
+      getContainer(env.SCRIPTY_CONTAINER, "scripty").fetch(
+        new Request("http://container/health"),
+      ),
+    );
+  },
 };

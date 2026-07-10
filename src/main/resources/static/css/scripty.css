@@ -212,6 +212,58 @@ html[data-theme-setting="system"] .settings-dropdown .theme-option[data-theme="s
     font-weight: 600;
 }
 
+.help-dropdown .nav-dropdown-menu.help-dropdown-menu {
+    min-width: 16.5rem;
+    max-width: min(20rem, calc(100vw - 1.5rem));
+}
+
+.help-feature-search {
+    padding: 0.2rem 0.2rem 0.15rem;
+}
+
+.help-feature-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--border, #e0e0e0);
+    border-radius: 0.45rem;
+    background: var(--bg, #ffffff);
+    color: var(--fg, #333333);
+    font: inherit;
+    font-size: 0.875rem;
+    line-height: 1.35;
+}
+
+.help-feature-search-input:focus {
+    outline: none;
+    border-color: var(--accent, #475569);
+    box-shadow: 0 0 0 2px rgba(71, 85, 105, 0.15);
+}
+
+.help-feature-search-input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.help-feature-search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    max-height: 14rem;
+    overflow-y: auto;
+    margin-top: 0.35rem;
+}
+
+.help-feature-search-results .nav-dropdown-item {
+    white-space: normal;
+}
+
+.help-feature-search-empty {
+    margin: 0.45rem 0.35rem 0.15rem;
+    font-size: 0.8rem;
+    text-align: left;
+}
+
 .header-actions-group .help-toggle-btn,
 .header-actions-group .settings-toggle-btn,
 .header-actions-group .user-toggle-btn {

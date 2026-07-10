@@ -39,11 +39,11 @@
         <!-- TAB: OVERVIEW -->
         <div class="help-content-section active" id="tab-overview">
             <div class="help-card-grid">
-                <div class="help-card" data-keywords="introduction scripty screenplay scene block outline hierarchy">
+                <div class="help-card" id="welcome" data-keywords="introduction scripty screenplay scene block outline hierarchy">
                     <h3>🎬 Welcome to Scripty</h3>
                     <p>Scripty is a web-based collaborative screenwriting platform. It breaks screenplays down into semantic hierarchical units rather than page-based text, allowing for granular editing, character management, versioning, and shared access with automatic refresh while you’re not typing.</p>
                 </div>
-                <div class="help-card" data-keywords="project scene block hierarchy relationship structure">
+                <div class="help-card" id="hierarchy" data-keywords="project scene block hierarchy relationship structure">
                     <h3>📐 The Scripty Hierarchy</h3>
                     <p>Scripts in Scripty are structured using two primary entities:</p>
                     <ul style="margin-top: 0.5rem; padding-left: 1.25rem;">
@@ -51,7 +51,7 @@
                         <li><strong>Blocks</strong>: Granular paragraphs typed after the Fountain screenplay elements — Scene Heading, Action, Text, Character, Dialogue, Dual Dialogue, Parenthetical, Transition, Shot, Lyrics, Centered text, Section, Synopsis, Note, and Page Break. A scene-heading block groups the blocks that follow it; use the Element buttons on the project page to change the type of selected rows. Dual Dialogue marks the second simultaneous speaker (Fountain <code>^</code>). Text is plain body copy (prints like Action, without screenplay force-markers on Fountain export).</li>
                     </ul>
                 </div>
-                <div class="help-card" data-keywords="default project home dashboard settings automatically">
+                <div class="help-card" id="default-project" data-keywords="default project home dashboard settings automatically">
                     <h3>⭐ Default Project</h3>
                     <p>Click the <strong>Set as Default</strong> badge at the top of any Project page. When set, that project will load automatically whenever you navigate to the main dashboard of Scripty, bypassing lists.</p>
                 </div>
@@ -75,19 +75,19 @@
         <!-- TAB: WRITING & EDITING -->
         <div class="help-content-section" id="tab-editing">
             <div class="help-card-grid">
-                <div class="help-card" data-keywords="edit edit block input inline content changes click auto-save save">
+                <div class="help-card" id="inline-editing" data-keywords="edit edit block input inline content changes click auto-save save">
                     <h3>✍️ Inline Editing &amp; Auto-Save</h3>
                     <p>Simply click on the text area of any block to edit its dialogue or action description inline. Your changes are automatically saved in the background after you stop typing (500ms delay).</p>
                 </div>
-                <div class="help-card" data-keywords="offline block text edit cached sync disconnected airplane mode pwa service worker install app">
+                <div class="help-card" id="offline-editing" data-keywords="offline block text edit cached sync disconnected airplane mode pwa service worker install app">
                     <h3>📴 Offline Editing</h3>
                     <p>Visit a project once while online so Scripty can cache it. Then you can reopen it offline (from the offline project list, an installed app, or by revisiting the project URL). Edit block text, press <kbd>Enter</kbd> to add blocks below, or use the <kbd>+</kbd> button. Changes save locally, survive reloads and closed tabs, and sync automatically when you reconnect (with retries if the network is flaky). Unsynced blocks show a small dot indicator. Delete, reorder, and bulk actions still need a connection. See <a href="/help#install-app">Install as an App</a> for home-screen setup.</p>
                 </div>
-                <div class="help-card" data-keywords="add new block insert create below plus icon block controls">
+                <div class="help-card" id="adding-blocks" data-keywords="add new block insert create below plus icon block controls">
                     <h3>➕ Adding Blocks</h3>
                     <p>To insert a block, click the plus icon (<kbd>+</kbd>) on the left side of any block, or press <kbd>Enter</kbd> while editing. <kbd>+</kbd> adds a block below, then opens a menu to choose the element type (or insert a song/draft). You can also change type later with the Element buttons in the toolbar.</p>
                 </div>
-                <div class="help-card" data-keywords="fountain tab cycle element type syntax auto detect character scene location time day night autocomplete outline page view pages letter pagination power user export import pdf docx word fdx final draft upload download paste clipboard ocr scanned password">
+                <div class="help-card" id="fountain-features" data-keywords="fountain tab cycle element type syntax auto detect character scene location time day night autocomplete outline page view pages letter pagination power user export import pdf docx word fdx final draft upload download paste clipboard ocr scanned password">
                     <h3>⌨️ Fountain Power Features</h3>
                     <ul style="margin-top: 0.5rem; padding-left: 1.25rem;">
                         <li><strong>Tab / Shift+Tab</strong> — move the active block to the next (or previous) logical screenplay element type: Scene → Action → Character → Parenthetical → Dialogue → Transition → Shot.</li>
@@ -101,31 +101,31 @@
                         <li><strong>Import / Export / Print</strong> — use the folder icon in the project toolbar. <strong>Import</strong> accepts Fountain (<code>.fountain</code>), plain text, Word (<code>.docx</code> / <code>.doc</code>), Final Draft (<code>.fdx</code>), or PDF (<code>.pdf</code>); Word and PDF files use screenplay layout when present so Scripty-exported DOCX/PDF round-trips element types, otherwise plain text is parsed with Fountain heuristics. Best PDF results come from Scripty-exported or standard screenplay-layout PDFs; <strong>scanned or image-only PDFs are not supported</strong> (no OCR). Password-protected PDFs must be unlocked first. Final Draft files map Scene Heading, Action, Character, Dialogue, Parenthetical, Transition, Shot, and related elements into typed blocks. Import replaces all blocks in the project. <strong>Export</strong> as PDF, Word (.docx) (industry US Letter / Courier layout), Final Draft (.fdx), or Fountain. Fountain round-trips <code>Title:</code>, <code>Credit:</code>, <code>Author:</code>, <code>Draft date:</code> (version), and <code>Contact:</code>, preserves bold/italic/underline, and forces Action/Character markers when needed so re-import keeps element types. <strong>Print</strong> opens the browser print dialog.</li>
                     </ul>
                 </div>
-                <div class="help-card" data-keywords="songs lyrics drafts notes separate text document insert screenplay music song list">
+                <div class="help-card" id="songs-drafts" data-keywords="songs lyrics drafts notes separate text document insert screenplay music song list">
                     <h3>🎵 Songs &amp; Drafts</h3>
                     <p>Write outside the screenplay, then insert when ready. Open <strong>Songs</strong> or <strong>Drafts</strong> from the project toolbar icons, the Production hub, or <strong>Go to songs…</strong> / <strong>Go to drafts…</strong> in the <kbd>+</kbd> block menu. Songs are for lyrics and insert as <strong>Lyrics</strong> blocks. Drafts are for notes/scratch text and insert as <strong>Note</strong> blocks by default. Use <strong>Import</strong> on either page to load a <code>.txt</code>, <code>.fountain</code>, <code>.docx</code>, <code>.doc</code>, <code>.fdx</code>, or <code>.pdf</code> file. Each line becomes its own block on insert. Saving a song or draft updates every place it was already inserted into the screenplay. In the screenplay, open <strong>Song list</strong> from the lists menu to jump to each run of Lyrics blocks.</p>
                 </div>
-                <div class="help-card" data-keywords="drag and drop reorder move block order dots vertical drag-handle handle elements menu bookmark pin delete">
+                <div class="help-card" id="drag-drop" data-keywords="drag and drop reorder move block order dots vertical drag-handle handle elements menu bookmark pin delete">
                     <h3>↕️ Drag &amp; Drop Reordering</h3>
                     <p>Reorder blocks instantly by dragging the double vertical dots (<kbd>⋮⋮</kbd>) on the far-left control panel of any block row — they appear when you hover or click the block. Drag the row to the desired position and drop to save the new order. Click the same handle for block options: <strong>Elements</strong> (change type), bookmark, pin, or delete. Page view mode hides these controls; turn it off from the toolbar to edit.</p>
                 </div>
-                <div class="help-card" data-keywords="bookmark star pin toggle highlight favorite block priority outline jump combined scenes 📌">
+                <div class="help-card" id="bookmarks-pins" data-keywords="bookmark star pin toggle highlight favorite block priority outline jump combined scenes 📌">
                     <h3>📌 Bookmarks &amp; Pinned Blocks</h3>
                     <p>Keep track of key story beats or high-priority dialogue. Toggle the star (<kbd>☆</kbd>) to bookmark a block, or click the pushpin (<kbd>📌</kbd>) to pin a block for fast reference. Open the lists menu (list icon) → <strong>Outline</strong>, then use the <strong>Combined</strong> or <strong>Bookmarks</strong> tab to jump to marked blocks.</p>
                 </div>
-                <div class="help-card" data-keywords="bulk action tags delete multiple blocks checkbox check select all">
+                <div class="help-card" id="bulk-actions" data-keywords="bulk action tags delete multiple blocks checkbox check select all">
                     <h3>📦 Bulk Tagging &amp; Deletions</h3>
                     <p>Need to manage multiple blocks at once? Use the checkboxes on the left control panel of blocks (or the "Select All" checkbox) to perform bulk actions: type tags in the action bar to add tags in bulk, or click the trash can (<kbd>🗑️</kbd>) to delete multiple selected blocks.</p>
                 </div>
-                <div class="help-card" data-keywords="safari reader read script view all read script mobile ios distraction free">
+                <div class="help-card" id="reader-view" data-keywords="safari reader read script view all read script mobile ios distraction free">
                     <h3>📖 Safari Reader &amp; Read Script</h3>
                     <p>To read your screenplay in Safari Reader (or other browser reading modes), open a project and tap the Reader icon in Safari’s address bar. The project page is structured as an article — script text, scene headings, and character names are reader-visible, while editing controls are excluded. You can also choose <strong>Read Script</strong> from the View menu for a minimal read-only page that works especially well with Reader.</p>
                 </div>
-                <div class="help-card" data-keywords="font size text zoom controls A+ A- scale larger smaller readability">
+                <div class="help-card" id="text-size" data-keywords="font size text zoom controls A+ A- scale larger smaller readability">
                     <h3>🔍 Text Size Controls</h3>
                     <p>Improve screenplay readability. Use the <kbd>A−</kbd> and <kbd>A+</kbd> buttons on the top-right of the page to scale text size down or up instantly to suit your display.</p>
                 </div>
-                <div class="help-card" data-keywords="spellcheck spelling misspelled typo dictionary suggestions correct ignore right-click">
+                <div class="help-card" id="spellcheck" data-keywords="spellcheck spelling misspelled typo dictionary suggestions correct ignore right-click">
                     <h3>Spellcheck &amp; Suggestions</h3>
                     <p>Use <strong>Spellcheck</strong> in the View menu to turn checking on or off. Misspelled words in script blocks are underlined while you edit. Right-click a misspelled word (or press <kbd>Ctrl</kbd>+<kbd>.</kbd> / <kbd>⌘</kbd>+<kbd>.</kbd>) to pick a correction, or choose Ignore to stop flagging that word. Character names and scene locations from your project are treated as valid.</p>
                 </div>
@@ -139,11 +139,11 @@
             </p>
             <div th:replace="~{fragments/shortcuts :: shortcutsContent}"></div>
             <div class="help-card-grid" style="margin-top: 1.5rem;">
-                <div class="help-card" data-keywords="history undo redo version history project version list restore clock snapshot">
+                <div class="help-card" id="undo-redo" data-keywords="history undo redo version history project version list restore clock snapshot">
                     <h3>🕒 Undo, Redo &amp; Snapshot History</h3>
                     <p>Use Undo and Redo from the curved-arrow menu in the project toolbar for recent edits in this session. Open <strong>Snapshot History</strong> from the clock icon to browse saved snapshots, compare what changed, and restore an earlier draft of the current screenplay version.</p>
                 </div>
-                <div class="help-card" data-keywords="version history list list-versions backup revision timestamp restore auto-save block edit add delete move snapshot">
+                <div class="help-card" id="snapshot-history" data-keywords="version history list list-versions backup revision timestamp restore auto-save block edit add delete move snapshot">
                     <h3>💾 Snapshot History</h3>
                     <p>Block edits, adds, deletes, moves, and tag changes trigger auto-saves (updated in place about every 10 minutes when content changes). Each entry shows what changed since the previous save — block edits with previews, plus scene and character changes. Restoring saves a “Before restore” snapshot first so you can undo a mistaken restore. Older auto-saves are pruned (the newest 30 per screenplay version are kept); named snapshots and “Before restore” entries are kept. Use the version menu next to Snapshot History to create parallel editable screenplay versions. Click the star next to a version to make it the project default — exports and imports use the default version.</p>
                 </div>
@@ -153,15 +153,15 @@
         <!-- TAB: CASTING & COLLABORATION -->
         <div class="help-content-section" id="tab-collaboration">
             <div class="help-card-grid">
-                <div class="help-card" data-keywords="casting actors list profile assign database roles">
+                <div class="help-card" id="casting" data-keywords="casting actors list profile assign database roles">
                     <h3>👥 Actor Casting</h3>
                     <p>The <strong>Casting</strong> tab allows you to maintain a directory of real-world actors. You can assign actors to script Characters, making it easy to track casting configurations and contact details.</p>
                 </div>
-                <div class="help-card" data-keywords="characters list roles assign actor character-profile profile name">
+                <div class="help-card" id="characters" data-keywords="characters list roles assign actor character-profile profile name">
                     <h3>🎭 Characters &amp; Roles</h3>
                     <p>Create and edit script characters. Each block of dialogue can be associated with a specific character name. Click a character name to view their profile, assigned actor, and full list of dialogue blocks.</p>
                 </div>
-                <div class="help-card" data-keywords="teams collaboration share member group list-teams collaborate project-team">
+                <div class="help-card" id="teams" data-keywords="teams collaboration share member group list-teams collaborate project-team">
                     <h3>🤝 Team Collaboration</h3>
                     <p>Collaborate with others! Open <strong>Teams</strong> from the user menu to form a project group. Assigning a Project to a Team gives members shared access to view the screenplay. Only users with the <strong>Writer</strong> role can edit the screenplay.</p>
                 </div>

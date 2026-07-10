@@ -38,7 +38,19 @@
                     <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
             </button>
-            <div class="nav-dropdown-menu">
+            <div class="nav-dropdown-menu help-dropdown-menu" role="menu" aria-label="Help">
+                <div class="help-feature-search" role="search">
+                    <input type="search"
+                           id="help-feature-search"
+                           class="help-feature-search-input"
+                           placeholder="Search features…"
+                           aria-label="Search features"
+                           autocomplete="off"
+                           spellcheck="false">
+                    <div id="help-feature-search-results" class="help-feature-search-results" hidden></div>
+                    <p id="help-feature-search-empty" class="help-feature-search-empty muted" hidden>No matching features</p>
+                </div>
+                <hr class="nav-dropdown-divider">
                 <a class="nav-dropdown-item" th:href="@{/help}" th:classappend="${currentPage == 'help'} ? 'active'">Scripty Help</a>
                 <a class="nav-dropdown-item" th:href="@{/shortcuts}" th:classappend="${currentPage == 'shortcuts'} ? 'active'">Keyboard Shortcuts</a>
                 <button type="button" class="nav-dropdown-item" data-scripty-install-app hidden>Install App</button>

@@ -5,10 +5,23 @@
 GitHub Actions runs Maven verify on every pull request and on `main`. After verify succeeds on `main` (or a manual **Run workflow**), the app deploys to **Railway and Cloudflare in parallel**. Each deploy job waits for its platform to finish before succeeding.
 
 ```text
-PR opened/updated  →  Verify (Maven)
-Push to main       →  Verify (Maven)  →  Deploy Railway ∥ Deploy Cloudflare
-Actions → Run workflow  →  Verify (Maven)  →  Deploy Railway ∥ Deploy Cloudflare
+PR opened/updated              →  Verify (Maven)
+PR from cursor/* (mobile)      →  Verify → Ship to main → (push) Deploy Railway ∥ Cloudflare
+Push to main                   →  Verify (Maven)  →  Deploy Railway ∥ Deploy Cloudflare
+Actions → Run workflow         →  Verify (Maven)  →  Deploy Railway ∥ Deploy Cloudflare
 ```
+
+### Cursor Mobile → Railway
+
+Cursor Mobile / cloud agents push to `cursor/*` branches (often as draft PRs). Those do **not** deploy until they are on `main`.
+
+- **Automatic:** after Maven verify on a `cursor/*` → `main` PR, CI squash-merges it (unless labeled `hold` or `no-ship`). The resulting push to `main` deploys Railway + Cloudflare.
+- **Manual:** list or ship pending branches:
+
+  ```bash
+  ./scripts/ship-mobile-changes.sh           # dry-run list
+  ./scripts/ship-mobile-changes.sh --apply   # cherry-pick onto main and push
+  ```
 
 ### One-time setup
 

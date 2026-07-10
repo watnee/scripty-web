@@ -1,10 +1,15 @@
 # Scripty CI/CD
 #
 # Flow:
-#   pull_request  →  Verify (Maven)
-#   push to main  →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
-#   Run workflow  →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
+#   pull_request              →  Verify (Maven)
+#   pull_request (cursor/*)   →  Verify → Ship to main (auto-merge) → push triggers deploy
+#   push to main              →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
+#   Run workflow              →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
 #   Run workflow (secrets only) → Sync Cloudflare Worker MySQL secrets from Railway
+#
+# Mobile Cursor cloud agents open draft PRs on cursor/* branches. Those never
+# reach Railway until they land on main. After Verify succeeds, the
+# ship-cursor-pr job squash-merges cursor/* → main (unless labeled hold / no-ship).
 #
 # One-time setup (repo Settings → Secrets and variables → Actions):
 #   RAILWAY_TOKEN           Project token: Railway → Project → Settings → Tokens
@@ -77,11 +82,103 @@ jobs:
             echo "| Result | ${{ job.status }} |"
             echo ""
             if [ "${{ github.event_name }}" = "pull_request" ]; then
-              echo "PRs only run verify. Merge to \`main\` (or use **Run workflow**) to deploy."
+              head_ref="${{ github.head_ref }}"
+              case "$head_ref" in
+                cursor/*)
+                  echo "Cursor mobile PR: after verify, **Ship Cursor mobile PR** squash-merges into \`main\` (unless labeled \`hold\` / \`no-ship\`), which triggers Railway + Cloudflare deploy."
+                  ;;
+                *)
+                  echo "PRs only run verify. Merge to \`main\` (or use **Run workflow**) to deploy."
+                  ;;
+              esac
             else
               echo "Next: **Deploy to Railway** and **Deploy to Cloudflare** run in parallel after this job succeeds."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # Mobile Cursor → Railway: land cursor/* PRs on main after verify so the
+  # existing push-to-main deploy path runs (Railway + Cloudflare).
+  ship-cursor-pr:
+    name: Ship Cursor mobile PR
+    needs: verify
+    if: >
+      github.event_name == 'pull_request' &&
+      github.base_ref == 'main' &&
+      startsWith(github.head_ref, 'cursor/') &&
+      github.event.action != 'closed' &&
+      !contains(github.event.pull_request.labels.*.name, 'hold') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-ship')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Squash-merge cursor/* PR into main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          echo "Shipping PR #$PR_NUMBER ($HEAD_REF → main) after Verify succeeded."
+
+          if gh pr view "$PR_NUMBER" --json isDraft --jq '.isDraft' | grep -q true; then
+            echo "Marking draft PR ready for review…"
+            gh pr ready "$PR_NUMBER"
+          fi
+
+          set +e
+          gh pr merge "$PR_NUMBER" \
+            --squash \
+            --delete-branch \
+            --subject "$(gh pr view "$PR_NUMBER" --json title --jq '.title')" \
+            --body "Auto-shipped from Cursor mobile branch \`$HEAD_REF\` after Maven verify. Triggers Railway + Cloudflare deploy on main."
+          status=$?
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            # Merges via GITHUB_TOKEN do not fire the push workflow — dispatch deploy explicitly.
+            echo "Dispatching CI/CD on main (Railway + Cloudflare deploy)…"
+            gh workflow run "CI/CD" --ref main \
+              -f reason="Auto-ship PR #$PR_NUMBER ($HEAD_REF)"
+          fi
+
+          {
+            echo "## Ship Cursor mobile PR"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| PR | [#${PR_NUMBER}](${{ github.server_url }}/${{ github.repository }}/pull/${PR_NUMBER}) |"
+            echo "| Branch | \`$HEAD_REF\` |"
+            echo "| Result | $([ "$status" -eq 0 ] && echo success || echo failed) |"
+            echo ""
+            if [ "$status" -eq 0 ]; then
+              echo "Merged to \`main\` and dispatched **CI/CD** (Verify → Railway + Cloudflare)."
+              echo "Add label \`hold\` or \`no-ship\` on a Cursor PR to skip auto-ship."
+            else
+              echo "Merge failed (exit \`$status\`). Resolve conflicts or merge manually, then push to \`main\`."
+              echo "Or run locally: \`./scripts/ship-mobile-changes.sh --apply\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$status" -ne 0 ]; then
+            body="$(printf '%s\n' \
+              '## Auto-ship blocked' \
+              '' \
+              'Maven verify passed, but this `cursor/*` PR could not be squash-merged into `main` (likely a conflict).' \
+              '' \
+              '**To get it on Railway:**' \
+              '1. Resolve conflicts and merge into `main`, or' \
+              '2. From a desktop checkout: `./scripts/ship-mobile-changes.sh --apply`' \
+              '' \
+              'Add label `hold` or `no-ship` to skip auto-ship next time.')"
+            gh pr comment "$PR_NUMBER" --body "$body" || true
+            exit "$status"
+          fi
+
+          gh pr comment "$PR_NUMBER" --body "Shipped to \`main\` after verify. Dispatched CI/CD so **Railway** + Cloudflare deploy." || true
 
   deploy-railway:
     name: Deploy to Railway

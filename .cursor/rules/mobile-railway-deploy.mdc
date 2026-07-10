@@ -1,0 +1,25 @@
+---
+description: Land Cursor mobile (cursor/*) changes on main so Railway deploys
+alwaysApply: true
+---
+
+# Mobile Cursor → Railway deploy
+
+Production deploys only from **`main`** (GitHub Actions → Railway + Cloudflare).
+
+Cursor Mobile / cloud agents push to **`cursor/*` branches** and often open **draft PRs**. Those do **not** appear on Railway until they are on `main`.
+
+## When the user wants mobile changes live
+
+1. Prefer the auto-ship path: ensure the work is a PR into **`main`** from `cursor/*`. After Maven verify, CI squash-merges it (unless labeled `hold` / `no-ship`).
+2. If auto-ship did not run or failed, land the commits on `main` yourself:
+   - `./scripts/ship-mobile-changes.sh` (list)
+   - `./scripts/ship-mobile-changes.sh --apply` (cherry-pick + push)
+3. Confirm the Actions run: Verify → **Deploy to Railway** (and Cloudflare).
+4. Do not tell the user changes are deployed while they only exist on a `cursor/*` branch or an open draft PR.
+
+## When finishing cloud/mobile UI work yourself
+
+- Target **`main`**, not `master`.
+- After verify-worthy changes, get them onto `main` (merge/ship) so Railway updates.
+- Bump asset / service-worker cache versions when shipping CSS/JS/static UI fixes so clients see the new build.

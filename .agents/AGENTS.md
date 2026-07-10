@@ -9,6 +9,15 @@ This file defines rules and guidelines specific to the Scripty workspace.
 
 ---
 
+### Mobile Cursor → Railway
+- Production deploys only from **`main`** (GitHub Actions → Railway + Cloudflare). Cursor Mobile cloud agents work on **`cursor/*`** branches / draft PRs — those are not live until they land on `main`.
+- CI auto-ships `cursor/*` → `main` after Maven verify (skip with PR labels `hold` or `no-ship`).
+- If the user asks to deploy mobile changes and auto-ship did not run: `./scripts/ship-mobile-changes.sh` then `./scripts/ship-mobile-changes.sh --apply`.
+- Never claim a change is on Railway while it only exists on a `cursor/*` branch or open draft PR.
+- When shipping CSS/JS/static UI fixes, bump asset / service-worker cache versions so clients pick up the new build.
+
+---
+
 ### Persistent H2 Database Setup
 - For local development and testing environments (e.g., in `application-dev.yml` or `application.properties`), avoid using in-memory databases (`jdbc:h2:mem:...`) as it causes data loss across server restarts.
 - Always use persistent, file-based configurations:

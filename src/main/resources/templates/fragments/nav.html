@@ -109,7 +109,7 @@
             </div>
         </div>
     </div>
-    <script>
+    <script th:inline="none">
     (function() {
         // Aliases for shared helpers loaded via scripty-project-utils.js
         var resolveProjectId = window.scriptyResolveProjectId;
@@ -2644,11 +2644,12 @@
                     const currentIndex = buttons.indexOf(document.activeElement);
                     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
                         e.preventDefault();
-                        const next = buttons[(currentIndex + 1) % buttons.length];
+                        // Space after '[' avoids Thymeleaf treating [(...)] as an inline expression.
+                        const next = buttons[ (currentIndex + 1) % buttons.length];
                         if (next) next.focus();
                     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
                         e.preventDefault();
-                        const prev = buttons[(currentIndex - 1 + buttons.length) % buttons.length];
+                        const prev = buttons[ (currentIndex - 1 + buttons.length) % buttons.length];
                         if (prev) prev.focus();
                     } else if (e.key === 'Enter' || e.key === ' ') {
                         const activeBtn = document.activeElement;

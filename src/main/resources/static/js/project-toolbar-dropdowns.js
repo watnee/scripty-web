@@ -1,5 +1,5 @@
 /**
- * Project editor toolbar dropdowns (file, lists, view, edition, share).
+ * Project editor toolbar dropdowns (file, lists, view, edition, share, text align).
  *
  * Loaded from nav.html so handlers survive HTMX-boosted navigation into
  * /project/show (page scripts are not executed when allowScriptTags is false).
@@ -15,8 +15,22 @@
         { id: 'project-lists-dropdown', toggle: '.lists-toolbar-btn' },
         { id: 'project-view-dropdown', toggle: '.view-toolbar-btn', keepOpenOnItemClick: true },
         { id: 'script-edition-dropdown', toggle: '.script-edition-toggle' },
-        { id: 'project-share-dropdown', toggle: '.project-share-toggle' }
+        { id: 'project-share-dropdown', toggle: '.project-share-toggle' },
+        { id: 'project-text-align-dropdown', toggle: '.text-align-toolbar-btn' }
     ];
+
+    var ALIGN_ICONS = {
+        LEFT: '<line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="15" y2="12"></line><line x1="3" y1="18" x2="18" y2="18"></line>',
+        CENTER: '<line x1="3" y1="6" x2="21" y2="6"></line><line x1="6" y1="12" x2="18" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line>',
+        RIGHT: '<line x1="3" y1="6" x2="21" y2="6"></line><line x1="9" y1="12" x2="21" y2="12"></line><line x1="6" y1="18" x2="21" y2="18"></line>'
+    };
+
+    function syncTextAlignToggleIcon(align) {
+        var icon = document.querySelector('#project-text-align-dropdown .text-align-toolbar-icon');
+        if (!icon || !ALIGN_ICONS[align]) return;
+        icon.setAttribute('data-align-icon', align);
+        icon.innerHTML = ALIGN_ICONS[align];
+    }
 
     function closeAllDropdowns() {
         document.querySelectorAll('.nav-dropdown').forEach(function (d) {
@@ -33,6 +47,7 @@
     }
 
     function findConfigForToggle(toggle) {
+        if (!toggle) return null;
         for (var i = 0; i < DROPDOWNS.length; i++) {
             var cfg = DROPDOWNS[i];
             if (toggle.matches(cfg.toggle) || toggle.closest(cfg.toggle)) {
@@ -158,8 +173,12 @@
                         break;
                     }
                 }
-                if (!keepOpen && parentDropdown.querySelector('.file-toolbar-btn, .lists-toolbar-btn, .view-toolbar-btn, .script-edition-toggle, .project-share-toggle')) {
+                if (!keepOpen && parentDropdown.querySelector('.file-toolbar-btn, .lists-toolbar-btn, .view-toolbar-btn, .script-edition-toggle, .project-share-toggle, .text-align-toolbar-btn')) {
                     setOpen(parentDropdown, parentDropdown.querySelector('.nav-dropdown-toggle'), false);
+                }
+                var alignItem = item.classList.contains('bulk-align-btn') ? item : null;
+                if (alignItem && parentDropdown && parentDropdown.id === 'project-text-align-dropdown') {
+                    syncTextAlignToggleIcon(alignItem.getAttribute('data-bulk-align'));
                 }
             }
         }

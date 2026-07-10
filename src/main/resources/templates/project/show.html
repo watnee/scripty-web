@@ -546,29 +546,61 @@
                             aria-label="Show more element types">More</button>
                 </div>
                 <div class="text-format-actions hide-in-reader-view sidebar menu">
-                    <span class="text-align-actions" aria-label="Text alignment">
-                        <button type="button" class="bulk-align-btn" data-bulk-align="LEFT" title="Align selected blocks left" aria-label="Align left">
-                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <div class="nav-dropdown text-align-dropdown" id="project-text-align-dropdown">
+                        <button type="button"
+                                class="nav-dropdown-toggle text-align-toolbar-btn"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                aria-label="Text alignment"
+                                title="Text alignment">
+                            <svg class="text-align-toolbar-icon" data-align-icon="LEFT" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <line x1="3" y1="6" x2="21" y2="6"></line>
                                 <line x1="3" y1="12" x2="15" y2="12"></line>
                                 <line x1="3" y1="18" x2="18" y2="18"></line>
                             </svg>
                         </button>
-                        <button type="button" class="bulk-align-btn" data-bulk-align="CENTER" title="Align selected blocks center" aria-label="Align center">
-                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <line x1="3" y1="6" x2="21" y2="6"></line>
-                                <line x1="6" y1="12" x2="18" y2="12"></line>
-                                <line x1="4" y1="18" x2="20" y2="18"></line>
-                            </svg>
-                        </button>
-                        <button type="button" class="bulk-align-btn" data-bulk-align="RIGHT" title="Align selected blocks right" aria-label="Align right">
-                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <line x1="3" y1="6" x2="21" y2="6"></line>
-                                <line x1="9" y1="12" x2="21" y2="12"></line>
-                                <line x1="6" y1="18" x2="21" y2="18"></line>
-                            </svg>
-                        </button>
-                    </span>
+                        <div class="nav-dropdown-menu text-align-menu" role="menu" aria-label="Text alignment">
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-align-btn"
+                                    role="menuitem"
+                                    data-bulk-align="LEFT"
+                                    title="Align selected blocks left"
+                                    aria-label="Align left">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <line x1="3" y1="12" x2="15" y2="12"></line>
+                                    <line x1="3" y1="18" x2="18" y2="18"></line>
+                                </svg>
+                                <span>Left</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-align-btn"
+                                    role="menuitem"
+                                    data-bulk-align="CENTER"
+                                    title="Align selected blocks center"
+                                    aria-label="Align center">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <line x1="6" y1="12" x2="18" y2="12"></line>
+                                    <line x1="4" y1="18" x2="20" y2="18"></line>
+                                </svg>
+                                <span>Center</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-align-btn"
+                                    role="menuitem"
+                                    data-bulk-align="RIGHT"
+                                    title="Align selected blocks right"
+                                    aria-label="Align right">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <line x1="9" y1="12" x2="21" y2="12"></line>
+                                    <line x1="6" y1="18" x2="21" y2="18"></line>
+                                </svg>
+                                <span>Right</span>
+                            </button>
+                        </div>
+                    </div>
                     <span class="text-style-actions" aria-label="Text style">
                         <button type="button" class="bulk-style-btn" data-bulk-style="BOLD" title="Toggle bold on selected blocks" aria-label="Bold"><strong>B</strong></button>
                         <button type="button" class="bulk-style-btn" data-bulk-style="ITALIC" title="Toggle italic on selected blocks" aria-label="Italic"><em>I</em></button>

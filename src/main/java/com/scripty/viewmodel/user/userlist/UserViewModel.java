@@ -1,7 +1,9 @@
 package com.scripty.viewmodel.user.userlist;
 
+import com.scripty.viewmodel.user.userprofile.UserProjectAccessViewModel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class UserViewModel {
 
@@ -20,6 +22,10 @@ public class UserViewModel {
     private boolean directorOfPhotography;
     private boolean castingDirector;
     private boolean viewCasting;
+    private boolean canEditScreenplay;
+    private boolean canViewCastingPages;
+    private boolean privilegedProjectAccess;
+    private List<UserProjectAccessViewModel> projectAccess = new ArrayList<>();
 
     public int getId() {
         return id;
@@ -139,6 +145,57 @@ public class UserViewModel {
 
     public void setViewCasting(boolean viewCasting) {
         this.viewCasting = viewCasting;
+    }
+
+    public boolean isCanEditScreenplay() {
+        return canEditScreenplay;
+    }
+
+    public void setCanEditScreenplay(boolean canEditScreenplay) {
+        this.canEditScreenplay = canEditScreenplay;
+    }
+
+    public boolean isCanViewCastingPages() {
+        return canViewCastingPages;
+    }
+
+    public void setCanViewCastingPages(boolean canViewCastingPages) {
+        this.canViewCastingPages = canViewCastingPages;
+    }
+
+    public boolean isPrivilegedProjectAccess() {
+        return privilegedProjectAccess;
+    }
+
+    public void setPrivilegedProjectAccess(boolean privilegedProjectAccess) {
+        this.privilegedProjectAccess = privilegedProjectAccess;
+    }
+
+    public List<UserProjectAccessViewModel> getProjectAccess() {
+        return projectAccess;
+    }
+
+    public void setProjectAccess(List<UserProjectAccessViewModel> projectAccess) {
+        this.projectAccess = projectAccess != null ? projectAccess : new ArrayList<>();
+    }
+
+    /**
+     * Compact label for list search / glance: "All projects", project names, or "No access".
+     */
+    public String getProjectAccessLabel() {
+        if (!enabled) {
+            return "No access";
+        }
+        if (privilegedProjectAccess) {
+            return "All projects";
+        }
+        if (projectAccess == null || projectAccess.isEmpty()) {
+            return "No projects";
+        }
+        return projectAccess.stream()
+                .map(UserProjectAccessViewModel::getProjectName)
+                .filter(name -> name != null && !name.isBlank())
+                .collect(Collectors.joining(", "));
     }
 
     public String getRolesLabel() {

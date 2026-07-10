@@ -20,6 +20,10 @@ public class UserProfileViewModel {
     private boolean directorOfPhotography;
     private boolean castingDirector;
     private boolean viewCasting;
+    private boolean canEditScreenplay;
+    private boolean canViewCastingPages;
+    private boolean privilegedProjectAccess;
+    private List<UserProjectAccessViewModel> projectAccess = new ArrayList<>();
 
     public int getId() {
         return id;
@@ -139,6 +143,38 @@ public class UserProfileViewModel {
 
     public void setViewCasting(boolean viewCasting) {
         this.viewCasting = viewCasting;
+    }
+
+    public boolean isCanEditScreenplay() {
+        return canEditScreenplay;
+    }
+
+    public void setCanEditScreenplay(boolean canEditScreenplay) {
+        this.canEditScreenplay = canEditScreenplay;
+    }
+
+    public boolean isCanViewCastingPages() {
+        return canViewCastingPages;
+    }
+
+    public void setCanViewCastingPages(boolean canViewCastingPages) {
+        this.canViewCastingPages = canViewCastingPages;
+    }
+
+    public boolean isPrivilegedProjectAccess() {
+        return privilegedProjectAccess;
+    }
+
+    public void setPrivilegedProjectAccess(boolean privilegedProjectAccess) {
+        this.privilegedProjectAccess = privilegedProjectAccess;
+    }
+
+    public List<UserProjectAccessViewModel> getProjectAccess() {
+        return projectAccess;
+    }
+
+    public void setProjectAccess(List<UserProjectAccessViewModel> projectAccess) {
+        this.projectAccess = projectAccess != null ? projectAccess : new ArrayList<>();
     }
 
     public String getRolesLabel() {

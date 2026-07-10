@@ -94,6 +94,54 @@
                     No roles assigned.
                 </p>
             </section>
+
+            <section class="user-profile-card user-profile-card--access">
+                <h2>Access</h2>
+                <dl class="user-profile-details">
+                    <div>
+                        <dt>Screenplay</dt>
+                        <dd>
+                            <span class="access-permission-chip"
+                                  th:classappend="${viewModel.canEditScreenplay} ? ' access-permission-chip--edit' : ' access-permission-chip--view'"
+                                  th:text="${viewModel.canEditScreenplay} ? 'Can edit' : 'View only'">View only</span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>Casting</dt>
+                        <dd th:text="${viewModel.canViewCastingPages} ? 'Yes' : 'No'">No</dd>
+                    </div>
+                </dl>
+                <p class="muted user-profile-access-note"
+                   th:if="${viewModel.enabled and viewModel.privilegedProjectAccess}">
+                    Privileged role — all projects
+                </p>
+                <p class="muted user-profile-empty"
+                   th:if="${!viewModel.enabled}">
+                    Account is disabled — no project access.
+                </p>
+                <div th:if="${viewModel.enabled}">
+                    <h3 class="user-profile-access-subtitle">Projects</h3>
+                    <ul class="user-profile-access-list"
+                        th:if="${!#lists.isEmpty(viewModel.projectAccess)}">
+                        <li th:each="project : ${viewModel.projectAccess}" class="user-profile-access-item">
+                            <span class="user-profile-access-item-main">
+                                <a th:href="@{/project/show(id=${project.projectId})}"
+                                   th:text="${project.projectName}"
+                                   hx-boost="false">Project</a>
+                                <span class="muted user-profile-access-reason"
+                                      th:text="${project.accessReason}">Team</span>
+                            </span>
+                            <span class="access-permission-chip"
+                                  th:classappend="${project.canEdit} ? ' access-permission-chip--edit' : ' access-permission-chip--view'"
+                                  th:text="${project.permissionLabel}">View only</span>
+                        </li>
+                    </ul>
+                    <p class="muted user-profile-empty"
+                       th:if="${#lists.isEmpty(viewModel.projectAccess)}">
+                        No projects accessible.
+                    </p>
+                </div>
+            </section>
         </div>
     </main>
     <script src="/js/htmx.min.js"></script>

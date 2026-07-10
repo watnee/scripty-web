@@ -68,7 +68,7 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
         resource.setFirst(actor.getFirstName());
         resource.setLast(actor.getLastName());
         return EntityModel.of(resource,
-                linkTo(methodOn(ActorRestController.class).list(null)).withRel(ApiRel.ACTORS));
+                linkTo(methodOn(ActorRestController.class).list(null, null)).withRel(ApiRel.ACTORS));
     }
 
     public CollectionModel<EntityModel<ActorResource>> toActorCollection(
@@ -78,7 +78,7 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
             resources.add(toModel(actor, projectId));
         }
         CollectionModel<EntityModel<ActorResource>> collection = CollectionModel.of(resources)
-                .add(linkTo(methodOn(ActorRestController.class).list(projectId)).withSelfRel());
+                .add(linkTo(methodOn(ActorRestController.class).list(projectId, null)).withSelfRel());
         if (projectId != null) {
             collection.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
@@ -91,7 +91,7 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
             resources.add(toModel(actor));
         }
         return CollectionModel.of(resources)
-                .add(linkTo(methodOn(ActorRestController.class).list(null)).withSelfRel());
+                .add(linkTo(methodOn(ActorRestController.class).list(null, null)).withSelfRel());
     }
 
     private ActorResource toResource(ActorViewModel actor) {
@@ -107,12 +107,12 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
 
     private org.springframework.hateoas.Link[] actorLinks(int id, Integer projectId, Boolean hasHeadshot) {
         List<org.springframework.hateoas.Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(ActorRestController.class).show(id)).withSelfRel());
-        links.add(linkTo(methodOn(ActorRestController.class).list(projectId)).withRel(ApiRel.ACTORS));
-        links.add(linkTo(methodOn(ActorRestController.class).update(id, null, null)).withRel(ApiRel.UPDATE));
-        links.add(linkTo(methodOn(ActorRestController.class).delete(id)).withRel(ApiRel.DELETE));
+        links.add(linkTo(methodOn(ActorRestController.class).show(id, null)).withSelfRel());
+        links.add(linkTo(methodOn(ActorRestController.class).list(projectId, null)).withRel(ApiRel.ACTORS));
+        links.add(linkTo(methodOn(ActorRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE));
+        links.add(linkTo(methodOn(ActorRestController.class).delete(id, null)).withRel(ApiRel.DELETE));
         if (Boolean.TRUE.equals(hasHeadshot)) {
-            links.add(linkTo(methodOn(ActorController.class).headshot(id)).withRel(ApiRel.HEADSHOT));
+            links.add(linkTo(methodOn(ActorController.class).headshot(id, null)).withRel(ApiRel.HEADSHOT));
         }
         if (projectId != null) {
             links.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));

@@ -15,6 +15,7 @@ import com.scripty.viewmodel.user.userlist.UserViewModel;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,14 +26,17 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final AuthorityRepository authorityRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ProjectService projectService;
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository,
                            AuthorityRepository authorityRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           @Lazy ProjectService projectService) {
         this.userRepository = userRepository;
         this.authorityRepository = authorityRepository;
         this.passwordEncoder = passwordEncoder;
+        this.projectService = projectService;
     }
 
     @Override
@@ -160,6 +164,7 @@ public class UserServiceImpl implements UserService {
     public UserListViewModel getUserListViewModel() {
         UserListViewModel vm = new UserListViewModel();
         List<User> users = list();
+        var projectAccessByUserId = projectService.getUsersProjectAccess(users);
         List<UserViewModel> userViewModels = new ArrayList<>();
         for (User user : users) {
             UserViewModel uvm = new UserViewModel();
@@ -178,6 +183,12 @@ public class UserServiceImpl implements UserService {
             uvm.setDirectorOfPhotography(user.isDirectorOfPhotography());
             uvm.setCastingDirector(user.isCastingDirector());
             uvm.setViewCasting(user.isViewCasting());
+            uvm.setCanEditScreenplay(user.isWriter() || user.isAdmin());
+            uvm.setCanViewCastingPages(user.isAdmin() || user.isCastingDirector() || user.isViewCasting());
+            uvm.setPrivilegedProjectAccess(user.isAdmin() || user.isDirector() || user.isProducer()
+                    || user.isWriter() || user.isActor() || user.isCrew()
+                    || user.isDirectorOfPhotography() || user.isCastingDirector());
+            uvm.setProjectAccess(projectAccessByUserId.getOrDefault(user.getId(), List.of()));
             userViewModels.add(uvm);
         }
         vm.setUsers(userViewModels);
@@ -310,6 +321,12 @@ public class UserServiceImpl implements UserService {
         vm.setDirectorOfPhotography(user.isDirectorOfPhotography());
         vm.setCastingDirector(user.isCastingDirector());
         vm.setViewCasting(user.isViewCasting());
+        vm.setCanEditScreenplay(user.isWriter() || user.isAdmin());
+        vm.setCanViewCastingPages(user.isAdmin() || user.isCastingDirector() || user.isViewCasting());
+        vm.setPrivilegedProjectAccess(user.isAdmin() || user.isDirector() || user.isProducer()
+                || user.isWriter() || user.isActor() || user.isCrew()
+                || user.isDirectorOfPhotography() || user.isCastingDirector());
+        vm.setProjectAccess(projectService.getUserProjectAccess(user));
         return vm;
     }
 

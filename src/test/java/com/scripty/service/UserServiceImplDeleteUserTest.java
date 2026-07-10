@@ -25,7 +25,7 @@ class UserServiceImplDeleteUserTest {
     void setUp() {
         userRepository = mock(UserRepository.class);
         authorityRepository = mock(AuthorityRepository.class);
-        userService = new UserServiceImpl(userRepository, authorityRepository, new BCryptPasswordEncoder());
+        userService = new UserServiceImpl(userRepository, authorityRepository, new BCryptPasswordEncoder(), mock(ProjectService.class));
     }
 
     @Test

@@ -43,7 +43,7 @@
                 <input type="search"
                        id="user-list-search"
                        class="project-list-search"
-                       placeholder="Search by name, username, team, or role..."
+                       placeholder="Search by name, username, team, role, or project..."
                        autocomplete="off"
                        enterkeyhint="search" />
                 <button type="button"
@@ -106,6 +106,31 @@
                                         <span class="user-role-chip" th:if="${user.viewCasting}">View Casting</span>
                                         <span class="user-role-chip user-role-chip--muted"
                                               th:if="${!user.admin and !user.director and !user.producer and !user.writer and !user.actor and !user.crew and !user.directorOfPhotography and !user.castingDirector and !user.viewCasting}">User</span>
+                                    </div>
+                                    <div class="user-list-access"
+                                         th:attr="data-access-label=${user.projectAccessLabel}">
+                                        <div class="user-list-access-perms">
+                                            <span class="access-permission-chip"
+                                                  th:if="${user.enabled}"
+                                                  th:classappend="${user.canEditScreenplay} ? ' access-permission-chip--edit' : ' access-permission-chip--view'"
+                                                  th:text="${user.canEditScreenplay} ? 'Can edit' : 'View only'">View only</span>
+                                            <span class="user-list-access-casting"
+                                                  th:if="${user.enabled and user.canViewCastingPages}">Casting</span>
+                                            <span class="user-list-access-empty muted"
+                                                  th:if="${!user.enabled}">No access</span>
+                                        </div>
+                                        <div class="user-list-access-projects" th:if="${user.enabled}">
+                                            <span class="user-list-access-projects-label muted">Can view</span>
+                                            <span class="user-list-project-chip user-list-project-chip--all"
+                                                  th:if="${user.privilegedProjectAccess}">All projects</span>
+                                            <th:block th:unless="${user.privilegedProjectAccess}">
+                                                <span class="user-list-project-chip"
+                                                      th:each="project : ${user.projectAccess}"
+                                                      th:text="${project.projectName}">Project</span>
+                                                <span class="user-list-access-empty muted"
+                                                      th:if="${#lists.isEmpty(user.projectAccess)}">No projects</span>
+                                            </th:block>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="user-list-actions project-list-actions">

@@ -11,7 +11,9 @@ import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectShareUserViewModel;
+import com.scripty.viewmodel.user.userprofile.UserProjectAccessViewModel;
 import java.util.List;
+import java.util.Map;
 
 public interface ProjectService {
 
@@ -44,4 +46,14 @@ public interface ProjectService {
     void setProjectTeams(Integer projectId, java.util.List<Integer> teamIds);
 
     List<ProjectShareUserViewModel> getProjectShareAccessUsers(Integer projectId);
+
+    /**
+     * Effective project access for a user (view vs edit), for admin profile display.
+     */
+    List<UserProjectAccessViewModel> getUserProjectAccess(User user);
+
+    /**
+     * Batch project access for many users (loads projects once). Keyed by user id.
+     */
+    Map<Integer, List<UserProjectAccessViewModel>> getUsersProjectAccess(List<User> users);
 }

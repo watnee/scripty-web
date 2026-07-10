@@ -105,7 +105,7 @@ public class PersonResourceAssembler implements RepresentationModelAssembler<Cha
             links.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
         if (actorId != null) {
-            links.add(linkTo(methodOn(ActorRestController.class).show(actorId)).withRel(ApiRel.ACTOR));
+            links.add(linkTo(methodOn(ActorRestController.class).show(actorId, null)).withRel(ApiRel.ACTOR));
         }
         return links.toArray(org.springframework.hateoas.Link[]::new);
     }

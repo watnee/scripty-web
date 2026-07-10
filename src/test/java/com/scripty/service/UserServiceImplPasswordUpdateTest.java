@@ -30,7 +30,7 @@ class UserServiceImplPasswordUpdateTest {
         userRepository = mock(UserRepository.class);
         authorityRepository = mock(AuthorityRepository.class);
         passwordEncoder = new BCryptPasswordEncoder();
-        userService = new UserServiceImpl(userRepository, authorityRepository, passwordEncoder);
+        userService = new UserServiceImpl(userRepository, authorityRepository, passwordEncoder, mock(ProjectService.class));
     }
 
     @Test

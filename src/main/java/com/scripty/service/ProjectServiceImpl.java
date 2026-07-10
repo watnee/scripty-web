@@ -25,9 +25,12 @@ import com.scripty.viewmodel.project.projectprofile.PersonViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectShareUserViewModel;
 import com.scripty.viewmodel.project.projectprofile.SceneViewModel;
+import com.scripty.viewmodel.user.userprofile.UserProjectAccessViewModel;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -144,7 +147,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public List<ProjectShareUserViewModel> getProjectShareAccessUsers(Integer projectId) {
         Project project = projectRepository.findWithTeamsById(projectId).orElse(null);
-        if (project == null || project.getTeams().isEmpty()) {
+        if (project == null) {
             return List.of();
         }
 
@@ -153,14 +156,70 @@ public class ProjectServiceImpl implements ProjectService {
             if (!canUserAccessProject(project, user)) {
                 continue;
             }
+            boolean canEdit = canEditScreenplay(user);
             ProjectShareUserViewModel vm = new ProjectShareUserViewModel();
             vm.setDisplayName(formatShareUserDisplayName(user));
             vm.setAccessLabel(formatShareUserAccessLabel(user));
+            vm.setCanEdit(canEdit);
+            vm.setPermissionLabel(permissionLabel(canEdit));
             users.add(vm);
         }
 
         users.sort(Comparator.comparing(ProjectShareUserViewModel::getDisplayName, String.CASE_INSENSITIVE_ORDER));
         return users;
+    }
+
+    @Override
+    public List<UserProjectAccessViewModel> getUserProjectAccess(User user) {
+        return buildUserProjectAccess(user, projectRepository.findAllWithTeams());
+    }
+
+    @Override
+    public Map<Integer, List<UserProjectAccessViewModel>> getUsersProjectAccess(List<User> users) {
+        Map<Integer, List<UserProjectAccessViewModel>> byUserId = new HashMap<>();
+        if (users == null || users.isEmpty()) {
+            return byUserId;
+        }
+        List<Project> projects = projectRepository.findAllWithTeams();
+        for (User user : users) {
+            if (user == null) {
+                continue;
+            }
+            byUserId.put(user.getId(), buildUserProjectAccess(user, projects));
+        }
+        return byUserId;
+    }
+
+    private List<UserProjectAccessViewModel> buildUserProjectAccess(User user, List<Project> projects) {
+        if (user == null || !user.isEnabled()) {
+            return List.of();
+        }
+
+        List<UserProjectAccessViewModel> access = new ArrayList<>();
+        boolean canEdit = canEditScreenplay(user);
+        for (Project project : projects) {
+            if (!canUserAccessProject(project, user)) {
+                continue;
+            }
+            UserProjectAccessViewModel vm = new UserProjectAccessViewModel();
+            vm.setProjectId(project.getId());
+            vm.setProjectName(project.getTitle());
+            vm.setCanEdit(canEdit);
+            vm.setPermissionLabel(permissionLabel(canEdit));
+            vm.setAccessReason(formatUserProjectAccessReason(project, user));
+            access.add(vm);
+        }
+
+        access.sort(Comparator.comparing(UserProjectAccessViewModel::getProjectName, String.CASE_INSENSITIVE_ORDER));
+        return access;
+    }
+
+    private static boolean canEditScreenplay(User user) {
+        return user != null && (user.isWriter() || user.isAdmin());
+    }
+
+    private static String permissionLabel(boolean canEdit) {
+        return canEdit ? "Can edit" : "View only";
     }
 
     private String formatShareUserDisplayName(User user) {
@@ -174,6 +233,30 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     private String formatShareUserAccessLabel(User user) {
+        return formatPrivilegedRoleLabel(user);
+    }
+
+    private String formatUserProjectAccessReason(Project project, User user) {
+        if (hasPrivilegedProjectRole(user)) {
+            return formatPrivilegedRoleLabel(user);
+        }
+        if (project.getTeams() == null || project.getTeams().isEmpty()) {
+            return "Open project";
+        }
+        String team = user.getTeam();
+        if (team != null && !team.trim().isEmpty()) {
+            return team.trim();
+        }
+        return "Open project";
+    }
+
+    private static boolean hasPrivilegedProjectRole(User user) {
+        return user.isAdmin() || user.isDirector() || user.isProducer() || user.isWriter()
+                || user.isActor() || user.isCrew() || user.isDirectorOfPhotography()
+                || user.isCastingDirector();
+    }
+
+    private String formatPrivilegedRoleLabel(User user) {
         if (user.isAdmin()) {
             return "Admin";
         }

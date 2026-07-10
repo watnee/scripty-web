@@ -94,12 +94,17 @@
     </p>
     <ul class="project-share-user-list" th:if="${!#lists.isEmpty(shareAccessUsers)}">
         <li th:each="user : ${shareAccessUsers}" class="project-share-user">
-            <span class="project-share-user-name" th:text="${user.displayName}"></span>
-            <span class="project-share-user-access muted" th:text="${user.accessLabel}"></span>
+            <span class="project-share-user-main">
+                <span class="project-share-user-name" th:text="${user.displayName}"></span>
+                <span class="project-share-user-access muted" th:text="${user.accessLabel}"></span>
+            </span>
+            <span class="access-permission-chip"
+                  th:classappend="${user.canEdit} ? ' access-permission-chip--edit' : ' access-permission-chip--view'"
+                  th:text="${user.permissionLabel}">View only</span>
         </li>
     </ul>
     <p class="project-share-access-empty muted"
-       th:if="${!#lists.isEmpty(teams) and #lists.isEmpty(shareAccessUsers)}">
+       th:if="${#lists.isEmpty(shareAccessUsers)}">
         No users have access yet.
     </p>
 </div>

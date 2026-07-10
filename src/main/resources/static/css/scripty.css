@@ -3322,9 +3322,9 @@ input.project-list-search:focus-visible {
     display: inline-flex;
     align-items: center;
     position: relative;
-    flex: 1 1 12rem;
-    min-width: 10rem;
-    max-width: 22rem;
+    flex: 1 1 16rem;
+    min-width: 12rem;
+    max-width: min(28rem, 100%);
 }
 
 .breadcrumb-name-meta .project-search-icon {
@@ -4118,15 +4118,24 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
     display: flex;
     width: 100%;
     align-items: center;
+    gap: 0.75rem;
     min-height: 1.75rem;
 }
 
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-breadcrumb-name-wrap,
-.project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line,
+.project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.2;
+    flex-shrink: 0;
+}
+
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-search-dropdown {
     display: inline-flex;
     align-items: center;
     line-height: 1.2;
+    flex: 1 1 16rem;
+    min-width: 12rem;
 }
 
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line {

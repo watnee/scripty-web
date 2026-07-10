@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v27';
+const CACHE_NAME = 'scripty-cache-v28';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/offline-project.html',
@@ -17,6 +17,8 @@ const ASSETS_TO_CACHE = [
   '/js/page-view-mode.js',
   '/js/full-width-toggle.js',
   '/js/toolbar-toggle.js',
+  '/js/project-search.js',
+  '/js/project-toolbar-dropdowns.js',
   '/js/import-script.js',
   '/js/fountain-power.js',
   '/js/vendor/typo.js',

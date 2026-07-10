@@ -40,6 +40,33 @@ class LoginSuccessHandlerTest {
     }
 
     @Test
+    void ignoresStaleErrorSavedRequestAndGoesHome() throws Exception {
+        LogoutIgnoringRequestCache cache = new LogoutIgnoringRequestCache();
+        LoginSuccessHandler handler = new LoginSuccessHandler(cache);
+
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login");
+        request.setScheme("https");
+        request.setServerName("example.com");
+        request.setServerPort(443);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // Secured /error gets saved for anonymous users; replaying it after login
+        // renders Spring Boot's Whitelabel page with status=999.
+        MockHttpServletRequest prior = new MockHttpServletRequest("GET", "/error");
+        prior.setScheme("https");
+        prior.setServerName("example.com");
+        prior.setServerPort(443);
+        prior.setSession(request.getSession(true));
+        new HttpSessionRequestCache().saveRequest(prior, response);
+
+        Authentication auth = new UsernamePasswordAuthenticationToken("admin", "admin");
+        handler.onAuthenticationSuccess(request, response, auth);
+
+        assertEquals("/", response.getRedirectedUrl());
+        assertNull(cache.getRequest(request, response));
+    }
+
+    @Test
     void preservesNormalSavedRequest() throws Exception {
         LogoutIgnoringRequestCache cache = new LogoutIgnoringRequestCache();
         LoginSuccessHandler handler = new LoginSuccessHandler(cache);
@@ -69,6 +96,17 @@ class LoginSuccessHandlerTest {
     void requestCacheDoesNotSaveLogout() {
         LogoutIgnoringRequestCache cache = new LogoutIgnoringRequestCache();
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/logout");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        cache.saveRequest(request, response);
+
+        assertNull(cache.getRequest(request, response));
+    }
+
+    @Test
+    void requestCacheDoesNotSaveError() {
+        LogoutIgnoringRequestCache cache = new LogoutIgnoringRequestCache();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/error");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         cache.saveRequest(request, response);

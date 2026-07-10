@@ -71,6 +71,7 @@ public class SecurityConfig {
                 .requestMatchers(
                         "/",
                         "/health",
+                        "/error",
                         "/favicon.ico",
                         "/css/**",
                         "/js/**",

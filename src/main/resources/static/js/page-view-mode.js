@@ -13,11 +13,14 @@
     var STORAGE_KEY = 'scripty-page-view-mode';
     var CLASS_NAME = 'scripty-page-view-mode';
     var PAGES_WRAP_CLASS = 'screenplay-pages';
+    var PAGES_SETTLED_CLASS = 'screenplay-pages--settled';
     var PAGE_CLASS = 'screenplay-page';
+    var PAGE_ACTIVE_CLASS = 'screenplay-page--active';
     var PAGE_BODY_CLASS = 'screenplay-page-body';
     var PAGE_NUMBER_CLASS = 'screenplay-page-number';
     var reflowTimer = null;
     var measuring = false;
+    var enterAnimPending = false;
 
     function isOn() {
         return localStorage.getItem(STORAGE_KEY) === '1';
@@ -41,8 +44,10 @@
             btn.setAttribute('aria-label', btn.title);
         }
         if (on) {
+            enterAnimPending = true;
             scheduleReflow(0);
         } else {
+            enterAnimPending = false;
             unwrapPages();
             restoreWordPageEstimate();
         }
@@ -144,6 +149,16 @@
 
     function isSearchFilteredOut(el) {
         return !!(el && el.classList && el.classList.contains('filtered-out'));
+    }
+
+    function rowLayoutHeight(el) {
+        if (!el || isSearchFilteredOut(el)) return 0;
+        var height = el.offsetHeight || 0;
+        try {
+            var style = window.getComputedStyle(el);
+            height += (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
+        } catch (err) { /* ignore */ }
+        return height;
     }
 
     function updateRealPageCount(count) {
@@ -280,6 +295,9 @@
 
             var wrap = document.createElement('div');
             wrap.className = PAGES_WRAP_CLASS;
+            if (!enterAnimPending) {
+                wrap.classList.add(PAGES_SETTLED_CLASS);
+            }
             sceneBlocks.appendChild(wrap);
 
             var usableHeight = measureUsableHeight(wrap);
@@ -303,12 +321,12 @@
                 current.body.appendChild(child);
                 // Search-filtered rows stay in the DOM (order-preserving) but
                 // contribute no height while .filtered-out hides them.
-                var height = isSearchFilteredOut(child) ? 0 : (child.offsetHeight || 0);
+                var height = rowLayoutHeight(child);
 
                 if (!forcedBreak && currentHeight > 0 && currentHeight + height > usableHeight + 0.5) {
                     startPage();
                     current.body.appendChild(child);
-                    height = isSearchFilteredOut(child) ? 0 : (child.offsetHeight || 0);
+                    height = rowLayoutHeight(child);
                 }
 
                 if (forcedBreak) {
@@ -395,9 +413,46 @@
             }
 
             updateRealPageCount(finalPages.length);
+
+            if (enterAnimPending) {
+                enterAnimPending = false;
+                // After enter animation finishes, mark settled so edit reflows stay still.
+                window.setTimeout(function () {
+                    var settledWrap = getSceneBlocks() && getSceneBlocks().querySelector(':scope > .' + PAGES_WRAP_CLASS);
+                    if (settledWrap) settledWrap.classList.add(PAGES_SETTLED_CLASS);
+                }, 520);
+            }
+
+            syncActivePage();
         } finally {
             measuring = false;
             restoreEditState(editState);
+        }
+    }
+
+    function clearActivePages() {
+        document.querySelectorAll('.' + PAGE_CLASS + '.' + PAGE_ACTIVE_CLASS).forEach(function (el) {
+            el.classList.remove(PAGE_ACTIVE_CLASS);
+        });
+    }
+
+    function setActivePageFromEl(el) {
+        clearActivePages();
+        if (!el || !el.closest) return;
+        var page = el.closest('.' + PAGE_CLASS);
+        if (page && !page.classList.contains('screenplay-page--measure')) {
+            page.classList.add(PAGE_ACTIVE_CLASS);
+        }
+    }
+
+    function syncActivePage() {
+        if (!window.scriptyIsPageViewMode()) {
+            clearActivePages();
+            return;
+        }
+        var active = document.activeElement;
+        if (active && active.closest && active.closest('.project-script .' + PAGE_CLASS)) {
+            setActivePageFromEl(active);
         }
     }
 
@@ -462,6 +517,34 @@
         var t = e.target;
         if (!t || !t.closest) return;
         if (t.closest('.project-script .block-row')) scheduleReflow(200);
+    });
+
+    document.body.addEventListener('focusin', function (e) {
+        if (!window.scriptyIsPageViewMode()) return;
+        var t = e.target;
+        if (!t || !t.closest) return;
+        if (t.closest('.project-script .' + PAGE_CLASS)) {
+            setActivePageFromEl(t);
+        }
+    });
+
+    document.body.addEventListener('focusout', function (e) {
+        if (!window.scriptyIsPageViewMode()) return;
+        // Delay so focus moving within the same page doesn't flash.
+        window.setTimeout(function () {
+            var active = document.activeElement;
+            if (!active || !active.closest || !active.closest('.project-script .' + PAGE_CLASS)) {
+                clearActivePages();
+            }
+        }, 0);
+    });
+
+    document.body.addEventListener('pointerdown', function (e) {
+        if (!window.scriptyIsPageViewMode()) return;
+        var t = e.target;
+        if (!t || !t.closest) return;
+        var page = t.closest('.project-script .' + PAGE_CLASS);
+        if (page) setActivePageFromEl(page);
     });
 
     // Re-paginate when block rows are added/removed outside HTMX settle paths.

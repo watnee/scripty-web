@@ -1,5 +1,6 @@
 package com.scripty.config;
 
+import com.scripty.security.CsrfAccessDeniedHandler;
 import com.scripty.security.HtmxLoginUrlAuthenticationEntryPoint;
 import com.scripty.security.LoginSuccessHandler;
 import com.scripty.security.LogoutIgnoringRequestCache;
@@ -121,6 +122,7 @@ public class SecurityConfig {
             )
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(new CsrfAccessDeniedHandler())
             )
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))

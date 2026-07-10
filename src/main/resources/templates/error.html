@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scripty - Error</title>
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+</head>
+<body class="login-body">
+    <main class="login-page">
+        <div class="login-shell">
+            <section class="login-panel">
+                <header class="login-header">
+                    <h1 class="login-brand">Scripty</h1>
+                    <p class="login-title" th:text="${status != null} ? (${status} + ' — something went wrong') : 'Something went wrong'">Something went wrong</p>
+                    <p class="login-subtitle">You can go back home or sign in again.</p>
+                </header>
+                <footer class="login-footer">
+                    <a class="login-footer-link" th:href="@{/}">Back to home</a>
+                    <a class="login-footer-link" th:href="@{/login}">Sign in</a>
+                </footer>
+            </section>
+        </div>
+    </main>
+</body>
+</html>

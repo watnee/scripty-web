@@ -5896,6 +5896,24 @@ a.project-list-team:hover {
     align-items: center;
 }
 
+.text-documents-toolbar {
+    margin: 0 0 1rem;
+}
+
+.text-documents-search-wrap {
+    max-width: 22rem;
+    width: 100%;
+}
+
+.text-documents-no-results {
+    margin: 0.5rem 0 0;
+    padding: 0.85rem 1rem;
+    border: 1px dashed var(--td-line, var(--border, #cbd5e1));
+    border-radius: var(--border-radius, 0.5rem);
+    color: var(--muted-fg, #64748b);
+    font-size: 0.9rem;
+}
+
 .text-document-import-banner {
     margin: 0 0 1.25rem;
     padding: 0.7rem 1rem;
@@ -6071,6 +6089,10 @@ a.project-list-team:hover {
 @media (max-width: 640px) {
     .text-document-form-row {
         grid-template-columns: 1fr;
+    }
+
+    .text-documents-search-wrap {
+        max-width: none;
     }
 
     .text-document-card-actions {

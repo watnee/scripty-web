@@ -52,34 +52,39 @@
         var songsBtn = document.querySelector('a.songs-toolbar-btn');
         var draftsBtn = document.querySelector('a.drafts-toolbar-btn');
         if (songsBtn) {
-            if (!songsBtn.querySelector('.nav-dropdown-item-label') &&
-                !songsBtn.querySelector('.nav-dropdown-shortcut')) {
-                var songsLabel = document.createElement('span');
-                songsLabel.className = 'nav-dropdown-item-label';
-                songsLabel.textContent = (songsBtn.textContent || 'Songs').trim() || 'Songs';
-                songsBtn.textContent = '';
-                songsBtn.appendChild(songsLabel);
+            // Menu items get inline shortcut chrome; toolbar links only get title/aria.
+            if (songsBtn.classList.contains('nav-dropdown-item')) {
+                if (!songsBtn.querySelector('.nav-dropdown-item-label') &&
+                    !songsBtn.querySelector('.nav-dropdown-shortcut')) {
+                    var songsLabel = document.createElement('span');
+                    songsLabel.className = 'nav-dropdown-item-label';
+                    songsLabel.textContent = (songsBtn.textContent || 'Songs').trim() || 'Songs';
+                    songsBtn.textContent = '';
+                    songsBtn.appendChild(songsLabel);
+                }
+                if (typeof window.scriptySetMenuShortcut === 'function') {
+                    window.scriptySetMenuShortcut(songsBtn, songsHint);
+                }
             }
             songsBtn.title = 'Songs (' + songsHint + ')';
             songsBtn.setAttribute('aria-label', 'Songs (' + songsHint + ')');
-            if (typeof window.scriptySetMenuShortcut === 'function') {
-                window.scriptySetMenuShortcut(songsBtn, songsHint);
-            }
         }
         if (draftsBtn) {
-            if (!draftsBtn.querySelector('.nav-dropdown-item-label') &&
-                !draftsBtn.querySelector('.nav-dropdown-shortcut')) {
-                var draftsLabel = document.createElement('span');
-                draftsLabel.className = 'nav-dropdown-item-label';
-                draftsLabel.textContent = (draftsBtn.textContent || 'Drafts').trim() || 'Drafts';
-                draftsBtn.textContent = '';
-                draftsBtn.appendChild(draftsLabel);
+            if (draftsBtn.classList.contains('nav-dropdown-item')) {
+                if (!draftsBtn.querySelector('.nav-dropdown-item-label') &&
+                    !draftsBtn.querySelector('.nav-dropdown-shortcut')) {
+                    var draftsLabel = document.createElement('span');
+                    draftsLabel.className = 'nav-dropdown-item-label';
+                    draftsLabel.textContent = (draftsBtn.textContent || 'Drafts').trim() || 'Drafts';
+                    draftsBtn.textContent = '';
+                    draftsBtn.appendChild(draftsLabel);
+                }
+                if (typeof window.scriptySetMenuShortcut === 'function') {
+                    window.scriptySetMenuShortcut(draftsBtn, draftsHint);
+                }
             }
             draftsBtn.title = 'Drafts (' + draftsHint + ')';
             draftsBtn.setAttribute('aria-label', 'Drafts (' + draftsHint + ')');
-            if (typeof window.scriptySetMenuShortcut === 'function') {
-                window.scriptySetMenuShortcut(draftsBtn, draftsHint);
-            }
         }
     }
 

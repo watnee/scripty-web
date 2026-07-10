@@ -92,6 +92,31 @@
                        tabindex="-1" />
             </form>
 
+            <div class="text-documents-toolbar" th:if="${!#lists.isEmpty(documents)}">
+                <div class="project-list-search-wrap text-documents-search-wrap" id="text-documents-search-wrap">
+                    <label class="visually-hidden"
+                           for="text-documents-search"
+                           th:text="${isSongList} ? 'Search songs' : 'Search drafts'">Search</label>
+                    <span class="project-list-search-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
+                        </svg>
+                    </span>
+                    <input type="search"
+                           id="text-documents-search"
+                           class="project-list-search"
+                           th:placeholder="${isSongList} ? 'Search songs...' : 'Search drafts...'"
+                           autocomplete="off"
+                           enterkeyhint="search" />
+                    <button type="button"
+                            id="text-documents-search-clear"
+                            class="project-list-search-clear"
+                            aria-label="Clear search"
+                            hidden>&times;</button>
+                </div>
+            </div>
+
             <div class="text-documents-empty-state" th:if="${#lists.isEmpty(documents)}">
                 <p class="text-documents-empty-title"
                    th:text="${isSongList} ? 'No songs yet' : 'No drafts yet'">Empty</p>
@@ -110,11 +135,12 @@
                 </div>
             </div>
 
-            <ul class="text-documents-list" th:if="${!#lists.isEmpty(documents)}">
+            <ul class="text-documents-list" id="text-documents-list" th:if="${!#lists.isEmpty(documents)}">
                 <li th:each="doc, iter : ${documents}"
                     class="text-document-card"
                     th:classappend="${isSongList} ? ' text-document-card--song' : ' text-document-card--draft'"
-                    th:style="'--card-i:' + ${iter.index}">
+                    th:style="'--card-i:' + ${iter.index}"
+                    th:attr="data-doc-title=${#strings.toLowerCase(doc.title)}">
                     <div class="text-document-card-main">
                         <a class="text-document-card-title"
                            th:href="@{/project/documents/edit(id=${doc.id})}"
@@ -160,6 +186,10 @@
                     </div>
                 </li>
             </ul>
+            <p class="text-documents-no-results" id="text-documents-no-results" hidden>
+                No <span th:text="${isSongList} ? 'songs' : 'drafts'">documents</span> match
+                <strong id="text-documents-search-query"></strong>.
+            </p>
         </section>
     </main>
     <script src="/js/htmx.min.js"></script>
@@ -170,12 +200,70 @@
             var btn = document.getElementById('import-doc-btn');
             var file = document.getElementById('import-doc-file');
             var form = document.getElementById('import-doc-form');
-            if (!btn || !file || !form) return;
-            btn.addEventListener('click', function() { file.click(); });
-            file.addEventListener('change', function() {
-                if (!file.files || !file.files.length) return;
-                form.submit();
+            if (btn && file && form) {
+                btn.addEventListener('click', function() { file.click(); });
+                file.addEventListener('change', function() {
+                    if (!file.files || !file.files.length) return;
+                    form.submit();
+                });
+            }
+
+            var searchInput = document.getElementById('text-documents-search');
+            var clearBtn = document.getElementById('text-documents-search-clear');
+            var searchWrap = document.getElementById('text-documents-search-wrap');
+            var noResultsEl = document.getElementById('text-documents-no-results');
+            var noResultsQueryEl = document.getElementById('text-documents-search-query');
+            var listEl = document.getElementById('text-documents-list');
+            if (!searchInput || !listEl) return;
+
+            function performSearch() {
+                var query = searchInput.value.trim();
+                var normalizedQuery = query.toLowerCase();
+
+                if (clearBtn) {
+                    clearBtn.hidden = !query;
+                }
+                if (searchWrap) {
+                    searchWrap.classList.toggle('has-value', !!query);
+                }
+
+                var cards = listEl.querySelectorAll('.text-document-card');
+                var visibleCount = 0;
+
+                cards.forEach(function(card) {
+                    var titleText = (card.getAttribute('data-doc-title') || '').toLowerCase();
+                    if (!titleText) {
+                        var titleLink = card.querySelector('.text-document-card-title');
+                        titleText = titleLink ? titleLink.textContent.toLowerCase() : '';
+                    }
+                    var matches = !normalizedQuery || titleText.indexOf(normalizedQuery) !== -1;
+                    card.hidden = !matches;
+                    if (matches) visibleCount++;
+                });
+
+                if (noResultsEl) {
+                    noResultsEl.hidden = visibleCount > 0 || !query;
+                }
+                if (noResultsQueryEl) {
+                    noResultsQueryEl.textContent = query ? '"' + query + '"' : '';
+                }
+            }
+
+            searchInput.addEventListener('input', performSearch);
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    searchInput.value = '';
+                    performSearch();
+                    searchInput.focus();
+                }
             });
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function() {
+                    searchInput.value = '';
+                    performSearch();
+                    searchInput.focus();
+                });
+            }
         })();
     </script>
 </body>

@@ -12,7 +12,6 @@
 
     var DROPDOWNS = [
         { id: 'project-file-dropdown', toggle: '.file-toolbar-btn' },
-        { id: 'project-docs-dropdown', toggle: '.docs-toolbar-btn' },
         { id: 'project-lists-dropdown', toggle: '.lists-toolbar-btn' },
         { id: 'project-element-type-dropdown', toggle: '.element-type-toolbar-btn' },
         { id: 'project-view-dropdown', toggle: '.view-toolbar-btn', keepOpenOnItemClick: true },
@@ -239,7 +238,7 @@
                         break;
                     }
                 }
-                if (!keepOpen && parentDropdown.querySelector('.file-toolbar-btn, .docs-toolbar-btn, .lists-toolbar-btn, .element-type-toolbar-btn, .view-toolbar-btn, .script-edition-toggle, .project-share-toggle, .text-format-toolbar-btn')) {
+                if (!keepOpen && parentDropdown.querySelector('.file-toolbar-btn, .lists-toolbar-btn, .element-type-toolbar-btn, .view-toolbar-btn, .script-edition-toggle, .project-share-toggle, .text-format-toolbar-btn')) {
                     setOpen(parentDropdown, parentDropdown.querySelector('.nav-dropdown-toggle'), false);
                 }
                 var alignItem = item.classList.contains('bulk-align-btn') ? item : null;

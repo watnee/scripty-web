@@ -564,35 +564,22 @@
                             id="script-edition-create-open">New version…</button>
                 </div>
             </div>
-            <div class="nav-dropdown docs-dropdown" id="project-docs-dropdown">
-                <button id="nav-docs"
-                        type="button"
-                        class="nav-dropdown-toggle docs-toolbar-btn"
-                        aria-haspopup="true"
-                        aria-expanded="false"
-                        aria-label="Songs and drafts"
-                        title="Songs and drafts">
-                    Docs
-                </button>
-                <div class="nav-dropdown-menu docs-menu" role="menu" aria-label="Songs and drafts">
-                    <a class="nav-dropdown-item songs-toolbar-btn"
-                       role="menuitem"
-                       th:href="@{/project/documents/songs(projectId=${viewModel.id})}"
-                       hx-boost="false"
-                       aria-label="Songs"
-                       title="Songs">
-                        Songs
-                    </a>
-                    <a class="nav-dropdown-item drafts-toolbar-btn"
-                       role="menuitem"
-                       th:href="@{/project/documents/drafts(projectId=${viewModel.id})}"
-                       hx-boost="false"
-                       aria-label="Drafts"
-                       title="Drafts">
-                        Drafts
-                    </a>
-                </div>
-            </div>
+            <a class="nav-dropdown-toggle songs-toolbar-btn"
+               id="nav-songs"
+               th:href="@{/project/documents/songs(projectId=${viewModel.id})}"
+               hx-boost="false"
+               aria-label="Songs"
+               title="Songs">
+                Songs
+            </a>
+            <a class="nav-dropdown-toggle drafts-toolbar-btn"
+               id="nav-drafts"
+               th:href="@{/project/documents/drafts(projectId=${viewModel.id})}"
+               hx-boost="false"
+               aria-label="Drafts"
+               title="Drafts">
+                Drafts
+            </a>
             <div class="nav-dropdown lists-dropdown" id="project-lists-dropdown">
                 <button id="nav-lists"
                         type="button"

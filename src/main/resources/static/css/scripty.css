@@ -7880,7 +7880,7 @@ html:not(.safari-reader-view) .block-content .reader-visible-character-name {
     margin: 0 0 0.15em;
 }
 
-html:not(.safari-reader-view) .block-content .character-name.hide-in-reader-view {
+html:not(.safari-reader-view):not(.scripty-page-view-mode) .block-content .character-name.hide-in-reader-view {
     position: absolute;
     left: 0;
     right: 0;
@@ -7888,6 +7888,7 @@ html:not(.safari-reader-view) .block-content .character-name.hide-in-reader-view
     margin: 0;
     text-align: center;
     z-index: 1;
+    /* Match the editor surface, not the letter-page sheet */
     background: var(--bg, #fff);
 }
 
@@ -8273,15 +8274,16 @@ body.focus-mode .project-script {
     margin: 0 auto;
 }
 
-/* Outline mode: show only structural blocks (scene / section / synopsis) */
-html.scripty-outline-mode .project-script .scene-blocks > .block-row[data-block-id]:not([data-block-type="SCENE"]):not([data-block-type="SECTION"]):not([data-block-type="SYNOPSIS"]),
-html.scripty-outline-mode .project-script .scene-blocks > .block-row:not([data-block-id]):not([data-block-type="SCENE"]):not([data-block-type="SECTION"]):not([data-block-type="SYNOPSIS"]) {
+/* Outline mode: show only structural blocks (scene / section / synopsis).
+   Use descendants (not >) so rows still match after page-view wraps them. */
+html.scripty-outline-mode .project-script .scene-blocks .block-row[data-block-id]:not([data-block-type="SCENE"]):not([data-block-type="SECTION"]):not([data-block-type="SYNOPSIS"]),
+html.scripty-outline-mode .project-script .scene-blocks .block-row:not([data-block-id]):not([data-block-type="SCENE"]):not([data-block-type="SECTION"]):not([data-block-type="SYNOPSIS"]) {
     display: none !important;
 }
 
-html.scripty-outline-mode .project-script .scene-blocks > .block-row[data-block-type="SCENE"],
-html.scripty-outline-mode .project-script .scene-blocks > .block-row[data-block-type="SECTION"],
-html.scripty-outline-mode .project-script .scene-blocks > .block-row[data-block-type="SYNOPSIS"] {
+html.scripty-outline-mode .project-script .scene-blocks .block-row[data-block-type="SCENE"],
+html.scripty-outline-mode .project-script .scene-blocks .block-row[data-block-type="SECTION"],
+html.scripty-outline-mode .project-script .scene-blocks .block-row[data-block-type="SYNOPSIS"] {
     margin-block: 0.35rem;
 }
 
@@ -8304,14 +8306,16 @@ html.scripty-outline-mode .project-script::after {
     }
 }
 
-/* Page view: US Letter sheets with measured pagination */
+/* Page view: US Letter sheets with measured pagination.
+   Use % of the page body (not fixed inches) so indented dialogue/character
+   still fits when the sheet is narrower than 8.5in (Missing.css main max-width). */
 html.scripty-page-view-mode .project-script,
 html.scripty-page-view-mode .script-content.entry-content {
-    --screenplay-action-width: 6in;
-    --screenplay-dialogue-width: 3.5in;
-    --screenplay-character-indent: 2.2in;
-    --screenplay-dialogue-indent: 1in;
-    --screenplay-parenthetical-indent: 1.5in;
+    --screenplay-action-width: 100%;
+    --screenplay-dialogue-width: 58.333%;
+    --screenplay-character-indent: 36.667%;
+    --screenplay-dialogue-indent: 16.667%;
+    --screenplay-parenthetical-indent: 25%;
 }
 
 html.scripty-page-view-mode .project-script .script-scene {
@@ -8357,7 +8361,8 @@ html.scripty-page-view-mode .project-script .screenplay-page {
     width: min(8.5in, 100%);
     height: 11in;
     max-width: 100%;
-    padding: 1in 1in 1in 1.5in;
+    /* % of page width so margins stay proportional when the sheet shrinks */
+    padding: 11.7647% 11.7647% 11.7647% 17.647%;
     background: #ffffff;
     color: #111111;
     border: 1px solid #cbd5e1;
@@ -8402,8 +8407,8 @@ html.scripty-page-view-mode .project-script .screenplay-page-body {
 
 html.scripty-page-view-mode .project-script .screenplay-page-number {
     position: absolute;
-    top: 0.45in;
-    right: 1in;
+    top: 5.3%;
+    right: 11.76%;
     font-family: 'Courier New', Courier, monospace;
     font-size: calc(12pt * var(--scripty-text-scale, 1));
     line-height: 1;
@@ -8434,8 +8439,18 @@ html.scripty-page-view-mode .project-script aside.block-actions,
 html.scripty-page-view-mode .project-script .block-element-label,
 html.scripty-page-view-mode .project-script .block-tags-list,
 html.scripty-page-view-mode .project-script .project-script-select-row,
-html.scripty-page-view-mode .project-script .block-row:not([data-block-id]) {
+html.scripty-page-view-mode .project-script .block-row:not([data-block-id]),
+html.scripty-page-view-mode .project-script .character-name.hide-in-reader-view {
     display: none !important;
+}
+
+/* Letter pages own their ink color — don't let theme --fg/--bg wash out block text */
+html.scripty-page-view-mode .project-script .screenplay-page .script-block-text,
+html.scripty-page-view-mode .project-script .screenplay-page .reader-visible-text,
+html.scripty-page-view-mode .project-script .screenplay-page .reader-visible-character-name,
+html.scripty-page-view-mode .project-script .screenplay-page .script-character-name,
+html.scripty-page-view-mode .project-script .screenplay-page .block-input-textarea {
+    color: inherit;
 }
 
 html.scripty-page-view-mode .project-script .block-row[data-block-type="PAGE_BREAK"] {
@@ -8451,7 +8466,7 @@ html.scripty-page-view-mode .project-script .block-content.block-type-character 
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-weight: 700;
-    margin-left: var(--screenplay-character-indent, 2.2in);
+    margin-left: var(--screenplay-character-indent, 36.667%);
     margin-right: 0;
     width: auto;
     max-width: none;
@@ -8464,9 +8479,9 @@ html.scripty-page-view-mode .project-script .script-block--dialogue .script-bloc
 html.scripty-page-view-mode .project-script .script-block--dialogue .reader-visible-text,
 html.scripty-page-view-mode .project-script .script-block--dialogue .block-input-textarea {
     display: block;
-    width: var(--screenplay-dialogue-width, 3.5in);
-    max-width: var(--screenplay-dialogue-width, 3.5in);
-    margin-left: var(--screenplay-dialogue-indent, 1in);
+    width: var(--screenplay-dialogue-width, 58.333%);
+    max-width: var(--screenplay-dialogue-width, 58.333%);
+    margin-left: var(--screenplay-dialogue-indent, 16.667%);
     margin-right: 0;
     text-align: left;
 }
@@ -8475,9 +8490,9 @@ html.scripty-page-view-mode .project-script .block-content.block-type-parentheti
 html.scripty-page-view-mode .project-script .block-content.block-type-parenthetical .reader-visible-text,
 html.scripty-page-view-mode .project-script .block-content.block-type-parenthetical .block-input-textarea {
     display: block;
-    margin-left: var(--screenplay-parenthetical-indent, 1.5in);
+    margin-left: var(--screenplay-parenthetical-indent, 25%);
     margin-right: 0;
-    max-width: 2in;
+    max-width: 33.333%;
     width: auto;
     text-align: left;
     font-style: italic;
@@ -8494,7 +8509,7 @@ html.scripty-page-view-mode body.focus-mode .project-script {
     max-width: none;
 }
 
-/* Full-width must win over page-view's fixed 6in vars (same specificity, later rule). */
+/* Full-width stretches the sheet; metrics already use % of the page body. */
 html.scripty-screenplay-full-width.scripty-page-view-mode .project-script,
 html.scripty-screenplay-full-width.scripty-page-view-mode .script-content.entry-content {
     --screenplay-action-width: 100%;

@@ -3653,16 +3653,8 @@ input.project-list-search:focus-visible {
 
 .file-dropdown .nav-dropdown-menu.file-menu {
     display: none;
-    right: 0;
-    left: auto;
     min-width: 10.5rem;
     padding: 0.35rem;
-    transform-origin: top right;
-    z-index: 1100;
-}
-
-.file-dropdown.open .nav-dropdown-menu.file-menu {
-    display: block;
 }
 
 .file-menu .nav-dropdown-item {
@@ -3680,6 +3672,7 @@ input.project-list-search:focus-visible {
     user-select: none;
 }
 
+.project-tools-group .file-dropdown,
 .project-tools-group .lists-dropdown,
 .text-size-control .lists-dropdown,
 .project-tools-group .docs-dropdown,
@@ -3691,6 +3684,7 @@ input.project-list-search:focus-visible {
     z-index: 1;
 }
 
+.project-tools-group .file-dropdown.open,
 .project-tools-group .lists-dropdown.open,
 .text-size-control .lists-dropdown.open,
 .project-tools-group .docs-dropdown.open,
@@ -3700,6 +3694,7 @@ input.project-list-search:focus-visible {
     z-index: 1300;
 }
 
+.project-tools-group .file-dropdown .nav-dropdown-menu.file-menu,
 .project-tools-group .lists-dropdown .nav-dropdown-menu.lists-menu,
 .text-size-control .lists-dropdown .nav-dropdown-menu.lists-menu,
 .project-tools-group .docs-dropdown .nav-dropdown-menu.docs-menu,
@@ -3715,6 +3710,7 @@ input.project-list-search:focus-visible {
     z-index: 1300;
 }
 
+.project-tools-group .file-dropdown.open .nav-dropdown-menu.file-menu,
 .project-tools-group .lists-dropdown.open .nav-dropdown-menu.lists-menu,
 .text-size-control .lists-dropdown.open .nav-dropdown-menu.lists-menu,
 .project-tools-group .docs-dropdown.open .nav-dropdown-menu.docs-menu,
@@ -7207,6 +7203,35 @@ kbd {
 
     .has-toolbar-brand header nav {
         display: none !important;
+    }
+
+    /* Project editor toolbar: full-width row so File and other menus are not clipped */
+    .project-script-toolbar > .project-toolbar-row.project-tools-row {
+        grid-template-columns: minmax(0, 1fr);
+        column-gap: 0;
+    }
+
+    .project-script-toolbar > .project-toolbar-row.project-tools-row .project-toolbar-main,
+    .project-script-toolbar > .project-toolbar-row.project-tools-row .project-toolbar-right {
+        grid-column: 1;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .project-script-toolbar > .project-toolbar-row.project-tools-row .project-toolbar-right {
+        justify-self: stretch;
+        justify-content: flex-start;
+        margin-top: 0.25rem;
+    }
+
+    .project-script-toolbar,
+    .project-tools-group,
+    .project-toolbar-row.project-tools-row .project-toolbar-main {
+        overflow: visible;
+    }
+
+    .project-tools-group .file-dropdown .nav-dropdown-menu.file-menu {
+        max-width: min(12rem, calc(100vw - 1.5rem));
     }
 
     /* Keep breadcrumbs wrapping nicely and readable */

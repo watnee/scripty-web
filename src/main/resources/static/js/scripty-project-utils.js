@@ -142,8 +142,8 @@
 
         function isFormatChrome(el) {
             return !!(el && el.closest && el.closest(
-                '.bulk-type-btn, .bulk-align-btn, .bulk-style-btn, .text-align-toolbar-btn, ' +
-                '.text-align-dropdown, .text-format-actions, .element-type-actions, .project-script-toolbar'
+                '.bulk-type-btn, .bulk-align-btn, .bulk-style-btn, .text-align-toolbar-btn, .text-style-toolbar-btn, ' +
+                '.text-align-dropdown, .text-style-dropdown, .text-format-actions, .element-type-actions, .project-script-toolbar'
             ));
         }
 

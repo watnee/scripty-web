@@ -605,11 +605,49 @@
                             </button>
                         </div>
                     </div>
-                    <span class="text-style-actions" aria-label="Text style">
-                        <button type="button" class="bulk-style-btn" data-bulk-style="BOLD" title="Toggle bold" aria-label="Bold" aria-pressed="false"><strong>B</strong></button>
-                        <button type="button" class="bulk-style-btn" data-bulk-style="ITALIC" title="Toggle italic" aria-label="Italic" aria-pressed="false"><em>I</em></button>
-                        <button type="button" class="bulk-style-btn bulk-style-btn--underline" data-bulk-style="UNDERLINE" title="Toggle underline" aria-label="Underline" aria-pressed="false">U</button>
-                    </span>
+                    <div class="nav-dropdown text-style-dropdown" id="project-text-style-dropdown">
+                        <button type="button"
+                                class="nav-dropdown-toggle text-style-toolbar-btn"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                aria-pressed="false"
+                                aria-label="Text style"
+                                title="Text style">
+                            <span class="text-style-toolbar-label" aria-hidden="true"><strong>B</strong></span>
+                        </button>
+                        <div class="nav-dropdown-menu text-style-menu" role="menu" aria-label="Text style">
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-style-btn"
+                                    role="menuitemcheckbox"
+                                    aria-checked="false"
+                                    data-bulk-style="BOLD"
+                                    title="Toggle bold"
+                                    aria-label="Bold">
+                                <strong>B</strong>
+                                <span>Bold</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-style-btn"
+                                    role="menuitemcheckbox"
+                                    aria-checked="false"
+                                    data-bulk-style="ITALIC"
+                                    title="Toggle italic"
+                                    aria-label="Italic">
+                                <em>I</em>
+                                <span>Italic</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-style-btn bulk-style-btn--underline"
+                                    role="menuitemcheckbox"
+                                    aria-checked="false"
+                                    data-bulk-style="UNDERLINE"
+                                    title="Toggle underline"
+                                    aria-label="Underline">
+                                <span class="text-style-menu-mark">U</span>
+                                <span>Underline</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="project-toolbar-right">

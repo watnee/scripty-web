@@ -1,5 +1,5 @@
 /**
- * Project editor toolbar dropdowns (file, lists, view, edition, share, text align).
+ * Project editor toolbar dropdowns (file, lists, view, edition, share, text align/style).
  *
  * Loaded from nav.html so handlers survive HTMX-boosted navigation into
  * /project/show (page scripts are not executed when allowScriptTags is false).
@@ -16,7 +16,8 @@
         { id: 'project-view-dropdown', toggle: '.view-toolbar-btn', keepOpenOnItemClick: true },
         { id: 'script-edition-dropdown', toggle: '.script-edition-toggle' },
         { id: 'project-share-dropdown', toggle: '.project-share-toggle' },
-        { id: 'project-text-align-dropdown', toggle: '.text-align-toolbar-btn' }
+        { id: 'project-text-align-dropdown', toggle: '.text-align-toolbar-btn' },
+        { id: 'project-text-style-dropdown', toggle: '.text-style-toolbar-btn', keepOpenOnItemClick: true }
     ];
 
     var ALIGN_ICONS = {
@@ -66,13 +67,21 @@
         var bold = !!(content && content.classList.contains('block-text-bold'));
         var italic = !!(content && content.classList.contains('block-text-italic'));
         var underline = !!(content && content.classList.contains('block-text-underline'));
-        document.querySelectorAll('.text-style-actions .bulk-style-btn').forEach(function (btn) {
+        var anyOn = bold || italic || underline;
+        var toggle = document.querySelector('#project-text-style-dropdown .text-style-toolbar-btn');
+        if (toggle) {
+            toggle.classList.toggle('is-active', anyOn);
+            toggle.setAttribute('aria-pressed', anyOn ? 'true' : 'false');
+        }
+        document.querySelectorAll('#project-text-style-dropdown .bulk-style-btn').forEach(function (btn) {
             var style = (btn.getAttribute('data-bulk-style') || '').toUpperCase();
             var on = (style === 'BOLD' && bold)
                 || (style === 'ITALIC' && italic)
                 || (style === 'UNDERLINE' && underline);
             btn.classList.toggle('is-active', on);
+            btn.setAttribute('aria-checked', on ? 'true' : 'false');
             btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+            btn.setAttribute('role', 'menuitemcheckbox');
         });
     }
 
@@ -223,12 +232,28 @@
                         break;
                     }
                 }
-                if (!keepOpen && parentDropdown.querySelector('.file-toolbar-btn, .lists-toolbar-btn, .view-toolbar-btn, .script-edition-toggle, .project-share-toggle, .text-align-toolbar-btn')) {
+                if (!keepOpen && parentDropdown.querySelector('.file-toolbar-btn, .lists-toolbar-btn, .view-toolbar-btn, .script-edition-toggle, .project-share-toggle, .text-align-toolbar-btn, .text-style-toolbar-btn')) {
                     setOpen(parentDropdown, parentDropdown.querySelector('.nav-dropdown-toggle'), false);
                 }
                 var alignItem = item.classList.contains('bulk-align-btn') ? item : null;
                 if (alignItem && parentDropdown && parentDropdown.id === 'project-text-align-dropdown') {
                     syncTextAlignMenu(alignItem.getAttribute('data-bulk-align'));
+                }
+                var styleItem = item.classList.contains('bulk-style-btn') ? item : null;
+                if (styleItem && parentDropdown && parentDropdown.id === 'project-text-style-dropdown') {
+                    var next = !(styleItem.getAttribute('aria-checked') === 'true');
+                    styleItem.classList.toggle('is-active', next);
+                    styleItem.setAttribute('aria-checked', next ? 'true' : 'false');
+                    styleItem.setAttribute('aria-pressed', next ? 'true' : 'false');
+                    var anyOn = false;
+                    parentDropdown.querySelectorAll('.bulk-style-btn').forEach(function (btn) {
+                        if (btn.getAttribute('aria-checked') === 'true') anyOn = true;
+                    });
+                    var styleToggle = parentDropdown.querySelector('.text-style-toolbar-btn');
+                    if (styleToggle) {
+                        styleToggle.classList.toggle('is-active', anyOn);
+                        styleToggle.setAttribute('aria-pressed', anyOn ? 'true' : 'false');
+                    }
                 }
             }
         }

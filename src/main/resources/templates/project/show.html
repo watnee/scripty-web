@@ -200,6 +200,15 @@
                         <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
                 </a>
+                <button id="nav-lock-toggle"
+                        type="button"
+                        class="nav-dropdown-toggle lock-filter-toggle"
+                        th:if="${canEditScript == null or canEditScript}"
+                        aria-pressed="false"
+                        aria-label="Lock block text editing"
+                        title="Lock block text editing">
+                    <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
+                </button>
             </div>
         </div>
         <div class="text-size-control">
@@ -276,15 +285,6 @@
                     </button>
                 </div>
             </div>
-            <button id="nav-lock-toggle"
-                    type="button"
-                    class="nav-dropdown-toggle lock-filter-toggle"
-                    th:if="${canEditScript == null or canEditScript}"
-                    aria-pressed="false"
-                    aria-label="Lock block text editing"
-                    title="Lock block text editing">
-                <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
-            </button>
             <span th:if="${canEditScript == null or canEditScript}" th:replace="~{fragments/spellcheckToggle :: toolbarButton}"></span>
             <div class="nav-dropdown project-search-dropdown" id="project-search-dropdown">
                 <button class="nav-dropdown-toggle project-search-toggle" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Search script" title="Search script">

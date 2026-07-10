@@ -3875,13 +3875,11 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
 }
 
 .text-size-control .project-search-toggle.is-active,
-.text-size-control .lock-filter-toggle.is-active,
 .text-size-control .outline-mode-toolbar-btn.is-active {
     color: var(--accent, #475569);
     border-color: var(--accent, #475569);
 }
 
-.text-size-control .lock-filter-toggle,
 .text-size-control .spellcheck-toggle-btn {
     font-size: 1rem;
     line-height: 1;
@@ -7116,6 +7114,41 @@ aside.block-actions {
     height: 20px;
 }
 
+.has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle {
+    background: var(--interactive-bg);
+    border: 1px solid var(--muted-fg);
+    border-radius: var(--border-radius);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg);
+    font-size: 1rem;
+    line-height: 1;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle:hover,
+.has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle:focus {
+    filter: brightness(1.1);
+    background-color: var(--interactive-bg);
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle.is-active {
+    color: var(--accent, #475569);
+    border-color: var(--accent, #475569);
+}
+
+.has-toolbar-brand .project-top-bar-breadcrumb .lock-filter-toggle .lock-icon {
+    width: 20px;
+    height: 20px;
+}
+
 .has-toolbar-brand .project-top-bar-breadcrumb .share-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .focus-toolbar-btn,
 .has-toolbar-brand .project-top-bar-breadcrumb .script-edition-toggle {
@@ -7188,11 +7221,11 @@ aside.block-actions {
 }
 
 body.has-toolbar-brand {
-    --toolbar-brand-top-space: 0.65rem;
-    --toolbar-brand-bottom-space: 0.5rem;
-    --toolbar-brand-side-space: 0.5rem;
+    --toolbar-brand-top-space: 1rem;
+    --toolbar-brand-bottom-space: 0.75rem;
+    --toolbar-brand-side-space: 1.25rem;
     --toolbar-brand-header-actions-space: 7.5rem;
-    --project-chrome-inset: 0;
+    --project-chrome-inset: 0.25rem;
     padding-top: var(--toolbar-brand-top-space);
     padding-left: var(--toolbar-brand-side-space);
     padding-right: var(--toolbar-brand-side-space);
@@ -7250,7 +7283,7 @@ body.has-toolbar-brand {
 }
 
 .has-toolbar-brand main {
-    padding-top: 0.35rem !important;
+    padding-top: 0.75rem !important;
 }
 
 .top-bar .toolbar-brand-link {
@@ -8051,19 +8084,6 @@ html.safari-reader-view .block-content .reader-visible-text {
     color: var(--accent, #475569);
 }
 
-.lock-filter-toggle .lock-icon--locked {
-    display: none;
-}
-
-html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--locked {
-    display: block;
-}
-
-html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
-    display: none;
-}
-
-.text-size-control .lock-filter-toggle svg,
 .text-size-control .spellcheck-toggle-btn svg,
 .text-size-control .title-page-toolbar-btn svg,
 .text-size-control .drafts-toolbar-btn svg,
@@ -8076,6 +8096,19 @@ html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
 .text-size-control .full-width-toolbar-btn svg,
 .text-size-control .toolbar-visibility-toggle svg {
     display: block;
+}
+
+/* Keep these after the generic toolbar svg rule so lock icon swap wins. */
+.lock-filter-toggle .lock-icon--locked {
+    display: none;
+}
+
+html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--locked {
+    display: block;
+}
+
+html.scripty-block-edit-locked .lock-filter-toggle .lock-icon--unlocked {
+    display: none;
 }
 
 .text-size-control #outline-mode-toggle[aria-pressed="true"],

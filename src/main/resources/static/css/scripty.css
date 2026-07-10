@@ -4134,8 +4134,9 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
     display: inline-flex;
     align-items: center;
     line-height: 1.2;
-    flex: 1 1 16rem;
+    flex: 0 1 16rem;
     min-width: 12rem;
+    margin-left: auto;
 }
 
 .project-top-bar-breadcrumb .breadcrumb-name-meta .project-last-edited-line {

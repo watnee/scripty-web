@@ -1,4 +1,15 @@
+/**
+ * Screenplay page view mode (US Letter pagination).
+ *
+ * Loaded from nav.html so handlers survive HTMX-boosted navigation into
+ * /project/show (page scripts are not executed when allowScriptTags is false).
+ */
 (function () {
+    'use strict';
+
+    if (window._scriptyPageViewModeInit) return;
+    window._scriptyPageViewModeInit = true;
+
     var STORAGE_KEY = 'scripty-page-view-mode';
     var CLASS_NAME = 'scripty-page-view-mode';
     var PAGES_WRAP_CLASS = 'screenplay-pages';
@@ -294,12 +305,11 @@
         }
     };
 
-    var toggleBtn = getToggleBtn();
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', function () {
-            window.scriptySetPageViewMode(!isOn());
-        });
-    }
+    document.body.addEventListener('click', function (e) {
+        var btn = e.target && e.target.closest && e.target.closest('#page-view-mode-toggle');
+        if (!btn) return;
+        window.scriptySetPageViewMode(!isOn());
+    });
 
     document.body.addEventListener('htmx:afterSwap', function () {
         if (window.scriptyIsPageViewMode()) scheduleReflow(50);
@@ -371,5 +381,9 @@
         }
     }
 
-    sync();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', sync);
+    } else {
+        sync();
+    }
 })();

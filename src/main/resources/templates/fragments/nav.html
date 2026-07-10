@@ -6927,9 +6927,15 @@
     <script th:src="@{/js/offline.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/offline-edit.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/block-empty-guard.js(v=${assetVersion})}"></script>
-    <!-- Element type + Fountain power: load from nav so they survive HTMX-boosted
+    <!-- Project editor scripts: load from nav so they survive HTMX-boosted
          navigation into /project/show (allowScriptTags is false, so show.html
          script tags are not executed after a boost). -->
+    <script th:src="@{/js/text-size.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/focus-mode.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/outline-mode.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/page-view-mode.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/full-width-toggle.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/toolbar-toggle.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/element-type.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/fountain-power.js(v=${assetVersion})}"></script>
 </header>

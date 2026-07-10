@@ -1,4 +1,15 @@
+/**
+ * Focus mode toggle.
+ *
+ * Loaded from nav.html so handlers survive HTMX-boosted navigation into
+ * /project/show (page scripts are not executed when allowScriptTags is false).
+ */
 (function () {
+    'use strict';
+
+    if (window._scriptyFocusModeInit) return;
+    window._scriptyFocusModeInit = true;
+
     var STORAGE_KEY = 'scripty-focus-mode';
 
     function isOn() {
@@ -22,16 +33,19 @@
         }
     }
 
-    var toggleBtn = document.getElementById('focus-toggle');
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', function () {
-            var next = !isOn();
-            localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
-            apply(next);
-        });
-    }
+    document.body.addEventListener('click', function (e) {
+        var btn = e.target && e.target.closest && e.target.closest('#focus-toggle');
+        if (!btn) return;
+        var next = !isOn();
+        localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
+        apply(next);
+    });
 
     document.body.addEventListener('htmx:afterSwap', sync);
 
-    sync();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', sync);
+    } else {
+        sync();
+    }
 })();

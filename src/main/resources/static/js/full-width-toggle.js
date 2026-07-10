@@ -1,4 +1,15 @@
+/**
+ * Full page width toggle for the screenplay editor.
+ *
+ * Loaded from nav.html so handlers survive HTMX-boosted navigation into
+ * /project/show (page scripts are not executed when allowScriptTags is false).
+ */
 (function () {
+    'use strict';
+
+    if (window._scriptyFullWidthInit) return;
+    window._scriptyFullWidthInit = true;
+
     var STORAGE_KEY = 'scripty-screenplay-full-width';
     var CLASS_NAME = 'scripty-screenplay-full-width';
 
@@ -28,16 +39,19 @@
         }
     }
 
-    var toggleBtn = document.getElementById('nav-full-width-toggle');
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', function () {
-            var next = !isOn();
-            localStorage.setItem(STORAGE_KEY, next ? 'true' : 'false');
-            apply(next);
-        });
-    }
+    document.body.addEventListener('click', function (e) {
+        var btn = e.target && e.target.closest && e.target.closest('#nav-full-width-toggle');
+        if (!btn) return;
+        var next = !isOn();
+        localStorage.setItem(STORAGE_KEY, next ? 'true' : 'false');
+        apply(next);
+    });
 
     document.body.addEventListener('htmx:afterSwap', sync);
 
-    sync();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', sync);
+    } else {
+        sync();
+    }
 })();

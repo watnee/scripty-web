@@ -1,4 +1,15 @@
+/**
+ * Screenplay text size controls.
+ *
+ * Loaded from nav.html so handlers survive HTMX-boosted navigation into
+ * /project/show (page scripts are not executed when allowScriptTags is false).
+ */
 (function () {
+    'use strict';
+
+    if (window._scriptyTextSizeInit) return;
+    window._scriptyTextSizeInit = true;
+
     var STORAGE_KEY = 'scripty-text-size';
     var DEFAULT_SIZE = 100;
     var MIN_SIZE = 80;
@@ -41,27 +52,24 @@
         updateButtons(next);
     }
 
-    applySize(getSize());
-    updateButtons(getSize());
-
-    var decreaseBtn = document.getElementById('text-size-decrease');
-    var increaseBtn = document.getElementById('text-size-increase');
-    var isMac = window.scriptyIsMac ? window.scriptyIsMac() : /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
-    var modHint = isMac ? '⌘' : 'Ctrl';
-
-    if (decreaseBtn) {
-        decreaseBtn.title = 'Decrease text size (' + modHint + '−)';
-        decreaseBtn.addEventListener('click', function () {
-            changeSize(-1);
-        });
+    function sync() {
+        var size = getSize();
+        applySize(size);
+        updateButtons(size);
+        var isMac = window.scriptyIsMac ? window.scriptyIsMac() : /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
+        var modHint = isMac ? '⌘' : 'Ctrl';
+        var decreaseBtn = document.getElementById('text-size-decrease');
+        var increaseBtn = document.getElementById('text-size-increase');
+        if (decreaseBtn) decreaseBtn.title = 'Decrease text size (' + modHint + '−)';
+        if (increaseBtn) increaseBtn.title = 'Increase text size (' + modHint + '+)';
     }
 
-    if (increaseBtn) {
-        increaseBtn.title = 'Increase text size (' + modHint + '+)';
-        increaseBtn.addEventListener('click', function () {
-            changeSize(1);
-        });
-    }
+    document.body.addEventListener('click', function (e) {
+        var t = e.target && e.target.closest && e.target.closest('#text-size-decrease, #text-size-increase');
+        if (!t) return;
+        if (t.id === 'text-size-decrease') changeSize(-1);
+        else if (t.id === 'text-size-increase') changeSize(1);
+    });
 
     document.addEventListener('keydown', function (e) {
         if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
@@ -76,4 +84,12 @@
             changeSize(-1);
         }
     });
+
+    document.body.addEventListener('htmx:afterSwap', sync);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', sync);
+    } else {
+        sync();
+    }
 })();

@@ -3,6 +3,9 @@
 # One-time setup: see docs/BACKUP.md
 # Uses the same MYSQL* + CLOUDFLARE_* secrets as the Cloudflare deploy job,
 # plus R2_BUCKET (e.g. scripty-db-backups). CLOUDFLARE_API_TOKEN needs R2 edit.
+#
+# Railway volume snapshots (Daily/Weekly/Monthly) are a separate on-platform layer;
+# this workflow is the off-platform copy.
 
 name: Backup database
 
@@ -21,6 +24,8 @@ jobs:
     name: mysqldump → R2
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,6 +46,7 @@ jobs:
           mysqldump --version
 
       - name: Run backup script
+        id: dump
         env:
           MYSQLHOST: ${{ secrets.MYSQLHOST }}
           MYSQLPORT: ${{ secrets.MYSQLPORT }}
@@ -56,6 +62,11 @@ jobs:
 
       - name: Summarize
         if: always()
+        env:
+          DUMP_FILENAME: ${{ steps.dump.outputs.filename }}
+          DUMP_SIZE: ${{ steps.dump.outputs.size_bytes }}
+          DUMP_SHA256: ${{ steps.dump.outputs.sha256 }}
+          DUMP_BUCKET: ${{ steps.dump.outputs.bucket }}
         run: |
           {
             echo "## Backup database"
@@ -64,6 +75,12 @@ jobs:
             echo "|---|---|"
             echo "| Event | \`${{ github.event_name }}\` |"
             echo "| Result | ${{ job.status }} |"
+            if [ -n "${DUMP_FILENAME}" ]; then
+              echo "| Object | \`r2://${DUMP_BUCKET}/${DUMP_FILENAME}\` |"
+              echo "| Size | ${DUMP_SIZE} bytes |"
+              echo "| SHA-256 | \`${DUMP_SHA256}\` |"
+            fi
             echo ""
+            echo "Railway volume schedules: Daily / Weekly / Monthly (MySQL)."
             echo "See [docs/BACKUP.md](../blob/main/docs/BACKUP.md) for restore steps."
           } >> "$GITHUB_STEP_SUMMARY"

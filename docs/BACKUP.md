@@ -4,20 +4,29 @@ Scripty production data lives in **Railway MySQL**. Screenplay **Snapshot Histor
 
 This project uses two layers:
 
-1. **Railway volume backups** — same-project restore of the MySQL volume
+1. **Railway volume backups** — same-project restore of the MySQL volume (Daily / Weekly / Monthly)
 2. **Daily `mysqldump` to Cloudflare R2** — off-platform copies via GitHub Actions
 
 ## Railway volume backups
 
-Railway can snapshot the volume attached to the MySQL service.
+Railway snapshots the volume attached to the MySQL service (`mysql-volume` at `/var/lib/mysql`).
 
-### Enable (one-time, dashboard)
+| Schedule | Cadence | Retention |
+|----------|---------|-----------|
+| Daily | every 24h | ~6 days |
+| Weekly | every 7 days | ~1 month |
+| Monthly | every 30 days | ~3 months |
 
-1. Open the Railway project → **MySQL** service → **Backups** tab.
-2. Enable **Daily** (kept ~6 days) and **Weekly** (kept ~1 month).
-3. Optionally trigger a **manual** backup after enabling.
+### Enable / inspect (CLI)
 
-Schedules are configured in the Railway UI only (not in `railway.json`).
+```bash
+chmod +x scripts/railway-mysql-backups.sh
+./scripts/railway-mysql-backups.sh status    # schedules + existing backups
+./scripts/railway-mysql-backups.sh enable    # Daily + Weekly + Monthly
+./scripts/railway-mysql-backups.sh snapshot  # manual backup now
+```
+
+Requires `railway login`. Schedules can also be set in the dashboard: **MySQL** → **Backups** → **Edit Schedule**.
 
 ### Restore a volume backup
 
@@ -38,6 +47,7 @@ Script: [`scripts/backup-mysql.sh`](../scripts/backup-mysql.sh)
 
 - **Schedule:** daily at 07:00 UTC (`0 7 * * *`), plus manual **Run workflow**
 - **Format:** `scripty-YYYYMMDD-HHMMSS.sql.gz`
+- **Checks:** non-empty size floor, `gunzip -t`, SQL content sniff, SHA-256 in the Actions summary
 - **Upload:** `wrangler r2 object put` (uses `CLOUDFLARE_API_TOKEN`)
 - **Retention:** prefer an R2 **lifecycle rule** to expire objects after 30 days
 
@@ -97,7 +107,7 @@ export R2_BUCKET=scripty-db-backups
 ./scripts/backup-mysql.sh
 ```
 
-Requires `mysqldump`, `gzip`, and Node/`npx wrangler`.
+Requires `mysqldump`, `gzip`, `gunzip`, `openssl`, and Node/`npx wrangler`.
 
 ## Snapshot History retention (app)
 
@@ -105,7 +115,7 @@ Auto-saves in Snapshot History are pruned per screenplay edition: the newest **3
 
 ## Checklist
 
-- [ ] Railway MySQL: Daily + Weekly volume backups enabled
+- [x] Railway MySQL: Daily + Weekly + Monthly volume backups enabled
 - [ ] R2 bucket created (`scripty-db-backups`)
 - [ ] R2 30-day lifecycle rule (recommended)
 - [ ] `CLOUDFLARE_API_TOKEN` includes R2 edit

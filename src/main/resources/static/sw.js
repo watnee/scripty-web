@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v23';
+const CACHE_NAME = 'scripty-cache-v24';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/offline-project.html',
@@ -8,6 +8,7 @@ const ASSETS_TO_CACHE = [
   '/js/_hyperscript.min.js',
   '/js/shortcuts.js',
   '/js/help-center.js',
+  '/js/csrf.js',
   '/js/text-size.js',
   '/js/block-empty-guard.js',
   '/js/element-type.js',

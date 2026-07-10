@@ -1,5 +1,6 @@
 /**
  * Attach Spring Security CSRF tokens to HTMX and same-origin mutating fetch calls.
+ * Also exposes scriptyAppendCsrfToForm for programmatic form.submit() fallbacks.
  */
 (function () {
     'use strict';
@@ -26,6 +27,23 @@
             return false;
         }
     }
+
+    /** Inject _csrf into a form so native form.submit() works in prod. */
+    window.scriptyAppendCsrfToForm = function (form) {
+        if (!form) return;
+        var csrf = csrfMeta();
+        if (!csrf) return;
+        var existing = form.querySelector('input[name="_csrf"]');
+        if (existing) {
+            existing.value = csrf.token;
+            return;
+        }
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = '_csrf';
+        input.value = csrf.token;
+        form.appendChild(input);
+    };
 
     document.addEventListener('htmx:configRequest', function (event) {
         var csrf = csrfMeta();

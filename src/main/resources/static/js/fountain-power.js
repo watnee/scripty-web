@@ -1884,18 +1884,6 @@
         }
     });
 
-    // After HTMX swaps, refresh outline / character list and apply pending create type
-    document.body.addEventListener('htmx:afterSwap', function() {
-        sceneCache.loadedAt = 0;
-        characterCache.loadedAt = 0;
-        refreshOutline();
-        refreshCharacterList();
-        refreshLocationList();
-        refreshSongList();
-        refreshScriptStats();
-        applyPendingCreateType();
-    });
-
     function applyPendingCreateType(preferredRow) {
         var pending = window.scriptyPendingCreateType;
         if (!pending) return;
@@ -1980,6 +1968,7 @@
     });
 
     function startObserver() {
+        observer.disconnect();
         var root = document.querySelector('.project-script') || document.body;
         observer.observe(root, {
             childList: true,
@@ -1991,7 +1980,8 @@
 
     function initOutlineButton() {
         var btn = document.getElementById('nav-outline-toggle');
-        if (!btn) return;
+        if (!btn || btn.dataset.fountainOutlineInit === 'true') return;
+        btn.dataset.fountainOutlineInit = 'true';
         // Prevent focus steal so the script caret / test caret stays put.
         btn.addEventListener('mousedown', function(e) {
             if (e.button !== 0) return;
@@ -2011,7 +2001,8 @@
 
     function initCharacterListButton() {
         var btn = document.getElementById('nav-character-list-toggle');
-        if (!btn) return;
+        if (!btn || btn.dataset.fountainCharacterListInit === 'true') return;
+        btn.dataset.fountainCharacterListInit = 'true';
         btn.addEventListener('mousedown', function(e) {
             if (e.button !== 0) return;
             e.preventDefault();
@@ -2030,7 +2021,8 @@
 
     function initLocationListButton() {
         var btn = document.getElementById('nav-location-list-toggle');
-        if (!btn) return;
+        if (!btn || btn.dataset.fountainLocationListInit === 'true') return;
+        btn.dataset.fountainLocationListInit = 'true';
         btn.addEventListener('mousedown', function(e) {
             if (e.button !== 0) return;
             e.preventDefault();
@@ -2049,7 +2041,8 @@
 
     function initSongListButton() {
         var btn = document.getElementById('nav-song-list-toggle');
-        if (!btn) return;
+        if (!btn || btn.dataset.fountainSongListInit === 'true') return;
+        btn.dataset.fountainSongListInit = 'true';
         btn.addEventListener('mousedown', function(e) {
             if (e.button !== 0) return;
             e.preventDefault();
@@ -2066,6 +2059,17 @@
         else ensureSongList().hidden = true;
     }
 
+    function initFountainPowerUi() {
+        startObserver();
+        initOutlineButton();
+        initCharacterListButton();
+        initLocationListButton();
+        initSongListButton();
+        loadCharacters(true);
+        refreshScriptStats();
+    }
+    window.scriptyInitFountainPowerUi = initFountainPowerUi;
+
     // Expose apply helper used by Tab cycling when element-type.js is present
     window.scriptyApplyFountainType = function(type, preferredBlockId) {
         if (typeof window.scriptyApplyElementType === 'function') {
@@ -2077,23 +2081,22 @@
         if (row && isCreateRow(row)) setCreateRowType(row, type);
     };
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            startObserver();
-            initOutlineButton();
-            initCharacterListButton();
-            initLocationListButton();
-            initSongListButton();
-            loadCharacters(true);
-            refreshScriptStats();
-        });
-    } else {
-        startObserver();
-        initOutlineButton();
-        initCharacterListButton();
-        initLocationListButton();
-        initSongListButton();
-        loadCharacters(true);
+    // After HTMX swaps, refresh outline / character list and apply pending create type
+    document.body.addEventListener('htmx:afterSwap', function() {
+        sceneCache.loadedAt = 0;
+        characterCache.loadedAt = 0;
+        initFountainPowerUi();
+        refreshOutline();
+        refreshCharacterList();
+        refreshLocationList();
+        refreshSongList();
         refreshScriptStats();
+        applyPendingCreateType();
+    });
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFountainPowerUi);
+    } else {
+        initFountainPowerUi();
     }
 })();

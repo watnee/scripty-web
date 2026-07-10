@@ -1,6 +1,10 @@
 /**
  * Element type toolbar (Scene, Action, Dialogue, ...).
  *
+ * Loaded from nav.html so handlers survive HTMX-boosted navigation into
+ * /project/show (inline/page scripts are not executed when allowScriptTags
+ * is false).
+ *
  * Flow:
  * 1. mousedown: capture target block + content snapshot, prevent focus steal
  * 2. click: apply type using the snapshot (never trust a wiped textarea)
@@ -360,6 +364,9 @@
                 input.value = fields[name];
                 form.appendChild(input);
             });
+            if (window.scriptyAppendCsrfToForm) {
+                window.scriptyAppendCsrfToForm(form);
+            }
             document.body.appendChild(form);
             form.submit();
         }).finally(function() {
@@ -389,6 +396,9 @@
                 input.value = pair[1];
                 form.appendChild(input);
             });
+            if (window.scriptyAppendCsrfToForm) {
+                window.scriptyAppendCsrfToForm(form);
+            }
             document.body.appendChild(form);
             form.submit();
         }

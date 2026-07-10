@@ -1,5 +1,5 @@
 /**
- * Project script search (magnifying glass beside last-edited).
+ * Project script search (inline field beside last-edited).
  *
  * Loaded from nav.html so handlers survive HTMX-boosted navigation into
  * /project/show (page scripts are not executed when allowScriptTags is false).
@@ -14,10 +14,6 @@
         return document.getElementById('project-search-dropdown');
     }
 
-    function getToggle(dropdown) {
-        return dropdown ? dropdown.querySelector('.project-search-toggle') : null;
-    }
-
     function getInput() {
         return document.getElementById('project-search');
     }
@@ -26,27 +22,13 @@
         return document.getElementById('project-search-clear');
     }
 
-    function closeAllDropdowns() {
-        document.querySelectorAll('.nav-dropdown').forEach(function (d) {
-            d.classList.remove('open');
-            var t = d.querySelector('.nav-dropdown-toggle');
-            if (t) t.setAttribute('aria-expanded', 'false');
-        });
-    }
-
-    function setSearchOpen(isOpen) {
-        var searchDropdown = getDropdown();
-        var searchToggle = getToggle(searchDropdown);
+    function focusSearch() {
         var searchInput = getInput();
-        if (!searchDropdown || !searchToggle) return;
-        searchDropdown.classList.toggle('open', isOpen);
-        searchToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        if (isOpen && searchInput) {
-            setTimeout(function () {
-                searchInput.focus();
-                searchInput.select();
-            }, 0);
-        }
+        if (!searchInput) return;
+        setTimeout(function () {
+            searchInput.focus();
+            searchInput.select();
+        }, 0);
     }
 
     function rowMatchesSearch(row, query) {
@@ -64,12 +46,12 @@
         if (!searchInput) return;
         var query = searchInput.value.toLowerCase().trim();
         var clearBtn = getClearBtn();
-        var searchToggle = getToggle(getDropdown());
+        var searchDropdown = getDropdown();
         if (clearBtn) {
             clearBtn.hidden = !query;
         }
-        if (searchToggle) {
-            searchToggle.classList.toggle('is-active', !!query);
+        if (searchDropdown) {
+            searchDropdown.classList.toggle('has-value', !!query);
         }
         document.querySelectorAll('.project-script .scene-blocks .block-row[data-block-id]').forEach(function (row) {
             row.style.display = rowMatchesSearch(row, query) ? '' : 'none';
@@ -77,19 +59,18 @@
     }
 
     function syncShortcutLabel() {
-        var searchToggle = getToggle(getDropdown());
-        if (!searchToggle) return;
+        var searchInput = getInput();
+        if (!searchInput) return;
         var isMac = window.scriptyIsMac
             ? window.scriptyIsMac()
             : /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
         var searchShortcut = isMac ? ' (⌘F)' : ' (Ctrl+F)';
-        searchToggle.title = 'Search script' + searchShortcut;
-        searchToggle.setAttribute('aria-label', 'Search script' + searchShortcut);
+        searchInput.title = 'Search script' + searchShortcut;
+        searchInput.setAttribute('aria-label', 'Search blocks, character names, or tags' + searchShortcut);
     }
 
     window.scriptyOpenProjectSearch = function () {
-        closeAllDropdowns();
-        setSearchOpen(true);
+        focusSearch();
     };
 
     window.scriptyPerformProjectSearch = performSearch;
@@ -104,21 +85,7 @@
             if (searchInput) {
                 searchInput.value = tagBadge.textContent.trim();
                 performSearch();
-                setSearchOpen(true);
-            }
-            return;
-        }
-
-        var toggle = target.closest('.project-search-toggle');
-        if (toggle) {
-            var searchDropdown = getDropdown();
-            if (!searchDropdown || !searchDropdown.contains(toggle)) return;
-            e.preventDefault();
-            e.stopPropagation();
-            var isOpen = searchDropdown.classList.contains('open');
-            closeAllDropdowns();
-            if (!isOpen) {
-                setSearchOpen(true);
+                focusSearch();
             }
             return;
         }
@@ -131,12 +98,6 @@
             input.value = '';
             performSearch();
             input.focus();
-            return;
-        }
-
-        var openDropdown = getDropdown();
-        if (openDropdown && openDropdown.classList.contains('open') && !openDropdown.contains(target)) {
-            setSearchOpen(false);
         }
     });
 
@@ -147,25 +108,27 @@
     });
 
     document.addEventListener('keydown', function (e) {
-        var searchDropdown = getDropdown();
-        var searchToggle = getToggle(searchDropdown);
+        var searchInput = getInput();
 
-        if (e.key === 'Escape' && searchDropdown && searchDropdown.classList.contains('open')) {
-            setSearchOpen(false);
-            if (searchToggle) searchToggle.focus();
+        if (e.key === 'Escape' && searchInput && document.activeElement === searchInput) {
+            if (searchInput.value) {
+                searchInput.value = '';
+                performSearch();
+            } else {
+                searchInput.blur();
+            }
             return;
         }
 
         if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
         if (e.key.toLowerCase() !== 'f') return;
-        if (!getInput()) return;
+        if (!searchInput) return;
         var active = document.activeElement;
         if (window.scriptyIsTypingContext && window.scriptyIsTypingContext(active)) {
-            if (active !== getInput()) return;
+            if (active !== searchInput) return;
         }
         e.preventDefault();
-        closeAllDropdowns();
-        setSearchOpen(true);
+        focusSearch();
     });
 
     function sync() {

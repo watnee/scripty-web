@@ -2580,8 +2580,7 @@ body.htmx-swapping {
 .nav-dropdown.open > .nav-dropdown-toggle,
 .help-dropdown.open .help-toggle-btn,
 .settings-dropdown.open .settings-toggle-btn,
-.user-dropdown-container.open .user-toggle-btn,
-.project-search-dropdown.open .project-search-toggle {
+.user-dropdown-container.open .user-toggle-btn {
     background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
     color: var(--accent, inherit);
 }
@@ -3323,41 +3322,30 @@ input.project-list-search:focus-visible {
     display: inline-flex;
     align-items: center;
     position: relative;
-    flex-shrink: 0;
+    flex: 1 1 12rem;
+    min-width: 10rem;
+    max-width: 22rem;
 }
 
-.project-search-dropdown .nav-dropdown-menu {
-    display: none;
-    left: 0;
-    right: auto;
-    min-width: min(22rem, calc(100vw - 2rem));
-    padding: 0.5rem;
-    transform-origin: top left;
-}
-
-.project-search-dropdown.open .nav-dropdown-menu {
-    display: block;
-}
-
-.breadcrumb-name-meta .project-search-toggle {
-    padding: 0.15rem;
-    min-width: 1.5rem;
-    min-height: 1.5rem;
-    color: var(--muted-fg, #64748b);
+.breadcrumb-name-meta .project-search-icon {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+    margin-left: 0.75rem;
+    color: var(--muted-fg, #64748b);
+    pointer-events: none;
 }
 
-.breadcrumb-name-meta .project-search-toggle:hover,
-.breadcrumb-name-meta .project-search-toggle:focus-visible,
-.breadcrumb-name-meta .project-search-dropdown.open .project-search-toggle,
-.breadcrumb-name-meta .project-search-toggle.is-active {
+.breadcrumb-name-meta .project-search-dropdown.has-value .project-search-icon,
+.breadcrumb-name-meta .project-search-wrap:focus-within .project-search-icon {
     color: var(--accent, #475569);
 }
 
-.breadcrumb-name-meta .project-search-toggle svg {
+.breadcrumb-name-meta .project-search-icon svg {
     display: block;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
 }
 
 .project-share-dropdown {
@@ -3677,10 +3665,10 @@ input.project-list-search:focus-visible {
     display: flex;
     align-items: center;
     width: 100%;
-    border-radius: 999px;
+    min-height: 2.25rem;
+    border-radius: 8px;
     border: 1px solid var(--border, #cbd5e1);
     background: var(--box-bg, #ffffff);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -3694,17 +3682,32 @@ input.project-list-search:focus-visible {
     min-width: 0;
     width: 100%;
     margin: 0;
-    padding: 0.55rem 0.85rem;
+    padding: 0.5rem 0.55rem 0.5rem 0.5rem;
     border: none;
-    border-radius: 999px;
+    border-radius: 0;
     background: transparent;
     box-shadow: none;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    line-height: 1.2;
 }
 
-.project-search-input:focus {
+.project-search-input::placeholder {
+    color: var(--muted-fg, #94a3b8);
+}
+
+.project-search-input:focus,
+.project-search-input:focus-visible {
     outline: none;
+    border: none;
     box-shadow: none;
+}
+
+.project-search-input::-webkit-search-decoration,
+.project-search-input::-webkit-search-cancel-button,
+.project-search-input::-webkit-search-results-button,
+.project-search-input::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .project-search-clear {
@@ -3714,10 +3717,10 @@ input.project-list-search:focus-visible {
     flex-shrink: 0;
     width: 1.75rem;
     height: 1.75rem;
-    margin-right: 0.35rem;
+    margin-right: 0.4rem;
     padding: 0;
     border: none;
-    border-radius: 999px;
+    border-radius: 6px;
     background: transparent;
     color: var(--muted-fg, #64748b);
     font-size: 1.2rem;
@@ -6984,11 +6987,11 @@ kbd {
         justify-content: center !important;
     }
 
-    /* Search panel beside last-edited */
-    .project-search-dropdown .nav-dropdown-menu {
-        min-width: calc(100vw - 2rem) !important;
-        left: 0 !important;
-        right: auto !important;
+    /* Inline search beside last-edited */
+    .project-search-dropdown {
+        flex: 1 1 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
     }
 
     .project-share-dropdown .nav-dropdown-menu {

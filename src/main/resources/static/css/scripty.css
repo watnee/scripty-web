@@ -3817,7 +3817,7 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
 }
 
 .project-tools-group .project-search-dropdown {
-    display: inline-flex;
+    display: none;
     align-items: center;
     gap: 0.35rem;
     margin-left: 0;
@@ -3826,17 +3826,15 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
     z-index: 1;
 }
 
+.project-tools-group .project-search-dropdown.is-open,
+.project-tools-group .project-search-dropdown.has-value {
+    display: inline-flex;
+}
+
 .project-tools-group .project-search-dropdown.is-open {
     flex: 1 1 12rem;
     max-width: min(18rem, 100%);
     z-index: 1300;
-}
-
-.project-tools-group .project-search-toggle {
-    width: auto;
-    height: auto;
-    min-width: 0;
-    min-height: 0;
 }
 
 .lists-menu .nav-dropdown-item,
@@ -9474,7 +9472,7 @@ body.focus-mode .project-top-bar-breadcrumb > nav,
 body.focus-mode .project-top-bar-actions,
 body.focus-mode .text-size-control,
 body.focus-mode .project-script-toolbar .project-toolbar-row:not(.project-tools-row),
-body.focus-mode .project-tools-group > :not(#project-lists-dropdown):not(#project-view-dropdown):not(#project-search-dropdown),
+body.focus-mode .project-tools-group > :not(#project-lists-dropdown):not(#project-view-dropdown):not(#history-dropdown):not(#project-search-dropdown),
 body.focus-mode .project-header-row,
 body.focus-mode .project-create-scene,
 body.focus-mode .block-left-controls,

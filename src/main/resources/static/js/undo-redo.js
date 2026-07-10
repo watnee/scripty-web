@@ -146,12 +146,12 @@
         var undoBtn = document.getElementById('nav-undo');
         var redoBtn = document.getElementById('nav-redo');
 
-        if (!undoBtn || !redoBtn) return;
+        if (!dropdown && !undoBtn && !redoBtn) return;
 
-        if (!undoBtn.classList.contains('history-action-btn')) {
+        if (undoBtn && !undoBtn.classList.contains('history-action-btn')) {
             undoBtn.classList.add('history-action-btn');
         }
-        if (!redoBtn.classList.contains('history-action-btn')) {
+        if (redoBtn && !redoBtn.classList.contains('history-action-btn')) {
             redoBtn.classList.add('history-action-btn');
         }
 
@@ -161,29 +161,31 @@
         var undoShortcut = isMac ? ' (⌘Z)' : ' (Ctrl+Z)';
         var redoShortcut = isMac ? ' (⌘⇧Z)' : ' (Ctrl+Y)';
 
-        var undoLabel = undoBtn.classList.contains('nav-dropdown-item') ? 'Undo' + undoShortcut : '← Undo';
-        var redoLabel = redoBtn.classList.contains('nav-dropdown-item') ? 'Redo' + redoShortcut : 'Redo →';
-
-        if (undoBtn.classList.contains('nav-dropdown-item')) {
-            undoBtn.textContent = undoLabel;
+        if (undoBtn) {
+            var undoLabel = undoBtn.classList.contains('nav-dropdown-item') ? 'Undo' + undoShortcut : '← Undo';
+            if (undoBtn.classList.contains('nav-dropdown-item')) {
+                undoBtn.textContent = undoLabel;
+            }
+            undoBtn.title = 'Undo' + undoShortcut;
+            undoBtn.setAttribute('aria-label', 'Undo' + undoShortcut);
+            undoBtn.onclick = function (e) {
+                e.preventDefault();
+                performHistoryAction('undo');
+            };
         }
-        if (redoBtn.classList.contains('nav-dropdown-item')) {
-            redoBtn.textContent = redoLabel;
+
+        if (redoBtn) {
+            var redoLabel = redoBtn.classList.contains('nav-dropdown-item') ? 'Redo' + redoShortcut : 'Redo →';
+            if (redoBtn.classList.contains('nav-dropdown-item')) {
+                redoBtn.textContent = redoLabel;
+            }
+            redoBtn.title = 'Redo' + redoShortcut;
+            redoBtn.setAttribute('aria-label', 'Redo' + redoShortcut);
+            redoBtn.onclick = function (e) {
+                e.preventDefault();
+                performHistoryAction('redo');
+            };
         }
-        undoBtn.title = 'Undo' + undoShortcut;
-        undoBtn.setAttribute('aria-label', 'Undo' + undoShortcut);
-        redoBtn.title = 'Redo' + redoShortcut;
-        redoBtn.setAttribute('aria-label', 'Redo' + redoShortcut);
-
-        undoBtn.onclick = function (e) {
-            e.preventDefault();
-            performHistoryAction('undo');
-        };
-
-        redoBtn.onclick = function (e) {
-            e.preventDefault();
-            performHistoryAction('redo');
-        };
 
         var projectId = resolveProjectId();
         if (!dropdown) {

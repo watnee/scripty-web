@@ -1,5 +1,5 @@
 /**
- * Project script search (icon button + expandable field beside toolbar actions).
+ * Project script search (Edit → Search + expandable field in the toolbar).
  *
  * Loaded from nav.html so handlers survive HTMX-boosted navigation into
  * /project/show (page scripts are not executed when allowScriptTags is false).
@@ -22,18 +22,26 @@
         return document.getElementById('project-search-clear');
     }
 
-    function getToggle() {
-        return document.getElementById('project-search-toggle');
+    function getMenuItem() {
+        return document.getElementById('nav-search');
+    }
+
+    function closeEditDropdown() {
+        var historyDropdown = document.getElementById('history-dropdown');
+        if (!historyDropdown) return;
+        historyDropdown.classList.remove('open');
+        var toggle = historyDropdown.querySelector('.nav-dropdown-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
     }
 
     function setOpen(open) {
         var searchDropdown = getDropdown();
         var searchInput = getInput();
-        var toggle = getToggle();
+        var menuItem = getMenuItem();
         if (!searchDropdown || !searchInput) return;
         searchDropdown.classList.toggle('is-open', !!open);
-        if (toggle) {
-            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (menuItem) {
+            menuItem.setAttribute('aria-expanded', open ? 'true' : 'false');
         }
         searchInput.tabIndex = open ? 0 : -1;
         if (!open && !searchInput.value) {
@@ -49,6 +57,7 @@
     function focusSearch() {
         var searchInput = getInput();
         if (!searchInput) return;
+        closeEditDropdown();
         setOpen(true);
         setTimeout(function () {
             searchInput.focus();
@@ -58,7 +67,7 @@
 
     function closeSearch() {
         var searchInput = getInput();
-        var toggle = getToggle();
+        var menuItem = getMenuItem();
         if (searchInput && searchInput.value) {
             // Keep open while a query is active so results stay filterable
             setOpen(true);
@@ -67,7 +76,7 @@
         }
         setOpen(false);
         if (searchInput) searchInput.blur();
-        if (toggle) toggle.focus();
+        if (menuItem) menuItem.focus();
     }
 
     function rowMatchesSearch(row, query) {
@@ -114,8 +123,8 @@
 
     function syncShortcutLabel() {
         var searchInput = getInput();
-        var toggle = getToggle();
-        if (!searchInput && !toggle) return;
+        var menuItem = getMenuItem();
+        if (!searchInput && !menuItem) return;
         var isMac = window.scriptyIsMac
             ? window.scriptyIsMac()
             : /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
@@ -124,9 +133,10 @@
             searchInput.title = 'Search script' + searchShortcut;
             searchInput.setAttribute('aria-label', 'Search blocks, character names, or tags' + searchShortcut);
         }
-        if (toggle) {
-            toggle.title = 'Search script' + searchShortcut;
-            toggle.setAttribute('aria-label', 'Search script' + searchShortcut);
+        if (menuItem) {
+            menuItem.textContent = 'Search' + searchShortcut;
+            menuItem.title = 'Search script' + searchShortcut;
+            menuItem.setAttribute('aria-label', 'Search script' + searchShortcut);
         }
     }
 
@@ -151,10 +161,12 @@
             return;
         }
 
-        var toggle = target.closest('#project-search-toggle');
-        if (toggle) {
+        var menuItem = target.closest('#nav-search');
+        if (menuItem) {
             e.preventDefault();
+            e.stopPropagation();
             if (isOpen() && !(getInput() && getInput().value)) {
+                closeEditDropdown();
                 closeSearch();
             } else {
                 focusSearch();

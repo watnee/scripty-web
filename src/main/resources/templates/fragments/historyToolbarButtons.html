@@ -4,13 +4,24 @@
                 class="nav-dropdown-toggle history-toolbar-btn"
                 aria-haspopup="true"
                 aria-expanded="false"
-                aria-label="Undo and redo"
-                title="Undo and redo">
-            History
+                aria-label="Edit"
+                title="Edit">
+            Edit
         </button>
-        <div class="nav-dropdown-menu history-menu" role="menu" aria-label="Undo and redo">
-            <button id="nav-undo" type="button" class="nav-dropdown-item history-action-btn" role="menuitem" aria-label="Undo" title="Undo">Undo</button>
-            <button id="nav-redo" type="button" class="nav-dropdown-item history-action-btn" role="menuitem" aria-label="Redo" title="Redo">Redo</button>
+        <div class="nav-dropdown-menu history-menu" role="menu" aria-label="Edit">
+            <th:block th:if="${canEditScript == null or canEditScript}">
+                <button id="nav-undo" type="button" class="nav-dropdown-item history-action-btn" role="menuitem" aria-label="Undo" title="Undo">Undo</button>
+                <button id="nav-redo" type="button" class="nav-dropdown-item history-action-btn" role="menuitem" aria-label="Redo" title="Redo">Redo</button>
+                <div class="nav-dropdown-divider" role="separator"></div>
+            </th:block>
+            <button id="nav-search"
+                    type="button"
+                    class="nav-dropdown-item"
+                    role="menuitem"
+                    aria-label="Search script"
+                    title="Search script (⌘F)">
+                Search
+            </button>
         </div>
     </div>
 </th:block>

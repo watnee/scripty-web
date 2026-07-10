@@ -1,6 +1,8 @@
 package com.scripty.config;
 
 import com.scripty.security.HtmxLoginUrlAuthenticationEntryPoint;
+import com.scripty.security.LoginSuccessHandler;
+import com.scripty.security.LogoutIgnoringRequestCache;
 import javax.sql.DataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +17,7 @@ import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
@@ -42,9 +45,15 @@ public class SecurityConfig {
             "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
 
     @Bean
+    public RequestCache requestCache() {
+        return new LogoutIgnoringRequestCache();
+    }
+
+    @Bean
     @Profile("!dev")
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, RequestCache requestCache) throws Exception {
         http
+            .requestCache(cache -> cache.requestCache(requestCache))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                         "/",
@@ -86,7 +95,7 @@ public class SecurityConfig {
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .defaultSuccessUrl("/", false)
+                .successHandler(new LoginSuccessHandler(requestCache))
                 .failureUrl("/login?login_error=1")
                 .permitAll()
             )
@@ -116,8 +125,9 @@ public class SecurityConfig {
 
     @Bean
     @Profile("dev")
-    public SecurityFilterChain devFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain devFilterChain(HttpSecurity http, RequestCache requestCache) throws Exception {
         http
+            .requestCache(cache -> cache.requestCache(requestCache))
             .addFilterBefore(new DevAutoLoginFilter(), UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/perform-login").permitAll()
@@ -125,7 +135,7 @@ public class SecurityConfig {
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .defaultSuccessUrl("/", false)
+                .successHandler(new LoginSuccessHandler(requestCache))
                 .failureUrl("/login?login_error=1")
                 .permitAll()
             )

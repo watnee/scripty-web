@@ -36,7 +36,8 @@ public class PersonController {
 
     @RequestMapping(value = "/list")
     public String list(@RequestParam Integer projectId, Model model, Principal principal) {
-        if (!projectAccess.canAccessProject(projectId, principal)) {
+        if (!projectAccess.canAccessProject(projectId, principal)
+                || !projectAccess.canViewCasting(principal)) {
             return "redirect:/project/list";
         }
 
@@ -112,7 +113,8 @@ public class PersonController {
 
     @RequestMapping(value = "/create")
     public String create(@RequestParam Integer projectId, Model model, Principal principal) {
-        if (!projectAccess.canAccessProject(projectId, principal)) {
+        if (!projectAccess.canAccessProject(projectId, principal)
+                || !projectAccess.canViewCasting(principal)) {
             return "redirect:/project/list";
         }
 
@@ -129,7 +131,8 @@ public class PersonController {
                              BindingResult bindingResult,
                              Model model,
                              Principal principal) {
-        if (!projectAccess.canAccessProject(commandModel.getProjectId(), principal)) {
+        if (!projectAccess.canAccessProject(commandModel.getProjectId(), principal)
+                || !projectAccess.canViewCasting(principal)) {
             return "redirect:/project/list";
         }
 
@@ -152,7 +155,8 @@ public class PersonController {
     public String assignActor(@RequestParam Integer characterId,
                               @RequestParam(required = false) Integer actorId,
                               Principal principal) {
-        if (!projectAccess.canAccessPerson(characterId, principal)) {
+        if (!projectAccess.canAccessPerson(characterId, principal)
+                || !projectAccess.canViewCasting(principal)) {
             return "redirect:/project/list";
         }
 

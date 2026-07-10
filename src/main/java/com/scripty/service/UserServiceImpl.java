@@ -65,6 +65,9 @@ public class UserServiceImpl implements UserService {
         if (user.isCastingDirector()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_CASTING"));
         }
+        if (user.isViewCasting()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_VIEW_CASTING"));
+        }
         return saved;
     }
 
@@ -132,6 +135,9 @@ public class UserServiceImpl implements UserService {
         if (user.isCastingDirector()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_CASTING"));
         }
+        if (user.isViewCasting()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_VIEW_CASTING"));
+        }
     }
 
     @Override
@@ -171,6 +177,7 @@ public class UserServiceImpl implements UserService {
             uvm.setCrew(user.isCrew());
             uvm.setDirectorOfPhotography(user.isDirectorOfPhotography());
             uvm.setCastingDirector(user.isCastingDirector());
+            uvm.setViewCasting(user.isViewCasting());
             userViewModels.add(uvm);
         }
         vm.setUsers(userViewModels);
@@ -203,6 +210,7 @@ public class UserServiceImpl implements UserService {
         commandModel.setCrew(user.isCrew());
         commandModel.setDirectorOfPhotography(user.isDirectorOfPhotography());
         commandModel.setCastingDirector(user.isCastingDirector());
+        commandModel.setViewCasting(user.isViewCasting());
         vm.setEditUserCommandModel(commandModel);
         return vm;
     }
@@ -224,6 +232,7 @@ public class UserServiceImpl implements UserService {
         user.setCrew(cmd.isCrew());
         user.setDirectorOfPhotography(cmd.isDirectorOfPhotography());
         user.setCastingDirector(cmd.isCastingDirector());
+        user.setViewCasting(cmd.isViewCasting());
         return create(user);
     }
 
@@ -243,6 +252,7 @@ public class UserServiceImpl implements UserService {
         user.setCrew(cmd.isCrew());
         user.setDirectorOfPhotography(cmd.isDirectorOfPhotography());
         user.setCastingDirector(cmd.isCastingDirector());
+        user.setViewCasting(cmd.isViewCasting());
         update(user);
         return user;
     }
@@ -299,6 +309,7 @@ public class UserServiceImpl implements UserService {
         vm.setCrew(user.isCrew());
         vm.setDirectorOfPhotography(user.isDirectorOfPhotography());
         vm.setCastingDirector(user.isCastingDirector());
+        vm.setViewCasting(user.isViewCasting());
         return vm;
     }
 
@@ -312,5 +323,6 @@ public class UserServiceImpl implements UserService {
         user.setCrew(authorities.stream().anyMatch(a -> "ROLE_CREW".equals(a.getAuthority())));
         user.setDirectorOfPhotography(authorities.stream().anyMatch(a -> "ROLE_DP".equals(a.getAuthority())));
         user.setCastingDirector(authorities.stream().anyMatch(a -> "ROLE_CASTING".equals(a.getAuthority())));
+        user.setViewCasting(authorities.stream().anyMatch(a -> "ROLE_VIEW_CASTING".equals(a.getAuthority())));
     }
 }

@@ -143,4 +143,17 @@ public class ProjectAccessSupport {
     private static boolean canEditScreenplay(User user) {
         return user != null && (user.isWriter() || user.isAdmin());
     }
+
+    /**
+     * Casting pages (actors, auditions, casting character management) require
+     * explicit view-casting permission, casting director, or admin.
+     */
+    public boolean canViewCasting(User user) {
+        return user != null && user.isEnabled()
+                && (user.isAdmin() || user.isCastingDirector() || user.isViewCasting());
+    }
+
+    public boolean canViewCasting(Principal principal) {
+        return canViewCasting(currentUser(principal));
+    }
 }

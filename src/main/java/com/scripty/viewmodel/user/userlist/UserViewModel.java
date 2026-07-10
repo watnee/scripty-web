@@ -19,6 +19,7 @@ public class UserViewModel {
     private boolean crew;
     private boolean directorOfPhotography;
     private boolean castingDirector;
+    private boolean viewCasting;
 
     public int getId() {
         return id;
@@ -132,6 +133,14 @@ public class UserViewModel {
         this.castingDirector = castingDirector;
     }
 
+    public boolean isViewCasting() {
+        return viewCasting;
+    }
+
+    public void setViewCasting(boolean viewCasting) {
+        this.viewCasting = viewCasting;
+    }
+
     public String getRolesLabel() {
         List<String> roles = new ArrayList<>();
         if (admin) {
@@ -157,6 +166,9 @@ public class UserViewModel {
         }
         if (castingDirector) {
             roles.add("Casting Director");
+        }
+        if (viewCasting) {
+            roles.add("View Casting");
         }
         if (roles.isEmpty()) {
             return "User";

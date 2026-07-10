@@ -57,6 +57,8 @@ public class User {
     private boolean directorOfPhotography;
     @Transient
     private boolean castingDirector;
+    @Transient
+    private boolean viewCasting;
 
     public Integer getId() {
         return id;
@@ -184,6 +186,14 @@ public class User {
 
     public void setCastingDirector(boolean castingDirector) {
         this.castingDirector = castingDirector;
+    }
+
+    public boolean isViewCasting() {
+        return viewCasting;
+    }
+
+    public void setViewCasting(boolean viewCasting) {
+        this.viewCasting = viewCasting;
     }
 
     public Integer getDefaultProjectId() {

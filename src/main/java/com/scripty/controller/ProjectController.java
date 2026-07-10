@@ -490,6 +490,7 @@ public class ProjectController {
         inviteCommand.setProjectId(id);
         model.addAttribute("inviteCommand", inviteCommand);
         model.addAttribute("recentActivity", projectActivityService.listRecent(id, currentUser, 20));
+        model.addAttribute("canViewCasting", projectAccess.canViewCasting(currentUser));
         return "project/production";
     }
 

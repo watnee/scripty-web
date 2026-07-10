@@ -7,10 +7,12 @@ import com.scripty.commandmodel.actor.createactor.CreateActorCommandModel;
 import com.scripty.commandmodel.actor.editactor.EditActorCommandModel;
 import com.scripty.dto.Actor;
 import com.scripty.repository.ActorRepository;
+import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ActorService;
 import com.scripty.viewmodel.actor.actorlist.ActorListViewModel;
 import com.scripty.viewmodel.actor.actorprofile.ActorProfileViewModel;
 import jakarta.validation.Valid;
+import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -39,9 +41,15 @@ public class ActorRestController {
     @Autowired
     ActorResourceAssembler actorResourceAssembler;
 
+    @Autowired
+    ProjectAccessSupport projectAccess;
+
     @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<CollectionModel<EntityModel<ActorResource>>> list(
-            @RequestParam(required = false) Integer projectId) {
+            @RequestParam(required = false) Integer projectId, Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         if (projectId != null) {
             ActorListViewModel viewModel = actorService.getActorListViewModel(projectId);
             return ResponseEntity.ok(
@@ -53,7 +61,12 @@ public class ActorRestController {
 
     @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<?> create(
-            @Valid @RequestBody CreateActorCommandModel commandModel, BindingResult bindingResult) {
+            @Valid @RequestBody CreateActorCommandModel commandModel,
+            BindingResult bindingResult,
+            Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
         }
@@ -65,7 +78,10 @@ public class ActorRestController {
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<ActorResource>> show(@PathVariable Integer id) {
+    public ResponseEntity<EntityModel<ActorResource>> show(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         ActorProfileViewModel viewModel = actorService.getActorProfileViewModel(id);
         return ResponseEntity.ok(actorResourceAssembler.toModel(viewModel));
     }
@@ -74,7 +90,11 @@ public class ActorRestController {
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody EditActorCommandModel commandModel,
-            BindingResult bindingResult) {
+            BindingResult bindingResult,
+            Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
         }
@@ -84,7 +104,10 @@ public class ActorRestController {
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<ActorResource>> delete(@PathVariable Integer id) {
+    public ResponseEntity<EntityModel<ActorResource>> delete(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         Actor actor = actorService.deleteActor(id);
         return ResponseEntity.ok(actorResourceAssembler.toDeleteModel(actor));
     }

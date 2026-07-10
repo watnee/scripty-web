@@ -19,6 +19,7 @@ public class UserResource extends RepresentationModel<UserResource> {
     private Boolean crew;
     private Boolean directorOfPhotography;
     private Boolean castingDirector;
+    private Boolean viewCasting;
     private Boolean enabled;
 
     public Integer getId() {
@@ -123,6 +124,14 @@ public class UserResource extends RepresentationModel<UserResource> {
 
     public void setCastingDirector(Boolean castingDirector) {
         this.castingDirector = castingDirector;
+    }
+
+    public Boolean getViewCasting() {
+        return viewCasting;
+    }
+
+    public void setViewCasting(Boolean viewCasting) {
+        this.viewCasting = viewCasting;
     }
 
     public Boolean getEnabled() {

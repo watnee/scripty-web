@@ -103,8 +103,9 @@
                                         <span class="user-role-chip" th:if="${user.crew}">Crew</span>
                                         <span class="user-role-chip" th:if="${user.directorOfPhotography}">DoP</span>
                                         <span class="user-role-chip" th:if="${user.castingDirector}">Casting</span>
+                                        <span class="user-role-chip" th:if="${user.viewCasting}">View Casting</span>
                                         <span class="user-role-chip user-role-chip--muted"
-                                              th:if="${!user.admin and !user.director and !user.producer and !user.writer and !user.actor and !user.crew and !user.directorOfPhotography and !user.castingDirector}">User</span>
+                                              th:if="${!user.admin and !user.director and !user.producer and !user.writer and !user.actor and !user.crew and !user.directorOfPhotography and !user.castingDirector and !user.viewCasting}">User</span>
                                     </div>
                                 </div>
                                 <div class="user-list-actions project-list-actions">

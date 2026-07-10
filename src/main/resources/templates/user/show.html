@@ -78,7 +78,7 @@
 
             <section class="user-profile-card user-profile-card--roles">
                 <h2>Roles</h2>
-                <div class="user-list-roles" th:if="${viewModel.admin or viewModel.director or viewModel.producer or viewModel.writer or viewModel.actor or viewModel.crew or viewModel.directorOfPhotography or viewModel.castingDirector}">
+                <div class="user-list-roles" th:if="${viewModel.admin or viewModel.director or viewModel.producer or viewModel.writer or viewModel.actor or viewModel.crew or viewModel.directorOfPhotography or viewModel.castingDirector or viewModel.viewCasting}">
                     <span class="user-role-chip" th:if="${viewModel.admin}">Admin</span>
                     <span class="user-role-chip" th:if="${viewModel.director}">Director</span>
                     <span class="user-role-chip" th:if="${viewModel.producer}">Producer</span>
@@ -87,9 +87,10 @@
                     <span class="user-role-chip" th:if="${viewModel.crew}">Crew</span>
                     <span class="user-role-chip" th:if="${viewModel.directorOfPhotography}">Director of Photography</span>
                     <span class="user-role-chip" th:if="${viewModel.castingDirector}">Casting Director</span>
+                    <span class="user-role-chip" th:if="${viewModel.viewCasting}">Can view casting</span>
                 </div>
                 <p class="muted user-profile-empty"
-                   th:unless="${viewModel.admin or viewModel.director or viewModel.producer or viewModel.writer or viewModel.actor or viewModel.crew or viewModel.directorOfPhotography or viewModel.castingDirector}">
+                   th:unless="${viewModel.admin or viewModel.director or viewModel.producer or viewModel.writer or viewModel.actor or viewModel.crew or viewModel.directorOfPhotography or viewModel.castingDirector or viewModel.viewCasting}">
                     No roles assigned.
                 </p>
             </section>

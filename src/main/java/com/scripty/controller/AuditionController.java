@@ -22,6 +22,9 @@ public class AuditionController {
 
     @RequestMapping(value = "/set", method = RequestMethod.GET)
     public String setAuditionsGet(@RequestParam(required = false) Integer projectId, Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return "redirect:/project/list";
+        }
         if (projectId != null) {
             if (!projectAccess.canAccessProject(projectId, principal)) {
                 return "redirect:/project/list";
@@ -36,7 +39,8 @@ public class AuditionController {
                                @RequestParam Integer projectId,
                                @RequestParam(required = false) List<Integer> characterIds,
                                Principal principal) {
-        if (!projectAccess.canAccessProject(projectId, principal)) {
+        if (!projectAccess.canViewCasting(principal)
+                || !projectAccess.canAccessProject(projectId, principal)) {
             return "redirect:/project/list";
         }
 

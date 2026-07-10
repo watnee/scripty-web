@@ -112,7 +112,7 @@
                 </p>
                 <p th:unless="${viewModel.editionName != null}">Edit scenes and blocks for this production.</p>
             </a>
-            <a th:href="@{/actor/list(projectId=${viewModel.id})}" class="help-card production-card-link">
+            <a th:if="${canViewCasting}" th:href="@{/actor/list(projectId=${viewModel.id})}" class="help-card production-card-link">
                 <h3>Casting</h3>
                 <p>Manage characters, actors, and auditions for this project.</p>
             </a>

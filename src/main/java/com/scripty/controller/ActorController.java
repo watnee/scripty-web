@@ -9,6 +9,7 @@ import com.scripty.commandmodel.actor.createactor.CreateActorCommandModel;
 import com.scripty.commandmodel.actor.editactor.EditActorCommandModel;
 import com.scripty.dto.Actor;
 import com.scripty.dto.User;
+import com.scripty.security.ProjectAccessSupport;
 import com.scripty.viewmodel.actor.actorlist.ActorListViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
@@ -55,9 +56,15 @@ public class ActorController {
 
     @Autowired
     ProjectService projectService;
+
+    @Autowired
+    ProjectAccessSupport projectAccess;
     
     @RequestMapping(value = "/list")
     public String list(@RequestParam(required = false) Integer projectId, Model model, Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return "redirect:/project/list";
+        }
 
         UserProjectContext context = resolveUserProjectContext(principal);
         Integer selectedProjectId = resolveSelectedProjectId(projectId, context);
@@ -120,7 +127,10 @@ public class ActorController {
     }
     
     @RequestMapping(value = "/show")
-    public String show(@RequestParam Integer id, Model model) {
+    public String show(@RequestParam Integer id, Model model, Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return "redirect:/project/list";
+        }
 
         ActorProfileViewModel viewModel = actorService.getActorProfileViewModel(id);
 
@@ -130,7 +140,11 @@ public class ActorController {
     }
 
     @GetMapping("/headshot")
-    public ResponseEntity<Resource> headshot(@RequestParam Integer id) {
+    public ResponseEntity<Resource> headshot(@RequestParam Integer id, Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return ResponseEntity.notFound().build();
+        }
+
         Resource resource = actorHeadshotService.loadHeadshot(id).orElse(null);
         if (resource == null) {
             return ResponseEntity.notFound().build();
@@ -147,8 +161,11 @@ public class ActorController {
     }
     
     @RequestMapping(value = "/delete")
-    public String delete(@RequestParam Integer id) {
-        
+    public String delete(@RequestParam Integer id, Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return "redirect:/project/list";
+        }
+
         Actor actor = actorService.deleteActor(id);
         if (!actor.getProjects().isEmpty()) {
             return "redirect:/actor/list?projectId=" + actor.getProjects().get(0).getId();
@@ -159,6 +176,9 @@ public class ActorController {
     // Show Form
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model, Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return "redirect:/project/list";
+        }
 
         UserProjectContext context = resolveUserProjectContext(principal);
         EditActorViewModel viewModel = actorService.getEditActorViewModel(id);
@@ -178,6 +198,9 @@ public class ActorController {
                            @RequestParam(value = "removeHeadshot", defaultValue = "false") boolean removeHeadshot,
                            Model model,
                            Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return "redirect:/project/list";
+        }
 
         if (bindingResult.hasErrors()) {
             return renderEditForm(commandModel, model, principal);
@@ -198,6 +221,9 @@ public class ActorController {
     // Show Form
     @RequestMapping(value = "/create")
     public String create(@RequestParam(required = false) Integer projectId, Model model, Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return "redirect:/project/list";
+        }
 
         UserProjectContext context = resolveUserProjectContext(principal);
         Integer selectedProjectId = resolveSelectedProjectId(projectId, context);
@@ -218,6 +244,9 @@ public class ActorController {
                              @RequestParam(value = "headshot", required = false) MultipartFile headshot,
                              Model model,
                              Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return "redirect:/project/list";
+        }
 
         if (bindingResult.hasErrors()) {
             UserProjectContext context = resolveUserProjectContext(principal);

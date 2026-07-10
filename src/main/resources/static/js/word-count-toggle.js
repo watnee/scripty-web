@@ -14,7 +14,8 @@
     var CLASS_NAME = 'scripty-word-count-hidden';
 
     function isHidden() {
-        return localStorage.getItem(STORAGE_KEY) === 'true';
+        // Hidden by default; only show when the user has explicitly opted in.
+        return localStorage.getItem(STORAGE_KEY) !== 'false';
     }
 
     function apply(hidden) {

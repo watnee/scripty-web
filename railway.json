@@ -11,7 +11,6 @@
     ]
   },
   "deploy": {
-    "startCommand": "sh -c 'java $JAVA_OPTS -jar scripty.jar --server.port=${PORT:-8080} --spring.profiles.active=prod'",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",

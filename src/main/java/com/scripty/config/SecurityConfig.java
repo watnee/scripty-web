@@ -88,6 +88,8 @@ public class SecurityConfig {
                         "/shortcuts",
                         "/invitation/accept")
                     .permitAll()
+                .requestMatchers("/account/password")
+                    .hasRole("USER")
                 .requestMatchers(
                         "/user/**",
                         "/api/user/**",

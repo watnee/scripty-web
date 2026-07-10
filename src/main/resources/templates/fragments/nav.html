@@ -42,6 +42,7 @@
             <div class="nav-dropdown-menu" role="menu" aria-label="User menu">
                 <a class="nav-dropdown-item" th:href="@{/login}" hx-boost="false" sec:authorize="!isAuthenticated()">Sign In</a>
                 <a class="nav-dropdown-item" th:href="@{/team/list}" th:classappend="${currentPage == 'teams'} ? 'active'" sec:authorize="isAuthenticated()">Teams</a>
+                <a class="nav-dropdown-item" th:href="@{/account/password}" th:classappend="${currentPage == 'account'} ? 'active'" sec:authorize="isAuthenticated()">Change password</a>
                 <a class="nav-dropdown-item" th:href="@{/user/list}" th:classappend="${currentPage == 'users'} ? 'active'" sec:authorize="hasRole('ROLE_ADMIN')">Users</a>
                 <hr class="nav-dropdown-divider">
                 <div class="user-menu-label" id="settings-dropdown">Theme</div>

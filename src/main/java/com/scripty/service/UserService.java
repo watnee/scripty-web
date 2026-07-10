@@ -26,6 +26,8 @@ public interface UserService {
     User saveCreateUserCommandModel(CreateUserCommandModel createUserCommandModel);
     User saveEditUserCommandModel(EditUserCommandModel editUserCommandModel);
 
+    void changePassword(String username, String currentPassword, String newPassword);
+
     User deleteUser(Integer id);
 
     UserProfileViewModel getUserProfileViewModel(Integer id);

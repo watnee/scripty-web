@@ -90,6 +90,7 @@ public class SecurityConfig {
                 .permitAll()
             )
             .logout(logout -> logout
+                .logoutSuccessUrl("/login?logout")
                 .permitAll()
             )
             .exceptionHandling(ex -> ex
@@ -125,6 +126,7 @@ public class SecurityConfig {
                 .permitAll()
             )
             .logout(logout -> logout
+                .logoutSuccessUrl("/login?logout")
                 .permitAll()
             )
             .headers(headers -> headers

@@ -106,8 +106,11 @@
                 <a class="nav-dropdown-item" th:href="@{/team/list}" th:classappend="${currentPage == 'teams'} ? 'active'" sec:authorize="isAuthenticated()">Teams</a>
                 <a class="nav-dropdown-item" th:href="@{/user/list}" th:classappend="${currentPage == 'users'} ? 'active'" sec:authorize="hasRole('ROLE_ADMIN')">Users</a>
                 <hr class="nav-dropdown-divider" sec:authorize="isAuthenticated()">
-                <a class="nav-dropdown-item" th:href="@{/logout}" hx-boost="false" sec:authorize="isAuthenticated()"
-                   onclick="try{localStorage.removeItem('scripty-offline-user-id');}catch(e){}if('caches' in window){caches.keys().then(function(keys){return Promise.all(keys.filter(function(k){return k.indexOf('scripty-cache')===0;}).map(function(k){return caches.delete(k);}));}).catch(function(){});}">Logout</a>
+                <form th:action="@{/logout}" method="post" hx-boost="false" sec:authorize="isAuthenticated()"
+                      onsubmit="try{localStorage.removeItem('scripty-offline-user-id');}catch(e){}if('caches' in window){caches.keys().then(function(keys){return Promise.all(keys.filter(function(k){return k.indexOf('scripty-cache')===0;}).map(function(k){return caches.delete(k);}));}).catch(function(){});}">
+                    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" class="nav-dropdown-item">Logout</button>
+                </form>
             </div>
         </div>
         </div>

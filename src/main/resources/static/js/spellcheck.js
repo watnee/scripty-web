@@ -625,6 +625,10 @@
                 }
                 return;
             }
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Home' || e.key === 'End' ||
+                e.key === 'Backspace' || e.key === 'Delete') {
+                hidePopup();
+            }
         }
 
         // Ctrl/Cmd+. — open suggestions for word at caret
@@ -643,14 +647,6 @@
         hidePopup();
     }, true);
 
-    document.addEventListener('selectionchange', function() {
-        if (!popupEl || popupEl.hidden || !popupTarget || !popupRange) return;
-        var start = popupTarget.selectionStart;
-        var end = popupTarget.selectionEnd;
-        if (start < popupRange.start || start > popupRange.end || end < popupRange.start || end > popupRange.end) {
-            hidePopup();
-        }
-    });
 
     document.addEventListener('mousedown', function(e) {
         if (!isScriptPage() || !isEnabled()) return;

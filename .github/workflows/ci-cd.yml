@@ -357,7 +357,9 @@ jobs:
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.event_name != 'workflow_dispatch' || inputs.sync_secrets_only != true)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # Build + 15 min healthcheck window (railway.json healthcheckTimeout) +
+    # up to 15 min of status polling in Confirm deployment status.
+    timeout-minutes: 40
     environment:
       name: production
     steps:
@@ -421,14 +423,70 @@ jobs:
           set -e
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
           if [ "$status" -ne 0 ]; then
-            echo "::error title=Railway deploy failed::railway up --ci exited $status. Check build/deploy logs in the Railway dashboard."
-            exit "$status"
+            # Don't fail yet: railway up can exit non-zero on a slow healthcheck
+            # while Railway keeps retrying and the deploy ultimately succeeds
+            # (Boot + Flyway startup can exceed the CLI's wait). The next step
+            # polls the deployment's real status and decides pass/fail.
+            echo "::warning title=railway up exited $status::Deployment may still be in progress. Confirming real status via Railway API…"
           fi
+
+      - name: Confirm deployment status
+        id: confirm
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          UP_EXIT: ${{ steps.deploy.outputs.exit_code }}
+        run: |
+          if [ "${UP_EXIT:-1}" = "0" ]; then
+            echo "railway up exited 0 — deployment healthy."
+            echo "outcome=success" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Poll the latest deployment until it reaches a terminal state.
+          # healthcheckTimeout is 900s (railway.json), so allow up to 15 more
+          # minutes here before declaring the deploy dead.
+          deadline=$(( $(date +%s) + 900 ))
+          outcome=timeout
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            deploy_status=$(railway deployment list --json --limit 1 --service "$RAILWAY_SERVICE_ID" 2>/dev/null \
+              | jq -r 'if type == "array" then .[0].status else (.deployments[0].status // empty) end // empty' 2>/dev/null || true)
+            echo "$(date -u +%H:%M:%S) latest deployment status: ${deploy_status:-<unknown>}"
+            case "$deploy_status" in
+              SUCCESS)
+                outcome=recovered
+                break
+                ;;
+              FAILED|CRASHED|REMOVED|SKIPPED)
+                outcome=failed
+                break
+                ;;
+              *)
+                # QUEUED / BUILDING / DEPLOYING / INITIALIZING / WAITING, or a
+                # transient API hiccup — keep polling.
+                sleep 30
+                ;;
+            esac
+          done
+          echo "outcome=$outcome" >> "$GITHUB_OUTPUT"
+          case "$outcome" in
+            recovered)
+              echo "::notice title=Deploy succeeded after retry::railway up exited $UP_EXIT, but the deployment reached SUCCESS (slow startup — healthcheck retried past the CLI wait)."
+              ;;
+            failed)
+              echo "::error title=Railway deploy failed::Deployment ended in status $deploy_status. Check build/runtime logs in the Railway dashboard."
+              exit 1
+              ;;
+            timeout)
+              echo "::error title=Railway deploy unconfirmed::Deployment did not reach a terminal status within 15 minutes of railway up exiting $UP_EXIT. Check the Railway dashboard."
+              exit 1
+              ;;
+          esac
 
       - name: Summarize
         if: always()
         env:
           DEPLOY_EXIT: ${{ steps.deploy.outputs.exit_code }}
+          CONFIRM_OUTCOME: ${{ steps.confirm.outputs.outcome }}
           REASON: ${{ inputs.reason }}
         run: |
           {
@@ -444,10 +502,14 @@ jobs:
               echo "| Reason | ${REASON} |"
             fi
             echo ""
-            if [ "${{ job.status }}" = "success" ]; then
+            if [ "${CONFIRM_OUTCOME:-}" = "recovered" ]; then
+              echo "Deploy succeeded after a slow startup: \`railway up --ci\` exited \`$DEPLOY_EXIT\`, but Railway kept retrying \`/health\` and the deployment reached **SUCCESS** (confirmed via \`railway deployment list\`)."
+            elif [ "${{ job.status }}" = "success" ]; then
               echo "Deploy finished successfully (\`railway up --ci\`). Railway waited for \`/health\` before marking the release live."
+            elif [ "${CONFIRM_OUTCOME:-}" = "timeout" ]; then
+              echo "Deploy unconfirmed: the deployment never reached a terminal status within the polling window after \`railway up\` exited \`$DEPLOY_EXIT\`. Check the Railway dashboard — it may still complete."
             elif [ -n "${DEPLOY_EXIT:-}" ] && [ "$DEPLOY_EXIT" != "0" ]; then
-              echo "Railway reported a failed deploy (exit \`$DEPLOY_EXIT\`). Open the service’s latest deployment in the Railway dashboard for build/runtime logs."
+              echo "Railway reported a failed deploy (\`railway up\` exit \`$DEPLOY_EXIT\`, confirmed terminal failure via the deployments API). Open the service’s latest deployment in the Railway dashboard for build/runtime logs."
             else
               echo "Deploy did not succeed. Check the **Check Railway secrets** and **Deploy to Railway** steps above."
             fi

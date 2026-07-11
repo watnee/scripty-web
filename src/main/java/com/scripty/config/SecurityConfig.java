@@ -4,7 +4,9 @@ import com.scripty.security.CsrfAccessDeniedHandler;
 import com.scripty.security.HtmxLoginUrlAuthenticationEntryPoint;
 import com.scripty.security.LoginSuccessHandler;
 import com.scripty.security.LogoutIgnoringRequestCache;
+import com.scripty.security.MetricsTokenAuthorizationManager;
 import javax.sql.DataSource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -61,14 +63,25 @@ public class SecurityConfig {
     }
 
     @Bean
+    public MetricsTokenAuthorizationManager metricsTokenAuthorizationManager(
+            @Value("${METRICS_TOKEN:}") String metricsToken) {
+        return new MetricsTokenAuthorizationManager(metricsToken);
+    }
+
+    @Bean
     @Profile("!dev")
     public SecurityFilterChain filterChain(HttpSecurity http,
             RequestCache requestCache,
             LoginSuccessHandler loginSuccessHandler,
-            HtmxLoginUrlAuthenticationEntryPoint authenticationEntryPoint) throws Exception {
+            HtmxLoginUrlAuthenticationEntryPoint authenticationEntryPoint,
+            MetricsTokenAuthorizationManager metricsTokenAuthorizationManager) throws Exception {
         http
             .requestCache(cache -> cache.requestCache(requestCache))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/actuator/health/**").permitAll()
+                .requestMatchers("/actuator/prometheus")
+                    .access(metricsTokenAuthorizationManager)
+                .requestMatchers("/actuator/**").hasRole("ADMIN")
                 .requestMatchers(
                         "/",
                         "/health",

@@ -462,3 +462,5 @@ uploads/
 # Local test-server process files
 *.pid
 scripty-server*.pid
+# Local observability scrape token (secret)
+observability/prometheus/token

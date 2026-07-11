@@ -37,6 +37,14 @@ spring:
           starttls:
             enable: ${MAIL_SMTP_STARTTLS:true}
 
+logging:
+  structured:
+    format:
+      # ECS JSON on stdout: Railway log search gets fields (log.level, request_id
+      # from MDC, …) instead of free text. Set LOG_FORMAT= (empty) to fall back
+      # to plain text.
+      console: ${LOG_FORMAT:ecs}
+
 app:
   uploads-dir: ./uploads
   headshot-max-bytes: 5242880

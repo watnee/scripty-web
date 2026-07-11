@@ -6,3 +6,26 @@ spring:
   # Running without a profile fails closed (no datasource) instead of enabling DevAutoLogin.
   hateoas:
     use-hal-as-default-json-media-type: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+      show-components: when-authorized
+  health:
+    # Mail is optional (app.mail-enabled) — an unreachable SMTP host must not flip
+    # overall health to DOWN.
+    mail:
+      enabled: false
+  metrics:
+    tags:
+      application: scripty
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true

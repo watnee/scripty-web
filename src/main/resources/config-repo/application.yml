@@ -1,0 +1,3 @@
+config:
+  source: "Spring Cloud Config Server (native classpath)"
+  message: "Hello from shared application configuration"

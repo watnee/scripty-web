@@ -122,6 +122,7 @@ public class SecurityConfig {
                 .requestMatchers("/account/password")
                     .hasRole("USER")
                 .requestMatchers(
+                        "/config/**",
                         "/user/**",
                         "/api/user/**",
                         "/team/**",
@@ -151,6 +152,7 @@ public class SecurityConfig {
                 .failureUrl("/login?login_error=1")
                 .permitAll()
             )
+            .httpBasic(org.springframework.security.config.Customizer.withDefaults())
             .logout(logout -> logout
                 // Accept GET too: cached pages / bookmarks still hit GET /logout and
                 // otherwise fall through to a Spring Whitelabel 404.

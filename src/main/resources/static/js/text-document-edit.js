@@ -6,10 +6,14 @@
 
     var SAVE_DELAY_MS = 900;
     var form = document.getElementById('text-document-form');
-    var ta = document.getElementById('text-document-content');
+    var initialTa = document.getElementById('text-document-content');
     var statusEl = document.getElementById('text-document-save-status');
-    if (!form || !ta) {
+    if (!form || !initialTa) {
         return;
+    }
+
+    function getTa() {
+        return document.getElementById('text-document-content');
     }
 
     var idInput = form.querySelector('input[name="id"]');
@@ -25,16 +29,20 @@
     var lastSavedKey = snapshotKey();
     var statusTimer = null;
 
-    ta.addEventListener('keydown', function (e) {
+    form.addEventListener('keydown', function (e) {
+        var target = e.target;
+        if (!target || target.id !== 'text-document-content') {
+            return;
+        }
         if (e.key !== 'Tab' || e.metaKey || e.ctrlKey || e.altKey) {
             return;
         }
         e.preventDefault();
-        var start = ta.selectionStart;
-        var end = ta.selectionEnd;
-        var value = ta.value;
-        ta.value = value.slice(0, start) + '    ' + value.slice(end);
-        ta.selectionStart = ta.selectionEnd = start + 4;
+        var start = target.selectionStart;
+        var end = target.selectionEnd;
+        var value = target.value;
+        target.value = value.slice(0, start) + '    ' + value.slice(end);
+        target.selectionStart = target.selectionEnd = start + 4;
         scheduleSave();
     });
 
@@ -79,7 +87,7 @@
         return [
             idInput ? idInput.value : '',
             titleInput ? titleInput.value : '',
-            ta.value
+            getTa() ? getTa().value : ''
         ].join('\u0001');
     }
 
@@ -89,7 +97,7 @@
 
     function hasSomethingToSave() {
         var title = titleInput ? titleInput.value.trim() : '';
-        var content = (ta.value || '').trim();
+        var content = getTa() ? (getTa().value || '').trim() : '';
         var hasId = idInput && idInput.value;
         return !!(hasId || title || content);
     }
@@ -98,7 +106,8 @@
         if (!titleInput) {
             return;
         }
-        if (!titleInput.value.trim() && (ta.value || '').trim()) {
+        var currentTa = getTa();
+        if (!titleInput.value.trim() && currentTa && (currentTa.value || '').trim()) {
             titleInput.value = 'Untitled';
         }
     }
@@ -147,7 +156,8 @@
             body.set('documentType', typeInput.value);
         }
         body.set('title', titleInput ? titleInput.value : '');
-        body.set('content', ta.value);
+        var currentTa = getTa();
+        body.set('content', currentTa ? currentTa.value : '');
         body.set('stay', 'true');
         return body;
     }
@@ -205,9 +215,10 @@
             })
             .then(function (result) {
                 var titleAtSend = titleInput ? titleInput.value : '';
-                var contentAtSend = ta.value;
+                var currentTa = getTa();
+                var contentAtSend = currentTa ? currentTa.value : '';
                 applySaved(result.location);
-                if ((titleInput ? titleInput.value : '') === titleAtSend && ta.value === contentAtSend) {
+                if ((titleInput ? titleInput.value : '') === titleAtSend && currentTa && currentTa.value === contentAtSend) {
                     lastSavedKey = snapshotKey();
                     pending = false;
                 } else {

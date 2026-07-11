@@ -2,6 +2,17 @@ server:
   port: ${PORT:8080}
 
 spring:
+  profiles:
+    include:
+      - native
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    config:
+      server:
+        prefix: /config
+        native:
+          search-locations: classpath:/config-repo,file:./config-repo
   # No default profile — require an explicit profile (dev locally, prod via Procfile/railpack).
   # Running without a profile fails closed (no datasource) instead of enabling DevAutoLogin.
   hateoas:

@@ -57,6 +57,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Least privilege by default; jobs that merge PRs or dispatch workflows
+# elevate explicitly with their own permissions block.
+permissions:
+  contents: read
+
 jobs:
   # Orphan cursor/* pushes (no PR yet) never hit pull_request → auto-ship.
   # GITHUB_TOKEN-created PRs do not fire workflows, so verify + merge here.
@@ -115,13 +120,14 @@ jobs:
 
       - name: Checkout
         if: env.NEED_SHIP == '1'
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: ${{ github.ref_name }}
+          persist-credentials: false
 
       - name: Set up Java 17
         if: env.NEED_SHIP == '1'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
         with:
           distribution: temurin
           java-version: "17"
@@ -197,10 +203,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
         with:
           distribution: temurin
           java-version: "17"
@@ -214,6 +222,10 @@ jobs:
 
       - name: Summarize
         if: always()
+        env:
+          # Never interpolate head_ref into the script — branch names are
+          # attacker-controlled on fork PRs (script injection vector).
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           {
             echo "## Verify (Maven)"
@@ -226,8 +238,7 @@ jobs:
             echo "| Result | ${{ job.status }} |"
             echo ""
             if [ "${{ github.event_name }}" = "pull_request" ]; then
-              head_ref="${{ github.head_ref }}"
-              case "$head_ref" in
+              case "$HEAD_REF" in
                 cursor/*)
                   echo "Cursor mobile PR: after verify, **Ship Cursor mobile PR** squash-merges into \`main\` (unless labeled \`hold\` / \`no-ship\`), which triggers Railway + Cloudflare deploy."
                   ;;
@@ -249,6 +260,7 @@ jobs:
       github.event_name == 'pull_request' &&
       github.base_ref == 'main' &&
       startsWith(github.head_ref, 'cursor/') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.action != 'closed' &&
       !contains(github.event.pull_request.labels.*.name, 'hold') &&
       !contains(github.event.pull_request.labels.*.name, 'no-ship')
@@ -346,7 +358,9 @@ jobs:
       name: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
 
       - name: Check Railway secrets
         env:
@@ -387,10 +401,11 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          REASON: ${{ inputs.reason }}
         run: |
           message="GitHub ${{ github.sha }}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            message="Manual: ${{ inputs.reason }} (${{ github.sha }})"
+            message="Manual: ${REASON} (${{ github.sha }})"
           fi
           echo "Deploying commit ${{ github.sha }} via railway up --ci (waits for healthcheck)"
           set +e
@@ -410,6 +425,7 @@ jobs:
         if: always()
         env:
           DEPLOY_EXIT: ${{ steps.deploy.outputs.exit_code }}
+          REASON: ${{ inputs.reason }}
         run: |
           {
             echo "## Deploy to Railway"
@@ -421,7 +437,7 @@ jobs:
             echo "| Commit | [\`${GITHUB_SHA:0:7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |"
             echo "| Result | ${{ job.status }} |"
             if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-              echo "| Reason | ${{ inputs.reason }} |"
+              echo "| Reason | ${REASON} |"
             fi
             echo ""
             if [ "${{ job.status }}" = "success" ]; then
@@ -452,7 +468,9 @@ jobs:
       name: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
 
       - name: Check Cloudflare secrets
         env:
@@ -473,7 +491,7 @@ jobs:
           echo "Cloudflare API token is present."
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: npm
@@ -482,7 +500,7 @@ jobs:
         run: npm ci
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Install Railway CLI
         env:
@@ -564,11 +582,18 @@ jobs:
             exit "$status"
           fi
 
+      # Belt-and-braces: the deploy step deletes the secrets file itself, but a
+      # cancelled or crashed step would skip that — always scrub it here.
+      - name: Remove Worker secrets file
+        if: always()
+        run: rm -f cloudflare/.deploy-secrets
+
       - name: Summarize
         if: always()
         env:
           DEPLOY_EXIT: ${{ steps.deploy.outputs.exit_code }}
           SECRETS_SOURCE: ${{ steps.secrets.outputs.source }}
+          REASON: ${{ inputs.reason }}
         run: |
           {
             echo "## Deploy to Cloudflare"
@@ -581,7 +606,7 @@ jobs:
             echo "| MySQL secrets | \`${SECRETS_SOURCE:-unknown}\` |"
             echo "| Result | ${{ job.status }} |"
             if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-              echo "| Reason | ${{ inputs.reason }} |"
+              echo "| Reason | ${REASON} |"
             fi
             echo ""
             if [ "${{ job.status }}" = "success" ]; then
@@ -606,7 +631,9 @@ jobs:
       name: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
 
       - name: Check secrets
         env:
@@ -627,7 +654,7 @@ jobs:
           fi
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: npm
@@ -651,6 +678,8 @@ jobs:
 
       - name: Summarize
         if: always()
+        env:
+          REASON: ${{ inputs.reason }}
         run: |
           {
             echo "## Sync Cloudflare MySQL secrets"
@@ -658,7 +687,7 @@ jobs:
             echo "| | |"
             echo "|---|---|"
             echo "| Trigger | \`workflow_dispatch\` (secrets only) |"
-            echo "| Reason | ${{ inputs.reason }} |"
+            echo "| Reason | ${REASON} |"
             echo "| Result | ${{ job.status }} |"
             echo ""
             if [ "${{ job.status }}" = "success" ]; then

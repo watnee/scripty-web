@@ -40,6 +40,9 @@ public class User {
     @Column(name = "default_project_id")
     private Integer defaultProjectId;
 
+    @Column(name = "password_change_required", nullable = false)
+    private boolean passwordChangeRequired;
+
     @Transient
     private boolean admin;
 
@@ -194,6 +197,14 @@ public class User {
 
     public void setViewCasting(boolean viewCasting) {
         this.viewCasting = viewCasting;
+    }
+
+    public boolean isPasswordChangeRequired() {
+        return passwordChangeRequired;
+    }
+
+    public void setPasswordChangeRequired(boolean passwordChangeRequired) {
+        this.passwordChangeRequired = passwordChangeRequired;
     }
 
     public Integer getDefaultProjectId() {

@@ -1,6 +1,8 @@
 package com.scripty.config;
 
+import com.scripty.repository.UserRepository;
 import com.scripty.security.CsrfAccessDeniedHandler;
+import com.scripty.security.ForcedPasswordChangeFilter;
 import com.scripty.security.HtmxLoginUrlAuthenticationEntryPoint;
 import com.scripty.security.LoginSuccessHandler;
 import com.scripty.security.LogoutIgnoringRequestCache;
@@ -74,9 +76,14 @@ public class SecurityConfig {
             RequestCache requestCache,
             LoginSuccessHandler loginSuccessHandler,
             HtmxLoginUrlAuthenticationEntryPoint authenticationEntryPoint,
-            MetricsTokenAuthorizationManager metricsTokenAuthorizationManager) throws Exception {
+            MetricsTokenAuthorizationManager metricsTokenAuthorizationManager,
+            UserRepository userRepository) throws Exception {
         http
             .requestCache(cache -> cache.requestCache(requestCache))
+            // Accounts still on seeded/generated deploy credentials are locked to
+            // the change-password page until they choose a real password.
+            .addFilterAfter(new ForcedPasswordChangeFilter(userRepository),
+                    UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health/**").permitAll()
                 .requestMatchers("/actuator/prometheus")

@@ -6,6 +6,7 @@ import com.scripty.dto.Authority;
 import com.scripty.dto.User;
 import com.scripty.repository.AuthorityRepository;
 import com.scripty.repository.UserRepository;
+import com.scripty.security.PasswordPolicy;
 import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.user.createuser.CreateUserViewModel;
 import com.scripty.viewmodel.user.edituser.EditUserViewModel;
@@ -284,7 +285,13 @@ public class UserServiceImpl implements UserService {
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
             throw new IllegalArgumentException("New password must be different from the current password.");
         }
+        if (PasswordPolicy.isWeak(newPassword, username)) {
+            throw new IllegalArgumentException(
+                    "New password is too weak: use at least " + PasswordPolicy.MIN_LENGTH
+                            + " characters and avoid common passwords or your username.");
+        }
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordChangeRequired(false);
         userRepository.save(user);
     }
 

@@ -1,6 +1,7 @@
 package com.scripty.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -69,6 +70,33 @@ class UserServiceImplChangePasswordTest {
                 () -> userService.changePassword("admin", "same-password", "same-password"));
 
         assertEquals("New password must be different from the current password.", ex.getMessage());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void changePasswordClearsPasswordChangeRequiredFlag() {
+        String storedHash = passwordEncoder.encode("old-password");
+        User existing = baseUser(storedHash);
+        existing.setPasswordChangeRequired(true);
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(existing));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.changePassword("admin", "old-password", "new-password");
+
+        ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(saved.capture());
+        assertFalse(saved.getValue().isPasswordChangeRequired());
+    }
+
+    @Test
+    void changePasswordRejectsWellKnownWeakPassword() {
+        String storedHash = passwordEncoder.encode("old-password");
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(baseUser(storedHash)));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> userService.changePassword("admin", "old-password", "changeme"));
+
+        assertTrue(ex.getMessage().contains("too weak"));
         verify(userRepository, never()).save(any(User.class));
     }
 

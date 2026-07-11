@@ -72,11 +72,30 @@ class ForcedPasswordChangeFilterTest {
         authenticate("admin");
         when(userRepository.findByUsername("admin")).thenReturn(Optional.of(flaggedUser()));
 
-        for (String path : List.of("/account/password", "/logout", "/css/scripty.css")) {
+        for (String path : List.of("/account/password", "/logout", "/css/scripty.css",
+                "/webauthn/register", "/webauthn/register/options", "/login/webauthn.js")) {
             MockHttpServletResponse response = new MockHttpServletResponse();
             filter.doFilter(request(path), response, new MockFilterChain());
             assertNull(response.getRedirectedUrl(), path);
         }
+    }
+
+    @Test
+    void lockLiftsWithoutNewSessionOnceFlagClears() throws Exception {
+        authenticate("admin");
+        User user = flaggedUser();
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(user));
+
+        MockHttpServletResponse first = new MockHttpServletResponse();
+        filter.doFilter(request("/project/1"), first, new MockFilterChain());
+        assertEquals("/account/password", first.getRedirectedUrl());
+
+        // Passkey registration (or a password change) clears the flag in the DB.
+        user.setPasswordChangeRequired(false);
+
+        MockHttpServletResponse second = new MockHttpServletResponse();
+        filter.doFilter(request("/project/1"), second, new MockFilterChain());
+        assertNull(second.getRedirectedUrl());
     }
 
     @Test

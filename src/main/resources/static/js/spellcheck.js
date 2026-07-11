@@ -78,6 +78,7 @@
             })
         ]).then(function(parts) {
             dictionary = new Typo('en_US', parts[0], parts[1]);
+            dictionary.loaded = true;
             dictLoading = null;
             return dictionary;
         }).catch(function(err) {

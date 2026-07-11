@@ -8,6 +8,31 @@ Config and Worker live under `cloudflare/`; the container image is the repo-root
 2. Docker available wherever you run `wrangler deploy` (local or CI).
 3. MySQL reachable from the container. Railway private networking is **not** reachable from Cloudflare — use the MySQL **TCP Proxy** host/port (same idea as the R2 backup workflow).
 
+## API tokens without the dashboard
+
+Nothing here requires hand-creating an API token in the Cloudflare dashboard:
+
+- **Local dev/deploy** (`npm run cf:dev`, `npm run cf:deploy`): `npx wrangler login` once — OAuth, no token.
+- **CI** (`CLOUDFLARE_API_TOKEN` GitHub secret): minted and rotated by script:
+
+```bash
+npm run cf:token          # create (or roll) the scoped token + push to GitHub secrets
+npm run cf:token:status   # token + GitHub secret state
+npm run cf:token:rotate   # roll the value + push (e.g. after a leak scare)
+```
+
+`cf-token.sh setup` calls the Cloudflare API to mint a token named `scripty-ci-deploy`
+scoped to this account with only **Workers Scripts write + Containers/Cloudchamber
+write + Account Settings read**, verifies it, then pushes `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` into GitHub Actions secrets via `gh`. The value is never
+written to disk. Re-running rolls the existing token's value instead of accumulating
+tokens.
+
+It bootstraps from either `CLOUDFLARE_API_KEY` + `CLOUDFLARE_EMAIL` (the account's
+pre-existing **Global API Key** — dashboard → My Profile → API Tokens → View; the
+script prompts interactively if unset and never stores it) or
+`CLOUDFLARE_BOOTSTRAP_TOKEN` (any token with *API Tokens Write*).
+
 ## Keep Railway ↔ Cloudflare MySQL secrets in sync
 
 Railway’s `web` service talks to MySQL on the private hostname. Cloudflare needs the **public TCP proxy** host/port plus the same credentials. Do not copy `MYSQLHOST=mysql.railway.internal` into the Worker.

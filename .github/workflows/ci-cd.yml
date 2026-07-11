@@ -19,8 +19,9 @@
 #   RAILWAY_TOKEN           Project token: Railway → Project → Settings → Tokens
 #                           (scope to the production environment)
 #   RAILWAY_SERVICE_ID      Service ID: Railway → service → Settings → copy ID
-#   CLOUDFLARE_API_TOKEN    API token with Workers Scripts Edit + Containers write
-#                           (optional CLOUDFLARE_ACCOUNT_ID if the token spans accounts)
+#   CLOUDFLARE_API_TOKEN    auto-provisioned: `npm run cf:token` mints a scoped token
+#                           via the Cloudflare API and sets this + CLOUDFLARE_ACCOUNT_ID
+#                           (manual alternative: Workers Scripts Edit + Containers write)
 #   MYSQL*                  Optional fallback if RAILWAY_TOKEN is unset; CI prefers
 #                           scripts/sync-railway-cloudflare.sh (Railway TCP proxy → Worker)
 #
@@ -462,12 +463,12 @@ jobs:
             {
               echo "## Deploy blocked — Cloudflare secrets missing"
               echo ""
-              echo "Add \`CLOUDFLARE_API_TOKEN\` under **Settings → Secrets and variables → Actions**."
+              echo "Run \`npm run cf:token\` locally — it mints a scoped token via the Cloudflare API and pushes it to GitHub secrets automatically."
               echo ""
-              echo "Token needs Workers Scripts Edit (and Containers) on the Scripty account."
+              echo "Manual alternative: token with Workers Scripts Edit (and Containers) on the Scripty account, added under **Settings → Secrets and variables → Actions**."
               echo "MySQL secrets sync from Railway when \`RAILWAY_TOKEN\` is set (see [docs/CLOUDFLARE.md](../../docs/CLOUDFLARE.md))."
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "::error title=Missing secret::Add CLOUDFLARE_API_TOKEN (Workers Scripts Edit + Containers)."
+            echo "::error title=Missing secret::Run 'npm run cf:token' to auto-provision CLOUDFLARE_API_TOKEN."
             exit 1
           fi
           echo "Cloudflare API token is present."

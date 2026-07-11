@@ -11,6 +11,7 @@
     "cf:token": "./scripts/cf-token.sh setup",
     "cf:token:status": "./scripts/cf-token.sh status",
     "cf:token:rotate": "./scripts/cf-token.sh rotate",
+    "cf:token:seed": "./scripts/cf-token.sh seed-bootstrap",
     "rules:sync": "node scripts/sync-rules.js",
     "rules:check": "node scripts/sync-rules.js --check",
     "rules:setup-hooks": "./scripts/setup-git-hooks.sh"

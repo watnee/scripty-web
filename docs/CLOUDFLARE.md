@@ -33,6 +33,26 @@ pre-existing **Global API Key** — dashboard → My Profile → API Tokens → 
 script prompts interactively if unset and never stores it) or
 `CLOUDFLARE_BOOTSTRAP_TOKEN` (any token with *API Tokens Write*).
 
+### Self-provisioning deploys (never blocks on a human)
+
+Every Cloudflare deploy starts with `./scripts/cf-token.sh ci-resolve`: it verifies
+the stored `CLOUDFLARE_API_TOKEN` and, if that is missing or dead, **mints a
+short-lived deploy token on the spot** (default 4h TTL, auto-expires, expired ones
+are cleaned up on the next run) — the deploy proceeds without anyone creating a
+token. That fallback activates once a `CLOUDFLARE_BOOTSTRAP_TOKEN` Actions secret
+exists; seed it one time with:
+
+```bash
+npm run cf:token:seed   # mints a token-minting token (API Tokens Write +
+                        # Account Settings Read) and pushes it to GitHub secrets
+```
+
+Trade-off: `CLOUDFLARE_BOOTSTRAP_TOKEN` can mint tokens, so it is more powerful
+than the deploy token itself — seed it only if you want deploys that can never be
+blocked by a dead token. Revoke it any time with
+`CF_TOKEN_NAME=scripty-ci-deploy-minter ./scripts/cf-token.sh revoke`; deploys
+then fall back to requiring a valid `CLOUDFLARE_API_TOKEN`.
+
 ## Keep Railway ↔ Cloudflare MySQL secrets in sync
 
 Railway’s `web` service talks to MySQL on the private hostname. Cloudflare needs the **public TCP proxy** host/port plus the same credentials. Do not copy `MYSQLHOST=mysql.railway.internal` into the Worker.

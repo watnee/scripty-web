@@ -547,22 +547,6 @@
             var errors = lastErrors.get(e.target);
             if (errors) renderOverlay(e.target, errors);
             scheduleCheck(e.target);
-
-            if (window._pendingSpellcheckClick) {
-                var pending = window._pendingSpellcheckClick;
-                window._pendingSpellcheckClick = null;
-                var ta = e.target;
-                setTimeout(function() {
-                    loadDictionary().then(function() {
-                        ta.focus();
-                        ta.setSelectionRange(pending.start, pending.end);
-                        var token = wordAtOffset(ta.value || '', pending.start);
-                        if (token) {
-                            showSuggestions(ta, token);
-                        }
-                    }).catch(function() {});
-                }, 150);
-            }
         }
     }, true);
 

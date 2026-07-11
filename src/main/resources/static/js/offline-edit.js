@@ -412,6 +412,7 @@
             if (window.scriptyPendingBlockCaret && window.scriptyPendingBlockCaret.blockContent === blockContent) {
                 if (start == null) start = window.scriptyPendingBlockCaret.offset;
                 if (end == null) end = window.scriptyPendingBlockCaret.endOffset;
+                window.scriptyPendingBlockCaret = null;
             }
             if (start != null) {
                 var pos = Math.max(0, Math.min(start, textarea.value.length));
@@ -422,6 +423,13 @@
                 focusTextareaEnd(textarea);
             }
             textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+            if (window.scriptyOpenSpellcheckSuggestions && window._pendingSpellcheckClick) {
+                window._pendingSpellcheckClick = null;
+                requestAnimationFrame(function() {
+                    window.scriptyOpenSpellcheckSuggestions(textarea);
+                });
+            }
         }
         return textarea;
     }

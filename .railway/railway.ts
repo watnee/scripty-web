@@ -57,8 +57,70 @@ export default defineRailway(() => {
       METRICS_TOKEN: preserve(),
     },
   });
+  const prometheusVolume = volume("prometheus-volume", {
+    alerts: { usage: { "100": {}, "80": {}, "95": {} } },
+    allowOnlineResize: true,
+    region: "sfo",
+    sizeMB: 10000,
+  });
+
+  const grafanaVolume = volume("grafana-volume", {
+    alerts: { usage: { "100": {}, "80": {}, "95": {} } },
+    allowOnlineResize: true,
+    region: "sfo",
+    sizeMB: 10000,
+  });
+
+  const prometheus = service("prometheus", {
+    source: github("watnee/scripty"),
+    build: {
+      buildEnvironment: "V3",
+      builder: "DOCKERFILE",
+      dockerfilePath: "observability/prometheus/Dockerfile",
+      watchPatterns: [
+        "observability/prometheus/**",
+        ".railway/railway.ts",
+      ],
+    },
+    volumeMounts: {
+      "/prometheus": prometheusVolume,
+    },
+    env: {
+      METRICS_TOKEN: web.env.METRICS_TOKEN,
+      SCRAPE_TARGET: "web:8080",
+    },
+  });
+
+  const grafana = service("grafana", {
+    source: github("watnee/scripty"),
+    build: {
+      buildEnvironment: "V3",
+      builder: "DOCKERFILE",
+      dockerfilePath: "observability/grafana/Dockerfile",
+      watchPatterns: [
+        "observability/grafana/**",
+        ".railway/railway.ts",
+      ],
+    },
+    volumeMounts: {
+      "/var/lib/grafana": grafanaVolume,
+    },
+    env: {
+      PROMETHEUS_URL: "http://prometheus:9090",
+      GF_SECURITY_ADMIN_PASSWORD: preserve(),
+    },
+  });
 
   return project("scripty", {
-    resources: [MySQL, web, mysqlVolume, webVolume],
+    resources: [
+      MySQL,
+      web,
+      mysqlVolume,
+      webVolume,
+      prometheusVolume,
+      grafanaVolume,
+      prometheus,
+      grafana,
+    ],
   });
 });

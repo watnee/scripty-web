@@ -496,10 +496,11 @@
         return wordAtOffset(textarea.value || '', offset);
     }
 
-    function openSuggestionsForTextarea(textarea) {
+    function openSuggestionsForTextarea(textarea, pendingClick) {
         if (!isBlockTextarea(textarea) || !isEnabled()) return;
         loadDictionary().then(function() {
-            var token = wordAtOffset(textarea.value || '', textarea.selectionStart);
+            var offset = (pendingClick && pendingClick.start != null) ? pendingClick.start : textarea.selectionStart;
+            var token = wordAtOffset(textarea.value || '', offset);
             if (!token) {
                 hidePopup();
                 return;

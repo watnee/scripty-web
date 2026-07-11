@@ -425,9 +425,10 @@
             textarea.dispatchEvent(new Event('input', { bubbles: true }));
 
             if (window.scriptyOpenSpellcheckSuggestions && window._pendingSpellcheckClick) {
+                var pendingClick = window._pendingSpellcheckClick;
                 window._pendingSpellcheckClick = null;
                 requestAnimationFrame(function() {
-                    window.scriptyOpenSpellcheckSuggestions(textarea);
+                    window.scriptyOpenSpellcheckSuggestions(textarea, pendingClick);
                 });
             }
         }

@@ -5866,9 +5866,10 @@
             textarea.setSelectionRange(start, end);
 
             if (window.scriptyOpenSpellcheckSuggestions && window._pendingSpellcheckClick) {
+                const pendingClick = window._pendingSpellcheckClick;
                 window._pendingSpellcheckClick = null;
                 requestAnimationFrame(function() {
-                    window.scriptyOpenSpellcheckSuggestions(textarea);
+                    window.scriptyOpenSpellcheckSuggestions(textarea, pendingClick);
                 });
             }
         }

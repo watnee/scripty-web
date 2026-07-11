@@ -27,6 +27,7 @@ const ASSETS_TO_CACHE = [
   '/js/offline.js',
   '/js/offline-edit.js',
   '/js/pwa-install.js',
+  '/js/passkeys.js',
   '/dictionaries/en_US/en_US.aff',
   '/dictionaries/en_US/en_US.dic',
   '/favicon.ico',

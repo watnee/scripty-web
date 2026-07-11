@@ -36,11 +36,13 @@
         if (!html) {
             return false;
         }
+        // Only markers unique to the sign-in page itself. Do NOT match shared
+        // chrome like login-body / login-page: the change-password and passkey
+        // pages reuse those styling classes, and matching them cancels every
+        // boosted navigation to /account/password (bounced back via /login).
         return html.indexOf('id="login-brand"') !== -1
             || html.indexOf("id='login-brand'") !== -1
             || html.indexOf('id="login-heading"') !== -1
-            || html.indexOf('class="login-body"') !== -1
-            || html.indexOf("class='login-body'") !== -1
             || html.indexOf('class="login-panel"') !== -1
             || html.indexOf("class='login-panel'") !== -1;
     }
@@ -103,7 +105,9 @@
         if (isLoginPagePath()) {
             return;
         }
-        if (document.getElementById('login-brand') || document.querySelector('main.login-page, .login-panel')) {
+        // .login-panel / #login-brand exist only on the real sign-in page;
+        // main.login-page is shared with account pages and must not match here.
+        if (document.getElementById('login-brand') || document.querySelector('.login-panel')) {
             forceFullLoginNavigation();
         }
     }

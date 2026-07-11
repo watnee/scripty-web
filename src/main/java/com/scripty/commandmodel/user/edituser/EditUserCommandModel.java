@@ -29,6 +29,7 @@ public class EditUserCommandModel {
     private boolean directorOfPhotography;
     private boolean castingDirector;
     private boolean viewCasting;
+    private boolean developer;
 
     public Integer getId() {
         return id;
@@ -149,5 +150,13 @@ public class EditUserCommandModel {
 
     public void setViewCasting(boolean viewCasting) {
         this.viewCasting = viewCasting;
+    }
+
+    public boolean isDeveloper() {
+        return developer;
+    }
+
+    public void setDeveloper(boolean developer) {
+        this.developer = developer;
     }
 }

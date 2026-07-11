@@ -38,6 +38,7 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
         resource.setDirectorOfPhotography(profile.isDirectorOfPhotography());
         resource.setCastingDirector(profile.isCastingDirector());
         resource.setViewCasting(profile.isViewCasting());
+        resource.setDeveloper(profile.isDeveloper());
         resource.setEnabled(profile.isEnabled());
         return EntityModel.of(resource).add(userLinks(profile.getId()));
     }
@@ -58,6 +59,7 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
         resource.setDirectorOfPhotography(user.isDirectorOfPhotography());
         resource.setCastingDirector(user.isCastingDirector());
         resource.setViewCasting(user.isViewCasting());
+        resource.setDeveloper(user.isDeveloper());
         return EntityModel.of(resource).add(userLinks(user.getId()));
     }
 
@@ -94,6 +96,7 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
         resource.setDirectorOfPhotography(user.isDirectorOfPhotography());
         resource.setCastingDirector(user.isCastingDirector());
         resource.setViewCasting(user.isViewCasting());
+        resource.setDeveloper(user.isDeveloper());
         resource.setEnabled(user.isEnabled());
         return resource;
     }

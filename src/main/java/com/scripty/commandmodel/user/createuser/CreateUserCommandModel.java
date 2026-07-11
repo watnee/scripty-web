@@ -28,6 +28,7 @@ public class CreateUserCommandModel {
     private boolean directorOfPhotography;
     private boolean castingDirector;
     private boolean viewCasting;
+    private boolean developer;
 
     public String getUsername() {
         return username;
@@ -139,5 +140,13 @@ public class CreateUserCommandModel {
 
     public void setViewCasting(boolean viewCasting) {
         this.viewCasting = viewCasting;
+    }
+
+    public boolean isDeveloper() {
+        return developer;
+    }
+
+    public void setDeveloper(boolean developer) {
+        this.developer = developer;
     }
 }

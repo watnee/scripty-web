@@ -45,7 +45,15 @@ public class UserServiceImpl implements UserService {
     public User create(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         User saved = userRepository.save(user);
-        authorityRepository.save(new Authority(user.getUsername(), "ROLE_USER"));
+        boolean hasStandardRoles = user.isAdmin() || user.isDirector() || user.isProducer()
+                || user.isWriter() || user.isActor() || user.isCrew()
+                || user.isDirectorOfPhotography() || user.isCastingDirector() || user.isViewCasting();
+        if (hasStandardRoles || !user.isDeveloper()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_USER"));
+        }
+        if (user.isDeveloper()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_DEVELOPER"));
+        }
         if (user.isAdmin()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_ADMIN"));
         }
@@ -115,7 +123,15 @@ public class UserServiceImpl implements UserService {
         }
         userRepository.save(existing);
         authorityRepository.deleteByUsername(user.getUsername());
-        authorityRepository.save(new Authority(user.getUsername(), "ROLE_USER"));
+        boolean hasStandardRoles = user.isAdmin() || user.isDirector() || user.isProducer()
+                || user.isWriter() || user.isActor() || user.isCrew()
+                || user.isDirectorOfPhotography() || user.isCastingDirector() || user.isViewCasting();
+        if (hasStandardRoles || !user.isDeveloper()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_USER"));
+        }
+        if (user.isDeveloper()) {
+            authorityRepository.save(new Authority(user.getUsername(), "ROLE_DEVELOPER"));
+        }
         if (user.isAdmin()) {
             authorityRepository.save(new Authority(user.getUsername(), "ROLE_ADMIN"));
         }
@@ -184,6 +200,7 @@ public class UserServiceImpl implements UserService {
             uvm.setDirectorOfPhotography(user.isDirectorOfPhotography());
             uvm.setCastingDirector(user.isCastingDirector());
             uvm.setViewCasting(user.isViewCasting());
+            uvm.setDeveloper(user.isDeveloper());
             uvm.setCanEditScreenplay(user.isWriter() || user.isAdmin());
             uvm.setCanViewCastingPages(user.isAdmin() || user.isCastingDirector() || user.isViewCasting());
             uvm.setPrivilegedProjectAccess(user.isAdmin() || user.isDirector() || user.isProducer()
@@ -223,6 +240,7 @@ public class UserServiceImpl implements UserService {
         commandModel.setDirectorOfPhotography(user.isDirectorOfPhotography());
         commandModel.setCastingDirector(user.isCastingDirector());
         commandModel.setViewCasting(user.isViewCasting());
+        commandModel.setDeveloper(user.isDeveloper());
         vm.setEditUserCommandModel(commandModel);
         return vm;
     }
@@ -245,6 +263,7 @@ public class UserServiceImpl implements UserService {
         user.setDirectorOfPhotography(cmd.isDirectorOfPhotography());
         user.setCastingDirector(cmd.isCastingDirector());
         user.setViewCasting(cmd.isViewCasting());
+        user.setDeveloper(cmd.isDeveloper());
         return create(user);
     }
 
@@ -265,6 +284,7 @@ public class UserServiceImpl implements UserService {
         user.setDirectorOfPhotography(cmd.isDirectorOfPhotography());
         user.setCastingDirector(cmd.isCastingDirector());
         user.setViewCasting(cmd.isViewCasting());
+        user.setDeveloper(cmd.isDeveloper());
         update(user);
         return user;
     }
@@ -328,6 +348,7 @@ public class UserServiceImpl implements UserService {
         vm.setDirectorOfPhotography(user.isDirectorOfPhotography());
         vm.setCastingDirector(user.isCastingDirector());
         vm.setViewCasting(user.isViewCasting());
+        vm.setDeveloper(user.isDeveloper());
         vm.setCanEditScreenplay(user.isWriter() || user.isAdmin());
         vm.setCanViewCastingPages(user.isAdmin() || user.isCastingDirector() || user.isViewCasting());
         vm.setPrivilegedProjectAccess(user.isAdmin() || user.isDirector() || user.isProducer()
@@ -348,5 +369,6 @@ public class UserServiceImpl implements UserService {
         user.setDirectorOfPhotography(authorities.stream().anyMatch(a -> "ROLE_DP".equals(a.getAuthority())));
         user.setCastingDirector(authorities.stream().anyMatch(a -> "ROLE_CASTING".equals(a.getAuthority())));
         user.setViewCasting(authorities.stream().anyMatch(a -> "ROLE_VIEW_CASTING".equals(a.getAuthority())));
+        user.setDeveloper(authorities.stream().anyMatch(a -> "ROLE_DEVELOPER".equals(a.getAuthority())));
     }
 }

@@ -62,6 +62,8 @@ public class User {
     private boolean castingDirector;
     @Transient
     private boolean viewCasting;
+    @Transient
+    private boolean developer;
 
     public Integer getId() {
         return id;
@@ -197,6 +199,14 @@ public class User {
 
     public void setViewCasting(boolean viewCasting) {
         this.viewCasting = viewCasting;
+    }
+
+    public boolean isDeveloper() {
+        return developer;
+    }
+
+    public void setDeveloper(boolean developer) {
+        this.developer = developer;
     }
 
     public boolean isPasswordChangeRequired() {

@@ -22,6 +22,7 @@ public class UserViewModel {
     private boolean directorOfPhotography;
     private boolean castingDirector;
     private boolean viewCasting;
+    private boolean developer;
     private boolean canEditScreenplay;
     private boolean canViewCastingPages;
     private boolean privilegedProjectAccess;
@@ -147,6 +148,14 @@ public class UserViewModel {
         this.viewCasting = viewCasting;
     }
 
+    public boolean isDeveloper() {
+        return developer;
+    }
+
+    public void setDeveloper(boolean developer) {
+        this.developer = developer;
+    }
+
     public boolean isCanEditScreenplay() {
         return canEditScreenplay;
     }
@@ -243,6 +252,9 @@ public class UserViewModel {
         }
         if (viewCasting) {
             roles.add("View Casting");
+        }
+        if (developer) {
+            roles.add("Developer");
         }
         if (roles.isEmpty()) {
             return "User";

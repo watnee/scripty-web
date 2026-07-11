@@ -127,11 +127,13 @@ public class SecurityConfig {
                         "/team/**",
                         "/api/team/**",
                         "/api/account/**",
-                        "/account/**",
+                        "/account/**")
+                    .hasRole("ADMIN")
+                .requestMatchers(
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html")
-                    .hasRole("ADMIN")
+                    .hasRole("DEVELOPER")
                 .requestMatchers(
                         "/project/**",
                         "/actor/**",

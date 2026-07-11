@@ -21,7 +21,7 @@ echo "Checking/Syncing rules for Antigravity, Cursor, and Claude Code..."
 node scripts/sync-rules.js
 
 # Stage the updated rules files so they get committed
-git add CLAUDE.md .cursorrules .cursor/rules/*.mdc
+git add CLAUDE.md .cursorrules .cursor/rules/*.mdc .claude/rules/*.md
 EOF
 
 chmod +x "$HOOK_FILE"

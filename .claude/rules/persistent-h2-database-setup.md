@@ -1,0 +1,14 @@
+---
+paths:
+  - "**/application*.yml"
+  - "**/application*.properties"
+  - "**/pom.xml"
+syncSource: agents
+---
+
+# Persistent H2 Database Setup
+
+- For local development and testing environments (e.g., in `application-dev.yml` or `application.properties`), avoid using in-memory databases (`jdbc:h2:mem:...`) as it causes data loss across server restarts.
+- Always use persistent, file-based configurations:
+  `jdbc:h2:file:./db/<project_name>;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;AUTO_SERVER=TRUE`
+- Ensure that the local database directory (e.g., `/db/`) is ignored in the project's `.gitignore` file to prevent committing local data.

@@ -9,6 +9,7 @@ const agentsMdPath = path.join(repoRoot, '.agents', 'AGENTS.md');
 const claudeMdPath = path.join(repoRoot, 'CLAUDE.md');
 const cursorRulesPath = path.join(repoRoot, '.cursorrules');
 const cursorRulesDir = path.join(repoRoot, '.cursor', 'rules');
+const claudeRulesDir = path.join(repoRoot, '.claude', 'rules');
 
 // Known filename mappings for existing or specialized MDC files
 const filenameMap = {
@@ -24,6 +25,34 @@ function getFilename(title) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '') + '.mdc';
+}
+
+// Known filename mappings for Claude Code Markdown rules files
+const claudeFilenameMap = {
+  'Git Commit & Push Proactivity': 'git-commit-push-proactivity.md',
+  'Mobile Cursor → Railway': 'mobile-railway-deploy.md',
+  'Persistent H2 Database Setup': 'persistent-h2-database-setup.md',
+  'Layout Alignment and Third-Party CSS Guardrails': 'layout-alignment-css-guardrails.md'
+};
+
+function getClaudeFilename(title) {
+  if (claudeFilenameMap[title]) return claudeFilenameMap[title];
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '') + '.md';
+}
+
+// Standard file paths/globs for scoped Claude Code rules
+const claudePathsMap = {
+  'Git Commit & Push Proactivity': null, // unconditional
+  'Mobile Cursor → Railway': null, // unconditional
+  'Persistent H2 Database Setup': ['**/application*.yml', '**/application*.properties', '**/pom.xml'],
+  'Layout Alignment and Third-Party CSS Guardrails': ['**/*.css', '**/*.html']
+};
+
+function getClaudePaths(title) {
+  return claudePathsMap[title] || null;
 }
 
 if (!fs.existsSync(agentsMdPath)) {
@@ -146,6 +175,46 @@ ${body}
   checkOrWrite(mdcPath, expectedMdcContent);
 }
 
+// Check, write or prune .claude/rules/*.md files
+const activeClaudeFilenames = new Set();
+
+for (const { title, body } of sections) {
+  const filename = getClaudeFilename(title);
+  activeClaudeFilenames.add(filename);
+  const mdPath = path.join(claudeRulesDir, filename);
+
+  const paths = getClaudePaths(title);
+  let frontmatter = '';
+  if (paths) {
+    frontmatter = `paths:\n${paths.map(p => `  - "${p}"`).join('\n')}\nsyncSource: agents`;
+  } else {
+    frontmatter = `syncSource: agents`;
+  }
+
+  if (fs.existsSync(mdPath)) {
+    const existingFile = fs.readFileSync(mdPath, 'utf8');
+    const match = existingFile.match(/^---([\s\S]*?)---\n?([\s\S]*)$/);
+    if (match) {
+      let parsedFrontmatter = match[1].trim();
+      if (!parsedFrontmatter.includes('syncSource:')) {
+        parsedFrontmatter += '\nsyncSource: agents';
+      }
+      frontmatter = parsedFrontmatter;
+    }
+  }
+
+  const expectedMdContent = `---
+${frontmatter}
+---
+
+# ${title}
+
+${body}
+`;
+
+  checkOrWrite(mdPath, expectedMdContent);
+}
+
 // Prune obsolete generated MDC files
 if (fs.existsSync(cursorRulesDir)) {
   const files = fs.readdirSync(cursorRulesDir);
@@ -154,6 +223,26 @@ if (fs.existsSync(cursorRulesDir)) {
       const filePath = path.join(cursorRulesDir, file);
       const content = fs.readFileSync(filePath, 'utf8');
       if (content.includes('syncSource: agents') || Object.values(filenameMap).includes(file)) {
+        if (isCheckMode) {
+          console.error(`[DRIFT] Obsolete rules file should be deleted: ${path.relative(repoRoot, filePath)}`);
+          driftFound = true;
+        } else {
+          fs.unlinkSync(filePath);
+          console.log(`[SYNC] Deleted obsolete rules file: ${path.relative(repoRoot, filePath)}`);
+        }
+      }
+    }
+  }
+}
+
+// Prune obsolete generated Claude MD files
+if (fs.existsSync(claudeRulesDir)) {
+  const files = fs.readdirSync(claudeRulesDir);
+  for (const file of files) {
+    if (file.endsWith('.md') && !activeClaudeFilenames.has(file)) {
+      const filePath = path.join(claudeRulesDir, file);
+      const content = fs.readFileSync(filePath, 'utf8');
+      if (content.includes('syncSource: agents') || Object.values(claudeFilenameMap).includes(file)) {
         if (isCheckMode) {
           console.error(`[DRIFT] Obsolete rules file should be deleted: ${path.relative(repoRoot, filePath)}`);
           driftFound = true;

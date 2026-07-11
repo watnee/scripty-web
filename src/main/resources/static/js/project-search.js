@@ -121,36 +121,6 @@
         }
     }
 
-    function syncShortcutLabel() {
-        var searchInput = getInput();
-        var menuItem = getMenuItem();
-        if (!searchInput && !menuItem) return;
-        var isMac = window.scriptyIsMac
-            ? window.scriptyIsMac()
-            : /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
-        var searchHint = isMac ? '⌘F' : 'Ctrl+F';
-        var searchShortcut = ' (' + searchHint + ')';
-        if (searchInput) {
-            searchInput.title = 'Search script' + searchShortcut;
-            searchInput.setAttribute('aria-label', 'Search blocks, character names, or tags' + searchShortcut);
-        }
-        if (menuItem) {
-            if (!menuItem.querySelector('.nav-dropdown-item-label') &&
-                !menuItem.querySelector('.nav-dropdown-shortcut, .element-type-shortcut')) {
-                var labelEl = document.createElement('span');
-                labelEl.className = 'nav-dropdown-item-label';
-                labelEl.textContent = (menuItem.textContent || 'Search').trim() || 'Search';
-                menuItem.textContent = '';
-                menuItem.appendChild(labelEl);
-            }
-            if (typeof window.scriptySetMenuShortcut === 'function') {
-                window.scriptySetMenuShortcut(menuItem, searchHint);
-            }
-            menuItem.title = 'Search script' + searchShortcut;
-            menuItem.setAttribute('aria-label', 'Search script' + searchShortcut);
-        }
-    }
-
     window.scriptyOpenProjectSearch = function () {
         focusSearch();
     };
@@ -223,20 +193,11 @@
                 closeSearch();
             }
             e.preventDefault();
-            return;
         }
-
-        // ⌘F / Ctrl+F always opens project search (even while editing a block).
-        if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
-        if (e.key.toLowerCase() !== 'f') return;
-        if (!searchInput) return;
-        e.preventDefault();
-        focusSearch();
     });
 
     function sync() {
         if (!getInput()) return;
-        syncShortcutLabel();
         var input = getInput();
         if (input && input.value) {
             setOpen(true);

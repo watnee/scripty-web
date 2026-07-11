@@ -6156,6 +6156,10 @@
     <script th:src="@{/js/project-toolbar-dropdowns.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/element-type.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/fountain-power.js(v=${assetVersion})}"></script>
+    <!-- Song/note editor autosave: loaded from nav so it survives HTMX-boosted
+         navigation into /project/documents/edit (allowScriptTags is false, so
+         edit.html script tags are not executed after a boost). -->
+    <script th:src="@{/js/text-document-edit.js(v=${assetVersion})}"></script>
 </header>
 
     <div th:fragment="helpDropdown(currentPage)" class="nav-dropdown help-dropdown" id="help-dropdown">

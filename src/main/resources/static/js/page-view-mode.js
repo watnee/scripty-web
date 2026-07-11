@@ -528,11 +528,27 @@
         if (window.scriptyIsPageViewMode()) scheduleReflow(150);
     });
 
+    function pageBodyOverflows(page) {
+        if (!page) return false;
+        var body = page.querySelector(':scope > .' + PAGE_BODY_CLASS);
+        if (!body) return false;
+        return body.scrollHeight > body.clientHeight + 0.5;
+    }
+
     document.body.addEventListener('input', function (e) {
         if (!window.scriptyIsPageViewMode()) return;
         var t = e.target;
         if (!t || !t.closest) return;
-        if (t.closest('.project-script .block-row')) scheduleReflow(200);
+        if (!t.closest('.project-script .block-row')) return;
+        // Avoid full unwrap/rewrap on every keystroke — that makes text jump.
+        // Only reflow while typing when the current page actually overflows.
+        window.requestAnimationFrame(function () {
+            if (!t.isConnected) return;
+            var page = t.closest('.' + PAGE_CLASS);
+            if (!page || pageBodyOverflows(page)) {
+                scheduleReflow(200);
+            }
+        });
     });
 
     document.body.addEventListener('focusin', function (e) {
@@ -546,6 +562,12 @@
 
     document.body.addEventListener('focusout', function (e) {
         if (!window.scriptyIsPageViewMode()) return;
+        var t = e.target;
+        // After editing, reflow so shortened blocks pull content up from later pages.
+        if (t && t.closest && t.closest('.project-script .block-row') &&
+            (t.name === 'content' || (t.classList && t.classList.contains('block-input-textarea')))) {
+            scheduleReflow(80);
+        }
         // Delay so focus moving within the same page doesn't flash.
         window.setTimeout(function () {
             var active = document.activeElement;

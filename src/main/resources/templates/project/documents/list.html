@@ -3,7 +3,7 @@
 <head>
     <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
     <meta charset="UTF-8">
-    <title th:text="${isSongList} ? ('Scripty - Songs — ' + ${viewModel.projectTitle}) : ('Scripty - Drafts — ' + ${viewModel.projectTitle})">Scripty - Documents</title>
+    <title th:text="${isSongList} ? ('Scripty - Songs — ' + ${viewModel.projectTitle}) : ('Scripty - Notes — ' + ${viewModel.projectTitle})">Scripty - Documents</title>
     <link rel="stylesheet" href="/css/missing.min.css">
     <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
@@ -17,30 +17,30 @@
                 <ol>
                     <li><a th:href="@{/project/list}">Projects</a></li>
                     <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}">Project</a></li>
-                    <li aria-current="page" th:text="${isSongList} ? 'Songs' : 'Drafts'">Documents</li>
+                    <li aria-current="page" th:text="${isSongList} ? 'Songs' : 'Notes'">Documents</li>
                 </ol>
             </nav>
+            <div class="text-documents-top-actions">
+                <a th:if="${isSongList}"
+                   th:href="@{/project/documents/notes(projectId=${viewModel.projectId})}"
+                   class="project-list-action-btn project-list-action-btn--secondary">Notes</a>
+                <a th:unless="${isSongList}"
+                   th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}"
+                   class="project-list-action-btn project-list-action-btn--secondary">Songs</a>
+                <a th:href="@{/project/show(id=${viewModel.projectId})}"
+                   class="project-list-action-btn project-list-action-btn--secondary">Open Script</a>
+            </div>
         </div>
 
         <header class="text-documents-header"
                 th:classappend="${isSongList} ? ' text-documents-header--song' : ' text-documents-header--draft'">
             <div class="text-documents-header-text">
                 <p class="text-documents-kicker">Outside the screenplay</p>
-                <h1 th:text="${isSongList} ? 'Songs' : 'Drafts'">Documents</h1>
+                <h1 th:text="${isSongList} ? 'Songs' : 'Notes'">Documents</h1>
                 <p class="muted"
-                   th:text="${isSongList} ? 'Write lyrics and musical numbers here, then insert them into the script as Lyrics blocks. Edits sync to places already inserted.' : 'Write notes and scratch text here, then insert them into the script as Notes by default. Edits sync to places already inserted.'">
+                   th:text="${isSongList} ? 'Write lyrics here, then insert them into the script as Lyrics blocks. Edits sync to places already inserted.' : 'Write scratch text here, then insert into the script as Note blocks. Edits sync to places already inserted.'">
                     Write outside the screenplay.
                 </p>
-            </div>
-            <div class="text-documents-header-actions">
-                <a th:if="${isSongList}"
-                   th:href="@{/project/documents/drafts(projectId=${viewModel.projectId})}"
-                   class="project-list-action-btn project-list-action-btn--secondary">Drafts</a>
-                <a th:unless="${isSongList}"
-                   th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}"
-                   class="project-list-action-btn project-list-action-btn--secondary">Songs</a>
-                <a th:href="@{/project/show(id=${viewModel.projectId})}"
-                   class="project-list-action-btn project-list-action-btn--secondary">Open Script</a>
             </div>
         </header>
 
@@ -60,9 +60,9 @@
                           aria-hidden="true">♪</span>
                     <div>
                         <h2 th:id="${isSongList} ? 'songs-heading' : 'drafts-heading'"
-                            th:text="${isSongList} ? 'Your songs' : 'Your drafts'">Documents</h2>
+                            th:text="${isSongList} ? 'Your songs' : 'Your notes'">Documents</h2>
                         <p class="muted"
-                           th:text="${isSongList} ? 'Import a file or start a new song.' : 'Import a file or start a new draft.'">
+                           th:text="${isSongList} ? 'Import a file or start a new song.' : 'Import a file or start a new note.'">
                             Manage documents.
                         </p>
                     </div>
@@ -71,10 +71,10 @@
                     <button type="button"
                             class="project-list-action-btn project-list-action-btn--secondary"
                             id="import-doc-btn"
-                            th:title="${isSongList} ? 'Import a song from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file' : 'Import a draft from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file'">Import</button>
+                            th:title="${isSongList} ? 'Import a song from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file' : 'Import a note from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file'">Import</button>
                     <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
                        class="project-list-action-btn project-list-action-btn--primary"
-                       th:text="${isSongList} ? 'New Song' : 'New Draft'">New</a>
+                       th:text="${isSongList} ? 'New Song' : 'New Note'">New</a>
                 </div>
             </div>
 
@@ -96,7 +96,7 @@
                 <div class="project-list-search-wrap text-documents-search-wrap" id="text-documents-search-wrap">
                     <label class="visually-hidden"
                            for="text-documents-search"
-                           th:text="${isSongList} ? 'Search songs' : 'Search drafts'">Search</label>
+                           th:text="${isSongList} ? 'Search songs' : 'Search notes'">Search</label>
                     <span class="project-list-search-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="11" cy="11" r="7"></circle>
@@ -106,7 +106,7 @@
                     <input type="search"
                            id="text-documents-search"
                            class="project-list-search"
-                           th:placeholder="${isSongList} ? 'Search songs...' : 'Search drafts...'"
+                           th:placeholder="${isSongList} ? 'Search songs...' : 'Search notes...'"
                            autocomplete="off"
                            enterkeyhint="search" />
                     <button type="button"
@@ -119,19 +119,19 @@
 
             <div class="text-documents-empty-state" th:if="${#lists.isEmpty(documents)}">
                 <p class="text-documents-empty-title"
-                   th:text="${isSongList} ? 'No songs yet' : 'No drafts yet'">Empty</p>
+                   th:text="${isSongList} ? 'No songs yet' : 'No notes yet'">Empty</p>
                 <p class="muted"
-                   th:text="${isSongList} ? 'Start a lyric draft here, or import a .txt, .fountain, Word, Final Draft, or PDF file.' : 'Keep scene notes, dialogue scraps, or research here until you need them in the script.'">
+                   th:text="${isSongList} ? 'Start lyrics here, or import a .txt, .fountain, Word, Final Draft, or PDF file.' : 'Keep scene notes, dialogue scraps, or research here until you need them in the script.'">
                     Empty state help.
                 </p>
                 <div class="text-documents-empty-actions">
                     <button type="button"
                             class="project-list-action-btn project-list-action-btn--secondary"
                             onclick="document.getElementById('import-doc-file').click()"
-                            th:text="${isSongList} ? 'Import Song' : 'Import Draft'">Import</button>
+                            th:text="${isSongList} ? 'Import Song' : 'Import Note'">Import</button>
                     <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
                        class="project-list-action-btn project-list-action-btn--primary"
-                       th:text="${isSongList} ? 'New Song' : 'New Draft'">New</a>
+                       th:text="${isSongList} ? 'New Song' : 'New Note'">New</a>
                 </div>
             </div>
 
@@ -177,7 +177,7 @@
                               method="post"
                               class="text-document-delete-form"
                               hx-boost="false"
-                              th:attr="onsubmit=${isSongList} ? 'return confirm(\'Delete this song? This cannot be undone.\');' : 'return confirm(\'Delete this draft? This cannot be undone.\');'">
+                              th:attr="onsubmit=${isSongList} ? 'return confirm(\'Delete this song? This cannot be undone.\');' : 'return confirm(\'Delete this note? This cannot be undone.\');'">
                             <input type="hidden" name="id" th:value="${doc.id}" />
                             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
                             <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
@@ -187,7 +187,7 @@
                 </li>
             </ul>
             <p class="text-documents-no-results" id="text-documents-no-results" hidden>
-                No <span th:text="${isSongList} ? 'songs' : 'drafts'">documents</span> match
+                No <span th:text="${isSongList} ? 'songs' : 'notes'">documents</span> match
                 <strong id="text-documents-search-query"></strong>.
             </p>
         </section>

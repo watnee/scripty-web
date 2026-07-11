@@ -1017,7 +1017,7 @@
                     closeAllBlockDragMenus();
                     insertDocumentBelowBlock(target.row, draftId, {
                         asType: 'NOTE',
-                        offlineMessage: 'Connect to insert a draft into the script.'
+                        offlineMessage: 'Connect to insert a note into the script.'
                     });
                     return;
                 }
@@ -4549,12 +4549,12 @@
                 sectionSelector: '.create-below-drafts-section',
                 listSelector: '.create-below-drafts-list',
                 items: window.scriptyProjectDrafts,
-                untitledLabel: 'Untitled draft',
+                untitledLabel: 'Untitled note',
                 idAttr: 'data-insert-draft-id',
                 insertTitle: 'Insert as Note blocks below',
-                emptyLabel: 'No drafts yet',
-                manageHref: '/project/documents/drafts?projectId=',
-                manageLabel: 'Go to drafts…'
+                emptyLabel: 'No notes yet',
+                manageHref: '/project/documents/notes?projectId=',
+                manageLabel: 'Go to notes…'
             });
         }
 

@@ -59,6 +59,12 @@ public class TextDocumentController {
         return renderList(projectId, TextDocument.TYPE_SONG, model, principal);
     }
 
+    @RequestMapping(value = "/notes")
+    public String notes(@RequestParam Integer projectId, Model model, Principal principal) {
+        return renderList(projectId, TextDocument.TYPE_NOTES, model, principal);
+    }
+
+    /** Alias for {@link #notes}; old bookmarks keep working. */
     @RequestMapping(value = "/drafts")
     public String drafts(@RequestParam Integer projectId, Model model, Principal principal) {
         return renderList(projectId, TextDocument.TYPE_NOTES, model, principal);
@@ -244,7 +250,7 @@ public class TextDocumentController {
     }
 
     private static String listPath(boolean isSong) {
-        return isSong ? "/project/documents/songs" : "/project/documents/drafts";
+        return isSong ? "/project/documents/songs" : "/project/documents/notes";
     }
 
     private static String listUrl(Integer projectId, boolean isSong) {

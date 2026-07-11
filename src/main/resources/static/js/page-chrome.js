@@ -1,6 +1,6 @@
 /**
  * Page chrome helpers: stylesheet version, breadcrumbs, body classes,
- * ? / Songs / Drafts keyboard shortcuts.
+ * ? / Songs / Notes keyboard shortcuts.
  *
  * Loaded from nav.html so handlers survive HTMX-boosted navigation.
  */
@@ -75,7 +75,7 @@
                     !draftsBtn.querySelector('.nav-dropdown-shortcut')) {
                     var draftsLabel = document.createElement('span');
                     draftsLabel.className = 'nav-dropdown-item-label';
-                    draftsLabel.textContent = (draftsBtn.textContent || 'Drafts').trim() || 'Drafts';
+                    draftsLabel.textContent = (draftsBtn.textContent || 'Notes').trim() || 'Notes';
                     draftsBtn.textContent = '';
                     draftsBtn.appendChild(draftsLabel);
                 }
@@ -83,8 +83,8 @@
                     window.scriptySetMenuShortcut(draftsBtn, draftsHint);
                 }
             }
-            draftsBtn.title = 'Drafts (' + draftsHint + ')';
-            draftsBtn.setAttribute('aria-label', 'Drafts (' + draftsHint + ')');
+            draftsBtn.title = 'Notes (' + draftsHint + ')';
+            draftsBtn.setAttribute('aria-label', 'Notes (' + draftsHint + ')');
         }
     }
 
@@ -100,7 +100,7 @@
             window.location.href = '/shortcuts';
         });
 
-        // ⌘⇧S / Ctrl+Shift+S → Songs, ⌘⇧D / Ctrl+Shift+D → Drafts (project page).
+        // ⌘⇧S / Ctrl+Shift+S → Songs, ⌘⇧D / Ctrl+Shift+D → Notes (project page).
         document.addEventListener('keydown', function (e) {
             if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.altKey) return;
             var key = (e.key || '').toLowerCase();

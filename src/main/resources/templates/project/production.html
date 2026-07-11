@@ -124,8 +124,8 @@
                 <h3>Songs</h3>
                 <p>Write lyrics and musical numbers outside the screenplay, then insert them as Lyrics blocks.</p>
             </a>
-            <a th:href="@{/project/documents/drafts(projectId=${viewModel.id})}" class="help-card production-card-link">
-                <h3>Drafts</h3>
+            <a th:href="@{/project/documents/notes(projectId=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Notes</h3>
                 <p>Keep notes and scratch text outside the screenplay, then insert them when ready.</p>
             </a>
             <a th:href="@{/project/version/list(projectId=${viewModel.id}, editionId=${viewModel.editionId})}" class="help-card production-card-link">

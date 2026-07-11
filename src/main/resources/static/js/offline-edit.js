@@ -156,8 +156,8 @@
             '</div>' +
             '<div class="create-below-drafts-section" hidden>' +
             '<hr class="nav-dropdown-divider" />' +
-            '<div class="create-below-drafts-heading" role="presentation">Drafts</div>' +
-            '<div class="create-below-drafts-list" role="group" aria-label="Insert draft"></div>' +
+            '<div class="create-below-drafts-heading" role="presentation">Notes</div>' +
+            '<div class="create-below-drafts-list" role="group" aria-label="Insert note"></div>' +
             '</div>' +
             '</div></div>';
     }

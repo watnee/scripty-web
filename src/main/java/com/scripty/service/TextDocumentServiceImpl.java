@@ -350,7 +350,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     }
 
     private String titleFromFilename(String filename, String documentType) {
-        String fallback = TextDocument.TYPE_SONG.equalsIgnoreCase(documentType) ? "Imported Song" : "Imported Draft";
+        String fallback = TextDocument.TYPE_SONG.equalsIgnoreCase(documentType) ? "Imported Song" : "Imported Note";
         if (filename == null || filename.isBlank()) {
             return fallback;
         }

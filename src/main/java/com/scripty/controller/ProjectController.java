@@ -194,7 +194,7 @@ public class ProjectController {
             for (TextDocumentViewModel draft : documents.getDrafts()) {
                 Map<String, Object> item = new HashMap<>();
                 item.put("id", draft.getId());
-                item.put("title", draft.getTitle() != null && !draft.getTitle().isBlank() ? draft.getTitle() : "Untitled draft");
+                item.put("title", draft.getTitle() != null && !draft.getTitle().isBlank() ? draft.getTitle() : "Untitled note");
                 projectDrafts.add(item);
             }
         }

@@ -5761,6 +5761,60 @@ a.project-list-team:hover {
     line-height: 1.5;
 }
 
+/* Tighten chrome above Songs/Notes editors and lists */
+body:has(main.text-documents-page) > header.sidebar.menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+    border: none;
+    overflow: visible;
+    z-index: 1500;
+}
+
+body:has(main.text-documents-page) > header.sidebar.menu > nav {
+    display: none;
+}
+
+body:has(main.text-documents-page) > header.sidebar.menu .header-actions {
+    top: 0.35rem;
+    right: 0.5rem;
+}
+
+body:has(main.text-documents-page) > main.text-documents-page {
+    padding-top: 0.65rem !important;
+}
+
+.text-documents-page .top-bar {
+    margin-top: 0;
+    margin-bottom: 0.35rem;
+    padding: 0.35rem 3.5rem 0.35rem 0;
+    min-height: 2.25rem;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+}
+
+.text-documents-page .top-bar nav[aria-label="Breadcrumb"] {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.text-documents-page .top-bar nav[aria-label="Breadcrumb"] > ol {
+    padding: 0.15rem 0;
+    margin: 0;
+    align-items: center;
+}
+
+.text-document-edit-page .text-document-editor-shell {
+    margin-top: 0.25rem;
+}
+
 .text-documents-kicker {
     margin: 0 0 0.35rem;
     font-size: 0.72rem;
@@ -5770,22 +5824,124 @@ a.project-list-team:hover {
     color: var(--muted-fg, #64748b);
 }
 
-.text-documents-header {
+.text-document-about {
+    position: relative;
+    top: auto;
+    right: auto;
+    z-index: 2;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+    max-width: min(22rem, calc(100vw - 4rem));
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-end;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.text-document-about-toggle {
+    cursor: pointer;
+    list-style: none;
+    display: inline-flex;
     align-items: center;
-    gap: 1rem;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: calc(var(--border-radius, 0.5rem) - 2px);
+    color: var(--accent, #475569);
+    background: transparent;
+    box-shadow: none;
+    user-select: none;
+}
+
+.text-document-about-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.text-document-about-toggle:hover,
+.text-document-about-toggle:focus-visible {
+    color: var(--fg, #0f172a);
+    background: transparent;
+    outline: none;
+}
+
+.text-document-about[open] .text-document-about-toggle {
+    background: transparent;
+}
+
+.text-document-about-icon {
+    display: block;
+    flex: 0 0 auto;
+}
+
+.text-document-about-text {
+    margin: 0.4rem 0 0;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--td-line, var(--border, #cbd5e1));
+    border-radius: var(--border-radius, 0.5rem);
+    background: #fff;
+    box-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.35);
+    max-width: none;
+}
+
+.text-documents-page .top-bar {
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+}
+
+.text-document-breadcrumb-title {
+    min-width: 0;
+    max-width: min(100%, 28rem);
+}
+
+.text-document-breadcrumb-title-label {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.text-document-breadcrumb-title-input {
+    font: inherit;
+    font-size: inherit;
+    font-weight: 600;
+    line-height: inherit;
+    color: inherit;
+    min-width: 6rem;
+    max-width: min(100%, 28rem);
+    width: auto;
+    margin: 0;
+    padding: 0.1rem 0.15rem;
+    border: none !important;
+    border-radius: 0;
+    background: transparent;
+    outline: none !important;
+    box-shadow: none !important;
+    box-sizing: border-box;
+}
+
+.text-document-breadcrumb-title-input:hover,
+.text-document-breadcrumb-title-input:focus,
+.text-document-breadcrumb-title-input:focus-visible {
+    border-bottom: 1px solid var(--accent, #475569) !important;
+    background: transparent;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.text-documents-top-actions {
+    display: flex;
     flex-wrap: wrap;
-    margin: 0.85rem 0 1.75rem;
-    padding: 1.15rem 1.25rem;
-    border: 1px solid var(--td-line);
-    border-radius: calc(var(--border-radius, 0.5rem) + 4px);
-    background:
-        linear-gradient(135deg,
-            color-mix(in srgb, var(--td-song) 8%, transparent) 0%,
-            transparent 42%,
-            color-mix(in srgb, var(--td-draft) 7%, transparent) 100%),
-        var(--box-bg, var(--bg, #fff));
+    gap: 0.45rem;
+    align-items: center;
+    justify-content: flex-end;
+    margin-left: auto;
 }
 
 .text-documents-header--song {
@@ -5813,13 +5969,6 @@ a.project-list-team:hover {
 .text-documents-header-text > p:not(.text-documents-kicker) {
     margin: 0;
     max-width: 38rem;
-}
-
-.text-documents-header-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
 }
 
 .text-documents-secondary-btn {
@@ -6106,20 +6255,22 @@ a.project-list-team:hover {
 }
 
 .text-document-editor-shell {
-    padding: 1.15rem 1.2rem 1.25rem;
-    margin-bottom: 1rem;
-    border: 1px solid var(--td-line);
-    border-radius: calc(var(--border-radius, 0.5rem) + 4px);
-    background: var(--box-bg, var(--bg, #fff));
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--fg, #000) 4%, transparent);
+    position: relative;
+    padding: 0;
+    margin: 0.25rem 0 1rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
-.text-document-edit-page--song .text-document-editor-shell {
-    border-top: 3px solid color-mix(in srgb, var(--td-song) 70%, var(--td-line));
+.text-document-editor-shell .text-document-title-label {
+    width: 100%;
 }
 
+.text-document-edit-page--song .text-document-editor-shell,
 .text-document-edit-page--draft .text-document-editor-shell {
-    border-top: 3px solid color-mix(in srgb, var(--td-draft) 65%, var(--td-line));
+    border-top: none;
 }
 
 .text-document-form-row {
@@ -6155,6 +6306,8 @@ a.project-list-team:hover {
 }
 
 .text-document-title-full input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
     font-size: 1.15rem;
     font-weight: 600;
     letter-spacing: -0.01em;
@@ -6167,7 +6320,7 @@ a.project-list-team:hover {
 
 .text-document-content-heading {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: baseline;
     gap: 0.75rem;
     flex-wrap: wrap;
@@ -6184,19 +6337,51 @@ a.project-list-team:hover {
     font-family: "Courier Prime", "Courier New", Courier, monospace;
     font-size: 1rem;
     line-height: 1.6;
-    padding: 0.95rem 1rem;
+    padding: 0.25rem 0;
     resize: vertical;
     white-space: pre-wrap;
-    border-radius: var(--border-radius, 0.5rem);
-    background: color-mix(in srgb, var(--box-bg, #fff) 94%, var(--accent, #475569) 6%);
+    border: none !important;
+    border-radius: 0;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent;
 }
 
-.text-document-form-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
-    justify-content: flex-end;
+.text-document-content:focus,
+.text-document-content:focus-visible {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+:root.-dark-theme .text-document-content,
+:root[data-theme-setting="dark"] .text-document-content {
+    background: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.-no-dark-theme):not([data-theme-setting="light"]) .text-document-content {
+        background: transparent;
+    }
+}
+
+.text-document-save-status {
+    margin: 0.35rem 0 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    min-height: 1.2em;
+}
+
+.text-document-save-status[data-state="saving"] {
+    color: var(--muted, #64748b);
+}
+
+.text-document-save-status[data-state="saved"] {
+    color: color-mix(in srgb, #15803d 85%, var(--fg, #0f172a));
+}
+
+.text-document-save-status[data-state="error"] {
+    color: color-mix(in srgb, #b91c1c 85%, var(--fg, #0f172a));
 }
 
 .text-document-insert-panel {
@@ -10007,6 +10192,21 @@ html.scripty-page-view-mode .project-script .block-content {
     max-width: 100%;
     font-size: calc(12pt * var(--scripty-text-scale, 1));
     line-height: 1;
+}
+
+/* Continuous mode uses padding + centered columns; page view uses margin indents.
+   Reset padding so dialogue/parenthetical don't double-indent and reflow while editing. */
+html.scripty-page-view-mode .project-script .block-content.block-type-dialogue,
+html.scripty-page-view-mode .project-script .block-content.block-type-parenthetical {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Match line-height: 1 — continuous min-height: 1.5em makes single lines jump on focus. */
+html.scripty-page-view-mode .project-script .block-content .script-block-text,
+html.scripty-page-view-mode .project-script .block-content .reader-visible-text,
+html.scripty-page-view-mode .project-script .block-content .block-input-textarea {
+    min-height: 1em;
 }
 
 html.scripty-page-view-mode .project-script aside.block-left-controls,

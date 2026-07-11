@@ -119,7 +119,7 @@
                     <form th:if="${canEditScript == null or canEditScript}"
                           th:action="@{/project/edition/create}" method="POST" hx-boost="false" class="script-edition-create-form">
                         <h2>New screenplay version</h2>
-                        <p class="muted">Creates an editable copy of the current version. Songs, drafts, and casting stay shared.</p>
+                        <p class="muted">Creates an editable copy of the current version. Songs, notes, and casting stay shared.</p>
                         <input type="hidden" name="projectId" th:value="${viewModel.id}" />
                         <input type="hidden" name="copyFromEditionId" th:value="${viewModel.editionId}" />
                         <label>
@@ -607,11 +607,11 @@
             </a>
             <a class="nav-dropdown-toggle drafts-toolbar-btn"
                id="nav-drafts"
-               th:href="@{/project/documents/drafts(projectId=${viewModel.id})}"
+               th:href="@{/project/documents/notes(projectId=${viewModel.id})}"
                hx-boost="false"
-               aria-label="Drafts"
-               title="Drafts">
-                Drafts
+               aria-label="Notes"
+               title="Notes">
+                Notes
             </a>
             <div class="nav-dropdown lists-dropdown" id="project-lists-dropdown">
                 <button id="nav-lists"

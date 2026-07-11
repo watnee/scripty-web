@@ -6,6 +6,7 @@ This file is the single source of truth for Claude Code. It contains common deve
 
 - **Start test server (Local)**: `./start-test-server.command`
 - **Restart test server**: `./restart-test-server.command`
+- **Headless server (agents/routines/CI)**: `scripts/dev-server.sh {start|stop|restart|status|wait|logs}`
 - **Build**: `mvn clean package` or `mvn compile`
 - **Test**: `mvn verify`
 - **Run Cloudflare dev**: `npm run cf:dev`
@@ -41,6 +42,18 @@ Refer to the rules below before writing or modifying code.
 - Always use persistent, file-based configurations:
   `jdbc:h2:file:./db/<project_name>;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;AUTO_SERVER=TRUE`
 - Ensure that the local database directory (e.g., `/db/`) is ignored in the project's `.gitignore` file to prevent committing local data.
+
+---
+
+### Headless Server for Agents and Routines
+
+- Claude Code routines, cloud agents, and CI must never use `./start-test-server.command` or `./restart-test-server.command` — those are interactive (foreground Maven, open a browser). Use the headless lifecycle script instead:
+  `scripts/dev-server.sh {start|stop|restart|status|wait|logs [n]}`
+- `start` runs the dev server in the background, waits for `http://localhost:$PORT/actuator/health` to report `UP` (up to `STARTUP_TIMEOUT`, default 180s), and prints `READY`/`ERROR` with log excerpts — its exit code is safe to branch on in automation.
+- Server output goes to `scripty-server-<port>.log` and the PID to `scripty-server-<port>.pid` in the repo root (both gitignored). Use `scripts/dev-server.sh logs 200` to inspect output.
+- Set `PORT` to run per-worktree servers side by side (default 8080); each worktree keeps its own `./db/` H2 files, so parallel agents do not share state.
+- The script auto-detects Java 17 (Homebrew paths, `/usr/libexec/java_home`, `/usr/lib/jvm`); a routine only needs Java 17 and Maven installed.
+- Verify changes with `curl` against `http://localhost:$PORT` (dev profile auto-logs in as admin) and `/actuator/health` — do not assume a browser is available.
 
 ---
 

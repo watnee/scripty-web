@@ -92,6 +92,7 @@ This file is the single source of truth for Claude Code. It contains common deve
 
 - **Start test server (Local)**: \`./start-test-server.command\`
 - **Restart test server**: \`./restart-test-server.command\`
+- **Headless server (agents/routines/CI)**: \`scripts/dev-server.sh {start|stop|restart|status|wait|logs}\`
 - **Build**: \`mvn clean package\` or \`mvn compile\`
 - **Test**: \`mvn verify\`
 - **Run Cloudflare dev**: \`npm run cf:dev\`

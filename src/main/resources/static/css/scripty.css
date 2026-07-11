@@ -11399,7 +11399,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
     color: var(--accent, #145591);
 }
 
-.scripty-spell-suggestions li.scripty-spell-ignore {
+.scripty-spell-suggestions li.scripty-spell-ignore,
+.scripty-spell-suggestions li.scripty-spell-delete {
     border-top: 1px solid color-mix(in srgb, var(--fg, #111) 12%, transparent);
     margin-top: 0.15rem;
     font-size: 0.8rem;

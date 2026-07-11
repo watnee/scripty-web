@@ -349,6 +349,10 @@
                 ignoreCurrentWord();
                 return;
             }
+            if (li.getAttribute('data-action') === 'delete') {
+                deleteCurrentWord();
+                return;
+            }
             var suggestion = li.getAttribute('data-suggestion');
             if (suggestion != null) applySuggestion(suggestion);
         });
@@ -411,6 +415,10 @@
             '<li role="option" class="scripty-spell-ignore" data-action="ignore" data-index="' +
             suggestions.length + '">Ignore &ldquo;' + escapeHtml(token.word) + '&rdquo;</li>'
         );
+        items.push(
+            '<li role="option" class="scripty-spell-delete" data-action="delete" data-index="' +
+            (suggestions.length + 1) + '">Delete &ldquo;' + escapeHtml(token.word) + '&rdquo;</li>'
+        );
         el.innerHTML = items.join('');
         positionPopup(textarea, token.start, token.end);
         el.hidden = false;
@@ -445,6 +453,22 @@
             localStorage.setItem('scripty-spell-ignored', JSON.stringify(stored));
         } catch (e) { /* ignore */ }
         if (textarea) runCheck(textarea);
+    }
+
+    function deleteCurrentWord() {
+        var range = popupRange;
+        var textarea = popupTarget;
+        hidePopup();
+        if (!range || !textarea) return;
+        var value = textarea.value || '';
+        textarea.value = value.slice(0, range.start) + value.slice(range.end);
+        textarea.focus();
+        textarea.setSelectionRange(range.start, range.start);
+        if (typeof window.scriptyGrowTextarea === 'function') {
+            window.scriptyGrowTextarea(textarea);
+        }
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        runCheck(textarea);
     }
 
     function loadIgnored() {
@@ -610,6 +634,8 @@
                 var chosen = options[popupIndex];
                 if (chosen.getAttribute('data-action') === 'ignore') {
                     ignoreCurrentWord();
+                } else if (chosen.getAttribute('data-action') === 'delete') {
+                    deleteCurrentWord();
                 } else {
                     applySuggestion(chosen.getAttribute('data-suggestion'));
                 }
@@ -632,6 +658,15 @@
         if (popupEl.contains(e.target)) return;
         hidePopup();
     }, true);
+
+    document.addEventListener('selectionchange', function() {
+        if (!popupEl || popupEl.hidden || !popupTarget || !popupRange) return;
+        var start = popupTarget.selectionStart;
+        var end = popupTarget.selectionEnd;
+        if (start < popupRange.start || start > popupRange.end || end < popupRange.start || end > popupRange.end) {
+            hidePopup();
+        }
+    });
 
     document.addEventListener('mousedown', function(e) {
         if (!isScriptPage() || !isEnabled()) return;

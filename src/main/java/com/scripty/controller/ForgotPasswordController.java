@@ -52,7 +52,7 @@ public class ForgotPasswordController {
             PasswordRecoveryToken recoveryToken = recoveryService.validateToken(token);
             model.addAttribute("valid", true);
             model.addAttribute("token", token);
-            model.addAttribute("username", recoveryToken.getUser().getUsername());
+            model.addAttribute("email", recoveryToken.getUser().getEmail());
         } catch (IllegalArgumentException e) {
             model.addAttribute("valid", false);
             model.addAttribute("errorMessage", e.getMessage());

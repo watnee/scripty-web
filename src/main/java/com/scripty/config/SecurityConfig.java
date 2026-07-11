@@ -2,6 +2,7 @@ package com.scripty.config;
 
 import com.scripty.repository.UserRepository;
 import com.scripty.security.CsrfAccessDeniedHandler;
+import com.scripty.security.EmailResolvingUserDetailsManager;
 import com.scripty.security.ForcedPasswordChangeFilter;
 import com.scripty.security.HtmxLoginUrlAuthenticationEntryPoint;
 import com.scripty.security.LoginSuccessHandler;
@@ -262,8 +263,10 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserDetailsManager userDetailsManager(DataSource dataSource) {
-        JdbcUserDetailsManager manager = new JdbcUserDetailsManager(dataSource);
+    public UserDetailsManager userDetailsManager(DataSource dataSource,
+            UserRepository userRepository) {
+        JdbcUserDetailsManager manager =
+                new EmailResolvingUserDetailsManager(dataSource, userRepository);
         manager.setUsersByUsernameQuery(
             "SELECT username, `password`, enabled FROM `user` WHERE username = ?");
         manager.setAuthoritiesByUsernameQuery(

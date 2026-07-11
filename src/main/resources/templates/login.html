@@ -27,7 +27,7 @@
                 </div>
 
                 <div class="login-success" th:if="${inviteAccepted}" role="status">
-                    <span>Account created. Sign in with your new username and password.</span>
+                    <span>Account created. Sign in with your email and password.</span>
                 </div>
 
                 <div class="login-success" th:if="${param.logout}" role="status">
@@ -40,7 +40,7 @@
                         <line x1="12" y1="8" x2="12" y2="12"></line>
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                     </svg>
-                    <span>Incorrect username or password. Please try again.</span>
+                    <span>Incorrect email or password. Please try again.</span>
                 </div>
 
                 <div class="login-error" th:if="${param.csrf_error}" role="alert">
@@ -55,13 +55,13 @@
                 <form class="login-form" method="POST" th:action="@{/login}" hx-boost="false">
                     <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <label class="login-field">
-                        <span class="login-label">Username</span>
+                        <span class="login-label">Email</span>
                         <span class="login-input-wrap">
                             <svg class="login-field-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
                             </svg>
-                            <input type="text" name="username" placeholder="Enter your username" autocomplete="username" required autofocus />
+                            <input type="text" name="username" placeholder="Enter your email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" required autofocus />
                         </span>
                     </label>
                     <label class="login-field">

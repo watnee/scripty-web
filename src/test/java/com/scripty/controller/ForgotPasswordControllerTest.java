@@ -47,6 +47,7 @@ class ForgotPasswordControllerTest {
         PasswordRecoveryToken token = new PasswordRecoveryToken();
         User user = new User();
         user.setUsername("testuser");
+        user.setEmail("testuser@example.com");
         token.setUser(user);
 
         when(recoveryService.validateToken("good-token")).thenReturn(token);
@@ -57,7 +58,7 @@ class ForgotPasswordControllerTest {
         assertEquals("forgot-password/reset", view);
         assertEquals(true, model.getAttribute("valid"));
         assertEquals("good-token", model.getAttribute("token"));
-        assertEquals("testuser", model.getAttribute("username"));
+        assertEquals("testuser@example.com", model.getAttribute("email"));
     }
 
     @Test

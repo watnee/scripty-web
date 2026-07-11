@@ -7,6 +7,7 @@ import com.scripty.repository.UserRepository;
 import com.scripty.security.PasswordPolicy;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,6 +105,10 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
         if (recoveryToken.isExpired()) {
             throw new IllegalArgumentException("The password reset token has expired.");
         }
+
+        // The user is fetched lazily; initialize it here so callers outside this
+        // transaction (the controller renders the username) don't hit a closed session.
+        Hibernate.initialize(recoveryToken.getUser());
 
         return recoveryToken;
     }

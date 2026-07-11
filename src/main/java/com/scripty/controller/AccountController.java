@@ -1,7 +1,9 @@
 package com.scripty.controller;
 
 import com.scripty.commandmodel.account.ChangePasswordCommandModel;
+import com.scripty.security.ForcedPasswordChangeFilter;
 import com.scripty.service.UserService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.Objects;
@@ -22,10 +24,12 @@ public class AccountController {
     UserService userService;
 
     @RequestMapping(value = "/password", method = RequestMethod.GET)
-    public String changePasswordForm(Model model) {
+    public String changePasswordForm(Model model, HttpSession session) {
         if (!model.containsAttribute("commandModel")) {
             model.addAttribute("commandModel", new ChangePasswordCommandModel());
         }
+        model.addAttribute("forcedChange", Boolean.TRUE.equals(
+                session.getAttribute(ForcedPasswordChangeFilter.SESSION_ATTR)));
         return "account/change-password";
     }
 
@@ -34,6 +38,7 @@ public class AccountController {
                                  BindingResult bindingResult,
                                  Principal principal,
                                  Model model,
+                                 HttpSession session,
                                  RedirectAttributes redirectAttributes) {
         if (principal == null) {
             return "redirect:/login";
@@ -55,9 +60,12 @@ public class AccountController {
                     commandModel.getNewPassword());
         } catch (IllegalArgumentException e) {
             model.addAttribute("passwordError", e.getMessage());
+            model.addAttribute("forcedChange", Boolean.TRUE.equals(
+                    session.getAttribute(ForcedPasswordChangeFilter.SESSION_ATTR)));
             return "account/change-password";
         }
 
+        session.setAttribute(ForcedPasswordChangeFilter.SESSION_ATTR, Boolean.FALSE);
         redirectAttributes.addFlashAttribute("passwordChanged", true);
         return "redirect:/account/password";
     }

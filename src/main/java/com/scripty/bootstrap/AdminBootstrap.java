@@ -5,9 +5,13 @@ import com.scripty.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+// Runs before DefaultAdminPasswordGuard so a weak ADMIN_PASSWORD supplied here
+// is caught and rotated by the guard in the same startup.
 @Component
+@Order(10)
 public class AdminBootstrap implements CommandLineRunner {
 
     @Autowired

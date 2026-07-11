@@ -19,8 +19,12 @@
 #   RAILWAY_TOKEN           Project token: Railway → Project → Settings → Tokens
 #                           (scope to the production environment)
 #   RAILWAY_SERVICE_ID      Service ID: Railway → service → Settings → copy ID
-#   CLOUDFLARE_API_TOKEN    API token with Workers Scripts Edit + Containers write
-#                           (optional CLOUDFLARE_ACCOUNT_ID if the token spans accounts)
+#   CLOUDFLARE_API_TOKEN    auto-provisioned: `npm run cf:token` mints a scoped token
+#                           via the Cloudflare API and sets this + CLOUDFLARE_ACCOUNT_ID
+#                           (manual alternative: Workers Scripts Edit + Containers write)
+#   CLOUDFLARE_BOOTSTRAP_TOKEN  optional: lets deploys self-provision — if the token
+#                           above is missing/dead, CI mints a short-lived deploy token
+#                           on the spot (seed once: ./scripts/cf-token.sh seed-bootstrap)
 #   MYSQL*                  Optional fallback if RAILWAY_TOKEN is unset; CI prefers
 #                           scripts/sync-railway-cloudflare.sh (Railway TCP proxy → Worker)
 #
@@ -472,23 +476,35 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check Cloudflare secrets
+      - name: Resolve Cloudflare API token
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_BOOTSTRAP_TOKEN: ${{ secrets.CLOUDFLARE_BOOTSTRAP_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+          # Never blocks on a human: uses the stored token if it still verifies,
+          # otherwise mints a short-lived deploy token from the bootstrap secret.
+          set -euo pipefail
+          if token="$(./scripts/cf-token.sh ci-resolve)"; then
+            echo "::add-mask::$token"
+            echo "CLOUDFLARE_API_TOKEN=$token" >> "$GITHUB_ENV"
+            if [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+              echo "CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID" >> "$GITHUB_ENV"
+            fi
+            echo "Cloudflare API token resolved."
+          else
             {
-              echo "## Deploy blocked — Cloudflare secrets missing"
+              echo "## Deploy blocked — no Cloudflare credentials"
               echo ""
-              echo "Add \`CLOUDFLARE_API_TOKEN\` under **Settings → Secrets and variables → Actions**."
+              echo "Self-provisioning needs one of these Actions secrets:"
+              echo "- \`CLOUDFLARE_API_TOKEN\` — a working deploy token (\`npm run cf:token\` mints + pushes one), or"
+              echo "- \`CLOUDFLARE_BOOTSTRAP_TOKEN\` — lets CI mint its own short-lived deploy tokens (\`./scripts/cf-token.sh seed-bootstrap\`)."
               echo ""
-              echo "Token needs Workers Scripts Edit (and Containers) on the Scripty account."
               echo "MySQL secrets sync from Railway when \`RAILWAY_TOKEN\` is set (see [docs/CLOUDFLARE.md](../../docs/CLOUDFLARE.md))."
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "::error title=Missing secret::Add CLOUDFLARE_API_TOKEN (Workers Scripts Edit + Containers)."
+            echo "::error title=No Cloudflare credentials::Seed CLOUDFLARE_BOOTSTRAP_TOKEN (scripts/cf-token.sh seed-bootstrap) or CLOUDFLARE_API_TOKEN (npm run cf:token)."
             exit 1
           fi
-          echo "Cloudflare API token is present."
 
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -566,9 +582,9 @@ jobs:
       - name: Deploy to Cloudflare
         id: deploy
         working-directory: cloudflare
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID come from GITHUB_ENV,
+        # exported by "Resolve Cloudflare API token" (stored secret or a
+        # freshly minted ephemeral token).
         run: |
           echo "Deploying commit ${{ github.sha }} via wrangler deploy (builds Dockerfile + Worker)"
           set +e

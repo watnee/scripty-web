@@ -35,8 +35,9 @@ Cursor Mobile / cloud agents push to `cursor/*` branches. Those do **not** deplo
    |--------|-----------------|
    | `RAILWAY_TOKEN` | Railway → Project → Settings → Tokens (production environment) |
    | `RAILWAY_SERVICE_ID` | Railway → your web service → Settings → copy service ID |
-   | `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Workers Scripts Edit + Containers |
-   | `CLOUDFLARE_ACCOUNT_ID` | (optional) Cloudflare account ID if the token can see multiple accounts |
+   | `CLOUDFLARE_API_TOKEN` | **Automated:** `npm run cf:token` mints a scoped token via the Cloudflare API and pushes it here — no dashboard token creation ([docs/CLOUDFLARE.md](docs/CLOUDFLARE.md)) |
+   | `CLOUDFLARE_ACCOUNT_ID` | set automatically by `npm run cf:token` |
+   | `CLOUDFLARE_BOOTSTRAP_TOKEN` | (optional) `npm run cf:token:seed` — lets deploys self-provision: if the deploy token is ever missing/dead, CI mints a short-lived one on the spot |
    | `MYSQLHOST` / `MYSQLPORT` / `MYSQLUSER` / `MYSQLPASSWORD` / `MYSQLDATABASE` | (fallback) Railway MySQL **TCP proxy** host/port + credentials — only needed if `RAILWAY_TOKEN` is missing; CI prefers syncing these from Railway automatically |
    | `MYSQL_SSL_MODE` / `MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL` | (optional fallback) kept in sync by `./scripts/sync-railway-cloudflare.sh push-github` |
 
@@ -68,6 +69,7 @@ Cursor Mobile / cloud agents push to `cursor/*` branches. Those do **not** deplo
 - `.railway/railway.ts` — Infrastructure as Code (web + MySQL + uploads volume). Preview with `railway config plan`; apply only after `railway link` and migrating off `railway.json` (a service cannot be managed by both)
 - `Dockerfile` + `cloudflare/` — Cloudflare Containers Worker that proxies to the Spring Boot image; details in [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md)
 - `scripts/sync-railway-cloudflare.sh` — copies Railway MySQL **TCP proxy** credentials into Cloudflare Worker / GitHub Actions secrets so both platforms stay aligned
+- `scripts/cf-token.sh` — mints/rotates the scoped Cloudflare API token CI deploys with and pushes it to GitHub secrets (no manual token creation in the dashboard)
 
 ## Database backups
 

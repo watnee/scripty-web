@@ -12,6 +12,7 @@ This file is the single source of truth for Claude Code. It contains common deve
 - **Run Cloudflare dev**: `npm run cf:dev`
 - **Deploy Cloudflare**: `npm run cf:deploy`
 - **Sync secrets**: `npm run cf:sync`
+- **Provision/rotate CI Cloudflare API token**: `npm run cf:token` (no dashboard token creation)
 - **Sync project rules**: `npm run rules:sync`
 
 ## Project Rules

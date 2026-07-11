@@ -10,17 +10,6 @@
     <link rel="stylesheet" href="/css/missing.min.css">
     <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
-    <style th:if="${passkeysEnabled}">
-        .login-passkey { margin-top: 1rem; }
-        .login-passkey-divider {
-            display: flex; align-items: center; gap: 0.75rem;
-            margin-bottom: 1rem; color: var(--muted-fg, #888); font-size: 0.85rem;
-        }
-        .login-passkey-divider::before, .login-passkey-divider::after {
-            content: ""; flex: 1; border-top: 1px solid currentColor; opacity: 0.35;
-        }
-        .login-passkey-button { width: 100%; }
-    </style>
 </head>
 <body class="login-body" hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('')}"></div>
@@ -140,19 +129,6 @@
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
-    <th:block th:if="${passkeysEnabled}">
-        <script th:src="@{/login/webauthn.js}"></script>
-        <script th:inline="javascript">
-            document.addEventListener('DOMContentLoaded', function () {
-                var csrfHeaderName = /*[[${_csrf != null ? _csrf.headerName : null}]]*/ null;
-                var csrfToken = /*[[${_csrf != null ? _csrf.token : null}]]*/ null;
-                var csrfHeaders = {};
-                if (csrfHeaderName) {
-                    csrfHeaders[csrfHeaderName] = csrfToken;
-                }
-                setupLogin(csrfHeaders, '', document.getElementById('passkey-signin'));
-            });
-        </script>
-    </th:block>
+    <!-- Passkey button wiring lives in /js/passkeys.js (loaded via nav fragment). -->
 </body>
 </html>

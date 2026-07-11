@@ -7,12 +7,7 @@
     <link rel="stylesheet" href="/css/missing.min.css">
     <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
-    <style>
-        .passkey-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-        .passkey-table th, .passkey-table td { text-align: left; padding: 0.4rem 0.6rem; }
-        .passkey-row-controls { display: inline-flex; align-items: center; gap: 8px; vertical-align: middle; }
-        .passkey-hidden { display: none; }
-    </style>
+    <!-- Passkey styles live in scripty.css: boosted swaps replace only <body>. -->
 </head>
 <body class="login-body" hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('account')}"></div>
@@ -79,27 +74,6 @@
     </main>
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>
-    <th:block th:if="${passkeysEnabled}">
-        <script th:src="@{/login/webauthn.js}"></script>
-        <script th:inline="javascript">
-            document.addEventListener('DOMContentLoaded', function () {
-                var csrfHeaderName = /*[[${_csrf != null ? _csrf.headerName : null}]]*/ null;
-                var csrfToken = /*[[${_csrf != null ? _csrf.token : null}]]*/ null;
-                var csrfHeaders = {};
-                if (csrfHeaderName) {
-                    csrfHeaders[csrfHeaderName] = csrfToken;
-                }
-                setupRegistration(csrfHeaders, '', {
-                    getRegisterButton: function () { return document.getElementById('register'); },
-                    getLabelInput: function () { return document.getElementById('label'); },
-                    getSuccess: function () { return document.getElementById('success'); },
-                    getError: function () { return document.getElementById('error'); },
-                    getDeleteForms: function () {
-                        return Array.prototype.slice.call(document.querySelectorAll('form.delete-form'));
-                    }
-                });
-            });
-        </script>
-    </th:block>
+    <!-- Registration wiring lives in /js/passkeys.js (loaded via nav fragment). -->
 </body>
 </html>

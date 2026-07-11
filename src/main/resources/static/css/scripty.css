@@ -12068,3 +12068,18 @@ body.focus-mode #project-lists-dropdown {
         text-decoration: none !important;
     }
 }
+/* --- Passkeys: login button + management page (styles live here, not in the
+   page <head>, because HTMX-boosted swaps replace only <body>) --- */
+.login-passkey { margin-top: 1rem; }
+.login-passkey-divider {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin-bottom: 1rem; color: var(--muted-fg, #888); font-size: 0.85rem;
+}
+.login-passkey-divider::before, .login-passkey-divider::after {
+    content: ""; flex: 1; border-top: 1px solid currentColor; opacity: 0.35;
+}
+.login-passkey-button { width: 100%; }
+.passkey-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+.passkey-table th, .passkey-table td { text-align: left; padding: 0.4rem 0.6rem; }
+.passkey-row-controls { display: inline-flex; align-items: center; gap: 8px; vertical-align: middle; }
+.passkey-hidden { display: none; }

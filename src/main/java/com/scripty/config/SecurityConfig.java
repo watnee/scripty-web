@@ -111,7 +111,10 @@ public class SecurityConfig {
                         "/icons/**",
                         "/help",
                         "/shortcuts",
-                        "/invitation/accept")
+                        "/invitation/accept",
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html")
                     .permitAll()
                 .requestMatchers("/account/password")
                     .hasRole("USER")

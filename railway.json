@@ -13,7 +13,7 @@
   "deploy": {
     "startCommand": "java -XX:MaxRAMPercentage=75.0 -jar scripty.jar --spring.profiles.active=prod",
     "healthcheckPath": "/health",
-    "healthcheckTimeout": 300,
+    "healthcheckTimeout": 900,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 5
   }

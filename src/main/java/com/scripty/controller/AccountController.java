@@ -1,6 +1,7 @@
 package com.scripty.controller;
 
 import com.scripty.commandmodel.account.ChangePasswordCommandModel;
+import com.scripty.config.PasskeySettings;
 import com.scripty.security.ForcedPasswordChangeFilter;
 import com.scripty.service.UserService;
 import jakarta.servlet.http.HttpSession;
@@ -23,6 +24,9 @@ public class AccountController {
     @Autowired
     UserService userService;
 
+    @Autowired
+    PasskeySettings passkeySettings;
+
     @RequestMapping(value = "/password", method = RequestMethod.GET)
     public String changePasswordForm(Model model, HttpSession session) {
         if (!model.containsAttribute("commandModel")) {
@@ -30,6 +34,7 @@ public class AccountController {
         }
         model.addAttribute("forcedChange", Boolean.TRUE.equals(
                 session.getAttribute(ForcedPasswordChangeFilter.SESSION_ATTR)));
+        model.addAttribute("passkeysEnabled", passkeySettings.isEnabled());
         return "account/change-password";
     }
 
@@ -62,6 +67,7 @@ public class AccountController {
             model.addAttribute("passwordError", e.getMessage());
             model.addAttribute("forcedChange", Boolean.TRUE.equals(
                     session.getAttribute(ForcedPasswordChangeFilter.SESSION_ATTR)));
+            model.addAttribute("passkeysEnabled", passkeySettings.isEnabled());
             return "account/change-password";
         }
 

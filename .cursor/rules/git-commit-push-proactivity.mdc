@@ -1,0 +1,11 @@
+---
+description: Rule for Git Commit & Push Proactivity
+alwaysApply: true
+syncSource: agents
+---
+
+# Git Commit & Push Proactivity
+
+- When a task or implementation plan is fully implemented and successfully verified (e.g., builds compile, tests pass, server starts), the agent should proactively check `git status`, prepare a descriptive commit message, and commit and push the changes to the remote branch (`main`).
+- Do not wait for the user to explicitly type "push" or ask to commit. Proactively run:
+  `git status`, `git add <modified files>`, `git commit -m "..."`, and `git push`.

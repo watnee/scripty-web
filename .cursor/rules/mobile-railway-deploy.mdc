@@ -1,32 +1,13 @@
 ---
 description: Land Cursor mobile (cursor/*) changes on main so Railway deploys
 alwaysApply: true
+syncSource: agents
 ---
 
-# Mobile Cursor → Railway deploy
+# Mobile Cursor → Railway
 
-Production deploys only from **`main`** (GitHub Actions → Railway + Cloudflare).
-
-Cursor Mobile / cloud agents push to **`cursor/*` branches**. Those do **not** appear on Railway until they are on `main`.
-
-## Happy path (automatic)
-
-1. Push to `cursor/*` with **no PR** → CI **Ensure Cursor mobile PR** opens a draft PR, runs Maven verify, squash-merges to `main`, and dispatches Railway + Cloudflare (skip re-verify).
-2. Push to `cursor/*` with a PR already open → PR Verify → **Ship Cursor mobile PR** (unless labeled `hold` / `no-ship`) → same deploy dispatch.
-3. Do not rely on “open PR only” from a `GITHUB_TOKEN` bot — that does not re-trigger workflows; the ensure job ships orphans in-process.
-
-## When the user wants mobile changes live and auto-ship stalled
-
-1. `./scripts/ship-mobile-changes.sh` (list pending + PR links)
-2. Prefer `./scripts/ship-mobile-changes.sh --ensure-pr` (opens draft PRs; CI ships after verify)
-3. Fallback: `./scripts/ship-mobile-changes.sh --apply` (cherry-pick + push)
-4. Optional: `./scripts/ship-mobile-changes.sh --prune` (delete remote `cursor/*` already on main)
-5. Confirm Actions: ship → **Deploy to Railway** (and Cloudflare).
-6. Do not tell the user changes are deployed while they only exist on a `cursor/*` branch or an open draft PR.
-
-## When finishing cloud/mobile UI work yourself
-
-- Prefer landing on **`main`** (push or merge), not `master`.
-- On a `cursor/*` branch: push the branch; CI opens the PR if needed — do not stop at a branch-only push.
-- After verify-worthy changes, get them onto `main` (merge/ship) so Railway updates.
-- Bump asset / service-worker cache versions when shipping CSS/JS/static UI fixes so clients see the new build.
+- Production deploys only from **`main`** (GitHub Actions → Railway + Cloudflare). Cursor Mobile cloud agents work on **`cursor/*`** branches — those are not live until they land on `main`.
+- Push to `cursor/*` with no PR → CI opens PR, verifies, and ships. Existing PR → verify → auto-ship. Deploy uses skip_verify. Skip auto-ship with PR labels `hold` or `no-ship`.
+- If the user asks to deploy mobile changes and auto-ship stalled: `./scripts/ship-mobile-changes.sh` then prefer `--ensure-pr` (CI ships) over `--apply` (local cherry-pick). Use `--prune` for stale remote `cursor/*` branches.
+- Never claim a change is on Railway while it only exists on a `cursor/*` branch or open draft PR.
+- When shipping CSS/JS/static UI fixes, bump asset / service-worker cache versions so clients pick up the new build.

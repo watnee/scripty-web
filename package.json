@@ -7,7 +7,10 @@
     "cf:dev": "wrangler dev --config cloudflare/wrangler.jsonc",
     "cf:sync": "./scripts/sync-railway-cloudflare.sh sync",
     "cf:sync:status": "./scripts/sync-railway-cloudflare.sh status",
-    "cf:sync:check": "./scripts/sync-railway-cloudflare.sh check"
+    "cf:sync:check": "./scripts/sync-railway-cloudflare.sh check",
+    "rules:sync": "node scripts/sync-rules.js",
+    "rules:check": "node scripts/sync-rules.js --check",
+    "rules:setup-hooks": "./scripts/setup-git-hooks.sh"
   },
   "dependencies": {
     "railway": "^3.5.5"

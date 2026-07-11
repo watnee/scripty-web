@@ -127,6 +127,10 @@ jobs:
           java-version: "17"
           cache: maven
 
+      - name: Verify rules sync
+        if: env.NEED_SHIP == '1'
+        run: npm run rules:check
+
       - name: Run Maven verify
         if: env.NEED_SHIP == '1'
         run: mvn -B verify
@@ -201,6 +205,9 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: maven
+
+      - name: Verify rules sync
+        run: npm run rules:check
 
       - name: Run Maven verify
         run: mvn -B verify

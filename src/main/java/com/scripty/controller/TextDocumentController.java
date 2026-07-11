@@ -117,6 +117,7 @@ public class TextDocumentController {
         model.addAttribute("projectId", viewModel.getProjectId());
         model.addAttribute("projectTitle", viewModel.getProjectTitle());
         model.addAttribute("commandModel", commandModel);
+        model.addAttribute("updatedAt", viewModel.getUpdatedAt());
         model.addAttribute("isNew", false);
         model.addAttribute("isSong", isSong);
         model.addAttribute("listPath", listPath(isSong));

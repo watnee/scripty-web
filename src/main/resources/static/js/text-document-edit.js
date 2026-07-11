@@ -107,6 +107,29 @@
 
         var lastSavedKey = snapshotKey();
 
+        function formatLocalDateTime(date) {
+            var pad = function (num) { return (num < 10 ? '0' : '') + num; };
+            return date.getFullYear() + '-' +
+                pad(date.getMonth() + 1) + '-' +
+                pad(date.getDate()) + 'T' +
+                pad(date.getHours()) + ':' +
+                pad(date.getMinutes()) + ':' +
+                pad(date.getSeconds());
+        }
+
+        function updateLastEditedTimestamp() {
+            var container = document.getElementById('text-document-last-edited');
+            if (!container) return;
+            var timeEl = container.querySelector('.last-edited-time');
+            if (timeEl) {
+                timeEl.setAttribute('data-timestamp', formatLocalDateTime(new Date()));
+                if (window.scriptyUpdateLastEditedTimes) {
+                    window.scriptyUpdateLastEditedTimes();
+                }
+            }
+            container.style.display = '';
+        }
+
         function isDirty() {
             return snapshotKey() !== lastSavedKey;
         }
@@ -247,6 +270,7 @@
                         state.pending = true;
                     }
                     setStatus('Saved', 'saved');
+                    updateLastEditedTimestamp();
                 })
                 .catch(function () {
                     setStatus('Couldn’t save', 'error');

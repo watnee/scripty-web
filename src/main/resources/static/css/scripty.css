@@ -6457,6 +6457,23 @@ body:has(main.text-documents-page) > main.text-documents-page {
     color: color-mix(in srgb, #b91c1c 85%, var(--fg, #0f172a));
 }
 
+.text-document-meta-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.35rem;
+    min-height: 1.2em;
+}
+
+.text-document-last-edited {
+    font-size: 0.85rem;
+    color: var(--muted-fg, #64748b);
+}
+
+.text-document-meta-bar .text-document-save-status {
+    margin: 0;
+}
+
 .text-document-insert-panel {
     display: flex;
     justify-content: space-between;

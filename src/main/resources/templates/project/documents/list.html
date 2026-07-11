@@ -151,7 +151,9 @@
                                   th:text="${isSongList} ? 'Song' : ${doc.documentTypeLabel}">Type</span>
                             <span class="muted"
                                   th:if="${doc.updatedAt != null}"
-                                  th:text="${#temporals.format(doc.updatedAt, 'MMM d, yyyy h:mm a')}">Updated</span>
+                                  th:title="${#temporals.format(doc.updatedAt, 'MMM d, yyyy, h:mm a')}">
+                                Last edited <span th:replace="~{fragments/lastEditedTime :: relativeTime(${doc.updatedAt})}"></span>
+                            </span>
                         </div>
                         <p class="text-document-preview"
                            th:if="${!#strings.isEmpty(doc.preview)}"

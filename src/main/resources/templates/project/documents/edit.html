@@ -109,11 +109,18 @@
                 </label>
             </div>
 
-            <p id="text-document-save-status"
-               class="text-document-save-status muted"
-               role="status"
-               aria-live="polite"
-               hidden></p>
+            <div class="text-document-meta-bar">
+                <span id="text-document-last-edited" class="text-document-last-edited muted" th:style="${updatedAt == null} ? 'display: none;' : ''">
+                    Last edited <span class="last-edited-time"
+                                      th:attr="data-timestamp=${updatedAt != null ? #temporals.format(updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}"
+                                      th:text="${updatedAt != null ? #temporals.format(updatedAt, 'MMM d, yyyy') : ''}"></span>
+                </span>
+                <span id="text-document-save-status"
+                      class="text-document-save-status muted"
+                      role="status"
+                      aria-live="polite"
+                      hidden></span>
+            </div>
         </form>
     </main>
     <script src="/js/htmx.min.js"></script>

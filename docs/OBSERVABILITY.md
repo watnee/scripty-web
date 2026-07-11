@@ -40,6 +40,23 @@ Micrometer publishes JVM, HikariCP, Tomcat, and `http_server_requests` metrics
 To scrape from Grafana Cloud or any hosted Prometheus, point it at
 `https://<app-domain>/actuator/prometheus` with bearer token `$METRICS_TOKEN`.
 
+### Verification
+
+To verify that the metrics endpoint is secure on Railway, you can query it:
+
+```bash
+# Verify it blocks requests without authorization (should return 403 Forbidden)
+curl -I https://web-production-ce5bc3.up.railway.app/actuator/prometheus
+
+# Verify it responds with metrics when authorization header is set (should return HTTP 200 and Prometheus metrics)
+curl -H "Authorization: Bearer <METRICS_TOKEN>" https://web-production-ce5bc3.up.railway.app/actuator/prometheus
+```
+
+You can find the active `METRICS_TOKEN` configured in your Railway dashboard variables or by running:
+```bash
+railway variables
+```
+
 ## Local Prometheus + Grafana
 
 ```bash

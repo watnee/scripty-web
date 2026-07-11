@@ -1,72 +1,64 @@
-import {
-  defineRailway,
-  github,
-  group,
-  mysql,
-  preserve,
-  project,
-  service,
-  volume,
-} from "railway/iac";
+import { defineRailway, github, mysql, preserve, project, service, volume } from "railway/iac";
 
-/**
- * Scripty — Spring Boot 3.4 / Java 17 on Railway.
- *
- * Deploy-time settings still live in root railway.json (Dockerfile builder +
- * healthcheck) until you migrate fully to IaC (a service cannot be managed by
- * both). Cloudflare Containers use the same root Dockerfile; keep MySQL secrets
- * aligned with `./scripts/sync-railway-cloudflare.sh`.
- *
- * To migrate:
- *   1. Link a Railway project: `railway link`
- *   2. Confirm this file matches production intent
- *   3. Remove railway.json (and clear any custom config-file path in Settings)
- *   4. `railway config plan` && `railway config apply`
- */
 export default defineRailway(() => {
-  const db = mysql("MySQL");
-
-  const uploads = volume("uploads", {
-    sizeMB: 1024,
+  const MySQL = mysql("MySQL");
+  const mysqlVolume = volume("mysql-volume", {
+    alerts: { usage: { "100": {}, "80": {}, "95": {} } },
+    allowOnlineResize: true,
+    region: "sfo",
+    sizeMB: 50000,
+  });
+  const webVolume = volume("web-volume", {
+    alerts: { usage: { "100": {}, "80": {}, "95": {} } },
+    allowOnlineResize: true,
+    region: "sfo",
+    sizeMB: 50000,
   });
 
   const web = service("web", {
-    source: github("watnee/scripty", { branch: "main" }),
-    // Same image layout as root Dockerfile / railway.json (jar at /app/scripty.jar).
-    start:
-      "java -XX:MaxRAMPercentage=75.0 -jar scripty.jar --spring.profiles.active=prod",
+    source: github("watnee/scripty"),
+    build: {
+      buildEnvironment: "V3",
+      builder: "DOCKERFILE",
+      dockerfilePath: "Dockerfile",
+      watchPatterns: [
+        "src/**",
+        "pom.xml",
+        "Dockerfile",
+        ".railway/railway.ts",
+      ],
+    },
+    start: "java -XX:MaxRAMPercentage=75.0 -jar scripty.jar --spring.profiles.active=prod",
     healthcheck: "/health",
-    healthcheckTimeout: 300,
+    healthcheckTimeout: 900,
+    replicas: 1,
     volumeMounts: {
-      "/app/uploads": uploads,
+      "/app/uploads": webVolume,
     },
     env: {
-      JAVA_OPTS: "-XX:MaxRAMPercentage=75.0",
-
       // application-prod.yml datasource (private Railway networking)
-      MYSQLHOST: db.env.MYSQLHOST,
-      MYSQLPORT: db.env.MYSQLPORT,
-      MYSQLUSER: db.env.MYSQLUSER,
-      MYSQLPASSWORD: db.env.MYSQLPASSWORD,
-      MYSQLDATABASE: db.env.MYSQLDATABASE,
-      // Private networking typically has no TLS.
-      MYSQL_SSL_MODE: "DISABLED",
+      MYSQLDATABASE: MySQL.env.MYSQLDATABASE,
+      MYSQLHOST: MySQL.env.MYSQLHOST,
+      MYSQLPASSWORD: MySQL.env.MYSQLPASSWORD,
+      MYSQLPORT: MySQL.env.MYSQLPORT,
+      MYSQLUSER: MySQL.env.MYSQLUSER,
       MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL: "true",
+      MYSQL_SSL_MODE: "DISABLED",
 
       // Keep existing Railway values; set real values in the dashboard or via CLI.
       APP_BASE_URL: preserve(),
-      MAIL_ENABLED: preserve(),
-      MAIL_HOST: preserve(),
-      MAIL_PORT: preserve(),
-      MAIL_USERNAME: preserve(),
-      MAIL_PASSWORD: preserve(),
+      JAVA_OPTS: preserve(),
       MAIL_FROM: preserve(),
-      MAIL_SMTP_AUTH: preserve(),
-      MAIL_SMTP_STARTTLS: preserve(),
+      RAILPACK_JDK_VERSION: preserve(),
+      RESEND_API_KEY: preserve(),
+
+      // Observability configuration
+      LOG_FORMAT: "ecs",
+      METRICS_TOKEN: preserve(),
     },
   });
 
   return project("scripty", {
-    resources: [group("Scripty", [web, db, uploads])],
+    resources: [MySQL, web, mysqlVolume, webVolume],
   });
 });

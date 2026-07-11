@@ -6,6 +6,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.webauthn.api.CredentialRecord;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialUserEntity;
 import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository;
@@ -13,6 +18,7 @@ import org.springframework.security.web.webauthn.management.UserCredentialReposi
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
  * Passkey management page at the URL Spring Security's webauthn.js expects
@@ -37,6 +43,21 @@ public class PasskeyController {
         this.passkeySettings = passkeySettings;
         this.userEntityRepository = userEntityRepository;
         this.userCredentialRepository = userCredentialRepository;
+    }
+
+    /**
+     * Spring Security's DefaultResourcesFilter normally serves this script, but it
+     * is dropped together with the default registration page (disabled in
+     * SecurityConfig), so serve the framework's bundled copy ourselves.
+     */
+    @GetMapping("/login/webauthn.js")
+    @ResponseBody
+    public ResponseEntity<Resource> webauthnJs() {
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/javascript"))
+                .cacheControl(CacheControl.noCache())
+                .body(new ClassPathResource(
+                        "org/springframework/security/spring-security-webauthn.js"));
     }
 
     @GetMapping("/webauthn/register")

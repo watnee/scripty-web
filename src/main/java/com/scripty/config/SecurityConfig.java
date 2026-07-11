@@ -104,6 +104,12 @@ public class SecurityConfig {
                         "/dictionaries/**",
                         "/fonts/**",
                         "/login",
+                        // Pre-login passkey endpoints: the sign-in script, the
+                        // challenge endpoint, and the assertion endpoint all run
+                        // before a user is authenticated.
+                        "/login/webauthn.js",
+                        "/login/webauthn",
+                        "/webauthn/authenticate/options",
                         "/manifest.json",
                         "/sw.js",
                         "/offline.html",

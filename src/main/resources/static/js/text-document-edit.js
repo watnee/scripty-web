@@ -1,277 +1,336 @@
 /**
  * Song/note editor: Tab → four spaces, and debounced autosave via stay=true save.
+ *
+ * Loaded from nav.html so it survives HTMX-boosted navigation
+ * (allowScriptTags is false, so edit.html script tags are not executed
+ * after a boost). Re-binds to the current form on htmx:afterSettle.
  */
 (function () {
     'use strict';
 
+    if (window._scriptyTextDocumentEditInit) return;
+    window._scriptyTextDocumentEditInit = true;
+
     var SAVE_DELAY_MS = 900;
-    var form = document.getElementById('text-document-form');
-    var initialTa = document.getElementById('text-document-content');
-    var statusEl = document.getElementById('text-document-save-status');
-    if (!form || !initialTa) {
-        return;
-    }
+    var current = null; // editor state for the form currently in the DOM
 
-    function getTa() {
-        return document.getElementById('text-document-content');
-    }
-
-    var idInput = form.querySelector('input[name="id"]');
-    var projectIdInput = form.querySelector('input[name="projectId"]');
-    var typeInput = form.querySelector('input[name="documentType"]');
-    var titleInput = document.getElementById('title')
-        || (form.elements && form.elements.namedItem('title'))
-        || form.querySelector('input[name="title"]');
-
-    var timer = null;
-    var inFlight = false;
-    var pending = false;
-    var lastSavedKey = snapshotKey();
-    var statusTimer = null;
-
-    form.addEventListener('keydown', function (e) {
-        var target = e.target;
-        if (!target || target.id !== 'text-document-content') {
-            return;
-        }
-        if (e.key !== 'Tab' || e.metaKey || e.ctrlKey || e.altKey) {
-            return;
-        }
-        e.preventDefault();
-        var start = target.selectionStart;
-        var end = target.selectionEnd;
-        var value = target.value;
-        target.value = value.slice(0, start) + '    ' + value.slice(end);
-        target.selectionStart = target.selectionEnd = start + 4;
-        scheduleSave();
-    });
-
-    function onFieldEdit(e) {
-        var t = e.target;
-        if (!t || (t.name !== 'title' && t.name !== 'content')) {
-            return;
-        }
-        scheduleSave();
-    }
-
-    form.addEventListener('input', onFieldEdit);
-    form.addEventListener('change', onFieldEdit);
-    if (titleInput) {
-        titleInput.addEventListener('input', onFieldEdit);
-        titleInput.addEventListener('change', onFieldEdit);
-        titleInput.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                titleInput.blur();
+    function initEditor() {
+        var form = document.getElementById('text-document-form');
+        if (!form) {
+            if (current) {
+                clearTimeout(current.timer);
+                clearTimeout(current.statusTimer);
+                current = null;
             }
+            return;
+        }
+        if (current && current.form === form) {
+            return;
+        }
+        if (current) {
+            clearTimeout(current.timer);
+            clearTimeout(current.statusTimer);
+        }
+        current = bindEditor(form);
+    }
+
+    function bindEditor(form) {
+        var statusEl = document.getElementById('text-document-save-status');
+
+        var idInput = form.querySelector('input[name="id"]');
+        var projectIdInput = form.querySelector('input[name="projectId"]');
+        var typeInput = form.querySelector('input[name="documentType"]');
+        var titleInput = document.getElementById('title')
+            || (form.elements && form.elements.namedItem('title'))
+            || form.querySelector('input[name="title"]');
+
+        var state = {
+            form: form,
+            timer: null,
+            statusTimer: null,
+            inFlight: false,
+            pending: false,
+            saveNow: saveNow,
+            isDirty: isDirty,
+            hasPending: function () { return state.pending || state.inFlight; }
+        };
+
+        function getTa() {
+            return document.getElementById('text-document-content');
+        }
+
+        form.addEventListener('keydown', function (e) {
+            var target = e.target;
+            if (!target || target.id !== 'text-document-content') {
+                return;
+            }
+            if (e.key !== 'Tab' || e.metaKey || e.ctrlKey || e.altKey) {
+                return;
+            }
+            e.preventDefault();
+            var start = target.selectionStart;
+            var end = target.selectionEnd;
+            var value = target.value;
+            target.value = value.slice(0, start) + '    ' + value.slice(end);
+            target.selectionStart = target.selectionEnd = start + 4;
+            scheduleSave();
         });
+
+        function onFieldEdit(e) {
+            var t = e.target;
+            if (!t || (t.name !== 'title' && t.name !== 'content')) {
+                return;
+            }
+            scheduleSave();
+        }
+
+        form.addEventListener('input', onFieldEdit);
+        form.addEventListener('change', onFieldEdit);
+        if (titleInput) {
+            titleInput.addEventListener('input', onFieldEdit);
+            titleInput.addEventListener('change', onFieldEdit);
+            titleInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    titleInput.blur();
+                }
+            });
+        }
+
+        function snapshotKey() {
+            return [
+                idInput ? idInput.value : '',
+                titleInput ? titleInput.value : '',
+                getTa() ? getTa().value : ''
+            ].join('\u0001');
+        }
+
+        var lastSavedKey = snapshotKey();
+
+        function isDirty() {
+            return snapshotKey() !== lastSavedKey;
+        }
+
+        function hasSomethingToSave() {
+            var title = titleInput ? titleInput.value.trim() : '';
+            var content = getTa() ? (getTa().value || '').trim() : '';
+            var hasId = idInput && idInput.value;
+            return !!(hasId || title || content);
+        }
+
+        function ensureTitleForSave() {
+            if (!titleInput) {
+                return;
+            }
+            var currentTa = getTa();
+            if (!titleInput.value.trim() && currentTa && (currentTa.value || '').trim()) {
+                titleInput.value = 'Untitled';
+            }
+        }
+
+        function setStatus(text, stateName) {
+            if (!statusEl) {
+                return;
+            }
+            clearTimeout(state.statusTimer);
+            statusEl.textContent = text || '';
+            statusEl.dataset.state = stateName || '';
+            statusEl.hidden = !text;
+            if (stateName === 'saved') {
+                state.statusTimer = setTimeout(function () {
+                    if (statusEl.dataset.state === 'saved') {
+                        statusEl.hidden = true;
+                        statusEl.textContent = '';
+                        statusEl.dataset.state = '';
+                    }
+                }, 2500);
+            }
+        }
+
+        function scheduleSave() {
+            if (!hasSomethingToSave()) {
+                return;
+            }
+            state.pending = true;
+            setStatus('Saving…', 'saving');
+            clearTimeout(state.timer);
+            state.timer = setTimeout(function () {
+                saveNow(false);
+            }, SAVE_DELAY_MS);
+        }
+
+        function buildBody() {
+            ensureTitleForSave();
+            var body = new URLSearchParams();
+            if (idInput && idInput.value) {
+                body.set('id', idInput.value);
+            }
+            if (projectIdInput) {
+                body.set('projectId', projectIdInput.value);
+            }
+            if (typeInput) {
+                body.set('documentType', typeInput.value);
+            }
+            body.set('title', titleInput ? titleInput.value : '');
+            var currentTa = getTa();
+            body.set('content', currentTa ? currentTa.value : '');
+            body.set('stay', 'true');
+            return body;
+        }
+
+        function saveNow(keepalive) {
+            clearTimeout(state.timer);
+            if (state.inFlight) {
+                state.pending = true;
+                return;
+            }
+            if (!hasSomethingToSave()) {
+                state.pending = false;
+                setStatus('', '');
+                return;
+            }
+            var key = snapshotKey();
+            if (key === lastSavedKey) {
+                state.pending = false;
+                setStatus('Saved', 'saved');
+                return;
+            }
+
+            state.inFlight = true;
+            state.pending = false;
+            setStatus('Saving…', 'saving');
+
+            var action = form.getAttribute('action') || '/project/documents/save';
+            var fetchOpts = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    'Accept': 'text/html'
+                },
+                body: buildBody().toString(),
+                credentials: 'same-origin',
+                // Follow the stay=true redirect so we can read the saved id from res.url.
+                // redirect:'manual' yields an opaque redirect with no Location in browsers.
+                redirect: 'follow'
+            };
+            if (keepalive) {
+                fetchOpts.keepalive = true;
+            }
+
+            fetch(action, fetchOpts)
+                .then(function (res) {
+                    if (!res.ok) {
+                        throw new Error('save failed');
+                    }
+                    var finalUrl = res.url || '';
+                    if (finalUrl.indexOf('/project/documents/edit') === -1) {
+                        // Validation error returns the edit form without redirecting.
+                        throw new Error('validation');
+                    }
+                    return { location: finalUrl };
+                })
+                .then(function (result) {
+                    var titleAtSend = titleInput ? titleInput.value : '';
+                    var currentTa = getTa();
+                    var contentAtSend = currentTa ? currentTa.value : '';
+                    applySaved(result.location);
+                    if ((titleInput ? titleInput.value : '') === titleAtSend && currentTa && currentTa.value === contentAtSend) {
+                        lastSavedKey = snapshotKey();
+                        state.pending = false;
+                    } else {
+                        // Id is saved; keep dirty so trailing keystrokes flush next.
+                        lastSavedKey = [
+                            idInput ? idInput.value : '',
+                            titleAtSend,
+                            contentAtSend
+                        ].join('\u0001');
+                        state.pending = true;
+                    }
+                    setStatus('Saved', 'saved');
+                })
+                .catch(function () {
+                    setStatus('Couldn’t save', 'error');
+                    state.pending = true;
+                })
+                .finally(function () {
+                    state.inFlight = false;
+                    if (state.pending && isDirty()) {
+                        scheduleSave();
+                    } else if (!isDirty()) {
+                        state.pending = false;
+                    }
+                });
+        }
+
+        function applySaved(location) {
+            var wasNew = idInput && !idInput.value;
+            var id = idInput && idInput.value;
+            if (location) {
+                try {
+                    var url = new URL(location, window.location.href);
+                    var fromQuery = url.searchParams.get('id');
+                    if (fromQuery) {
+                        id = fromQuery;
+                    }
+                } catch (err) { /* ignore */ }
+            }
+            if (!id) {
+                return;
+            }
+            if (idInput) {
+                idInput.value = id;
+            }
+            var title = titleInput ? titleInput.value.trim() : '';
+            if (title) {
+                document.title = 'Scripty - ' + title;
+            }
+            if (wasNew) {
+                try {
+                    history.replaceState(null, '', '/project/documents/edit?id=' + encodeURIComponent(id));
+                } catch (err) { /* ignore */ }
+            }
+        }
+
+        return state;
     }
 
     window.addEventListener('beforeunload', function (e) {
-        if (!isDirty() && !inFlight && !pending) {
+        if (!current) {
+            return;
+        }
+        if (!current.isDirty() && !current.hasPending()) {
             return;
         }
         // Best-effort flush; browsers may cancel async work on unload.
-        saveNow(true);
+        current.saveNow(true);
         e.preventDefault();
         e.returnValue = '';
     });
 
     document.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'hidden' && (isDirty() || pending)) {
-            saveNow(true);
+        if (current && document.visibilityState === 'hidden'
+                && (current.isDirty() || current.hasPending())) {
+            current.saveNow(true);
         }
     });
 
-    function snapshotKey() {
-        return [
-            idInput ? idInput.value : '',
-            titleInput ? titleInput.value : '',
-            getTa() ? getTa().value : ''
-        ].join('\u0001');
-    }
+    // Boosted navigation away from the editor skips beforeunload;
+    // flush pending edits before htmx replaces the page.
+    document.body.addEventListener('htmx:beforeRequest', function () {
+        if (current && (current.isDirty() || current.hasPending())) {
+            current.saveNow(true);
+        }
+    });
 
-    function isDirty() {
-        return snapshotKey() !== lastSavedKey;
-    }
+    // Re-bind after boosted navigation swaps a new editor form in
+    // (allowScriptTags is false, so this script only runs on hard loads).
+    document.body.addEventListener('htmx:afterSettle', initEditor);
+    document.body.addEventListener('htmx:afterSwap', initEditor);
+    document.body.addEventListener('htmx:historyRestore', initEditor);
 
-    function hasSomethingToSave() {
-        var title = titleInput ? titleInput.value.trim() : '';
-        var content = getTa() ? (getTa().value || '').trim() : '';
-        var hasId = idInput && idInput.value;
-        return !!(hasId || title || content);
-    }
-
-    function ensureTitleForSave() {
-        if (!titleInput) {
-            return;
-        }
-        var currentTa = getTa();
-        if (!titleInput.value.trim() && currentTa && (currentTa.value || '').trim()) {
-            titleInput.value = 'Untitled';
-        }
-    }
-
-    function setStatus(text, state) {
-        if (!statusEl) {
-            return;
-        }
-        clearTimeout(statusTimer);
-        statusEl.textContent = text || '';
-        statusEl.dataset.state = state || '';
-        statusEl.hidden = !text;
-        if (state === 'saved') {
-            statusTimer = setTimeout(function () {
-                if (statusEl.dataset.state === 'saved') {
-                    statusEl.hidden = true;
-                    statusEl.textContent = '';
-                    statusEl.dataset.state = '';
-                }
-            }, 2500);
-        }
-    }
-
-    function scheduleSave() {
-        if (!hasSomethingToSave()) {
-            return;
-        }
-        pending = true;
-        setStatus('Saving…', 'saving');
-        clearTimeout(timer);
-        timer = setTimeout(function () {
-            saveNow(false);
-        }, SAVE_DELAY_MS);
-    }
-
-    function buildBody() {
-        ensureTitleForSave();
-        var body = new URLSearchParams();
-        if (idInput && idInput.value) {
-            body.set('id', idInput.value);
-        }
-        if (projectIdInput) {
-            body.set('projectId', projectIdInput.value);
-        }
-        if (typeInput) {
-            body.set('documentType', typeInput.value);
-        }
-        body.set('title', titleInput ? titleInput.value : '');
-        var currentTa = getTa();
-        body.set('content', currentTa ? currentTa.value : '');
-        body.set('stay', 'true');
-        return body;
-    }
-
-    function saveNow(keepalive) {
-        clearTimeout(timer);
-        if (inFlight) {
-            pending = true;
-            return;
-        }
-        if (!hasSomethingToSave()) {
-            pending = false;
-            setStatus('', '');
-            return;
-        }
-        var key = snapshotKey();
-        if (key === lastSavedKey) {
-            pending = false;
-            setStatus('Saved', 'saved');
-            return;
-        }
-
-        inFlight = true;
-        pending = false;
-        setStatus('Saving…', 'saving');
-
-        var action = form.getAttribute('action') || '/project/documents/save';
-        var fetchOpts = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                'Accept': 'text/html'
-            },
-            body: buildBody().toString(),
-            credentials: 'same-origin',
-            // Follow the stay=true redirect so we can read the saved id from res.url.
-            // redirect:'manual' yields an opaque redirect with no Location in browsers.
-            redirect: 'follow'
-        };
-        if (keepalive) {
-            fetchOpts.keepalive = true;
-        }
-
-        fetch(action, fetchOpts)
-            .then(function (res) {
-                if (!res.ok) {
-                    throw new Error('save failed');
-                }
-                var finalUrl = res.url || '';
-                if (finalUrl.indexOf('/project/documents/edit') === -1) {
-                    // Validation error returns the edit form without redirecting.
-                    throw new Error('validation');
-                }
-                return { location: finalUrl };
-            })
-            .then(function (result) {
-                var titleAtSend = titleInput ? titleInput.value : '';
-                var currentTa = getTa();
-                var contentAtSend = currentTa ? currentTa.value : '';
-                applySaved(result.location);
-                if ((titleInput ? titleInput.value : '') === titleAtSend && currentTa && currentTa.value === contentAtSend) {
-                    lastSavedKey = snapshotKey();
-                    pending = false;
-                } else {
-                    // Id is saved; keep dirty so trailing keystrokes flush next.
-                    lastSavedKey = [
-                        idInput ? idInput.value : '',
-                        titleAtSend,
-                        contentAtSend
-                    ].join('\u0001');
-                    pending = true;
-                }
-                setStatus('Saved', 'saved');
-            })
-            .catch(function () {
-                setStatus('Couldn’t save', 'error');
-                pending = true;
-            })
-            .finally(function () {
-                inFlight = false;
-                if (pending && isDirty()) {
-                    scheduleSave();
-                } else if (!isDirty()) {
-                    pending = false;
-                }
-            });
-    }
-
-    function applySaved(location) {
-        var wasNew = idInput && !idInput.value;
-        var id = idInput && idInput.value;
-        if (location) {
-            try {
-                var url = new URL(location, window.location.href);
-                var fromQuery = url.searchParams.get('id');
-                if (fromQuery) {
-                    id = fromQuery;
-                }
-            } catch (err) { /* ignore */ }
-        }
-        if (!id) {
-            return;
-        }
-        if (idInput) {
-            idInput.value = id;
-        }
-        var title = titleInput ? titleInput.value.trim() : '';
-        if (title) {
-            document.title = 'Scripty - ' + title;
-        }
-        if (wasNew) {
-            try {
-                history.replaceState(null, '', '/project/documents/edit?id=' + encodeURIComponent(id));
-            } catch (err) { /* ignore */ }
-        }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initEditor);
+    } else {
+        initEditor();
     }
 })();

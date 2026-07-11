@@ -145,6 +145,28 @@
                         <a class="text-document-card-title"
                            th:href="@{/project/documents/edit(id=${doc.id})}"
                            th:text="${doc.title}">Untitled</a>
+                        <form class="text-document-rename-form"
+                              th:action="@{/project/documents/rename}"
+                              method="post"
+                              hx-boost="false"
+                              hidden>
+                            <input type="hidden" name="id" th:value="${doc.id}" />
+                            <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                            <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                            <label class="visually-hidden"
+                                   th:for="'rename-title-' + ${doc.id}"
+                                   th:text="${isSongList} ? 'New song title' : 'New note title'">New title</label>
+                            <input type="text"
+                                   th:id="'rename-title-' + ${doc.id}"
+                                   name="title"
+                                   class="text-document-rename-input"
+                                   th:value="${doc.title}"
+                                   maxlength="200"
+                                   required
+                                   autocomplete="off" />
+                            <button type="submit" class="project-list-action-btn project-list-action-btn--primary">Save</button>
+                            <button type="button" class="project-list-action-btn project-list-action-btn--ghost text-document-rename-cancel">Cancel</button>
+                        </form>
                         <div class="text-document-card-meta">
                             <span class="text-document-type-badge"
                                   th:classappend="${isSongList} ? ' text-document-type-badge--song'"
@@ -161,6 +183,9 @@
                     <div class="text-document-card-actions">
                         <a th:href="@{/project/documents/edit(id=${doc.id})}"
                            class="project-list-action-btn project-list-action-btn--secondary">Edit</a>
+                        <button type="button"
+                                class="project-list-action-btn project-list-action-btn--secondary text-document-rename-btn"
+                                th:title="${isSongList} ? 'Rename this song' : 'Rename this note'">Rename</button>
                         <form th:if="${canEditScript}"
                               th:action="@{/project/documents/insert}"
                               method="post"
@@ -207,6 +232,46 @@
                     form.submit();
                 });
             }
+
+            function setRenaming(card, renaming) {
+                if (!card) return;
+                var renameForm = card.querySelector('.text-document-rename-form');
+                var titleLink = card.querySelector('.text-document-card-title');
+                if (!renameForm || !titleLink) return;
+                renameForm.hidden = !renaming;
+                titleLink.hidden = renaming;
+                var input = renameForm.querySelector('.text-document-rename-input');
+                if (input) {
+                    if (renaming) {
+                        input.focus();
+                        input.select();
+                    } else {
+                        input.value = input.defaultValue;
+                    }
+                }
+            }
+
+            document.addEventListener('click', function(e) {
+                var renameBtn = e.target.closest('.text-document-rename-btn');
+                if (renameBtn) {
+                    setRenaming(renameBtn.closest('.text-document-card'), true);
+                    return;
+                }
+                var cancelBtn = e.target.closest('.text-document-rename-cancel');
+                if (cancelBtn) {
+                    setRenaming(cancelBtn.closest('.text-document-card'), false);
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== 'Escape') return;
+                var input = e.target.closest ? e.target.closest('.text-document-rename-input') : null;
+                if (!input) return;
+                var card = input.closest('.text-document-card');
+                setRenaming(card, false);
+                var btn = card ? card.querySelector('.text-document-rename-btn') : null;
+                if (btn) btn.focus();
+            });
 
             var searchInput = document.getElementById('text-documents-search');
             var clearBtn = document.getElementById('text-documents-search-clear');

@@ -26,6 +26,12 @@ public interface TextDocumentService {
 
     TextDocument save(TextDocumentCommandModel commandModel, User currentUser);
 
+    /**
+     * Renames a document without touching its content.
+     * @return the renamed document, or null if it isn't accessible
+     */
+    TextDocument rename(Integer id, Integer projectId, String title, User currentUser);
+
     void delete(Integer id, Integer projectId, User currentUser);
 
     /**

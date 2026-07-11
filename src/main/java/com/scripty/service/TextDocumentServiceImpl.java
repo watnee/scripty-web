@@ -199,6 +199,50 @@ public class TextDocumentServiceImpl implements TextDocumentService {
 
     @Override
     @Transactional
+    public TextDocument rename(Integer id, Integer projectId, String title, User currentUser) {
+        if (id == null) {
+            return null;
+        }
+        Project project = requireAccessibleProject(projectId, currentUser);
+        if (project == null) {
+            return null;
+        }
+        TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+        if (doc == null) {
+            return null;
+        }
+
+        String newTitle = PlainTextSanitizer.sanitizeSingleLine(title != null ? title : "");
+        if (newTitle == null || newTitle.isEmpty()) {
+            newTitle = "Untitled";
+        }
+        if (newTitle.length() > 200) {
+            newTitle = newTitle.substring(0, 200).trim();
+        }
+        String oldTitle = doc.getTitle();
+        if (newTitle.equals(oldTitle)) {
+            return doc;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        doc.setTitle(newTitle);
+        doc.setUpdatedAt(now);
+        project.setLastEdited(now);
+        projectRepository.save(project);
+
+        TextDocument saved = textDocumentRepository.save(doc);
+        projectActivityService.record(
+                project.getId(),
+                currentUser != null ? currentUser.getId() : null,
+                ProjectActivity.ACTION_DOCUMENT_UPDATED,
+                "renamed \"" + oldTitle + "\" to \"" + saved.getTitle() + "\"",
+                ProjectActivity.ENTITY_DOCUMENT,
+                saved.getId());
+        return saved;
+    }
+
+    @Override
+    @Transactional
     public void delete(Integer id, Integer projectId, User currentUser) {
         if (id == null || projectId == null || currentUser == null) {
             return;

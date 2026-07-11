@@ -6181,6 +6181,22 @@ body:has(main.text-documents-page) > main.text-documents-page {
     color: var(--accent, #475569);
 }
 
+.text-document-rename-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.5rem;
+}
+
+.text-document-rename-input {
+    flex: 1 1 12rem;
+    min-width: 0;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
 .text-document-card-meta {
     display: flex;
     flex-wrap: wrap;

@@ -117,7 +117,9 @@ public class SecurityConfig {
                         "/icons/**",
                         "/help",
                         "/shortcuts",
-                        "/invitation/accept")
+                        "/invitation/accept",
+                        "/forgot-password",
+                        "/forgot-password/**")
                     .permitAll()
                 .requestMatchers("/account/password")
                     .hasRole("USER")

@@ -685,6 +685,39 @@ public class BlockController {
         return redirectAfterBulkAction(projectId, blockIds);
     }
 
+    @RequestMapping(value = "/findReplace", method = RequestMethod.POST)
+    public ResponseEntity<Map<String, Object>> findReplace(@RequestParam Integer projectId,
+                                                           @RequestParam(required = false) Integer editionId,
+                                                           @RequestParam String find,
+                                                           @RequestParam(required = false, defaultValue = "") String replace,
+                                                           @RequestParam(required = false, defaultValue = "false") boolean matchCase,
+                                                           @RequestParam(required = false, defaultValue = "false") boolean wholeWord,
+                                                           @RequestParam(required = false) Integer blockId,
+                                                           @RequestParam(required = false) Integer occurrence,
+                                                           Principal principal) {
+        if (denyEditProject(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (find == null || find.isEmpty()) {
+            return ResponseEntity.ok(Map.of("replacements", 0, "blocks", List.of()));
+        }
+        if (blockId != null && denyEditBlock(blockId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        projectUndoRedoService.recordCheckpoint(projectId, editionId);
+        BlockService.FindReplaceResult result = blockService.findReplaceInBlocks(
+                projectId, editionId, find, replace, matchCase, wholeWord, blockId, occurrence);
+        if (!result.updatedBlocks().isEmpty()) {
+            projectVersionService.autoSaveVersion(projectId, editionId);
+        }
+        List<Map<String, Object>> blocks = result.updatedBlocks().stream()
+                .map(block -> Map.<String, Object>of(
+                        "id", block.getId(),
+                        "content", block.getContent() != null ? block.getContent() : ""))
+                .toList();
+        return ResponseEntity.ok(Map.of("replacements", result.replacements(), "blocks", blocks));
+    }
+
     @RequestMapping(value = "/bulkDelete", method = RequestMethod.POST)
     public String bulkDelete(@RequestParam String ids, @RequestParam(required = false) Integer projectId,
                              Principal principal) {

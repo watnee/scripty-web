@@ -3768,6 +3768,140 @@ input.project-list-search:focus-visible {
     display: none;
 }
 
+/* Find & Replace (Edit → Find & Replace) */
+.find-replace-panel {
+    position: fixed;
+    top: 4.25rem;
+    right: 1.25rem;
+    z-index: 1400;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: min(24rem, calc(100vw - 2rem));
+    padding: 0.6rem;
+    background: var(--bg, #ffffff);
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: var(--border-radius, 6px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.find-replace-panel[hidden] {
+    display: none;
+}
+
+.find-replace-panel .fr-row {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.find-replace-panel .fr-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.85rem;
+    color: var(--fg, inherit);
+    background: var(--bg, #ffffff);
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: calc(var(--border-radius, 6px) - 2px);
+}
+
+.find-replace-panel .fr-input:focus {
+    outline: none;
+    border-color: var(--accent, #475569);
+}
+
+.find-replace-panel button {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0.25rem 0.45rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    color: var(--fg, inherit);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: calc(var(--border-radius, 6px) - 2px);
+    cursor: pointer;
+}
+
+.find-replace-panel button:hover:not(:disabled),
+.find-replace-panel button:focus-visible {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    outline: none;
+}
+
+.find-replace-panel button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.find-replace-panel .fr-toggle.fr-toggle-on {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    border-color: var(--accent, #475569);
+    color: var(--accent, inherit);
+}
+
+.find-replace-panel .fr-action-btn {
+    border-color: var(--border, #cbd5e1);
+    font-weight: 500;
+}
+
+.find-replace-panel .fr-count {
+    flex-shrink: 0;
+    min-width: 2.6rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted, #64748b);
+    user-select: none;
+}
+
+.find-replace-panel .fr-count.fr-no-matches {
+    color: #dc2626;
+}
+
+.find-replace-panel .fr-status {
+    font-size: 0.75rem;
+    color: var(--muted, #64748b);
+}
+
+.find-replace-panel .fr-status[hidden],
+.find-replace-panel .fr-status:empty {
+    display: none;
+}
+
+mark.fr-match {
+    background: rgba(250, 204, 21, 0.45);
+    color: inherit;
+    border-radius: 2px;
+    padding: 0;
+}
+
+mark.fr-match.fr-current {
+    background: rgba(249, 115, 22, 0.65);
+    outline: 1px solid rgba(194, 65, 12, 0.9);
+}
+
+:root.-dark-theme mark.fr-match {
+    background: rgba(202, 138, 4, 0.45);
+}
+
+:root.-dark-theme mark.fr-match.fr-current {
+    background: rgba(234, 88, 12, 0.6);
+    outline-color: rgba(253, 186, 116, 0.9);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.-no-dark-theme) mark.fr-match {
+        background: rgba(202, 138, 4, 0.45);
+    }
+
+    :root:not(.-no-dark-theme) mark.fr-match.fr-current {
+        background: rgba(234, 88, 12, 0.6);
+        outline-color: rgba(253, 186, 116, 0.9);
+    }
+}
+
 .project-share-dropdown {
     display: inline-block;
     position: relative;

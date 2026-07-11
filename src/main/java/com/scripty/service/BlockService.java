@@ -35,6 +35,28 @@ public interface BlockService {
     Block updateSceneName(Integer id, String name);
     Block updateCharacterName(Integer id, String name);
 
+    /**
+     * Result of a find &amp; replace run: the blocks whose content changed and the
+     * total number of occurrences replaced across them.
+     */
+    record FindReplaceResult(java.util.List<Block> updatedBlocks, int replacements) {
+        public static FindReplaceResult empty() {
+            return new FindReplaceResult(java.util.List.of(), 0);
+        }
+    }
+
+    /**
+     * Replaces occurrences of {@code find} in block content.
+     * Scope is the whole project (or the given edition when {@code editionId} is set),
+     * narrowed to a single block when {@code blockId} is set. When {@code occurrence}
+     * is set alongside {@code blockId}, only that 1-based match within the block is
+     * replaced (used by single "Replace" in the editor).
+     */
+    FindReplaceResult findReplaceInBlocks(Integer projectId, Integer editionId,
+                                          String find, String replace,
+                                          boolean matchCase, boolean wholeWord,
+                                          Integer blockId, Integer occurrence);
+
     Block deleteBlock(Integer id);
     Block moveBlockUp(Integer id);
     Block moveBlockDown(Integer id);

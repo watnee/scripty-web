@@ -18,6 +18,8 @@ public interface ProjectUndoRedoService {
 
     void recordCheckpoint(Integer projectId);
 
+    void recordCheckpoint(Integer projectId, Integer editionId);
+
     void recordCheckpointForBlock(Integer blockId);
 
     void recordCheckpointForScene(Integer sceneId);

@@ -13,6 +13,16 @@ spring:
   h2:
     console:
       enabled: true
+  # Serve templates/static straight from source with caching off so edits
+  # show up on browser reload without restarting the server.
+  thymeleaf:
+    cache: false
+    prefix: file:src/main/resources/templates/
+  web:
+    resources:
+      static-locations: file:src/main/resources/static/
+      cache:
+        period: 0
 
 ADMIN_USERNAME: admin
 ADMIN_PASSWORD: admin

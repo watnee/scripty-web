@@ -238,17 +238,28 @@
         // Run on HTMX content swaps
         document.body.addEventListener('htmx:afterSwap', initAll);
 
-        // Register Service Worker for PWA
+        // Register Service Worker for PWA — but never in local dev, where its
+        // cache serves stale assets. On localhost, unregister any leftover SW
+        // and drop its caches so previews always hit the live server.
         if ('serviceWorker' in navigator) {
-            const registerSW = () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('SW registered:', reg.scope))
-                    .catch(err => console.error('SW registration failed:', err));
-            };
-            if (document.readyState === 'complete') {
-                registerSW();
+            const isLocalDev = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+            if (isLocalDev) {
+                navigator.serviceWorker.getRegistrations()
+                    .then(regs => regs.forEach(reg => reg.unregister()));
+                if (window.caches) {
+                    caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
+                }
             } else {
-                window.addEventListener('load', registerSW);
+                const registerSW = () => {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(reg => console.log('SW registered:', reg.scope))
+                        .catch(err => console.error('SW registration failed:', err));
+                };
+                if (document.readyState === 'complete') {
+                    registerSW();
+                } else {
+                    window.addEventListener('load', registerSW);
+                }
             }
         }
     })();

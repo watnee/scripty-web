@@ -393,19 +393,16 @@
     }
 
     function showSuggestions(textarea, token) {
-        console.log('[Spellcheck] showSuggestions called for:', token.word);
         if (!token || !isEnabled()) {
             hidePopup();
             return;
         }
         var allow = buildAllowlist();
         if (!isMisspelled(token.word, allow)) {
-            console.log('[Spellcheck] word is not misspelled or allowed:', token.word);
             hidePopup();
             return;
         }
         var suggestions = suggestionsFor(token.word);
-        console.log('[Spellcheck] suggestions list:', suggestions);
         var el = ensurePopup();
         popupTarget = textarea;
         popupRange = { start: token.start, end: token.end, word: token.word };
@@ -501,24 +498,17 @@
     }
 
     function openSuggestionsForTextarea(textarea, pendingClick) {
-        console.log('[Spellcheck] openSuggestionsForTextarea called', {
-            isBlock: isBlockTextarea(textarea),
-            isEnabled: isEnabled(),
-            pendingClick: pendingClick,
-            selectionStart: textarea.selectionStart
-        });
         if (!isBlockTextarea(textarea) || !isEnabled()) return;
         loadDictionary().then(function() {
             var offset = (pendingClick && pendingClick.start != null) ? pendingClick.start : textarea.selectionStart;
             var token = wordAtOffset(textarea.value || '', offset);
-            console.log('[Spellcheck] resolved token:', token);
             if (!token) {
                 hidePopup();
                 return;
             }
             showSuggestions(textarea, token);
-        }).catch(function(err) {
-            console.error('[Spellcheck] loadDictionary failed:', err);
+        }).catch(function() {
+            /* dictionary unavailable — nothing to suggest */
         });
     }
 
@@ -666,6 +656,17 @@
         hidePopup();
     }, true);
 
+
+    // Click on a misspelled word inside the textarea itself — the caret is already
+    // placed by the browser, so the word can be resolved from selectionStart.
+    document.addEventListener('click', function(e) {
+        if (!isScriptPage() || !isEnabled()) return;
+        if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+        var ta = e.target;
+        if (!isBlockTextarea(ta)) return;
+        if (ta.selectionStart !== ta.selectionEnd) return;
+        openSuggestionsForTextarea(ta);
+    }, true);
 
     document.addEventListener('mousedown', function(e) {
         if (!isScriptPage() || !isEnabled()) return;

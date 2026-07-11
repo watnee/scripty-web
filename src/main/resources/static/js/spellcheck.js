@@ -523,6 +523,22 @@
             var errors = lastErrors.get(e.target);
             if (errors) renderOverlay(e.target, errors);
             scheduleCheck(e.target);
+
+            if (window._pendingSpellcheckClick) {
+                var pending = window._pendingSpellcheckClick;
+                window._pendingSpellcheckClick = null;
+                var ta = e.target;
+                setTimeout(function() {
+                    loadDictionary().then(function() {
+                        ta.focus();
+                        ta.setSelectionRange(pending.start, pending.end);
+                        var token = wordAtOffset(ta.value || '', pending.start);
+                        if (token) {
+                            showSuggestions(ta, token);
+                        }
+                    }).catch(function() {});
+                }, 150);
+            }
         }
     }, true);
 
@@ -617,6 +633,18 @@
         hidePopup();
     }, true);
 
+    document.addEventListener('mousedown', function(e) {
+        if (!isScriptPage() || !isEnabled()) return;
+        var span = e.target.closest && e.target.closest('.scripty-spell-error');
+        if (!span) return;
+        var start = parseInt(span.getAttribute('data-start'), 10);
+        var end = parseInt(span.getAttribute('data-end'), 10);
+        window._pendingSpellcheckClick = {
+            start: start,
+            end: end
+        };
+    }, true);
+
     var refreshTimer = null;
     function scheduleRefreshAll() {
         if (refreshTimer) clearTimeout(refreshTimer);
@@ -664,6 +692,7 @@
     }
 
     window.scriptyRefreshSpellcheck = refreshAll;
+    window.scriptyOpenSpellcheckSuggestions = openSuggestionsForTextarea;
     window.scriptySpellcheckIgnoreWord = function(word) {
         if (!word) return;
         ignoredWords[String(word).toUpperCase()] = true;

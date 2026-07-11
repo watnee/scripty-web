@@ -5812,15 +5812,25 @@
             }
             if (!textEl || textEl.tagName === 'TEXTAREA') return;
 
-            const clickOffset = getBlockTextClickOffset(blockContent, e.clientX, e.clientY);
-            const resolvedTextEl = clickOffset.textEl || textEl;
-            const resolvedOffset = clickOffset.textEl ? clickOffset.offset : textEl.textContent.length;
+            const spellError = e.target.closest('.scripty-spell-error');
+            let resolvedTextEl, resolvedOffset, resolvedEndOffset;
+            if (spellError) {
+                resolvedTextEl = textEl;
+                resolvedOffset = parseInt(spellError.getAttribute('data-start'), 10);
+                resolvedEndOffset = parseInt(spellError.getAttribute('data-end'), 10);
+            } else {
+                const clickOffset = getBlockTextClickOffset(blockContent, e.clientX, e.clientY);
+                resolvedTextEl = clickOffset.textEl || textEl;
+                resolvedOffset = clickOffset.textEl ? clickOffset.offset : textEl.textContent.length;
+                resolvedEndOffset = null;
+            }
 
             if (shouldDeferBlockEditForClick() && isBlockContentViewMode(blockContent)) {
                 window.scriptyPendingBlockCaret = {
                     blockContent: blockContent,
                     textEl: resolvedTextEl,
-                    offset: resolvedOffset
+                    offset: resolvedOffset,
+                    endOffset: resolvedEndOffset
                 };
                 return;
             }
@@ -5833,7 +5843,8 @@
             window.scriptyPendingBlockCaret = {
                 blockContent: blockContent,
                 textEl: resolvedTextEl,
-                offset: resolvedOffset
+                offset: resolvedOffset,
+                endOffset: resolvedEndOffset
             };
         }, true);
 
@@ -5853,6 +5864,13 @@
             const endRaw = pending.endOffset != null ? pending.endOffset : pending.offset;
             const end = Math.max(start, Math.min(endRaw, len));
             textarea.setSelectionRange(start, end);
+
+            if (window.scriptyOpenSpellcheckSuggestions && window._pendingSpellcheckClick) {
+                window._pendingSpellcheckClick = null;
+                requestAnimationFrame(function() {
+                    window.scriptyOpenSpellcheckSuggestions(textarea);
+                });
+            }
         }
 
         function syncProjectNameDisplay() {

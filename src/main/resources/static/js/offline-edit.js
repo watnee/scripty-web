@@ -398,7 +398,7 @@
         textarea.setSelectionRange(len, len);
     }
 
-    function openBlockEditOffline(blockContent, caretOffset) {
+    function openBlockEditOffline(blockContent, caretOffset, caretEndOffset) {
         if (!blockContent) return null;
         var ctx = getBlockEditContext(blockContent);
         if (!ctx.blockId) return null;
@@ -407,10 +407,17 @@
         processNodes([blockContent]);
         var textarea = blockContent.querySelector('textarea[name="content"]');
         if (textarea) {
-            if (caretOffset != null) {
-                var pos = Math.max(0, Math.min(caretOffset, textarea.value.length));
+            var start = caretOffset;
+            var end = caretEndOffset;
+            if (window.scriptyPendingBlockCaret && window.scriptyPendingBlockCaret.blockContent === blockContent) {
+                if (start == null) start = window.scriptyPendingBlockCaret.offset;
+                if (end == null) end = window.scriptyPendingBlockCaret.endOffset;
+            }
+            if (start != null) {
+                var pos = Math.max(0, Math.min(start, textarea.value.length));
+                var posEnd = Math.max(pos, Math.min(end != null ? end : start, textarea.value.length));
                 textarea.focus({ preventScroll: true });
-                textarea.setSelectionRange(pos, pos);
+                textarea.setSelectionRange(pos, posEnd);
             } else {
                 focusTextareaEnd(textarea);
             }
@@ -832,7 +839,12 @@
         e.preventDefault();
 
         if (path.indexOf('/block/editInline') !== -1 && e.detail.verb === 'get') {
-            openBlockEditOffline(e.detail.elt);
+            var start = null, end = null;
+            if (window.scriptyPendingBlockCaret && window.scriptyPendingBlockCaret.blockContent === e.detail.elt) {
+                start = window.scriptyPendingBlockCaret.offset;
+                end = window.scriptyPendingBlockCaret.endOffset;
+            }
+            openBlockEditOffline(e.detail.elt, start, end);
             return;
         }
 

@@ -41,8 +41,8 @@
                 <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                 <input type="hidden" name="token" th:value="${token}" />
                 
-                <p class="invite-email-note muted" th:if="${username}">
-                    Resetting password for user: <strong th:text="${username}">username</strong>
+                <p class="invite-email-note muted" th:if="${email}">
+                    Resetting password for: <strong th:text="${email}">email</strong>
                 </p>
 
                 <label class="login-field">

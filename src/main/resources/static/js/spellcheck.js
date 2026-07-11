@@ -366,6 +366,7 @@
         popupIndex = -1;
         popupTarget = null;
         popupRange = null;
+        window._spellcheckPopupOpenedAt = 0;
     }
 
     function positionPopup(textarea, start, end) {
@@ -422,6 +423,7 @@
         el.innerHTML = items.join('');
         positionPopup(textarea, token.start, token.end);
         el.hidden = false;
+        window._spellcheckPopupOpenedAt = Date.now();
     }
 
     function applySuggestion(suggestion) {
@@ -644,6 +646,9 @@
     document.addEventListener('click', function(e) {
         if (!popupEl || popupEl.hidden) return;
         if (popupEl.contains(e.target)) return;
+        if (window._spellcheckPopupOpenedAt && (Date.now() - window._spellcheckPopupOpenedAt < 300)) {
+            return;
+        }
         hidePopup();
     }, true);
 

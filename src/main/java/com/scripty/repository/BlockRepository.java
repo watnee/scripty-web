@@ -23,6 +23,8 @@ public interface BlockRepository extends JpaRepository<Block, Integer> {
 
     List<Block> findBySourceDocumentIdOrderByOrderAsc(Integer sourceDocumentId);
 
+    int countBySourceDocumentId(Integer sourceDocumentId);
+
     List<Block> findBySourceDocumentIdAndScriptEditionIdOrderByOrderAsc(Integer sourceDocumentId, Integer scriptEditionId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

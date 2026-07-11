@@ -1,5 +1,6 @@
 /**
- * Song/note editor: Tab → four spaces, and debounced autosave via stay=true save.
+ * Song/note editor: Tab → four spaces, debounced autosave via stay=true save,
+ * live line/word counts, and save-then-insert for the Insert into Script button.
  */
 (function () {
     'use strict';
@@ -25,6 +26,31 @@
     var lastSavedKey = snapshotKey();
     var statusTimer = null;
 
+    var countsEl = document.getElementById('text-document-counts');
+
+    function updateCounts() {
+        if (!countsEl) {
+            return;
+        }
+        var value = ta.value || '';
+        var lines = value.split(/\r\n|\r|\n/);
+        var first = 0;
+        var last = lines.length - 1;
+        while (first <= last && !lines[first].trim()) first++;
+        while (last >= first && !lines[last].trim()) last--;
+        var lineCount = last < first ? 0 : last - first + 1;
+        var wordCount = (value.match(/\S+/g) || []).length;
+        if (!lineCount && !wordCount) {
+            countsEl.textContent = '';
+            return;
+        }
+        countsEl.textContent = lineCount + (lineCount === 1 ? ' line' : ' lines')
+            + ' · ' + wordCount + (wordCount === 1 ? ' word' : ' words');
+    }
+
+    ta.addEventListener('input', updateCounts);
+    updateCounts();
+
     ta.addEventListener('keydown', function (e) {
         if (e.key !== 'Tab' || e.metaKey || e.ctrlKey || e.altKey) {
             return;
@@ -35,8 +61,52 @@
         var value = ta.value;
         ta.value = value.slice(0, start) + '    ' + value.slice(end);
         ta.selectionStart = ta.selectionEnd = start + 4;
+        updateCounts();
         scheduleSave();
     });
+
+    var insertForm = document.getElementById('text-document-insert-form');
+    var insertIdInput = document.getElementById('text-document-insert-id');
+    if (insertForm && insertIdInput) {
+        insertForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!(ta.value || '').trim()) {
+                ta.focus();
+                return;
+            }
+            whenSaved(function () {
+                if (!idInput || !idInput.value) {
+                    return;
+                }
+                insertIdInput.value = idInput.value;
+                // Native submit bypasses this handler.
+                HTMLFormElement.prototype.submit.call(insertForm);
+            });
+        });
+    }
+
+    /** Flush any dirty edits, then run cb once saved. Aborts (no cb) if the save errors. */
+    function whenSaved(cb) {
+        if (!isDirty() && !inFlight && !pending && idInput && idInput.value) {
+            cb();
+            return;
+        }
+        saveNow(false);
+        var waited = 0;
+        var poll = setInterval(function () {
+            waited += 100;
+            var errored = statusEl && statusEl.dataset.state === 'error';
+            var settled = !isDirty() && !inFlight && !pending && idInput && idInput.value;
+            if (errored || waited >= 10000) {
+                clearInterval(poll);
+                return;
+            }
+            if (settled) {
+                clearInterval(poll);
+                cb();
+            }
+        }, 100);
+    }
 
     function onFieldEdit(e) {
         var t = e.target;

@@ -5753,6 +5753,7 @@ a.project-list-team:hover {
 .text-documents-page {
     --td-song: #0f766e;
     --td-draft: #475569;
+    --td-inserted: #15803d;
     --td-surface: color-mix(in srgb, var(--box-bg, #fff) 88%, var(--accent, #475569) 12%);
     --td-line: var(--border, #cbd5e1);
     max-width: 860px;
@@ -5776,12 +5777,14 @@ body:has(main.text-documents-page) > header.sidebar.menu {
     z-index: 1500;
 }
 
+/* !important so the mobile "header nav { display: flex !important }" rule doesn't resurface the brand */
 body:has(main.text-documents-page) > header.sidebar.menu > nav {
-    display: none;
+    display: none !important;
 }
 
+/* !important so the mobile ".header-actions { top: 0.35rem !important }" rule doesn't pull it back up */
 body:has(main.text-documents-page) > header.sidebar.menu .header-actions {
-    top: 0.35rem;
+    top: 0.85rem !important;
     right: 0.5rem;
 }
 
@@ -5826,9 +5829,12 @@ body:has(main.text-documents-page) > main.text-documents-page {
 
 .text-document-about {
     position: relative;
+    /* visible so the absolutely-positioned help popup isn't clipped (details defaults to overflow: clip) */
+    overflow: visible;
     top: auto;
     right: auto;
-    z-index: 2;
+    /* above the editor textarea (z-index 32) so the open popup overlays the lyrics */
+    z-index: 40;
     flex: 0 0 auto;
     margin: 0;
     padding: 0;
@@ -5880,13 +5886,18 @@ body:has(main.text-documents-page) > main.text-documents-page {
 }
 
 .text-document-about-text {
-    margin: 0.4rem 0 0;
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    left: 0;
+    z-index: 30;
+    margin: 0;
     padding: 0.65rem 0.75rem;
+    width: max-content;
+    max-width: min(22rem, calc(100vw - 4rem));
     border: 1px solid var(--td-line, var(--border, #cbd5e1));
     border-radius: var(--border-radius, 0.5rem);
     background: #fff;
     box-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.35);
-    max-width: none;
 }
 
 .text-documents-page .top-bar {
@@ -6209,6 +6220,29 @@ body:has(main.text-documents-page) > main.text-documents-page {
     border-color: color-mix(in srgb, var(--td-song) 24%, transparent);
 }
 
+.text-document-inserted-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--td-inserted, #15803d);
+    background: color-mix(in srgb, var(--td-inserted, #15803d) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--td-inserted, #15803d) 25%, transparent);
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.text-document-inserted-badge::before {
+    content: "✓";
+    font-size: 0.8em;
+    line-height: 1;
+}
+
 .text-document-preview {
     margin: 0;
     font-size: 0.92rem;
@@ -6281,6 +6315,10 @@ body:has(main.text-documents-page) > main.text-documents-page {
 }
 
 @media (max-width: 640px) {
+    .text-documents-page .top-bar {
+        flex-wrap: wrap;
+    }
+
     .text-document-form-row {
         grid-template-columns: 1fr;
     }
@@ -6347,6 +6385,12 @@ body:has(main.text-documents-page) > main.text-documents-page {
     background: transparent;
 }
 
+/* missing.css right-aligns all placeholders (text-align: end); keep them at the caret here */
+.text-documents-page input::placeholder,
+.text-documents-page textarea::placeholder {
+    text-align: left;
+}
+
 .text-document-content:focus,
 .text-document-content:focus-visible {
     border: none !important;
@@ -6363,6 +6407,20 @@ body:has(main.text-documents-page) > main.text-documents-page {
     :root:not(.-no-dark-theme):not([data-theme-setting="light"]) .text-document-content {
         background: transparent;
     }
+}
+
+.text-document-edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex: 0 0 auto;
+}
+
+.text-document-counts {
+    margin: 0;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .text-document-save-status {
@@ -6432,12 +6490,14 @@ body:has(main.text-documents-page) > main.text-documents-page {
 :root.-dark-theme .text-documents-page {
     --td-song: #2dd4bf;
     --td-draft: #94a3b8;
+    --td-inserted: #4ade80;
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not(.-no-dark-theme):not([data-theme-setting="light"]) .text-documents-page {
         --td-song: #2dd4bf;
         --td-draft: #94a3b8;
+        --td-inserted: #4ade80;
     }
 }
 

@@ -15,6 +15,8 @@ public class TextDocumentViewModel {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String preview;
+    private int lineCount;
+    private int insertedBlockCount;
 
     public Integer getId() {
         return id;
@@ -102,5 +104,21 @@ public class TextDocumentViewModel {
 
     public void setPreview(String preview) {
         this.preview = preview;
+    }
+
+    public int getLineCount() {
+        return lineCount;
+    }
+
+    public void setLineCount(int lineCount) {
+        this.lineCount = lineCount;
+    }
+
+    public int getInsertedBlockCount() {
+        return insertedBlockCount;
+    }
+
+    public void setInsertedBlockCount(int insertedBlockCount) {
+        this.insertedBlockCount = insertedBlockCount;
     }
 }

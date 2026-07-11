@@ -101,6 +101,7 @@ public class TextDocumentController {
         model.addAttribute("isNew", true);
         model.addAttribute("isSong", isSong);
         model.addAttribute("listPath", listPath(isSong));
+        model.addAttribute("insertedBlockCount", 0);
         model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
         return "project/documents/edit";
     }
@@ -120,6 +121,7 @@ public class TextDocumentController {
         model.addAttribute("isNew", false);
         model.addAttribute("isSong", isSong);
         model.addAttribute("listPath", listPath(isSong));
+        model.addAttribute("insertedBlockCount", viewModel.getInsertedBlockCount());
         model.addAttribute("canEditScript", projectAccess.canEditScript(viewModel.getProjectId(), user));
         return "project/documents/edit";
     }
@@ -143,6 +145,8 @@ public class TextDocumentController {
             model.addAttribute("isNew", commandModel.getId() == null);
             model.addAttribute("isSong", isSong);
             model.addAttribute("listPath", listPath(isSong));
+            model.addAttribute("insertedBlockCount", 0);
+            model.addAttribute("canEditScript", projectAccess.canEditScript(commandModel.getProjectId(), user));
             return "project/documents/edit";
         }
 

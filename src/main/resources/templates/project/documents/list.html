@@ -27,8 +27,6 @@
                 <a th:unless="${isSongList}"
                    th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}"
                    class="project-list-action-btn project-list-action-btn--secondary">Songs</a>
-                <a th:href="@{/project/show(id=${viewModel.projectId})}"
-                   class="project-list-action-btn project-list-action-btn--secondary">Open Script</a>
             </div>
         </div>
 
@@ -140,7 +138,7 @@
                     class="text-document-card"
                     th:classappend="${isSongList} ? ' text-document-card--song' : ' text-document-card--draft'"
                     th:style="'--card-i:' + ${iter.index}"
-                    th:attr="data-doc-title=${#strings.toLowerCase(doc.title)}">
+                    th:attr="data-doc-title=${#strings.toLowerCase(doc.title)},data-doc-preview=${#strings.toLowerCase(doc.preview ?: '')}">
                     <div class="text-document-card-main">
                         <a class="text-document-card-title"
                            th:href="@{/project/documents/edit(id=${doc.id})}"
@@ -149,6 +147,12 @@
                             <span class="text-document-type-badge"
                                   th:classappend="${isSongList} ? ' text-document-type-badge--song'"
                                   th:text="${isSongList} ? 'Song' : ${doc.documentTypeLabel}">Type</span>
+                            <span class="text-document-inserted-badge"
+                                  th:if="${doc.insertedBlockCount > 0}"
+                                  th:title="${isSongList} ? 'This song is in the script. Edits here update it there.' : 'This note is in the script. Edits here update it there.'">In script</span>
+                            <span class="muted"
+                                  th:if="${doc.lineCount > 0}"
+                                  th:text="${doc.lineCount} + (${doc.lineCount == 1} ? ' line' : ' lines')">Lines</span>
                             <span class="muted"
                                   th:if="${doc.updatedAt != null}"
                                   th:text="${#temporals.format(doc.updatedAt, 'MMM d, yyyy h:mm a')}">Updated</span>
@@ -236,7 +240,10 @@
                         var titleLink = card.querySelector('.text-document-card-title');
                         titleText = titleLink ? titleLink.textContent.toLowerCase() : '';
                     }
-                    var matches = !normalizedQuery || titleText.indexOf(normalizedQuery) !== -1;
+                    var previewText = (card.getAttribute('data-doc-preview') || '').toLowerCase();
+                    var matches = !normalizedQuery
+                        || titleText.indexOf(normalizedQuery) !== -1
+                        || previewText.indexOf(normalizedQuery) !== -1;
                     card.hidden = !matches;
                     if (matches) visibleCount++;
                 });

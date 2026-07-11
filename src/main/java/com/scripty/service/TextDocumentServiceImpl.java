@@ -471,7 +471,28 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             vm.setContent(content);
         }
         vm.setPreview(buildPreview(content));
+        vm.setLineCount(countInsertableLines(content));
+        if (doc.getId() != null) {
+            vm.setInsertedBlockCount(blockRepository.countBySourceDocumentId(doc.getId()));
+        }
         return vm;
+    }
+
+    /** Lines the document would produce on insert: leading/trailing blank lines dropped, interior ones kept. */
+    private int countInsertableLines(String content) {
+        if (content == null || content.isBlank()) {
+            return 0;
+        }
+        String[] lines = content.split("\\R", -1);
+        int first = 0;
+        int last = lines.length - 1;
+        while (first <= last && lines[first].trim().isEmpty()) {
+            first++;
+        }
+        while (last >= first && lines[last].trim().isEmpty()) {
+            last--;
+        }
+        return last < first ? 0 : last - first + 1;
     }
 
     private String buildPreview(String content) {

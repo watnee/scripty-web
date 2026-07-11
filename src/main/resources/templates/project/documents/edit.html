@@ -41,6 +41,21 @@
                     </li>
                 </ol>
             </nav>
+            <div class="text-document-edit-actions">
+            <span class="text-document-inserted-badge"
+                  th:if="${insertedBlockCount > 0}"
+                  th:title="${isSong} ? 'This song is in the script. Edits here update it there automatically.' : 'This note is in the script. Edits here update it there automatically.'">In script</span>
+            <form th:if="${canEditScript}"
+                  th:action="@{/project/documents/insert}"
+                  method="post"
+                  id="text-document-insert-form"
+                  class="text-document-insert-form"
+                  hx-boost="false">
+                <input type="hidden" name="id" id="text-document-insert-id" th:value="${commandModel.id}" />
+                <button type="submit"
+                        class="project-list-action-btn project-list-action-btn--secondary"
+                        th:title="${isSong} ? 'Insert as Lyrics blocks at end of script' : 'Insert as Note blocks at end of script'">Insert</button>
+            </form>
             <details class="text-document-about">
                 <summary class="text-document-about-toggle"
                          title="How this works"
@@ -56,6 +71,10 @@
                     Write freely here.
                 </p>
             </details>
+                <p id="text-document-counts"
+                   class="text-document-counts muted"
+                   aria-hidden="true"></p>
+            </div>
         </div>
 
         <p class="text-document-import-banner"

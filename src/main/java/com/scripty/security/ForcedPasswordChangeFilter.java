@@ -25,12 +25,15 @@ public class ForcedPasswordChangeFilter extends OncePerRequestFilter {
 
     private static final String CHANGE_PASSWORD_PATH = "/account/password";
 
+    // /webauthn/ is exempt: registering a passkey is the other way to resolve a
+    // bootstrap credential — PasswordDiscardingUserCredentialRepository replaces
+    // the temporary password and clears the flag when the passkey is saved.
     private static final String[] EXEMPT_PREFIXES = {
-            "/css/", "/js/", "/icons/", "/fonts/", "/dictionaries/", "/actuator/"
+            "/css/", "/js/", "/icons/", "/fonts/", "/dictionaries/", "/actuator/", "/webauthn/"
     };
 
     private static final String[] EXEMPT_PATHS = {
-            CHANGE_PASSWORD_PATH, "/login", "/logout", "/error",
+            CHANGE_PASSWORD_PATH, "/login", "/logout", "/error", "/login/webauthn.js",
             "/favicon.ico", "/manifest.json", "/sw.js", "/offline.html", "/offline-project.html"
     };
 
@@ -67,9 +70,13 @@ public class ForcedPasswordChangeFilter extends OncePerRequestFilter {
 
     private boolean isPasswordChangeRequired(HttpSession session, String username) {
         Boolean cached = (Boolean) session.getAttribute(SESSION_ATTR);
-        if (cached != null) {
-            return cached;
+        if (Boolean.FALSE.equals(cached)) {
+            return false;
         }
+        // No cache, or still flagged: re-check the database. Flagged sessions stay
+        // uncached-TRUE so the lock lifts as soon as the flag clears — whether via
+        // the change-password form or a passkey registration discarding the
+        // bootstrap password.
         boolean required = userRepository.findByUsername(username)
                 .map(User::isPasswordChangeRequired)
                 .orElse(false);

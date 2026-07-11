@@ -7,6 +7,7 @@ import com.scripty.security.HtmxLoginUrlAuthenticationEntryPoint;
 import com.scripty.security.LoginSuccessHandler;
 import com.scripty.security.LogoutIgnoringRequestCache;
 import com.scripty.security.MetricsTokenAuthorizationManager;
+import com.scripty.security.PasswordDiscardingUserCredentialRepository;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,7 @@ import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredentialUserEntityRepository;
 import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository;
+import org.springframework.security.web.webauthn.management.UserCredentialRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -241,10 +243,20 @@ public class SecurityConfig {
         return new JdbcPublicKeyCredentialUserEntityRepository(jdbcOperations);
     }
 
-    /** Persist registered passkeys across restarts (table: user_credentials, V33). */
+    /**
+     * Persist registered passkeys across restarts (table: user_credentials, V33).
+     * Wrapped so that registering a passkey on an account still flagged
+     * password_change_required (fresh-deploy bootstrap credentials) automatically
+     * replaces the password with a random value nobody knows.
+     */
     @Bean
-    public JdbcUserCredentialRepository userCredentialRepository(JdbcOperations jdbcOperations) {
-        return new JdbcUserCredentialRepository(jdbcOperations);
+    public UserCredentialRepository userCredentialRepository(JdbcOperations jdbcOperations,
+            JdbcPublicKeyCredentialUserEntityRepository userEntityRepository,
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder) {
+        return new PasswordDiscardingUserCredentialRepository(
+                new JdbcUserCredentialRepository(jdbcOperations),
+                userEntityRepository, userRepository, passwordEncoder);
     }
 
     @Bean

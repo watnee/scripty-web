@@ -154,9 +154,10 @@ public class DefaultAdminPasswordGuard implements CommandLineRunner {
                 + "* Username: {}\n"
                 + "* One-time password: {}\n"
                 + "*                                                           *\n"
-                + "* You must change this password at first login. To choose   *\n"
-                + "* the password yourself, set a strong ADMIN_PASSWORD env    *\n"
-                + "* var ({}+ chars) and redeploy.                             *\n"
+                + "* At first login, either register a passkey (recommended:   *\n"
+                + "* this discards the password automatically) or set a new    *\n"
+                + "* password. To choose the password yourself, set a strong   *\n"
+                + "* ADMIN_PASSWORD env var ({}+ chars) and redeploy.          *\n"
                 + "*************************************************************",
                 username, generated, PasswordPolicy.MIN_DEPLOY_LENGTH);
     }

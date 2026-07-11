@@ -4,7 +4,7 @@
         <th:block th:replace="~{fragments/createBelowMenu :: button}"></th:block>
         <th:block th:replace="~{fragments/blockDragMenu :: handle(true, ${block.bookmarked}, ${block.pinned})}"></th:block>
     </td>
-    <td class="block-content" th:classappend="${block.type != null ? 'block-type-' + #strings.toLowerCase(block.type) : ''}" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')&amp;&amp;!window.scriptySuppressBlockEditClick&amp;&amp;!window.scriptyBlockEditLocked]" hx-swap="innerHTML">
+    <td class="block-content" th:classappend="${block.type != null ? 'block-type-' + #strings.toLowerCase(block.type) : ''}" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="scripty-edit-block" hx-swap="innerHTML">
         <th:block th:replace="~{block/showCharacterNameInline :: characterName(${block})}"></th:block>
         <span th:text="${block.content}"></span>
         <div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list">

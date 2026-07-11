@@ -5840,6 +5840,16 @@
             };
         }, true);
 
+        document.body.addEventListener('click', function(e) {
+            const blockContent = e.target.closest('.block-content');
+            if (!blockContent) return;
+            if (e.target.closest('a') || e.target.closest('form')) return;
+            if (window.scriptySuppressBlockEditClick || window.scriptyBlockEditLocked) return;
+            if (typeof htmx !== 'undefined') {
+                htmx.trigger(blockContent, 'scripty-edit-block');
+            }
+        });
+
         function focusBlockTextareaFromClick() {
             if (!window.scriptyPendingBlockCaret) return;
             const pending = window.scriptyPendingBlockCaret;

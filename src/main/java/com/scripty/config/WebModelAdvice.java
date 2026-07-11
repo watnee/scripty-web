@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @ControllerAdvice
 public class WebModelAdvice {
 
-    @Value("${app.asset-version:195}")
+    @Value("${app.asset-version:197}")
     private String assetVersion;
 
     @Value("${app.service-worker-enabled:false}")

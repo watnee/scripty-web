@@ -91,8 +91,11 @@
         syncTextStyleButtons(row);
     }
 
-    function closeAllDropdowns() {
+    function closeAllDropdowns(exceptDropdown) {
         document.querySelectorAll('.nav-dropdown').forEach(function (d) {
+            if (exceptDropdown && (d === exceptDropdown || d.contains(exceptDropdown))) {
+                return;
+            }
             d.classList.remove('open');
             var t = d.querySelector('.nav-dropdown-toggle');
             if (t) t.setAttribute('aria-expanded', 'false');
@@ -222,7 +225,7 @@
         if (matched) {
             e.stopPropagation();
             var wasOpen = matched.dropdown.classList.contains('open');
-            closeAllDropdowns();
+            closeAllDropdowns(matched.dropdown);
             setOpen(matched.dropdown, matched.toggle, !wasOpen);
             return;
         }
@@ -238,8 +241,15 @@
                         break;
                     }
                 }
-                if (!keepOpen && parentDropdown.querySelector('.file-toolbar-btn, .lists-toolbar-btn, .element-type-toolbar-btn, .view-toolbar-btn, .script-edition-toggle, .project-share-toggle, .text-format-toolbar-btn')) {
-                    setOpen(parentDropdown, parentDropdown.querySelector('.nav-dropdown-toggle'), false);
+                if (!keepOpen) {
+                    var curr = parentDropdown;
+                    while (curr) {
+                        var toggleBtn = curr.querySelector('.nav-dropdown-toggle');
+                        if (toggleBtn) {
+                            setOpen(curr, toggleBtn, false);
+                        }
+                        curr = curr.parentElement ? curr.parentElement.closest('.nav-dropdown') : null;
+                    }
                 }
                 var alignItem = item.classList.contains('bulk-align-btn') ? item : null;
                 if (alignItem && parentDropdown && parentDropdown.id === 'project-text-format-dropdown') {

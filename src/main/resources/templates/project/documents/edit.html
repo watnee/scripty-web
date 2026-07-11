@@ -41,21 +41,41 @@
                     </li>
                 </ol>
             </nav>
-            <details class="text-document-about">
-                <summary class="text-document-about-toggle"
-                         title="How this works"
-                         aria-label="How this works">
-                    <svg class="text-document-about-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                    </svg>
-                </summary>
-                <p class="muted text-document-about-text"
-                   th:text="${isSong} ? 'Write lyrics freely. Each line becomes a Lyrics block when inserted. Edits auto-save and update places already in the screenplay.' : 'Write freely. Each line becomes a Note block when inserted. Edits auto-save and update places already in the screenplay.'">
-                    Write freely here.
-                </p>
-            </details>
+            <div class="text-document-top-bar-actions">
+                <div class="spellcheck-toggle-container" th:if="${isSong}">
+                    <button id="nav-spellcheck-toggle"
+                            type="button"
+                            class="spellcheck-toggle-btn"
+                            role="menuitemcheckbox"
+                            aria-pressed="true"
+                            aria-checked="true"
+                            aria-label="Spellcheck"
+                            title="Spellcheck"
+                            onclick="window.toggleSpellcheck()">
+                        <svg class="spellcheck-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m6 16 6-12 6 12"></path>
+                            <path d="M8 12h8"></path>
+                            <path d="m16 20 2 2 4-4" class="spellcheck-check"></path>
+                            <line x1="3" y1="3" x2="21" y2="21" class="spellcheck-slash" stroke="var(--bad-fg-color, #e11d48)" stroke-width="2"></line>
+                        </svg>
+                    </button>
+                </div>
+                <details class="text-document-about">
+                    <summary class="text-document-about-toggle"
+                             title="How this works"
+                             aria-label="How this works">
+                        <svg class="text-document-about-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </summary>
+                    <p class="muted text-document-about-text"
+                       th:text="${isSong} ? 'Write lyrics freely. Each line becomes a Lyrics block when inserted. Edits auto-save and update places already in the screenplay.' : 'Write freely. Each line becomes a Note block when inserted. Edits auto-save and update places already in the screenplay.'">
+                        Write freely here.
+                    </p>
+                </details>
+            </div>
         </div>
 
         <p class="text-document-import-banner"

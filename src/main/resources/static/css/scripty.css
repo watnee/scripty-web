@@ -5824,6 +5824,14 @@ body:has(main.text-documents-page) > main.text-documents-page {
     color: var(--muted-fg, #64748b);
 }
 
+.text-document-top-bar-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    vertical-align: middle;
+    flex: 0 0 auto;
+}
+
 .text-document-about {
     position: relative;
     top: auto;

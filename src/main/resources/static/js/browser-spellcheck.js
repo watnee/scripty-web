@@ -14,14 +14,14 @@
     }
 
     function updateSpellcheckToggleButton(state) {
-        var btn = document.getElementById('nav-spellcheck-toggle')
-            || document.querySelector('.spellcheck-toggle-btn');
-        if (!btn) return;
+        var buttons = document.querySelectorAll('#nav-spellcheck-toggle, .spellcheck-toggle-btn');
         var title = state ? 'Disable spellcheck' : 'Enable spellcheck';
-        btn.title = title;
-        btn.setAttribute('aria-label', title);
-        btn.setAttribute('aria-pressed', state ? 'true' : 'false');
-        btn.setAttribute('aria-checked', state ? 'true' : 'false');
+        buttons.forEach(function (btn) {
+            btn.title = title;
+            btn.setAttribute('aria-label', title);
+            btn.setAttribute('aria-pressed', state ? 'true' : 'false');
+            btn.setAttribute('aria-checked', state ? 'true' : 'false');
+        });
     }
 
     function applySpellcheckToElement(el, state) {

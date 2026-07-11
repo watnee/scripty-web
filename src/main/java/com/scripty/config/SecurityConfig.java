@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -24,6 +25,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredentialUserEntityRepository;
+import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -77,7 +80,9 @@ public class SecurityConfig {
             LoginSuccessHandler loginSuccessHandler,
             HtmxLoginUrlAuthenticationEntryPoint authenticationEntryPoint,
             MetricsTokenAuthorizationManager metricsTokenAuthorizationManager,
-            UserRepository userRepository) throws Exception {
+            UserRepository userRepository,
+            PasskeySettings passkeySettings) throws Exception {
+        applyWebAuthn(http, passkeySettings);
         http
             .requestCache(cache -> cache.requestCache(requestCache))
             // Accounts still on seeded/generated deploy credentials are locked to
@@ -164,7 +169,9 @@ public class SecurityConfig {
     @Profile("dev")
     public SecurityFilterChain devFilterChain(HttpSecurity http,
             RequestCache requestCache,
-            LoginSuccessHandler loginSuccessHandler) throws Exception {
+            LoginSuccessHandler loginSuccessHandler,
+            PasskeySettings passkeySettings) throws Exception {
+        applyWebAuthn(http, passkeySettings);
         http
             .requestCache(cache -> cache.requestCache(requestCache))
             .addFilterBefore(new DevAutoLoginFilter(), UsernamePasswordAuthenticationFilter.class)
@@ -194,6 +201,37 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable());
 
         return http.build();
+    }
+
+    /**
+     * Passkey (WebAuthn) sign-in, bound to the app.base-url domain. Skipped when
+     * no base URL is configured — password login keeps working either way.
+     */
+    private static void applyWebAuthn(HttpSecurity http, PasskeySettings settings)
+            throws Exception {
+        if (!settings.isEnabled()) {
+            return;
+        }
+        http.webAuthn(webAuthn -> webAuthn
+                .rpName("Scripty")
+                .rpId(settings.getRpId())
+                .allowedOrigins(settings.getOrigin())
+                // Scripty ships its own registration page (PasskeyController); the
+                // framework default also NPEs when CSRF is disabled (dev profile).
+                .disableDefaultRegistrationPage(true));
+    }
+
+    /** Persist passkey user handles across restarts (table: user_entities, V33). */
+    @Bean
+    public JdbcPublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository(
+            JdbcOperations jdbcOperations) {
+        return new JdbcPublicKeyCredentialUserEntityRepository(jdbcOperations);
+    }
+
+    /** Persist registered passkeys across restarts (table: user_credentials, V33). */
+    @Bean
+    public JdbcUserCredentialRepository userCredentialRepository(JdbcOperations jdbcOperations) {
+        return new JdbcUserCredentialRepository(jdbcOperations);
     }
 
     @Bean

@@ -1392,7 +1392,7 @@
         if (btn) {
             btn.setAttribute('aria-pressed', open ? 'true' : 'false');
             btn.classList.toggle('is-active', open);
-            var hint = listShortcutHint({ mac: '⌘⇧L', other: 'Ctrl+Shift+L' });
+            var hint = listShortcutHint({ mac: '⌘⇧G', other: 'Ctrl+Shift+G' });
             btn.title = 'Outline (' + hint + ')';
             btn.setAttribute('aria-label', btn.title);
             if (!btn.querySelector('.nav-dropdown-item-label') &&
@@ -2065,7 +2065,7 @@
             ensureOutline().hidden = true;
             var outlineBtn = document.getElementById('nav-outline-toggle');
             if (outlineBtn) {
-                var hint = listShortcutHint({ mac: '⌘⇧L', other: 'Ctrl+Shift+L' });
+                var hint = listShortcutHint({ mac: '⌘⇧G', other: 'Ctrl+Shift+G' });
                 outlineBtn.title = 'Outline (' + hint + ')';
                 outlineBtn.setAttribute('aria-label', outlineBtn.title);
                 if (!outlineBtn.querySelector('.nav-dropdown-item-label') &&

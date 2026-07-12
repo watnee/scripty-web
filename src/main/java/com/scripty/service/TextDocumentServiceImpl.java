@@ -199,6 +199,45 @@ public class TextDocumentServiceImpl implements TextDocumentService {
 
     @Override
     @Transactional
+    public TextDocument rename(Integer id, Integer projectId, String title, User currentUser) {
+        if (id == null || projectId == null || currentUser == null) {
+            return null;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return null;
+        }
+        TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+        if (doc == null) {
+            return null;
+        }
+        String newTitle = PlainTextSanitizer.sanitizeSingleLine(title != null ? title : "");
+        if (newTitle == null || newTitle.isEmpty() || newTitle.equals(doc.getTitle())) {
+            return null;
+        }
+        String oldTitle = doc.getTitle();
+        LocalDateTime now = LocalDateTime.now();
+        doc.setTitle(newTitle);
+        doc.setUpdatedAt(now);
+
+        Project project = doc.getProject();
+        if (project != null) {
+            project.setLastEdited(now);
+            projectRepository.save(project);
+        }
+
+        TextDocument saved = textDocumentRepository.save(doc);
+        projectActivityService.record(
+                projectId,
+                currentUser.getId(),
+                ProjectActivity.ACTION_DOCUMENT_UPDATED,
+                "renamed \"" + oldTitle + "\" to \"" + saved.getTitle() + "\"",
+                ProjectActivity.ENTITY_DOCUMENT,
+                saved.getId());
+        return saved;
+    }
+
+    @Override
+    @Transactional
     public void delete(Integer id, Integer projectId, User currentUser) {
         if (id == null || projectId == null || currentUser == null) {
             return;

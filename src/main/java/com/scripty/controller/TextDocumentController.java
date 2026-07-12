@@ -198,6 +198,16 @@ public class TextDocumentController {
         return "redirect:" + listUrl(commandModel.getProjectId(), isSong);
     }
 
+    @RequestMapping(value = "/rename", method = RequestMethod.POST)
+    public String rename(@RequestParam Integer id,
+                         @RequestParam Integer projectId,
+                         @RequestParam(required = false) String type,
+                         @RequestParam String title,
+                         Principal principal) {
+        textDocumentService.rename(id, projectId, title, currentUser(principal));
+        return "redirect:" + listUrl(projectId, TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type)));
+    }
+
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public String delete(@RequestParam Integer id,
                          @RequestParam Integer projectId,

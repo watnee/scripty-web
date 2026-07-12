@@ -163,6 +163,18 @@
                     <div class="text-document-card-actions">
                         <a th:href="@{/project/documents/edit(id=${doc.id})}"
                            class="project-list-action-btn project-list-action-btn--secondary">Edit</a>
+                        <form th:action="@{/project/documents/rename}"
+                              method="post"
+                              class="text-document-rename-form"
+                              hx-boost="false">
+                            <input type="hidden" name="id" th:value="${doc.id}" />
+                            <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                            <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                            <input type="hidden" name="title" th:attr="data-current-title=${doc.title}" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--secondary"
+                                    th:title="${isSongList} ? 'Rename this song' : 'Rename this note'">Rename</button>
+                        </form>
                         <form th:if="${canEditScript}"
                               th:action="@{/project/documents/insert}"
                               method="post"
@@ -209,6 +221,24 @@
                     form.submit();
                 });
             }
+
+            document.querySelectorAll('.text-document-rename-form').forEach(function(renameForm) {
+                renameForm.addEventListener('submit', function(e) {
+                    var titleInput = renameForm.querySelector('input[name="title"]');
+                    var current = titleInput ? (titleInput.getAttribute('data-current-title') || '') : '';
+                    var next = window.prompt('Rename to:', current);
+                    if (next === null) {
+                        e.preventDefault();
+                        return;
+                    }
+                    next = next.trim();
+                    if (!next || next === current) {
+                        e.preventDefault();
+                        return;
+                    }
+                    titleInput.value = next;
+                });
+            });
 
             var searchInput = document.getElementById('text-documents-search');
             var clearBtn = document.getElementById('text-documents-search-clear');

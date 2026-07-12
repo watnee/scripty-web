@@ -30,15 +30,11 @@
             </div>
         </div>
 
-        <header class="text-documents-header"
-                th:classappend="${isSongList} ? ' text-documents-header--song' : ' text-documents-header--draft'">
+        <header th:unless="${isSongList}" class="text-documents-header text-documents-header--draft">
             <div class="text-documents-header-text">
-                <p th:unless="${isSongList}" class="muted">
+                <p class="muted">
                     Write scratch text here, then insert into the script as Note blocks. Edits sync to places already inserted.
                 </p>
-                <a th:if="${isSongList}"
-                   th:href="@{/project/read(id=${viewModel.projectId})}"
-                   class="project-list-action-btn project-list-action-btn--secondary">Read</a>
             </div>
         </header>
 
@@ -57,8 +53,13 @@
                           th:text="${isSongList} ? '♪' : '¶'"
                           aria-hidden="true">♪</span>
                     <div>
-                        <h2 th:id="${isSongList} ? 'songs-heading' : 'drafts-heading'"
-                            th:text="${isSongList} ? 'Your songs' : 'Your notes'">Documents</h2>
+                        <div class="text-documents-heading-row">
+                            <h2 th:id="${isSongList} ? 'songs-heading' : 'drafts-heading'"
+                                th:text="${isSongList} ? 'Your songs' : 'Your notes'">Documents</h2>
+                            <a th:if="${isSongList}"
+                               th:href="@{/project/read(id=${viewModel.projectId})}"
+                               class="project-list-action-btn project-list-action-btn--secondary">Read</a>
+                        </div>
                         <p class="muted"
                            th:text="${isSongList} ? 'Import a file or start a new song.' : 'Import a file or start a new note.'">
                             Manage documents.

@@ -357,7 +357,7 @@ jobs:
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.event_name != 'workflow_dispatch' || inputs.sync_secrets_only != true)
     runs-on: ubuntu-latest
-    # Build + 15 min healthcheck window (railway.json healthcheckTimeout) +
+    # Build + 15 min healthcheck window (.railway/railway.ts healthcheckTimeout) +
     # up to 15 min of status polling in Confirm deployment status.
     timeout-minutes: 40
     environment:
@@ -443,7 +443,7 @@ jobs:
             exit 0
           fi
           # Poll the latest deployment until it reaches a terminal state.
-          # healthcheckTimeout is 900s (railway.json), so allow up to 15 more
+          # healthcheckTimeout is 900s (.railway/railway.ts), so allow up to 15 more
           # minutes here before declaring the deploy dead.
           deadline=$(( $(date +%s) + 900 ))
           outcome=timeout

@@ -308,6 +308,7 @@ cloudflare/.dev.vars
 cloudflare/.dev.vars.*
 !cloudflare/.dev.vars.example
 cloudflare/.deploy-secrets
+cloudflare/.worker-url
 .wrangler/
 cloudflare/.wrangler/
 

@@ -1,0 +1,448 @@
+#!/usr/bin/env bash
+# From-scratch deploy bootstrap for Scripty: Railway (app + MySQL) and
+# Cloudflare Containers, plus the GitHub Actions secrets CI needs.
+#
+# One command per stage, all idempotent — safe to re-run any time:
+#   ./scripts/bootstrap-deploy.sh doctor      # read-only: what is set up, what is missing, how to fix it
+#   ./scripts/bootstrap-deploy.sh railway     # link/create project, apply IaC, domain, backups, RAILWAY_SERVICE_ID
+#   ./scripts/bootstrap-deploy.sh secrets     # push GitHub Actions secrets (Railway token, Cloudflare token, MYSQL* fallback)
+#   ./scripts/bootstrap-deploy.sh cloudflare  # first wrangler deploy (Worker + container image + MySQL secrets)
+#   ./scripts/bootstrap-deploy.sh verify      # curl /health on the deployed platforms
+#   ./scripts/bootstrap-deploy.sh all         # railway → secrets → cloudflare → verify
+#
+# Reuses the focused scripts rather than duplicating them:
+#   scripts/cf-token.sh                Cloudflare CI token mint/rotate (no dashboard tokens)
+#   scripts/sync-railway-cloudflare.sh Railway MySQL TCP proxy → Cloudflare/GitHub secrets
+#   scripts/railway-mysql-backups.sh   MySQL volume snapshot schedules
+#
+# Requirements by stage (doctor reports all of this):
+#   railway CLI (logged in)            railway / secrets / verify
+#   gh CLI (authenticated)             secrets, doctor's GitHub checks
+#   node + npm ci                      cloudflare (wrangler is a devDependency)
+#   Docker running                     cloudflare (builds the container image)
+#
+# The only credential that cannot be minted from a CLI is the Railway project
+# token (dashboard → Project → Settings → Tokens); `secrets` prompts for it
+# once and pushes it to GitHub, everything else is fully automated.
+set -euo pipefail
+
+ACTION="${1:-doctor}"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+WEB_SERVICE="${WEB_SERVICE:-web}"
+MYSQL_SERVICE="${MYSQL_SERVICE:-MySQL}"
+WRANGLER_CONFIG="cloudflare/wrangler.jsonc"
+
+BOLD=$'\033[1m'; RED=$'\033[31m'; GRN=$'\033[32m'; YEL=$'\033[33m'; RST=$'\033[0m'
+[[ -t 1 ]] || { BOLD=""; RED=""; GRN=""; YEL=""; RST=""; }
+
+MISSING_REQUIRED=0
+NEXT_STEPS=()
+
+die()  { echo "error: $*" >&2; exit 1; }
+ok()   { printf '  %s✓%s %s\n' "$GRN" "$RST" "$*"; }
+warn() { printf '  %s!%s %s\n' "$YEL" "$RST" "$*"; }
+miss() {
+  # miss "<what is missing>" "<command that fixes it>"
+  printf '  %s✗%s %s\n' "$RED" "$RST" "$1"
+  MISSING_REQUIRED=1
+  [[ -n "${2:-}" ]] && NEXT_STEPS+=("$2")
+}
+section() { printf '\n%s%s%s\n' "$BOLD" "$*" "$RST"; }
+have_cmd() { command -v "$1" >/dev/null 2>&1; }
+need_cmd() { have_cmd "$1" || die "required command not found: $1"; }
+interactive() { [[ -t 0 ]]; }
+
+# --- Railway helpers ---------------------------------------------------------
+
+railway_logged_in() {
+  [[ -n "${RAILWAY_TOKEN:-}" ]] && return 0
+  railway whoami >/dev/null 2>&1
+}
+
+# Prints "<project_id>\t<project_name>\t<env>\t<web_id>\t<mysql_id>" or fails.
+railway_context() {
+  local status_json
+  status_json="$(railway status --json 2>/dev/null)" || return 1
+  RAILWAY_STATUS_JSON="$status_json" python3 - "$WEB_SERVICE" "$MYSQL_SERVICE" <<'PY'
+import json, os, sys
+data = json.loads(os.environ["RAILWAY_STATUS_JSON"])
+web_name, mysql_name = sys.argv[1], sys.argv[2]
+project = data.get("id") or ""
+name = data.get("name") or ""
+env_name, web_id, mysql_id = "", "", ""
+for env_edge in (data.get("environments") or {}).get("edges", []):
+    env = env_edge.get("node") or {}
+    if not env_name or env.get("name") == "production":
+        env_name = env.get("name") or env_name
+        for svc_edge in (env.get("serviceInstances") or {}).get("edges", []):
+            svc = svc_edge.get("node") or {}
+            if svc.get("serviceName") == web_name:
+                web_id = svc.get("serviceId") or ""
+            if svc.get("serviceName") == mysql_name:
+                mysql_id = svc.get("serviceId") or ""
+if not project:
+    sys.exit(1)
+print(f"{project}\t{name}\t{env_name}\t{web_id}\t{mysql_id}")
+PY
+}
+
+railway_web_domain() {
+  railway domain list --service "$WEB_SERVICE" --json 2>/dev/null | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+if isinstance(data, dict):
+    data = (data.get("serviceDomains") or []) + (data.get("customDomains") or []) or data.get("domains") or []
+for d in data if isinstance(data, list) else []:
+    domain = d.get("domain") if isinstance(d, dict) else None
+    if domain:
+        print(domain)
+        break
+'
+}
+
+gh_secret_present() {
+  gh secret list 2>/dev/null | awk '{print $1}' | grep -qx "$1"
+}
+
+wrangler_local() {
+  [[ -x node_modules/.bin/wrangler ]]
+}
+
+# --- doctor ------------------------------------------------------------------
+
+do_doctor() {
+  section "Tools"
+  local cmd
+  for cmd in railway gh python3 curl; do
+    if have_cmd "$cmd"; then ok "$cmd"; else miss "$cmd not installed" "install $cmd"; fi
+  done
+  if have_cmd node && have_cmd npx; then
+    if wrangler_local; then
+      ok "node + wrangler (node_modules)"
+    else
+      miss "wrangler not installed locally" "npm ci"
+    fi
+  else
+    miss "node/npx not installed" "install Node.js 22+"
+  fi
+  if have_cmd docker && docker info >/dev/null 2>&1; then
+    ok "docker (running)"
+  elif have_cmd docker; then
+    warn "docker installed but not running — needed only for 'cloudflare' (container image build)"
+  else
+    warn "docker not installed — needed only for 'cloudflare' (CI can deploy Cloudflare without it)"
+  fi
+
+  section "Auth"
+  if have_cmd railway; then
+    if railway_logged_in; then ok "railway ($(railway whoami 2>/dev/null || echo 'RAILWAY_TOKEN'))"; else miss "railway not logged in" "railway login"; fi
+  fi
+  if have_cmd gh; then
+    if gh auth status >/dev/null 2>&1; then ok "gh ($(gh api user -q .login 2>/dev/null || echo authenticated))"; else miss "gh not authenticated" "gh auth login"; fi
+  fi
+  if wrangler_local; then
+    if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]] || npx wrangler whoami >/dev/null 2>&1; then
+      ok "wrangler (OAuth or CLOUDFLARE_API_TOKEN)"
+    else
+      miss "wrangler not logged in" "npx wrangler login"
+    fi
+  fi
+
+  section "Railway project"
+  local ctx="" project_id project_name env_name web_id mysql_id
+  if have_cmd railway && railway_logged_in && ctx="$(railway_context)"; then
+    IFS=$'\t' read -r project_id project_name env_name web_id mysql_id <<<"$ctx"
+    ok "linked: ${project_name} (${project_id}) env=${env_name}"
+    if [[ -n "$web_id" ]]; then ok "service '${WEB_SERVICE}' (${web_id})"; else miss "service '${WEB_SERVICE}' missing" "./scripts/bootstrap-deploy.sh railway   # railway config apply"; fi
+    if [[ -n "$mysql_id" ]]; then ok "service '${MYSQL_SERVICE}' (${mysql_id})"; else miss "service '${MYSQL_SERVICE}' missing" "./scripts/bootstrap-deploy.sh railway   # railway config apply"; fi
+    local domain
+    domain="$(railway_web_domain || true)"
+    if [[ -n "$domain" ]]; then ok "domain: https://${domain}"; else warn "no domain on '${WEB_SERVICE}' — bootstrap 'railway' creates one"; fi
+  else
+    miss "no linked Railway project" "./scripts/bootstrap-deploy.sh railway   # railway link or railway init"
+  fi
+
+  section "GitHub Actions secrets (CI deploy)"
+  if have_cmd gh && gh auth status >/dev/null 2>&1; then
+    local name
+    for name in RAILWAY_TOKEN RAILWAY_SERVICE_ID CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+      if gh_secret_present "$name"; then ok "$name"; else miss "$name missing" "./scripts/bootstrap-deploy.sh secrets"; fi
+    done
+    for name in CLOUDFLARE_BOOTSTRAP_TOKEN MYSQLHOST MYSQLPASSWORD R2_BUCKET; do
+      if gh_secret_present "$name"; then ok "$name (optional)"; else warn "$name absent (optional — see README / docs/BACKUP.md)"; fi
+    done
+  else
+    warn "gh unavailable — skipped secret checks"
+  fi
+
+  section "Cloudflare Worker"
+  if wrangler_local && { [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]] || npx wrangler whoami >/dev/null 2>&1; }; then
+    local cf_secrets
+    if cf_secrets="$(npx wrangler secret list --config "$WRANGLER_CONFIG" 2>/dev/null)"; then
+      local name missing_cf=0
+      for name in MYSQLHOST MYSQLPORT MYSQLUSER MYSQLPASSWORD MYSQLDATABASE; do
+        if printf '%s' "$cf_secrets" | python3 -c 'import json,sys; names={x.get("name") for x in json.load(sys.stdin)}; sys.exit(0 if sys.argv[1] in names else 1)' "$name" 2>/dev/null; then
+          ok "Worker secret $name"
+        else
+          missing_cf=1
+        fi
+      done
+      if [[ "$missing_cf" -ne 0 ]]; then
+        miss "Worker missing required MySQL secrets (or Worker not deployed yet)" "./scripts/bootstrap-deploy.sh cloudflare"
+      fi
+    else
+      miss "Worker 'scripty' not deployed (or token lacks access)" "./scripts/bootstrap-deploy.sh cloudflare"
+    fi
+  else
+    warn "wrangler unavailable/not logged in — skipped Worker checks"
+  fi
+
+  echo
+  if [[ "$MISSING_REQUIRED" -eq 0 ]]; then
+    echo "${GRN}${BOLD}All checks passed.${RST} Deploys run from GitHub Actions on main; local: npm run cf:deploy / railway up."
+    return 0
+  fi
+  echo "${BOLD}Next steps (in order):${RST}"
+  # bash 3.2 + set -u: expanding an empty array errors, so guard on length.
+  if [[ "${#NEXT_STEPS[@]}" -gt 0 ]]; then
+    printf '%s\n' "${NEXT_STEPS[@]}" | awk '!seen[$0]++ {print "  " ++n ". " $0}'
+  fi
+  return 1
+}
+
+# --- railway -----------------------------------------------------------------
+
+do_railway() {
+  need_cmd railway
+  need_cmd python3
+  railway_logged_in || die "not logged in to Railway — run: railway login"
+
+  if ! railway status >/dev/null 2>&1; then
+    echo "No linked Railway project in this directory."
+    if ! interactive; then
+      die "link one first: 'railway link' (existing) or 'railway init -n scripty' (new), then re-run"
+    fi
+    local choice
+    read -rp "Link an existing project or create a new one? [link/init] " choice
+    case "$choice" in
+      init) railway init -n scripty ;;
+      *) railway link ;;
+    esac
+  fi
+
+  echo
+  echo "Previewing infrastructure changes from .railway/railway.ts …"
+  railway config plan || warn "config plan failed — check .railway/railway.ts"
+  if interactive; then
+    local apply
+    read -rp "Apply this plan now (creates/updates web + MySQL + volumes)? [y/N] " apply
+    if [[ "$apply" == [yY]* ]]; then
+      railway config apply
+    else
+      echo "Skipped apply — run 'railway config apply' when ready."
+    fi
+  else
+    echo "Non-interactive: review the plan above and run 'railway config apply' yourself."
+  fi
+
+  # Public domain for the web service (needed for APP_BASE_URL and verify).
+  local domain
+  domain="$(railway_web_domain || true)"
+  if [[ -z "$domain" ]]; then
+    echo "Generating a Railway domain for '${WEB_SERVICE}' …"
+    railway domain --service "$WEB_SERVICE" || warn "could not create domain — create one in the dashboard"
+    domain="$(railway_web_domain || true)"
+  fi
+  if [[ -n "$domain" ]]; then
+    echo "Domain: https://${domain}"
+    local app_base
+    app_base="$(railway variable list --service "$WEB_SERVICE" --json 2>/dev/null | python3 -c 'import json,sys; print((json.load(sys.stdin) or {}).get("APP_BASE_URL") or "")' || true)"
+    if [[ -z "$app_base" ]]; then
+      railway variable set "APP_BASE_URL=https://${domain}" --service "$WEB_SERVICE" --skip-deploys \
+        && echo "Set APP_BASE_URL=https://${domain}" \
+        || warn "could not set APP_BASE_URL — set it manually on '${WEB_SERVICE}'"
+    fi
+  fi
+
+  # MySQL volume snapshot schedules (Daily/Weekly/Monthly) — idempotent.
+  if [[ -x scripts/railway-mysql-backups.sh ]]; then
+    ./scripts/railway-mysql-backups.sh ensure || warn "backup schedule setup failed — see docs/BACKUP.md"
+  fi
+
+  push_railway_service_id
+  echo
+  echo "Railway stage done. Next: ./scripts/bootstrap-deploy.sh secrets"
+}
+
+push_railway_service_id() {
+  have_cmd gh && gh auth status >/dev/null 2>&1 || { warn "gh unavailable — set RAILWAY_SERVICE_ID GitHub secret manually"; return 0; }
+  local ctx web_id
+  ctx="$(railway_context)" || { warn "cannot resolve service id (project not linked)"; return 0; }
+  web_id="$(cut -f4 <<<"$ctx")"
+  [[ -n "$web_id" ]] || { warn "service '${WEB_SERVICE}' not found — apply the IaC plan first"; return 0; }
+  printf '%s' "$web_id" | gh secret set RAILWAY_SERVICE_ID --body -
+  echo "GitHub secret RAILWAY_SERVICE_ID set (${web_id})."
+}
+
+# --- secrets -----------------------------------------------------------------
+
+do_secrets() {
+  need_cmd gh
+  gh auth status >/dev/null 2>&1 || die "gh not authenticated — run: gh auth login"
+
+  push_railway_service_id
+
+  if gh_secret_present RAILWAY_TOKEN; then
+    echo "GitHub secret RAILWAY_TOKEN already set."
+  elif interactive; then
+    echo "RAILWAY_TOKEN is the one credential no CLI can mint:"
+    echo "  Railway dashboard → Project → Settings → Tokens → create for 'production'"
+    local token
+    read -rsp "Paste the project token (input hidden, pushed straight to GitHub): " token
+    echo
+    if [[ -n "$token" ]]; then
+      printf '%s' "$token" | gh secret set RAILWAY_TOKEN --body -
+      echo "GitHub secret RAILWAY_TOKEN set."
+    else
+      warn "skipped RAILWAY_TOKEN (empty input)"
+    fi
+  else
+    warn "RAILWAY_TOKEN missing — create it in the Railway dashboard and run: gh secret set RAILWAY_TOKEN"
+  fi
+
+  if gh_secret_present CLOUDFLARE_API_TOKEN; then
+    echo "GitHub secret CLOUDFLARE_API_TOKEN already set."
+  else
+    echo "Minting the scoped Cloudflare CI token (cf-token.sh setup) …"
+    ./scripts/cf-token.sh setup || warn "cf-token setup failed — see docs/CLOUDFLARE.md (bootstrap credentials)"
+  fi
+  if ! gh_secret_present CLOUDFLARE_BOOTSTRAP_TOKEN; then
+    echo "Optional: 'npm run cf:token:seed' lets CI self-provision deploy tokens (trade-off in docs/CLOUDFLARE.md)."
+  fi
+
+  # MYSQL* fallback secrets so CI can deploy Cloudflare even without RAILWAY_TOKEN.
+  if have_cmd railway && railway_logged_in; then
+    ./scripts/sync-railway-cloudflare.sh push-github || warn "MYSQL* fallback push failed (needs MySQL TCP proxy — see docs/CLOUDFLARE.md)"
+  else
+    warn "railway unavailable — skipped MYSQL* fallback secrets"
+  fi
+
+  echo
+  echo "Secrets stage done. Next: ./scripts/bootstrap-deploy.sh cloudflare"
+}
+
+# --- cloudflare --------------------------------------------------------------
+
+do_cloudflare() {
+  need_cmd npx
+  wrangler_local || die "wrangler not installed — run: npm ci"
+  have_cmd docker && docker info >/dev/null 2>&1 || die "Docker must be running: wrangler builds the container image locally (or let CI do this deploy)"
+  if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] && ! npx wrangler whoami >/dev/null 2>&1; then
+    die "wrangler not logged in — run: npx wrangler login"
+  fi
+  need_cmd railway
+  railway_logged_in || die "not logged in to Railway (needed to read MySQL TCP proxy credentials) — run: railway login"
+
+  echo "Writing Worker MySQL secrets from Railway's TCP proxy …"
+  trap 'rm -f cloudflare/.deploy-secrets' EXIT
+  ./scripts/sync-railway-cloudflare.sh write
+
+  echo "Deploying Worker + container image (first build takes a few minutes) …"
+  local deploy_log
+  deploy_log="$(mktemp "${TMPDIR:-/tmp}/scripty-cf-deploy.XXXXXX")"
+  trap 'rm -f cloudflare/.deploy-secrets "$deploy_log"' EXIT
+  # pipefail: tee passes wrangler's failure through
+  (cd cloudflare && npx wrangler deploy --secrets-file .deploy-secrets) 2>&1 | tee "$deploy_log"
+  rm -f cloudflare/.deploy-secrets
+  # Cache the workers.dev URL wrangler printed so 'verify' can curl it later.
+  grep -oE 'https://[a-z0-9.-]+\.workers\.dev' "$deploy_log" | head -n1 > cloudflare/.worker-url || true
+  rm -f "$deploy_log"
+  trap - EXIT
+  [[ -s cloudflare/.worker-url ]] && echo "Worker URL cached for verify: $(cat cloudflare/.worker-url)"
+
+  echo
+  echo "Cloudflare stage done. Next: ./scripts/bootstrap-deploy.sh verify"
+}
+
+# --- verify ------------------------------------------------------------------
+
+do_verify() {
+  local failed=0
+
+  section "Railway"
+  if have_cmd railway && railway_logged_in; then
+    local domain
+    domain="$(railway_web_domain || true)"
+    if [[ -n "$domain" ]]; then
+      if curl -fsS --max-time 30 "https://${domain}/health" >/dev/null; then
+        ok "https://${domain}/health is UP"
+      else
+        miss "https://${domain}/health not responding (first deploy may still be building — check the Railway dashboard)"
+        failed=1
+      fi
+    else
+      warn "no Railway domain found — run: ./scripts/bootstrap-deploy.sh railway"
+    fi
+  else
+    warn "railway unavailable — skipped"
+  fi
+
+  section "Cloudflare"
+  local worker_url="${SCRIPTY_WORKER_URL:-}"
+  if [[ -z "$worker_url" && -s cloudflare/.worker-url ]]; then
+    worker_url="$(head -n1 cloudflare/.worker-url)"
+  fi
+  if [[ -z "$worker_url" && -n "${CLOUDFLARE_API_TOKEN:-}" && -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+    local sub
+    sub="$(curl -fsS --max-time 15 -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+      "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/subdomain" \
+      | python3 -c 'import json,sys; print((json.load(sys.stdin).get("result") or {}).get("subdomain") or "")' 2>/dev/null || true)"
+    [[ -n "$sub" ]] && worker_url="https://scripty.${sub}.workers.dev"
+  fi
+  if [[ -n "$worker_url" ]]; then
+    if curl -fsS --max-time 120 "${worker_url}/health" >/dev/null; then
+      ok "${worker_url}/health is UP"
+    else
+      miss "${worker_url}/health not responding (container cold start can take a few minutes — retry shortly)"
+      failed=1
+    fi
+  else
+    warn "Worker URL unknown — set SCRIPTY_WORKER_URL=https://scripty.<subdomain>.workers.dev and re-run, or check the Cloudflare dashboard"
+  fi
+
+  return "$failed"
+}
+
+# --- dispatch ----------------------------------------------------------------
+
+case "$ACTION" in
+  doctor)     do_doctor ;;
+  railway)    do_railway ;;
+  secrets)    do_secrets ;;
+  cloudflare) do_cloudflare ;;
+  verify)     do_verify ;;
+  all)
+    do_railway
+    do_secrets
+    do_cloudflare
+    do_verify
+    ;;
+  *)
+    cat >&2 <<EOF
+usage: $0 <doctor|railway|secrets|cloudflare|verify|all>
+
+  doctor      read-only report: tools, auth, Railway project, GitHub secrets, Worker state
+  railway     link/create the Railway project, apply .railway/railway.ts, domain, backups
+  secrets     push the GitHub Actions secrets CI deploys with
+  cloudflare  first local wrangler deploy (Worker + container + MySQL secrets)
+  verify      curl /health on Railway and the Cloudflare Worker
+  all         railway → secrets → cloudflare → verify
+EOF
+    exit 2
+    ;;
+esac

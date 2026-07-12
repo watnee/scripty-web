@@ -1,6 +1,8 @@
 # Cloudflare Containers deploy for Scripty (Spring Boot jar).
 
-Config and Worker live under `cloudflare/`; the container image is the repo-root `Dockerfile` (same image Railway uses via `railway.json`).
+Config and Worker live under `cloudflare/`; the container image is the repo-root `Dockerfile` (same image Railway builds via `.railway/railway.ts`).
+
+First-time setup end to end (both platforms) is scripted — see [DEPLOY.md](DEPLOY.md) / `./scripts/bootstrap-deploy.sh`.
 
 ## Prerequisites
 

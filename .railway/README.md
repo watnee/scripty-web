@@ -12,7 +12,7 @@ Scripty is a Spring Boot (Java 17 / Maven) app. The generated config wires:
 - `MySQL` — managed MySQL with JDBC vars for `application-prod.yml` (volume backups: Daily / Weekly / Monthly via `./scripts/railway-mysql-backups.sh ensure`)
 - `uploads` — volume mounted at `/app/uploads`
 
-**Coexistence note:** Deploy-time settings still live in root `railway.json` (used by GitHub Actions `railway up`). A service cannot be managed by both Config-as-Code and IaC. Keep `railway.json` until you intentionally migrate (see docs below).
+**This file is the source of truth for Railway.** The legacy root `railway.json` (Config-as-Code) was removed when the project migrated to IaC — service settings (build, start command, healthcheck) are managed here and applied with `railway config apply`; GitHub Actions `railway up` only pushes code. From-scratch setup: `./scripts/bootstrap-deploy.sh railway` (see [docs/DEPLOY.md](../docs/DEPLOY.md)).
 
 Cloudflare Containers use the same root `Dockerfile`. Keep MySQL secrets aligned with:
 

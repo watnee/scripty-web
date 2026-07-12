@@ -350,9 +350,25 @@
         }
     });
 
+    var LEAVE_CONFIRM_MESSAGE = 'You have unsaved changes. Are you sure you want to leave this page?';
+
     // Boosted navigation away from the editor skips beforeunload;
-    // flush pending edits before htmx replaces the page.
-    document.body.addEventListener('htmx:beforeRequest', function () {
+    // ask before leaving with unsaved edits, then flush them before
+    // htmx replaces the page.
+    document.body.addEventListener('htmx:beforeRequest', function (e) {
+        if (!current || (!current.isDirty() && !current.hasPending())) {
+            return;
+        }
+        if (e.detail && e.detail.boosted && !window.confirm(LEAVE_CONFIRM_MESSAGE)) {
+            e.preventDefault();
+            return;
+        }
+        current.saveNow(true);
+    });
+
+    // Back/forward restores skip beforeRequest when htmx serves the page
+    // from its history cache; flush before the editor page is stashed.
+    document.body.addEventListener('htmx:beforeHistorySave', function () {
         if (current && (current.isDirty() || current.hasPending())) {
             current.saveNow(true);
         }

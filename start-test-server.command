@@ -38,6 +38,9 @@ echo
   echo "Server did not become ready within 3 minutes."
 ) &
 
+# maven.test.skip: booting the server never needs test classes — skipping the
+# forked test-compile phase saves seconds per start.
 mvn spring-boot:run \
+  -Dmaven.test.skip=true \
   -Dspring-boot.run.profiles=dev \
   -Dspring-boot.run.arguments="--server.port=${PORT}"

@@ -70,10 +70,10 @@ port_pids() {
 }
 
 wait_ready() {
-  local waited=0
-  while (( waited < STARTUP_TIMEOUT )); do
+  SECONDS=0
+  while (( SECONDS < STARTUP_TIMEOUT )); do
     if is_healthy; then
-      echo "READY: ${BASE_URL} (health UP after ${waited}s)"
+      echo "READY: ${BASE_URL} (health UP after ${SECONDS}s)"
       return 0
     fi
     if [[ -f "${PID_FILE}" ]] && ! kill -0 "$(cat "${PID_FILE}")" 2>/dev/null; then
@@ -81,8 +81,7 @@ wait_ready() {
       tail -n 40 "${LOG_FILE}" >&2 || true
       return 1
     fi
-    sleep 2
-    (( waited += 2 ))
+    sleep 0.5
   done
   echo "ERROR: server not healthy after ${STARTUP_TIMEOUT}s. Last log lines:" >&2
   tail -n 40 "${LOG_FILE}" >&2 || true
@@ -101,7 +100,10 @@ cmd_start() {
   setup_java
   echo "Starting Scripty dev server on ${BASE_URL} (log: ${LOG_FILE}) ..."
   cd "${REPO_ROOT}"
+  # maven.test.skip: spring-boot:run forks the test-compile phase, but booting
+  # the server never needs test classes — skipping them saves seconds per start.
   nohup mvn spring-boot:run \
+    -Dmaven.test.skip=true \
     -Dspring-boot.run.profiles=dev \
     -Dspring-boot.run.arguments="--server.port=${PORT}" \
     >"${LOG_FILE}" 2>&1 &

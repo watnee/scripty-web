@@ -107,7 +107,13 @@ export default defineRailway(() => {
     },
     env: {
       PROMETHEUS_URL: "http://prometheus:9090",
-      GF_SECURITY_ADMIN_PASSWORD: preserve(),
+      // No GF_SECURITY_ADMIN_PASSWORD here: preserve() on a service that does
+      // not exist yet makes `railway config apply` fail ("Unrecognized key(s)
+      // in object: 'type'") — there is no existing value to preserve. Grafana
+      // boots as admin/admin (private networking only, no public domain) and
+      // forces a change on first login. To pin it after the service exists:
+      //   railway variable set GF_SECURITY_ADMIN_PASSWORD=... --service grafana
+      // then switch this back to preserve().
     },
   });
 

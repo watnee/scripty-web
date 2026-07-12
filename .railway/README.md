@@ -8,7 +8,7 @@ This project defines its Railway infrastructure in code.
 
 Scripty is a Spring Boot (Java 17 / Maven) app. The generated config wires:
 
-- `web` — GitHub `watnee/scripty`, Dockerfile image layout (`scripty.jar`), `/health` check, prod start command
+- `web` — no GitHub source (CI deploys via `railway up --ci`; a connected repo would double-deploy every push), Dockerfile image layout (`scripty.jar`), `/health` check, prod start command
 - `MySQL` — managed MySQL with JDBC vars for `application-prod.yml` (volume backups: Daily / Weekly / Monthly via `./scripts/railway-mysql-backups.sh ensure`)
 - `uploads` — volume mounted at `/app/uploads`
 

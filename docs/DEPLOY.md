@@ -119,12 +119,21 @@ in CI by design and must be applied deliberately from a laptop.
 Curls `/health` on the Railway domain and the Worker URL. The first container
 cold start on Cloudflare can take a few minutes.
 
-## One manual dashboard step
+## No GitHub source on the web service
 
-If the Railway service was ever connected to GitHub, **turn off Railway
-auto-deploy** (service → Settings → Source) so pushes are not deployed twice —
-once by Railway and once by GitHub Actions. Fresh IaC-created projects don't
-have this problem.
+The `web` service intentionally has **no GitHub source connected** — GitHub
+Actions deploys it with `railway up --ci`, and a connected repo would
+auto-deploy every `main` push a second time. Because the service mounts a
+volume, Railway cannot overlap deploys, so each extra deploy is an extra
+"Application failed to respond" window. If a source ever gets reconnected
+(e.g. via the dashboard), disconnect it again:
+
+```bash
+railway service source disconnect --service web
+```
+
+`prometheus` and `grafana` keep their GitHub sources — CI does not `railway
+up` those; Railway builds them from the repo when their watch patterns match.
 
 ## After bootstrap: steady state
 

@@ -16,11 +16,16 @@ export default defineRailway(() => {
   });
 
   const web = service("web", {
-    source: github("watnee/scripty"),
+    // No GitHub source on purpose: CI deploys via `railway up --ci`, and a
+    // connected repo would auto-deploy every main push a second time. The
+    // volume on this service forces a stop-start swap per deploy, so each
+    // extra deploy is extra downtime.
     build: {
       buildEnvironment: "V3",
       builder: "DOCKERFILE",
       dockerfilePath: "Dockerfile",
+      // Kept although no repo is connected: `railway config apply` cannot
+      // unset watchPatterns, so omitting them leaves a permanent plan diff.
       watchPatterns: [
         "src/**",
         "pom.xml",

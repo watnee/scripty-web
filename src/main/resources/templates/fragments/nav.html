@@ -7,6 +7,7 @@
     </div>
     <meta name="app-asset-version" th:content="${assetVersion}">
     <meta name="service-worker-enabled" th:content="${serviceWorkerEnabled}">
+    <th:block th:replace="~{fragments/blockMenuTemplates :: templates}"></th:block>
     <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
     <script th:src="@{/js/csrf.js(v=${assetVersion})}"></script>
@@ -4701,6 +4702,52 @@
             return 'ACTION';
         }
 
+        // Block rows ship empty menu shells; contents are cloned from the
+        // page-level templates (fragments/blockMenuTemplates.html) the first
+        // time a menu opens, so per-row markup stays small on large scripts.
+        function hydrateCreateBelowMenu(dropdown) {
+            if (!dropdown) return;
+            var menu = dropdown.querySelector('.create-below-menu');
+            if (!menu || menu.dataset.hydrated === 'true') return;
+            var template = document.getElementById('scripty-create-below-menu-template');
+            if (!template) return;
+            menu.appendChild(template.content.cloneNode(true));
+            menu.dataset.hydrated = 'true';
+        }
+        window.scriptyHydrateCreateBelowMenu = hydrateCreateBelowMenu;
+
+        function hydrateBlockDragMenu(dropdown) {
+            if (!dropdown) return;
+            var menu = dropdown.querySelector('.block-drag-menu');
+            if (!menu || menu.dataset.hydrated === 'true') return;
+            var template = document.getElementById('scripty-block-drag-menu-template');
+            if (!template) return;
+            menu.appendChild(template.content.cloneNode(true));
+            menu.dataset.hydrated = 'true';
+
+            var row = dropdown.closest('.block-row, tr');
+            var bookmarkBtn = menu.querySelector('.block-drag-menu-bookmark');
+            var pinBtn = menu.querySelector('.block-drag-menu-pin');
+            if (!row || !row.hasAttribute('data-block-id')) {
+                // Unsaved create rows cannot be bookmarked or pinned.
+                var savedDivider = menu.querySelector('.block-drag-menu-saved-divider');
+                if (savedDivider) savedDivider.remove();
+                if (bookmarkBtn) bookmarkBtn.remove();
+                if (pinBtn) pinBtn.remove();
+            } else {
+                if (bookmarkBtn && row.getAttribute('data-bookmarked') === 'true') {
+                    bookmarkBtn.textContent = 'Remove bookmark';
+                    bookmarkBtn.setAttribute('data-bookmarked', 'true');
+                }
+                if (pinBtn && row.getAttribute('data-pinned') === 'true') {
+                    pinBtn.textContent = 'Unpin block';
+                    pinBtn.setAttribute('data-pinned', 'true');
+                }
+            }
+            wireBlockDragMenuItems(dropdown, menu);
+        }
+        window.scriptyHydrateBlockDragMenu = hydrateBlockDragMenu;
+
         function resolveCreateBelowMenuTarget(el) {
             const dropdown = el && el.closest
                 ? el.closest('.create-below-menu-dropdown')
@@ -4748,6 +4795,7 @@
             } else {
                 delete dropdown.dataset.createBelowTargetId;
             }
+            hydrateCreateBelowMenu(dropdown);
             populateCreateBelowSongs(dropdown);
             populateCreateBelowDrafts(dropdown);
             dropdown.classList.add('open');
@@ -5305,6 +5353,82 @@
             });
         }
 
+        // Wired at hydration time (first open), not init — the menu items do
+        // not exist in the DOM until hydrateBlockDragMenu clones them in.
+        function wireBlockDragMenuItems(dropdown, menu) {
+            menu.querySelectorAll('.block-drag-submenu-toggle').forEach(function(submenuToggle) {
+                submenuToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var submenu = submenuToggle.closest('.block-drag-submenu');
+                    if (!submenu) return;
+                    var isOpen = submenu.classList.contains('open');
+                    closeBlockDragSubmenus(dropdown);
+                    if (!isOpen) {
+                        submenu.classList.add('open');
+                        submenuToggle.setAttribute('aria-expanded', 'true');
+                        positionBlockDragSubmenu(submenu);
+                    }
+                });
+            });
+
+            menu.querySelectorAll('[data-block-drag-action="set-type"]').forEach(function(typeBtn) {
+                typeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeAllBlockDragMenus();
+                    var type = typeBtn.getAttribute('data-set-type');
+                    if (!type) return;
+                    var row = findAnyBlockRow(dropdown);
+                    if (!row) return;
+                    if (!row.hasAttribute('data-block-id')) {
+                        if (typeof window.scriptySetCreateRowType === 'function') {
+                            window.scriptySetCreateRowType(row, type);
+                        } else if (typeof window.scriptyApplyElementType === 'function') {
+                            window.scriptyApplyElementType(type, null);
+                        }
+                        return;
+                    }
+                    if (typeof window.scriptyApplyElementType === 'function') {
+                        window.scriptyApplyElementType(type, row.getAttribute('data-block-id'));
+                    }
+                });
+            });
+
+            var bookmarkBtn = menu.querySelector('[data-block-drag-action="toggle-bookmark"]');
+            if (bookmarkBtn) {
+                bookmarkBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeAllBlockDragMenus();
+                    var row = findBlockRow(dropdown);
+                    toggleBookmarkFromDragMenu(row);
+                });
+            }
+
+            var pinBtn = menu.querySelector('[data-block-drag-action="toggle-pin"]');
+            if (pinBtn) {
+                pinBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeAllBlockDragMenus();
+                    var row = findBlockRow(dropdown);
+                    togglePinFromDragMenu(row);
+                });
+            }
+
+            var deleteBtn = menu.querySelector('[data-block-drag-action="delete"]');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeAllBlockDragMenus();
+                    var row = findAnyBlockRow(dropdown);
+                    deleteBlockFromDragMenu(row, null);
+                });
+            }
+        }
+
         function initBlockDragMenus(container) {
             if (!container) return;
 
@@ -5313,9 +5437,6 @@
                 dropdown.dataset.dragMenuInit = 'true';
 
                 var toggle = dropdown.querySelector('.block-drag-menu-toggle');
-                var deleteBtn = dropdown.querySelector('[data-block-drag-action="delete"]');
-                var bookmarkBtn = dropdown.querySelector('[data-block-drag-action="toggle-bookmark"]');
-                var pinBtn = dropdown.querySelector('[data-block-drag-action="toggle-pin"]');
                 var dragStarted = false;
 
                 if (toggle) {
@@ -5336,78 +5457,10 @@
                         closeAllBlockDragMenus();
                         closeAllCreateBelowMenus();
                         if (!isOpen) {
+                            hydrateBlockDragMenu(dropdown);
                             dropdown.classList.add('open');
                             toggle.setAttribute('aria-expanded', 'true');
                         }
-                    });
-                }
-
-                dropdown.querySelectorAll('.block-drag-submenu-toggle').forEach(function(submenuToggle) {
-                    submenuToggle.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        var submenu = submenuToggle.closest('.block-drag-submenu');
-                        if (!submenu) return;
-                        var isOpen = submenu.classList.contains('open');
-                        closeBlockDragSubmenus(dropdown);
-                        if (!isOpen) {
-                            submenu.classList.add('open');
-                            submenuToggle.setAttribute('aria-expanded', 'true');
-                            positionBlockDragSubmenu(submenu);
-                        }
-                    });
-                });
-
-                dropdown.querySelectorAll('[data-block-drag-action="set-type"]').forEach(function(typeBtn) {
-                    typeBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        closeAllBlockDragMenus();
-                        var type = typeBtn.getAttribute('data-set-type');
-                        if (!type) return;
-                        var row = findAnyBlockRow(dropdown);
-                        if (!row) return;
-                        if (!row.hasAttribute('data-block-id')) {
-                            if (typeof window.scriptySetCreateRowType === 'function') {
-                                window.scriptySetCreateRowType(row, type);
-                            } else if (typeof window.scriptyApplyElementType === 'function') {
-                                window.scriptyApplyElementType(type, null);
-                            }
-                            return;
-                        }
-                        if (typeof window.scriptyApplyElementType === 'function') {
-                            window.scriptyApplyElementType(type, row.getAttribute('data-block-id'));
-                        }
-                    });
-                });
-
-                if (bookmarkBtn) {
-                    bookmarkBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        closeAllBlockDragMenus();
-                        var row = findBlockRow(dropdown);
-                        toggleBookmarkFromDragMenu(row);
-                    });
-                }
-
-                if (pinBtn) {
-                    pinBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        closeAllBlockDragMenus();
-                        var row = findBlockRow(dropdown);
-                        togglePinFromDragMenu(row);
-                    });
-                }
-
-                if (deleteBtn) {
-                    deleteBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        closeAllBlockDragMenus();
-                        var row = findAnyBlockRow(dropdown);
-                        deleteBlockFromDragMenu(row, container);
                     });
                 }
             });

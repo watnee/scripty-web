@@ -129,37 +129,13 @@
     }
 
     function renderCreateBelowMenuHtml() {
+        // Empty shell matching the server-rendered rows; contents are cloned
+        // from #scripty-create-below-menu-template on first open.
         return '<div class="nav-dropdown create-below-menu-dropdown">' +
             '<button type="button" class="create-below create-below-menu-toggle nav-dropdown-toggle" ' +
             'aria-haspopup="true" aria-expanded="false" title="Add block below" aria-label="Add block below">+</button>' +
-            '<div class="nav-dropdown-menu create-below-menu" role="menu" aria-label="Choose block type">' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SCENE">Scene</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="ACTION">Action</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="TEXT">Text</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="CHARACTER">Character</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="DIALOGUE">Dialogue</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="DUAL_DIALOGUE">Dual</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="PARENTHETICAL">(Paren)</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="TRANSITION">Transition</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SHOT">Shot</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="LYRICS">Lyrics</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="CENTERED">Centered</button>' +
-            '<hr class="nav-dropdown-divider" />' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SECTION">Section</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SYNOPSIS">Synopsis</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="NOTE">Note</button>' +
-            '<button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="PAGE_BREAK">Page Break</button>' +
-            '<div class="create-below-songs-section" hidden>' +
-            '<hr class="nav-dropdown-divider" />' +
-            '<div class="create-below-songs-heading" role="presentation">Songs</div>' +
-            '<div class="create-below-songs-list" role="group" aria-label="Insert song"></div>' +
-            '</div>' +
-            '<div class="create-below-drafts-section" hidden>' +
-            '<hr class="nav-dropdown-divider" />' +
-            '<div class="create-below-drafts-heading" role="presentation">Notes</div>' +
-            '<div class="create-below-drafts-list" role="group" aria-label="Insert note"></div>' +
-            '</div>' +
-            '</div></div>';
+            '<div class="nav-dropdown-menu create-below-menu" role="menu" aria-label="Choose block type"></div>' +
+            '</div>';
     }
 
     function renderCreateBelowRow(anchorBlockId) {
@@ -934,6 +910,9 @@
             var dropdown = created.querySelector('.create-below-menu-dropdown');
             var toggle = created.querySelector('.create-below-menu-toggle');
             if (dropdown && toggle) {
+                if (window.scriptyHydrateCreateBelowMenu) {
+                    window.scriptyHydrateCreateBelowMenu(dropdown);
+                }
                 dropdown.classList.add('open');
                 toggle.setAttribute('aria-expanded', 'true');
             }

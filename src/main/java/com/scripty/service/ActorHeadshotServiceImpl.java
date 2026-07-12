@@ -3,20 +3,26 @@ package com.scripty.service;
 import com.scripty.dto.Actor;
 import com.scripty.repository.ActorRepository;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * Stores headshots in the {@code actor_headshot} table (mediumblob) instead of
+ * on disk, so the app needs no persistent volume and deploys can overlap.
+ * {@code Actor.headshotPath} stays the "has a headshot" marker the templates
+ * and API assembler already key off; it is set if and only if a blob row
+ * exists (both are written in the same transaction).
+ */
 @Service
 public class ActorHeadshotServiceImpl implements ActorHeadshotService {
 
@@ -33,19 +39,20 @@ public class ActorHeadshotServiceImpl implements ActorHeadshotService {
             "image/gif", ".gif");
 
     private final ActorRepository actorRepository;
-    private final Path headshotsDir;
+    private final JdbcTemplate jdbcTemplate;
     private final long maxBytes;
 
     @Autowired
     public ActorHeadshotServiceImpl(ActorRepository actorRepository,
-                                    @Value("${app.uploads-dir:./uploads}") String uploadsDir,
+                                    JdbcTemplate jdbcTemplate,
                                     @Value("${app.headshot-max-bytes:5242880}") long maxBytes) {
         this.actorRepository = actorRepository;
-        this.headshotsDir = Path.of(uploadsDir).resolve("headshots").toAbsolutePath().normalize();
+        this.jdbcTemplate = jdbcTemplate;
         this.maxBytes = maxBytes;
     }
 
     @Override
+    @Transactional
     public void updateHeadshot(Actor actor, MultipartFile headshot, boolean removeHeadshot) {
         if (actor == null) {
             return;
@@ -63,7 +70,6 @@ public class ActorHeadshotServiceImpl implements ActorHeadshotService {
         }
 
         validateHeadshot(headshot);
-        deleteHeadshotFile(actor);
 
         String storedPath = storeHeadshot(actor.getId(), headshot);
         actor.setHeadshotPath(storedPath);
@@ -71,32 +77,47 @@ public class ActorHeadshotServiceImpl implements ActorHeadshotService {
     }
 
     @Override
+    @Transactional
     public void deleteHeadshot(Actor actor) {
-        if (actor == null) {
+        if (actor == null || actor.getId() == null) {
             return;
         }
-        deleteHeadshotFile(actor);
+        jdbcTemplate.update("DELETE FROM actor_headshot WHERE actor_id = ?", actor.getId());
     }
 
     @Override
     public Optional<Resource> loadHeadshot(Integer actorId) {
-        return actorRepository.findById(actorId)
-                .flatMap(actor -> resolveHeadshotPath(actor).map(FileSystemResource::new));
+        if (actorId == null) {
+            return Optional.empty();
+        }
+        return jdbcTemplate.query(
+                        "SELECT data FROM actor_headshot WHERE actor_id = ?",
+                        (rs, rowNum) -> rs.getBytes(1),
+                        actorId)
+                .stream()
+                .findFirst()
+                .map(ByteArrayResource::new);
     }
 
     @Override
     public Optional<String> getContentType(Integer actorId) {
-        return actorRepository.findById(actorId)
-                .flatMap(this::resolveHeadshotPath)
-                .flatMap(this::probeContentType);
+        if (actorId == null) {
+            return Optional.empty();
+        }
+        return jdbcTemplate.query(
+                        "SELECT content_type FROM actor_headshot WHERE actor_id = ?",
+                        (rs, rowNum) -> rs.getString(1),
+                        actorId)
+                .stream()
+                .findFirst()
+                .map(this::normalizeContentType);
     }
 
     @Override
     public boolean hasHeadshot(Actor actor) {
         return actor != null
                 && actor.getHeadshotPath() != null
-                && !actor.getHeadshotPath().isBlank()
-                && resolveHeadshotPath(actor).isPresent();
+                && !actor.getHeadshotPath().isBlank();
     }
 
     private void validateHeadshot(MultipartFile headshot) {
@@ -111,63 +132,21 @@ public class ActorHeadshotServiceImpl implements ActorHeadshotService {
     }
 
     private String storeHeadshot(Integer actorId, MultipartFile headshot) {
+        byte[] data;
         try {
-            Files.createDirectories(headshotsDir);
-            String contentType = normalizeContentType(headshot.getContentType());
-            String extension = EXTENSIONS.getOrDefault(contentType, ".jpg");
-            String relativePath = "headshots/" + actorId + extension;
-            Path destination = headshotsDir.resolve(actorId + extension);
-            Files.copy(headshot.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
-            return relativePath;
+            data = headshot.getBytes();
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to save headshot.", ex);
         }
-    }
 
-    private void deleteHeadshotFile(Actor actor) {
-        resolveHeadshotPath(actor).ifPresent(path -> {
-            try {
-                Files.deleteIfExists(path);
-            } catch (IOException ignored) {
-                // Best effort cleanup.
-            }
-        });
-
-        if (actor.getId() != null) {
-            for (String extension : EXTENSIONS.values()) {
-                try {
-                    Files.deleteIfExists(headshotsDir.resolve(actor.getId() + extension));
-                } catch (IOException ignored) {
-                    // Best effort cleanup.
-                }
-            }
-        }
-    }
-
-    private Optional<Path> resolveHeadshotPath(Actor actor) {
-        if (actor.getHeadshotPath() == null || actor.getHeadshotPath().isBlank()) {
-            return Optional.empty();
-        }
-
-        Path path = headshotsDir.resolve(extractFilename(actor.getHeadshotPath())).normalize();
-        if (!path.startsWith(headshotsDir) || !Files.isRegularFile(path)) {
-            return Optional.empty();
-        }
-        return Optional.of(path);
-    }
-
-    private String extractFilename(String headshotPath) {
-        int slash = headshotPath.lastIndexOf('/');
-        return slash >= 0 ? headshotPath.substring(slash + 1) : headshotPath;
-    }
-
-    private Optional<String> probeContentType(Path path) {
-        try {
-            String contentType = Files.probeContentType(path);
-            return Optional.ofNullable(normalizeContentType(contentType));
-        } catch (IOException ex) {
-            return Optional.empty();
-        }
+        String contentType = normalizeContentType(headshot.getContentType());
+        // Delete + insert instead of vendor upsert syntax: runs on both MySQL
+        // (prod) and H2 (dev/tests), and replacements are rare.
+        jdbcTemplate.update("DELETE FROM actor_headshot WHERE actor_id = ?", actorId);
+        jdbcTemplate.update(
+                "INSERT INTO actor_headshot (actor_id, content_type, data) VALUES (?, ?, ?)",
+                actorId, contentType, data);
+        return "headshots/" + actorId + EXTENSIONS.getOrDefault(contentType, ".jpg");
     }
 
     private String normalizeContentType(String contentType) {

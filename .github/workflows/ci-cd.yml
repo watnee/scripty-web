@@ -423,7 +423,13 @@ jobs:
           # data lives on one) from CI. If the plan contains destructive
           # changes, this fails — review with `railway config plan` locally and
           # apply deliberately: railway config apply --confirm-destructive
-          if ! railway config apply --yes; then
+          #
+          # --decrypt-variables: without it, existing encrypted variables read
+          # back as preserve() markers, so the diff re-sets every variable and
+          # the apply payload is rejected by the backend ("Invalid
+          # RailwayChangeSet patch: unrecognized key 'type'"). With it, current
+          # values are compared for real and an in-sync config is a no-op.
+          if ! railway config apply --yes --decrypt-variables; then
             echo "::error title=Railway IaC apply failed::If the plan includes destructive changes, CI refuses them by design. Run 'railway config plan' locally, review, then 'railway config apply --confirm-destructive' yourself."
             exit 1
           fi

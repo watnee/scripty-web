@@ -464,17 +464,20 @@ do_railway() {
 
   echo
   echo "Previewing infrastructure changes from .railway/railway.ts …"
-  railway config plan || warn "config plan failed — check .railway/railway.ts"
+  # --decrypt-variables: without it, existing encrypted variables read back as
+  # preserve() markers, so the plan re-sets every variable and apply is
+  # rejected by the backend ("Invalid RailwayChangeSet patch").
+  railway config plan --decrypt-variables || warn "config plan failed — check .railway/railway.ts"
   if interactive; then
     local apply
     read -rp "Apply this plan now (creates/updates web + MySQL + volumes)? [y/N] " apply
     if [[ "$apply" == [yY]* ]]; then
-      railway config apply
+      railway config apply --decrypt-variables
     else
-      echo "Skipped apply — run 'railway config apply' when ready."
+      echo "Skipped apply — run 'railway config apply --decrypt-variables' when ready."
     fi
   else
-    echo "Non-interactive: review the plan above and run 'railway config apply' yourself."
+    echo "Non-interactive: review the plan above and run 'railway config apply --decrypt-variables' yourself."
   fi
 
   # Public domain for the web service (needed for APP_BASE_URL and verify).

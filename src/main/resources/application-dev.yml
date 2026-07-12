@@ -1,4 +1,15 @@
 spring:
+  # Dev-only boot-speed tuning. Lazy init defers MVC/Thymeleaf/springdoc bean
+  # creation to first use (bean *wiring* errors still fail at startup; only
+  # instantiation moves to first request). Deferred JPA bootstrap builds the
+  # EntityManagerFactory on a background thread so the web server comes up
+  # sooner. Prod keeps eager init.
+  main:
+    lazy-initialization: true
+  data:
+    jpa:
+      repositories:
+        bootstrap-mode: deferred
   devtools:
     restart:
       poll-interval: 1s

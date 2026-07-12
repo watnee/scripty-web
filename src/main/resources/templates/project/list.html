@@ -12,6 +12,10 @@
     <div th:replace="~{fragments/nav :: nav('projects')}"></div>
     <main class="project-list-page">
 
+        <div class="login-success" th:if="${passwordChanged}" role="status">
+            <span>Your password is set — welcome to Scripty. Create a project below to start writing.</span>
+        </div>
+
         <div class="project-list-header">
             <div class="project-list-header-text">
                 <h1>Projects</h1>

@@ -9557,32 +9557,6 @@ html.scripty-block-text-selecting .block-actions-controls {
     margin: 0;
 }
 
-@media (max-width: 640px) {
-    /* Keep dialogue as a narrow column — industry shape, not full-bleed prose */
-    .script-block--dialogue .script-block-text,
-    .project-script .block-row:has(.script-character-name) .script-block-text,
-    .project-script .block-content:has(.script-character-name) .block-input-textarea,
-    #table-blocks tr[data-block-id]:has(.script-character-name) .script-block-text,
-    .table-blocks-all .block-row:has(.script-character-name) .script-block-text,
-    .block-content.block-type-dialogue .script-block-text,
-    .block-content.block-type-dialogue .reader-visible-text,
-    .block-content.block-type-dialogue .block-input-textarea {
-        max-width: min(58%, 3.5in);
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .block-content.block-type-dialogue,
-    .block-content.block-type-parenthetical {
-        padding-left: 8%;
-        padding-right: 8%;
-    }
-
-    html:not(.scripty-page-view-mode) .project-script {
-        padding: 0.85rem 0.35rem 1.75rem;
-    }
-}
-
 /* Scene headings stay visible — Safari Reader needs real h2s, not clipped ones */
 .project-script h2.scene-header,
 .project-script h2.script-block-text.scene-header {
@@ -12313,3 +12287,146 @@ body.focus-mode #project-lists-dropdown {
     }
 }
 
+/* ---- Mobile overrides: keep these last so they win the cascade ---- */
+
+@media (max-width: 640px) {
+    /* Keep dialogue as a narrow column — industry shape, not full-bleed prose */
+    .script-block--dialogue .script-block-text,
+    .project-script .block-row:has(.script-character-name) .script-block-text,
+    .project-script .block-content:has(.script-character-name) .block-input-textarea,
+    #table-blocks tr[data-block-id]:has(.script-character-name) .script-block-text,
+    .table-blocks-all .block-row:has(.script-character-name) .script-block-text,
+    .block-content.block-type-dialogue .script-block-text,
+    .block-content.block-type-dialogue .reader-visible-text,
+    .block-content.block-type-dialogue .block-input-textarea {
+        max-width: min(78%, 3.5in);
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .block-content.block-type-dialogue {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    /* Parenthetical: centered under the character cue, no fixed print indent */
+    .block-content.block-type-parenthetical {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .block-content.block-type-parenthetical .script-block-text,
+    .block-content.block-type-parenthetical .reader-visible-text,
+    .block-content.block-type-parenthetical .block-input-textarea {
+        display: block;
+        max-width: min(55%, 2.5in);
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    html:not(.scripty-page-view-mode) .project-script {
+        padding: 0.85rem 0.35rem 1.75rem;
+    }
+}
+
+/*
+ * Mobile continuous editor: the desktop layout reserves left/right gutter
+ * columns for hover-revealed controls. On a phone those gutters crush the
+ * text column (dialogue ended up ~55px wide), so collapse the grid to a
+ * linear flow and float the controls over the row instead.
+ */
+@media (max-width: 640px) {
+    .project-script .script-scene,
+    .project-script .scene-blocks,
+    .project-script .scene-header-row,
+    .project-script .scene-blocks .block-row {
+        display: block;
+    }
+
+    .project-script .scene-blocks .block-row {
+        position: relative;
+    }
+
+    .project-script .block-content {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .project-toolbar-row {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        column-gap: 0.35rem;
+    }
+
+    /* Right-gutter actions (bookmark/pin/move) float over the row's top-right
+       corner; they only paint when their visibility toggles reveal them. */
+    .project-script aside.block-actions {
+        position: absolute;
+        top: 0;
+        right: 0;
+        transform: translateY(-100%);
+        min-width: 0;
+        z-index: 30;
+    }
+
+    .project-script aside.block-actions .block-actions-controls {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        background: var(--box-bg, #fff);
+        border: 1px solid var(--border, #cbd5e1);
+        border-radius: 8px;
+        padding: 0.1rem 0.3rem;
+    }
+
+    /* Hidden-controls mode (default): reveal-on-focus controls become a
+       floating chip above the focused block instead of a reserved gutter. */
+    html.scripty-hide-block-select .project-script aside.block-left-controls {
+        position: absolute;
+        top: -0.3rem;
+        right: 0;
+        transform: translateY(-100%);
+        min-width: 0;
+        padding: 0;
+        z-index: 40;
+    }
+
+    /* Trailing create-row: keep its controls in flow at the end of the
+       script — floating them would cover the last block's text. */
+    html.scripty-hide-block-select .project-script .scene-blocks .block-row:not([data-block-id]) aside.block-left-controls {
+        position: static;
+        transform: none;
+        justify-self: start;
+    }
+
+    html.scripty-hide-block-select .project-script .scene-blocks .block-row:focus-within aside.block-left-controls,
+    html.scripty-hide-block-select .project-script .scene-blocks .block-row.block-controls-revealed aside.block-left-controls {
+        visibility: visible;
+        background: var(--box-bg, #fff);
+        border: 1px solid var(--border, #cbd5e1);
+        border-radius: 8px;
+        padding: 0.2rem 0.4rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+    }
+
+    /* Select mode: checkboxes must stay in reach on every row, so keep the
+       controls in flow as a compact strip above each block. */
+    html:not(.scripty-hide-block-select) .project-script aside.block-left-controls {
+        display: block;
+        min-width: 0;
+        padding: 0 0 0.15rem;
+        text-align: left;
+        /* Chrome applies justify-self to block-level boxes; the desktop
+           gutter rule sets `end`, which would right-align the strip. */
+        justify-self: start;
+    }
+
+    html:not(.scripty-hide-block-select) .project-script aside.block-left-controls .block-left-controls-inner {
+        min-height: 0;
+    }
+
+    /* Slightly larger tap targets for the toolbar menus */
+    .project-tools-group .nav-dropdown-toggle,
+    .project-tools-group a.nav-dropdown-toggle {
+        padding: 0.35em 0.6em;
+    }
+}

@@ -67,9 +67,8 @@
                                 </svg>
                             </a>
                         </div>
-                        <p class="muted"
-                           th:text="${isSongList} ? 'Import a file or start a new song.' : 'Import a file or start a new note.'">
-                            Manage documents.
+                        <p class="muted" th:unless="${isSongList}">
+                            Import a file or start a new note.
                         </p>
                     </div>
                 </div>

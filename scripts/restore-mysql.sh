@@ -251,7 +251,8 @@ echo "Database successfully restored. Total tables: ${TABLE_COUNT}"
 
 # Print row counts of key application tables
 echo "Row counts for key application tables:"
-for tbl in user project scene actor person block; do
+# No `scene` table: scenes are SCENE-type rows in `block`.
+for tbl in user project actor person block; do
   if grep -q -w "${tbl}" <<<"${TABLES}"; then
     ROW_COUNT=$(mysql --defaults-extra-file="${CNF_PATH_VERIFY}" -N -e "SELECT COUNT(*) FROM \`${tbl}\`;" "${MYSQL_BACKUP_DATABASE}" 2>/dev/null || echo "0")
     echo "  - Table '${tbl}': ${ROW_COUNT} rows"

@@ -131,7 +131,7 @@ R2 dump is verified weekly — without touching any database:
   dump (`MIN_SIZE_RATIO`)
 - it downloads and passes `gunzip -t`
 - the full decompressed SQL contains `CREATE TABLE`s, `INSERT`s, and the key
-  application tables (`user project scene actor person block`)
+  application tables (`user project actor person block`)
 
 Runs twice, independently:
 

@@ -199,13 +199,14 @@ PY
         fail "dump contains no INSERT INTO statements"
       fi
       MISSING_TABLES=()
-      for tbl in user project scene actor person block; do
+      # No `scene` table: scenes are SCENE-type rows in `block`.
+      for tbl in user project actor person block; do
         if ! grep -Eq "CREATE TABLE [\`\"]?${tbl}[\`\"]? " "${SQL_PATH}"; then
           MISSING_TABLES+=("${tbl}")
         fi
       done
       if [[ ${#MISSING_TABLES[@]} -eq 0 ]]; then
-        ok "all key application tables present (user project scene actor person block)"
+        ok "all key application tables present (user project actor person block)"
       else
         fail "key application tables missing from dump: ${MISSING_TABLES[*]}"
       fi

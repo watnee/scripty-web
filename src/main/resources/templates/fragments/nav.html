@@ -787,6 +787,9 @@
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 credentials: 'same-origin',
+                // Quiet saves also run while the page is being left — keepalive
+                // lets the request survive the unload.
+                keepalive: quiet,
                 body: buildCreateFormPostBody(form).toString()
             }).then(function(response) {
                 return response.text();
@@ -5982,6 +5985,10 @@
                 fetch(url, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    credentials: 'same-origin',
+                    // Commits also run while the page is being left — keepalive
+                    // lets the request survive the unload.
+                    keepalive: true,
                     body: new URLSearchParams(formData).toString()
                 }).then(function(response) {
                     return response.text();
@@ -5994,6 +6001,31 @@
                     /* keep edit form if save fails */
                 }).finally(function() {
                     delete form.dataset.committing;
+                });
+            });
+        }
+
+        // Create rows only submit on Enter, so typed-but-unconfirmed content
+        // (e.g. the first block of a brand-new project) is lost when the user
+        // leaves the page. Quiet-save any non-empty create row.
+        function commitOpenCreateRows() {
+            document.querySelectorAll(
+                '.block-row:not([data-block-id]):not(.project-script-select-row) textarea[name="content"], ' +
+                'tr:not([data-block-id]) textarea[name="content"]'
+            ).forEach(function(ta) {
+                if (!ta.isConnected || ta.value.trim() === '') return;
+                const row = ta.closest('.block-row, tr');
+                if (!row || row.dataset.enterCreatingBelow === 'true') return;
+                const container = row.closest('.scene-blocks, #table-blocks, tbody');
+                submitCreateRowFromEnter(ta, {
+                    quiet: true,
+                    onDone: function() {
+                        // Quiet saves swap in only the saved block; restore the
+                        // trailing create row for when the user comes back.
+                        if (container && container.isConnected) {
+                            ensureTrailingCreateRow(container);
+                        }
+                    }
                 });
             });
         }
@@ -6145,6 +6177,25 @@
                     window.scriptySaveEditorPosition();
                 }
                 commitOpenBlockEdits();
+                commitOpenCreateRows();
+            }
+        });
+
+        // Hard navigation (hx-boost="false" links, tab close) may skip
+        // visibilitychange in some browsers — flush on pagehide too. The
+        // committing/enterCreatingBelow guards make double-fire safe.
+        window.addEventListener('pagehide', function() {
+            commitOpenBlockEdits();
+            commitOpenCreateRows();
+        });
+
+        // Boosted navigation swaps the body without unloading the page, so
+        // neither visibilitychange nor pagehide fires — flush before htmx
+        // replaces the editor.
+        document.body.addEventListener('htmx:beforeRequest', function(e) {
+            if (e.detail && e.detail.boosted) {
+                commitOpenBlockEdits();
+                commitOpenCreateRows();
             }
         });
 

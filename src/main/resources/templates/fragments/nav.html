@@ -3746,8 +3746,13 @@
                 bookmarksToggle.setAttribute('aria-pressed', showBookmarks ? 'false' : 'true');
                 bookmarksToggle.setAttribute('aria-checked', showBookmarks ? 'true' : 'false');
                 bookmarksToggle.classList.toggle('is-active', !showBookmarks);
-                bookmarksToggle.title = showBookmarks ? 'Hide bookmark buttons in blocks' : 'Show bookmark buttons in blocks';
+                var isMacPlatform = typeof window.scriptyIsMac === 'function' ? window.scriptyIsMac() : /Mac/i.test(navigator.platform);
+                var hint = isMacPlatform ? '⌘⇧B' : 'Ctrl+Shift+B';
+                bookmarksToggle.title = (showBookmarks ? 'Hide bookmark buttons in blocks' : 'Show bookmark buttons in blocks') + ' (' + hint + ')';
                 bookmarksToggle.setAttribute('aria-label', bookmarksToggle.title);
+                if (typeof window.scriptySetMenuShortcut === 'function') {
+                    window.scriptySetMenuShortcut(bookmarksToggle, hint);
+                }
                 syncViewToolbarActive();
             }
 
@@ -3756,8 +3761,13 @@
                 pinsToggle.setAttribute('aria-pressed', showPins ? 'false' : 'true');
                 pinsToggle.setAttribute('aria-checked', showPins ? 'true' : 'false');
                 pinsToggle.classList.toggle('is-active', !showPins);
-                pinsToggle.title = showPins ? 'Hide pin buttons in blocks' : 'Show pin buttons in blocks';
+                var isMacPlatform = typeof window.scriptyIsMac === 'function' ? window.scriptyIsMac() : /Mac/i.test(navigator.platform);
+                var hint = isMacPlatform ? '⌘⇧N' : 'Ctrl+Shift+N';
+                pinsToggle.title = (showPins ? 'Hide pin buttons in blocks' : 'Show pin buttons in blocks') + ' (' + hint + ')';
                 pinsToggle.setAttribute('aria-label', pinsToggle.title);
+                if (typeof window.scriptySetMenuShortcut === 'function') {
+                    window.scriptySetMenuShortcut(pinsToggle, hint);
+                }
                 syncViewToolbarActive();
             }
 
@@ -3766,8 +3776,13 @@
                 selectToggle.setAttribute('aria-pressed', showSelect ? 'false' : 'true');
                 selectToggle.setAttribute('aria-checked', showSelect ? 'true' : 'false');
                 selectToggle.classList.toggle('is-active', !showSelect);
-                selectToggle.title = showSelect ? 'Hide block controls' : 'Show block controls';
+                var isMacPlatform = typeof window.scriptyIsMac === 'function' ? window.scriptyIsMac() : /Mac/i.test(navigator.platform);
+                var hint = isMacPlatform ? '⌘⇧V' : 'Ctrl+Shift+V';
+                selectToggle.title = (showSelect ? 'Hide block controls' : 'Show block controls') + ' (' + hint + ')';
                 selectToggle.setAttribute('aria-label', selectToggle.title);
+                if (typeof window.scriptySetMenuShortcut === 'function') {
+                    window.scriptySetMenuShortcut(selectToggle, hint);
+                }
                 syncViewToolbarActive();
             }
 
@@ -3776,22 +3791,32 @@
                 elementLabelsToggle.setAttribute('aria-pressed', showElementLabels ? 'false' : 'true');
                 elementLabelsToggle.setAttribute('aria-checked', showElementLabels ? 'true' : 'false');
                 elementLabelsToggle.classList.toggle('is-active', !showElementLabels);
-                elementLabelsToggle.title = showElementLabels ? 'Hide element labels in blocks' : 'Show element labels in blocks';
+                var isMacPlatform = typeof window.scriptyIsMac === 'function' ? window.scriptyIsMac() : /Mac/i.test(navigator.platform);
+                var hint = isMacPlatform ? '⌘⇧U' : 'Ctrl+Shift+U';
+                elementLabelsToggle.title = (showElementLabels ? 'Hide element labels in blocks' : 'Show element labels in blocks') + ' (' + hint + ')';
                 elementLabelsToggle.setAttribute('aria-label', elementLabelsToggle.title);
+                if (typeof window.scriptySetMenuShortcut === 'function') {
+                    window.scriptySetMenuShortcut(elementLabelsToggle, hint);
+                }
                 syncViewToolbarActive();
             }
 
             function syncLockToggleUi() {
+                var isMacPlatform = typeof window.scriptyIsMac === 'function' ? window.scriptyIsMac() : /Mac/i.test(navigator.platform);
+                var lockHint = isMacPlatform ? '⌘⇧Q' : 'Ctrl+Shift+Q';
                 var lockTitle = blockEditLocked ? 'Unlock this version' : 'Lock this version';
                 if (lockToggle) {
                     lockToggle.setAttribute('aria-pressed', blockEditLocked ? 'true' : 'false');
                     lockToggle.setAttribute('aria-checked', blockEditLocked ? 'true' : 'false');
                     lockToggle.classList.toggle('is-active', blockEditLocked);
-                    lockToggle.title = lockTitle;
-                    lockToggle.setAttribute('aria-label', lockTitle);
+                    lockToggle.title = lockTitle + ' (' + lockHint + ')';
+                    lockToggle.setAttribute('aria-label', lockToggle.title);
                     var lockLabel = lockToggle.querySelector('.lock-toggle-label');
                     if (lockLabel) {
                         lockLabel.textContent = lockTitle;
+                    }
+                    if (typeof window.scriptySetMenuShortcut === 'function') {
+                        window.scriptySetMenuShortcut(lockToggle, lockHint);
                     }
                 }
                 if (editionToggle) {

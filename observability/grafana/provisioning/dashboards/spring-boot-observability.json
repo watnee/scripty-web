@@ -824,7 +824,11 @@
   "templating": {
     "list": [
       {
-        "current": {},
+        "current": {
+          "selected": true,
+          "text": "scripty",
+          "value": "scripty"
+        },
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
@@ -835,7 +839,13 @@
         "label": "Application Name",
         "multi": false,
         "name": "app_name",
-        "options": [],
+        "options": [
+          {
+            "selected": true,
+            "text": "scripty",
+            "value": "scripty"
+          }
+        ],
         "query": {
           "query": "label_values(application)",
           "refId": "StandardVariableQuery"
@@ -845,27 +855,6 @@
         "skipUrlSync": false,
         "sort": 0,
         "type": "query"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "",
-          "value": ""
-        },
-        "description": "query with keyword",
-        "hide": 0,
-        "label": "Log Query",
-        "name": "log_keyword",
-        "options": [
-          {
-            "selected": true,
-            "text": "",
-            "value": ""
-          }
-        ],
-        "query": "",
-        "skipUrlSync": false,
-        "type": "textbox"
       }
     ]
   },

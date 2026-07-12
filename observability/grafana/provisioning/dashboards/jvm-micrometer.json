@@ -2794,14 +2794,24 @@
     "list": [
       {
         "allValue": null,
-        "current": {},
+        "current": {
+          "selected": true,
+          "text": "scripty",
+          "value": "scripty"
+        },
         "datasource": "Prometheus",
         "hide": 0,
         "includeAll": false,
         "label": "Application",
         "multi": false,
         "name": "application",
-        "options": [],
+        "options": [
+          {
+            "selected": true,
+            "text": "scripty",
+            "value": "scripty"
+          }
+        ],
         "query": "label_values(application)",
         "refresh": 2,
         "regex": "",

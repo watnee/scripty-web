@@ -8,9 +8,9 @@ This project defines its Railway infrastructure in code.
 
 Scripty is a Spring Boot (Java 17 / Maven) app. The generated config wires:
 
-- `web` — GitHub `watnee/scripty`, Dockerfile image layout (`scripty.jar`), `/health` check, prod start command
+- `web` — no GitHub source (CI deploys via `railway up --ci`; a connected repo would double-deploy every push), Dockerfile image layout (`scripty.jar`), `/health` check, prod start command
 - `MySQL` — managed MySQL with JDBC vars for `application-prod.yml` (volume backups: Daily / Weekly / Monthly via `./scripts/railway-mysql-backups.sh ensure`)
-- `uploads` — volume mounted at `/app/uploads`
+- No volume on `web` — actor headshots are stored in MySQL (`actor_headshot` table), so deploys can overlap with zero downtime (a mounted volume forces a stop-start swap)
 
 **This file is the source of truth for Railway.** The legacy root `railway.json` (Config-as-Code) was removed when the project migrated to IaC — service settings (build, start command, healthcheck) are managed here and applied with `railway config apply`; GitHub Actions `railway up` only pushes code. From-scratch setup: `./scripts/bootstrap-deploy.sh railway` (see [docs/DEPLOY.md](../docs/DEPLOY.md)).
 

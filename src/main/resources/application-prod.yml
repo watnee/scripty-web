@@ -46,7 +46,6 @@ logging:
       console: ${LOG_FORMAT:ecs}
 
 app:
-  uploads-dir: ./uploads
   headshot-max-bytes: 5242880
   base-url: ${APP_BASE_URL:}
   mail-from: ${MAIL_FROM:Scripty <noreply@localhost>}
@@ -55,6 +54,6 @@ app:
   # When set, emails go through the Resend HTTP API and the SMTP settings above
   # are ignored; MAIL_ENABLED is not required.
   resend-api-key: ${RESEND_API_KEY:}
-  asset-version: ${APP_ASSET_VERSION:210}
+  asset-version: ${APP_ASSET_VERSION:212}
   # Static assets + public offline shells only; project HTML lives in IndexedDB.
   service-worker-enabled: true

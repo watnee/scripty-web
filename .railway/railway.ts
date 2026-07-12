@@ -8,19 +8,17 @@ export default defineRailway(() => {
     region: "sfo",
     sizeMB: 50000,
   });
-  const webVolume = volume("web-volume", {
-    alerts: { usage: { "100": {}, "80": {}, "95": {} } },
-    allowOnlineResize: true,
-    region: "sfo",
-    sizeMB: 50000,
-  });
-
   const web = service("web", {
-    source: github("watnee/scripty"),
+    // No GitHub source on purpose: CI deploys via `railway up --ci`, and a
+    // connected repo would auto-deploy every main push a second time.
+    // No volume on purpose either: headshots live in MySQL (actor_headshot),
+    // and a volume would force a stop-start swap (downtime) on every deploy.
     build: {
       buildEnvironment: "V3",
       builder: "DOCKERFILE",
       dockerfilePath: "Dockerfile",
+      // Kept although no repo is connected: `railway config apply` cannot
+      // unset watchPatterns, so omitting them leaves a permanent plan diff.
       watchPatterns: [
         "src/**",
         "pom.xml",
@@ -32,9 +30,6 @@ export default defineRailway(() => {
     healthcheck: "/health",
     healthcheckTimeout: 900,
     replicas: 1,
-    volumeMounts: {
-      "/app/uploads": webVolume,
-    },
     env: {
       // application-prod.yml datasource (private Railway networking)
       MYSQLDATABASE: MySQL.env.MYSQLDATABASE,
@@ -126,7 +121,6 @@ export default defineRailway(() => {
       MySQL,
       web,
       mysqlVolume,
-      webVolume,
       prometheusVolume,
       grafanaVolume,
       prometheus,

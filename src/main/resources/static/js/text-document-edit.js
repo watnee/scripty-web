@@ -330,17 +330,16 @@
         return state;
     }
 
-    window.addEventListener('beforeunload', function (e) {
+    window.addEventListener('beforeunload', function () {
         if (!current) {
             return;
         }
         if (!current.isDirty() && !current.hasPending()) {
             return;
         }
-        // Best-effort flush; browsers may cancel async work on unload.
+        // Best-effort flush via keepalive fetch; no leave-confirmation
+        // prompt since edits auto-save.
         current.saveNow(true);
-        e.preventDefault();
-        e.returnValue = '';
     });
 
     document.addEventListener('visibilitychange', function () {

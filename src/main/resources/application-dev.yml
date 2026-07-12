@@ -51,9 +51,8 @@ ADMIN_USERNAME: admin
 ADMIN_PASSWORD: admin
 
 app:
-  asset-version: 210
+  asset-version: 212
   service-worker-enabled: true
-  uploads-dir: ./uploads
   headshot-max-bytes: 5242880
   base-url: http://localhost:8080
   mail-from: Scripty <noreply@localhost>

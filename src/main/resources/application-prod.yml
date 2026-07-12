@@ -46,7 +46,6 @@ logging:
       console: ${LOG_FORMAT:ecs}
 
 app:
-  uploads-dir: ./uploads
   headshot-max-bytes: 5242880
   base-url: ${APP_BASE_URL:}
   mail-from: ${MAIL_FROM:Scripty <noreply@localhost>}

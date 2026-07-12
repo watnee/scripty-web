@@ -405,6 +405,17 @@
                     <div class="nav-dropdown-divider" role="separator"></div>
                     <a class="nav-dropdown-item"
                        role="menuitem"
+                       th:href="@{/project/stats(id=${viewModel.id}, editionId=${viewModel.editionId})}"
+                       title="Scene, page, character, and location statistics">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                        <span>Script stats</span>
+                    </a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
                        th:href="@{/project/read(id=${viewModel.id}, editionId=${viewModel.editionId})}"
                        hx-boost="false"
                        title="Open a minimal read-only view (works with Safari Reader)">

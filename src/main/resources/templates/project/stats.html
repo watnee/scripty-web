@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - Script Stats</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main class="script-stats-page">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/show(id=${stats.projectId}, editionId=${stats.editionId})}" th:text="${stats.projectTitle}">Project</a></li>
+                    <li aria-current="page">Script Stats</li>
+                </ol>
+            </nav>
+        </div>
+        <h1>Script Stats</h1>
+        <p class="muted script-stats-edition" th:if="${stats.editionName != null and !#strings.isEmpty(stats.editionName)}">
+            Edition: <span th:text="${stats.editionName}"></span>
+        </p>
+
+        <div class="script-stats-empty" th:if="${stats.sceneCount == 0 and stats.totalWords == 0}">
+            <p class="muted">Nothing to measure yet — start writing and your stats will show up here.</p>
+            <a th:href="@{/project/show(id=${stats.projectId}, editionId=${stats.editionId})}" role="button">Back to script</a>
+        </div>
+
+        <th:block th:unless="${stats.sceneCount == 0 and stats.totalWords == 0}">
+            <section class="script-stats-tiles" aria-label="Script overview">
+                <div class="script-stats-tile">
+                    <span class="script-stats-tile-value" th:text="${stats.pageEstimate}">0</span>
+                    <span class="script-stats-tile-label">Estimated pages</span>
+                    <span class="script-stats-tile-hint" th:text="|~${stats.pageEstimate} min screen time|"></span>
+                </div>
+                <div class="script-stats-tile">
+                    <span class="script-stats-tile-value" th:text="${stats.sceneCount}">0</span>
+                    <span class="script-stats-tile-label">Scenes</span>
+                    <span class="script-stats-tile-hint"
+                          th:if="${stats.interiorSceneCount > 0 or stats.exteriorSceneCount > 0}"
+                          th:text="|${stats.interiorSceneCount} INT · ${stats.exteriorSceneCount} EXT|"></span>
+                </div>
+                <div class="script-stats-tile">
+                    <span class="script-stats-tile-value" th:text="${#numbers.formatInteger(stats.totalWords, 1, 'COMMA')}">0</span>
+                    <span class="script-stats-tile-label">Words</span>
+                </div>
+                <div class="script-stats-tile">
+                    <span class="script-stats-tile-value" th:text="${stats.speakingCharacterCount}">0</span>
+                    <span class="script-stats-tile-label">Speaking characters</span>
+                </div>
+                <div class="script-stats-tile">
+                    <span class="script-stats-tile-value" th:text="${stats.locationCount}">0</span>
+                    <span class="script-stats-tile-label">Locations</span>
+                    <span class="script-stats-tile-hint"
+                          th:if="${stats.daySceneCount > 0 or stats.nightSceneCount > 0}"
+                          th:text="|${stats.daySceneCount} day · ${stats.nightSceneCount} night|"></span>
+                </div>
+            </section>
+
+            <section class="script-stats-balance" th:if="${stats.dialogueWords > 0 or stats.actionWords > 0}" aria-label="Dialogue and action balance">
+                <h2>Dialogue vs. action</h2>
+                <div class="script-stats-balance-bar" role="img"
+                     th:aria-label="|${stats.dialoguePercent}% dialogue, ${stats.actionPercent}% action|">
+                    <span class="script-stats-balance-dialogue" th:style="|width: ${stats.dialoguePercent}%|"></span>
+                </div>
+                <p class="script-stats-balance-legend muted">
+                    <span class="script-stats-legend-swatch script-stats-legend-swatch--dialogue" aria-hidden="true"></span>
+                    <span th:text="|Dialogue ${stats.dialoguePercent}% (${#numbers.formatInteger(stats.dialogueWords, 1, 'COMMA')} words)|"></span>
+                    <span class="script-stats-legend-swatch script-stats-legend-swatch--action" aria-hidden="true"></span>
+                    <span th:text="|Action ${stats.actionPercent}% (${#numbers.formatInteger(stats.actionWords, 1, 'COMMA')} words)|"></span>
+                </p>
+            </section>
+
+            <div class="script-stats-columns">
+                <section class="script-stats-panel" th:if="${!#lists.isEmpty(stats.characters)}" aria-label="Characters by dialogue">
+                    <h2>Characters</h2>
+                    <table class="script-stats-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Character</th>
+                                <th scope="col" class="script-stats-num">Speeches</th>
+                                <th scope="col" class="script-stats-num">Words</th>
+                                <th scope="col" class="script-stats-num">Scenes</th>
+                                <th scope="col" class="script-stats-share">Dialogue share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="character : ${stats.characters}">
+                                <td th:text="${character.name}"></td>
+                                <td class="script-stats-num" th:text="${character.speechCount}"></td>
+                                <td class="script-stats-num" th:text="${#numbers.formatInteger(character.wordCount, 1, 'COMMA')}"></td>
+                                <td class="script-stats-num" th:text="${character.sceneCount}"></td>
+                                <td class="script-stats-share">
+                                    <span class="script-stats-share-bar" aria-hidden="true">
+                                        <span class="script-stats-share-fill" th:style="|width: ${character.dialogueSharePercent}%|"></span>
+                                    </span>
+                                    <span class="script-stats-share-num" th:text="|${character.dialogueSharePercent}%|"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="script-stats-panel" th:if="${!#lists.isEmpty(stats.locations)}" aria-label="Locations by scene count">
+                    <h2>Locations</h2>
+                    <table class="script-stats-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Location</th>
+                                <th scope="col" class="script-stats-num">Scenes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="location : ${stats.locations}">
+                                <td th:text="${location.name}"></td>
+                                <td class="script-stats-num" th:text="${location.sceneCount}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+
+            <p class="muted script-stats-footnote">
+                Page count is an estimate based on standard screenplay formatting (Courier 12, ~55 lines per page).
+                One page roughly equals one minute of screen time.
+            </p>
+        </th:block>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

@@ -14,12 +14,14 @@ import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectTeamViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
+import com.scripty.viewmodel.project.stats.ScriptStatsViewModel;
 import com.scripty.service.DocxExportService;
 import com.scripty.service.FdxExportService;
 import com.scripty.service.FountainExportService;
 import com.scripty.service.FountainImportService;
 import com.scripty.service.PdfExportService;
 import com.scripty.service.ProjectService;
+import com.scripty.service.ScriptStatsService;
 import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.InvitationService;
@@ -101,6 +103,9 @@ public class ProjectController {
     private boolean denyScriptEdit(Integer projectId, Principal principal) {
         return !projectAccess.canEditScript(projectId, principal);
     }
+
+    @Autowired
+    ScriptStatsService scriptStatsService;
 
     @Autowired
     FountainImportService fountainImportService;
@@ -267,6 +272,23 @@ public class ProjectController {
         }
         model.addAttribute("viewModel", viewModel);
         return "project/read";
+    }
+
+    @RequestMapping(value = "/stats")
+    public String stats(@RequestParam Integer id,
+                        @RequestParam(required = false) Integer editionId,
+                        Model model,
+                        Principal principal) {
+        if (denyProjectAccess(id, principal)) {
+            return "redirect:/project/list";
+        }
+        boolean canBrowseEditions = projectAccess.canEditScript(id, principal);
+        ScriptStatsViewModel stats = scriptStatsService.getStats(id, editionId, canBrowseEditions);
+        if (stats == null) {
+            return "redirect:/project/list";
+        }
+        model.addAttribute("stats", stats);
+        return "project/stats";
     }
 
     @RequestMapping(value = "/undo", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)

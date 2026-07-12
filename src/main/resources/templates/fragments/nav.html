@@ -5977,6 +5977,7 @@
                 }
 
                 form.dataset.committing = 'true';
+                invalidateHtmxHistoryCache();
                 syncReaderVisibleText(textarea);
 
                 const formData = new FormData(form);
@@ -6000,9 +6001,23 @@
                 }).catch(function() {
                     /* keep edit form if save fails */
                 }).finally(function() {
+                    // htmx may have snapshotted the page between the commit
+                    // starting and this response — invalidate again.
+                    invalidateHtmxHistoryCache();
                     delete form.dataset.committing;
                 });
             });
+        }
+
+        // htmx snapshots pages into its history cache before a leave-time
+        // commit lands, so back/forward would restore a view without the
+        // saved block. Drop the cache so those navigations refetch instead.
+        function invalidateHtmxHistoryCache() {
+            try {
+                localStorage.removeItem('htmx-history-cache');
+            } catch (e) {
+                /* storage unavailable (private mode) — stale restore only */
+            }
         }
 
         // Create rows only submit on Enter, so typed-but-unconfirmed content
@@ -6017,9 +6032,13 @@
                 const row = ta.closest('.block-row, tr');
                 if (!row || row.dataset.enterCreatingBelow === 'true') return;
                 const container = row.closest('.scene-blocks, #table-blocks, tbody');
+                invalidateHtmxHistoryCache();
                 submitCreateRowFromEnter(ta, {
                     quiet: true,
                     onDone: function() {
+                        // Invalidate again: htmx may have snapshotted the page
+                        // between the sync flush above and this response.
+                        invalidateHtmxHistoryCache();
                         // Quiet saves swap in only the saved block; restore the
                         // trailing create row for when the user comes back.
                         if (container && container.isConnected) {
@@ -6197,6 +6216,16 @@
                 commitOpenBlockEdits();
                 commitOpenCreateRows();
             }
+        });
+
+        // Back/forward (popstate) restores a cached page without firing
+        // visibilitychange (tab stays visible), pagehide (same-document
+        // navigation), or a boosted request. htmx snapshots the outgoing
+        // page via beforeHistorySave right before the swap — flush there,
+        // or the first block of a brand-new project is lost on Back.
+        document.body.addEventListener('htmx:beforeHistorySave', function() {
+            commitOpenBlockEdits();
+            commitOpenCreateRows();
         });
 
     })();

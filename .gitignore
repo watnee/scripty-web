@@ -308,6 +308,8 @@ cloudflare/.dev.vars
 cloudflare/.dev.vars.*
 !cloudflare/.dev.vars.example
 cloudflare/.deploy-secrets
+# Encrypted secrets snapshots (scripts/backup-secrets.sh) — ciphertext, but keep out of git
+scripty-secrets-*.json.enc
 cloudflare/.worker-url
 .wrangler/
 cloudflare/.wrangler/

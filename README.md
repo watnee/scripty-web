@@ -29,13 +29,14 @@ Cursor Mobile / cloud agents push to `cursor/*` branches. Those do **not** deplo
 
 ### One-time setup
 
-**Fast path:** the whole from-scratch setup (Railway project + IaC apply, GitHub
-secrets, first Cloudflare deploy) is scripted — see [docs/DEPLOY.md](docs/DEPLOY.md):
+**Fast path:** the whole from-scratch setup (GitHub repo + Actions environment,
+Railway project + IaC apply, secrets, first deploy on both platforms) is
+scripted — see [docs/DEPLOY.md](docs/DEPLOY.md):
 
 ```bash
 npm ci
 npm run deploy:doctor               # read-only audit: what's missing + fix commands
-./scripts/bootstrap-deploy.sh all   # railway → secrets → cloudflare → verify
+./scripts/bootstrap-deploy.sh all   # github → railway → secrets → cloudflare (or ci) → verify
 ```
 
 Manual reference:
@@ -77,7 +78,7 @@ Manual reference:
 
 - `.railway/railway.ts` — Infrastructure as Code, the source of truth for Railway (web service with Dockerfile build + `/health` healthcheck, MySQL, volumes, env vars). Preview with `railway config plan`, apply with `railway config apply`
 - `.railwayignore` — keeps `railway up` uploads small (skips `target/`, local DBs, logs, etc.)
-- `scripts/bootstrap-deploy.sh` — from-scratch bootstrap + setup audit (`doctor`/`railway`/`secrets`/`cloudflare`/`verify`); runbook in [docs/DEPLOY.md](docs/DEPLOY.md)
+- `scripts/bootstrap-deploy.sh` — from-scratch bootstrap + setup audit (`doctor`/`github`/`railway`/`secrets`/`cloudflare`/`ci`/`verify`); runbook in [docs/DEPLOY.md](docs/DEPLOY.md)
 - `Dockerfile` + `cloudflare/` — Cloudflare Containers Worker that proxies to the Spring Boot image; details in [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md)
 - `scripts/sync-railway-cloudflare.sh` — copies Railway MySQL **TCP proxy** credentials into Cloudflare Worker / GitHub Actions secrets so both platforms stay aligned
 - `scripts/cf-token.sh` — mints/rotates the scoped Cloudflare API token CI deploys with and pushes it to GitHub secrets (no manual token creation in the dashboard)

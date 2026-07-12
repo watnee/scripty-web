@@ -1,13 +1,12 @@
-# Deploying Scripty from scratch (Railway + Cloudflare)
+# Deploying Scripty from scratch (GitHub + Railway + Cloudflare)
 
-Everything needed to take a fresh clone (or a brand-new Railway/Cloudflare
-account) to a running production deploy on **both** platforms, driven by one
-script:
+Everything needed to take a fresh clone (or brand-new GitHub/Railway/Cloudflare
+accounts) to a running production deploy, driven by one script:
 
 ```bash
-npm ci                              # wrangler et al. (devDependencies)
+npm ci                              # wrangler + Railway TS SDK (also needed by CI's IaC apply)
 npm run deploy:doctor               # read-only: what exists, what's missing, how to fix it
-./scripts/bootstrap-deploy.sh all   # railway → secrets → cloudflare → verify
+./scripts/bootstrap-deploy.sh all   # github → railway → secrets → cloudflare (or ci) → verify
 ```
 
 Every stage is idempotent — re-run any of them at any time. `doctor` never
@@ -19,14 +18,24 @@ doubles as a setup audit in scripts.
 | Tool | Needed for | Install / login |
 |------|-----------|-----------------|
 | Railway CLI | `railway`, `secrets`, `verify` | `railway login` |
-| GitHub CLI (`gh`) | `secrets`, doctor's secret checks | `gh auth login` |
+| GitHub CLI (`gh`) | `github`, `secrets`, `ci`, doctor's repo/secret checks | `gh auth login` |
 | Node 22+ | wrangler (devDependency) | `npm ci` |
-| Docker (running) | `cloudflare` stage only (container image build) | CI can do this deploy instead |
+| Docker (running) | `cloudflare` stage only (container image build) | skip it — the `ci` stage deploys from Actions |
 | Cloudflare account | Workers **Paid** plan (Containers requirement) | `npx wrangler login` (OAuth — no token needed) |
 
 ## The stages
 
-### 1. `./scripts/bootstrap-deploy.sh railway`
+### 1. `./scripts/bootstrap-deploy.sh github`
+
+- Creates the GitHub repo if this clone has none (`gh repo create … --source=. --push`)
+  and verifies the `origin` remote resolves.
+- Enables GitHub Actions if the repo has it off.
+- Ensures the **`production`** environment exists (deploy jobs target it).
+  Optional manual gate: Settings → Environments → production → required reviewers.
+- Warns if `.railway/railway.ts` builds from a different repo than this one
+  (`github("owner/name")` must match, or Railway builds someone else's code).
+
+### 2. `./scripts/bootstrap-deploy.sh railway`
 
 - Links the repo to a Railway project (`railway link`) or creates one
   (`railway init -n scripty`).
@@ -44,7 +53,7 @@ have them: `RESEND_API_KEY`, `MAIL_FROM`, `METRICS_TOKEN` (see
 [OBSERVABILITY.md](OBSERVABILITY.md)). They are declared `preserve()` in the
 IaC so applies never clobber them.
 
-### 2. `./scripts/bootstrap-deploy.sh secrets`
+### 3. `./scripts/bootstrap-deploy.sh secrets`
 
 Pushes the GitHub Actions secrets CI deploys with:
 
@@ -66,9 +75,9 @@ Optional extras:
 - R2 backup secrets for the nightly `mysqldump` workflow — see
   [BACKUP.md](BACKUP.md).
 
-### 3. `./scripts/bootstrap-deploy.sh cloudflare`
+### 4. `./scripts/bootstrap-deploy.sh cloudflare` — or `ci` without Docker
 
-First Worker deploy (needs Docker running locally):
+`cloudflare` is the local first Worker deploy (needs Docker running):
 
 - Writes the Worker's MySQL secrets from Railway's **public TCP proxy**
   (Cloudflare cannot reach `*.railway.internal`).
@@ -79,10 +88,14 @@ First Worker deploy (needs Docker running locally):
 - Caches the printed `workers.dev` URL in `cloudflare/.worker-url`
   (gitignored) so `verify` can find it.
 
-No Docker locally? Skip this stage and let CI do it: push to `main` or run
-**Actions → CI/CD → Run workflow** once the secrets stage is done.
+No Docker locally? `./scripts/bootstrap-deploy.sh ci` instead: it dispatches
+the **CI/CD** workflow on `main` and watches it — Actions builds and deploys
+**both** platforms (`all` picks this path automatically when Docker is
+unavailable). The Railway deploy job also runs `railway config apply` first,
+so IaC changes land with every push to `main`; destructive plans are refused
+in CI by design and must be applied deliberately from a laptop.
 
-### 4. `./scripts/bootstrap-deploy.sh verify`
+### 5. `./scripts/bootstrap-deploy.sh verify`
 
 Curls `/health` on the Railway domain and the Worker URL. The first container
 cold start on Cloudflare can take a few minutes.

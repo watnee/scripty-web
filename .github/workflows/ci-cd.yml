@@ -402,12 +402,31 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli@5.26.0
 
+      # `railway config apply` evaluates .railway/railway.ts via the `railway`
+      # npm package (TypeScript SDK) — it must be installed in node_modules or
+      # the CLI fails with "Could not find Railway configuration support".
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install npm dependencies (Railway TS SDK)
+        run: npm ci
+
       - name: Apply Railway configuration (IaC)
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           echo "Applying Railway Infrastructure-as-Code configuration..."
-          railway config apply --yes --confirm-destructive
+          # No --confirm-destructive: never auto-delete services/volumes (MySQL
+          # data lives on one) from CI. If the plan contains destructive
+          # changes, this fails — review with `railway config plan` locally and
+          # apply deliberately: railway config apply --confirm-destructive
+          if ! railway config apply --yes; then
+            echo "::error title=Railway IaC apply failed::If the plan includes destructive changes, CI refuses them by design. Run 'railway config plan' locally, review, then 'railway config apply --confirm-destructive' yourself."
+            exit 1
+          fi
 
       - name: Deploy to Railway
         id: deploy

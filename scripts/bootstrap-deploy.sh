@@ -4,11 +4,13 @@
 #
 # One command per stage, all idempotent — safe to re-run any time:
 #   ./scripts/bootstrap-deploy.sh doctor      # read-only: what is set up, what is missing, how to fix it
+#   ./scripts/bootstrap-deploy.sh github      # create/verify the repo, enable Actions, 'production' environment
 #   ./scripts/bootstrap-deploy.sh railway     # link/create project, apply IaC, domain, backups, RAILWAY_SERVICE_ID
 #   ./scripts/bootstrap-deploy.sh secrets     # push GitHub Actions secrets (Railway token, Cloudflare token, MYSQL* fallback)
 #   ./scripts/bootstrap-deploy.sh cloudflare  # first wrangler deploy (Worker + container image + MySQL secrets)
+#   ./scripts/bootstrap-deploy.sh ci          # dispatch the CI/CD workflow on main and watch it (deploys both platforms)
 #   ./scripts/bootstrap-deploy.sh verify      # curl /health on the deployed platforms
-#   ./scripts/bootstrap-deploy.sh all         # railway → secrets → cloudflare → verify
+#   ./scripts/bootstrap-deploy.sh all         # github → railway → secrets → cloudflare (or ci) → verify
 #
 # Reuses the focused scripts rather than duplicating them:
 #   scripts/cf-token.sh                Cloudflare CI token mint/rotate (no dashboard tokens)
@@ -109,6 +111,20 @@ gh_secret_present() {
   gh secret list 2>/dev/null | awk '{print $1}' | grep -qx "$1"
 }
 
+gh_ready() {
+  have_cmd gh && gh auth status >/dev/null 2>&1
+}
+
+# Prints owner/name of the repo this directory maps to, or fails.
+gh_repo() {
+  gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null
+}
+
+# Repo the Railway IaC builds from, e.g. github("watnee/scripty").
+iac_source_repo() {
+  sed -n 's/.*github("\([^"]*\)").*/\1/p' .railway/railway.ts | head -n1
+}
+
 wrangler_local() {
   [[ -x node_modules/.bin/wrangler ]]
 }
@@ -151,6 +167,42 @@ do_doctor() {
     else
       miss "wrangler not logged in" "npx wrangler login"
     fi
+  fi
+
+  section "GitHub repo & Actions"
+  if gh_ready; then
+    local repo=""
+    if repo="$(gh_repo)"; then
+      ok "repo: ${repo}"
+      local actions_enabled
+      actions_enabled="$(gh api "repos/${repo}/actions/permissions" -q .enabled 2>/dev/null || echo unknown)"
+      case "$actions_enabled" in
+        true)  ok "Actions enabled" ;;
+        false) miss "Actions disabled" "./scripts/bootstrap-deploy.sh github" ;;
+        *)     warn "could not read Actions state" ;;
+      esac
+      if gh api "repos/${repo}/environments/production" >/dev/null 2>&1; then
+        ok "environment 'production' exists"
+      else
+        warn "environment 'production' absent — auto-created on first deploy, or: ./scripts/bootstrap-deploy.sh github"
+      fi
+      local iac_repo
+      iac_repo="$(iac_source_repo || true)"
+      if [[ -n "$iac_repo" && "$iac_repo" != "$repo" ]]; then
+        warn "IaC builds from github(\"${iac_repo}\") but this repo is ${repo} — update .railway/railway.ts"
+      fi
+      local last_run
+      last_run="$(gh run list --workflow 'CI/CD' --branch main --limit 1 --json status,conclusion -q '.[0] | (.conclusion // .status)' 2>/dev/null || true)"
+      case "$last_run" in
+        success)      ok "last CI/CD run on main: success" ;;
+        "")           warn "no CI/CD runs on main yet — first deploy: ./scripts/bootstrap-deploy.sh ci" ;;
+        *)            warn "last CI/CD run on main: ${last_run} (gh run list --workflow CI/CD)" ;;
+      esac
+    else
+      miss "no GitHub repo for this directory (origin remote missing or repo not created)" "./scripts/bootstrap-deploy.sh github"
+    fi
+  else
+    warn "gh unavailable — skipped repo checks"
   fi
 
   section "Railway project"
@@ -213,6 +265,87 @@ do_doctor() {
     printf '%s\n' "${NEXT_STEPS[@]}" | awk '!seen[$0]++ {print "  " ++n ". " $0}'
   fi
   return 1
+}
+
+# --- github ------------------------------------------------------------------
+
+do_github() {
+  need_cmd gh
+  gh_ready || die "gh not authenticated — run: gh auth login"
+
+  local repo=""
+  if repo="$(gh_repo)"; then
+    echo "GitHub repo: ${repo}"
+  else
+    echo "No GitHub repo detected (origin remote missing or repo not created)."
+    if ! interactive; then
+      die "create one first: gh repo create scripty --private --source=. --remote=origin --push"
+    fi
+    local name vis
+    read -rp "Repository name [scripty]: " name
+    name="${name:-scripty}"
+    read -rp "Visibility [private/public] (default private): " vis
+    [[ "$vis" == "public" ]] || vis="private"
+    gh repo create "$name" "--${vis}" --source=. --remote=origin --push
+    repo="$(gh_repo)" || die "repo created but 'gh repo view' still fails — check the origin remote"
+    echo "Created ${repo} and pushed the current branch."
+  fi
+
+  # CI/CD (deploys) and backup-db both run on Actions.
+  local actions_enabled
+  actions_enabled="$(gh api "repos/${repo}/actions/permissions" -q .enabled 2>/dev/null || echo unknown)"
+  if [[ "$actions_enabled" == "false" ]]; then
+    gh api --method PUT "repos/${repo}/actions/permissions" \
+        -F enabled=true -f allowed_actions=all >/dev/null \
+      && echo "Enabled GitHub Actions (was off)." \
+      || warn "could not enable Actions — repo Settings → Actions → General"
+  else
+    echo "GitHub Actions: ${actions_enabled}"
+  fi
+
+  # Deploy jobs target this environment; creating it up front means the first
+  # run cannot stall on it, and you can add required reviewers for a manual gate.
+  if gh api --method PUT "repos/${repo}/environments/production" >/dev/null 2>&1; then
+    echo "Environment 'production' ensured (optional approval gate: Settings → Environments → production → required reviewers)."
+  else
+    warn "could not create the 'production' environment (needs repo admin) — it is auto-created on the first deploy run"
+  fi
+
+  local iac_repo
+  iac_repo="$(iac_source_repo || true)"
+  if [[ -n "$iac_repo" && "$iac_repo" != "$repo" ]]; then
+    warn "Railway IaC builds from github(\"${iac_repo}\") but this repo is ${repo} — update .railway/railway.ts before 'railway config apply'"
+  fi
+
+  echo
+  echo "GitHub stage done. Next: ./scripts/bootstrap-deploy.sh railway"
+}
+
+# --- ci ----------------------------------------------------------------------
+
+# First (or any) deploy without local Docker: let Actions build and ship both
+# platforms. Requires the 'secrets' stage and the workflow on main.
+do_ci() {
+  need_cmd gh
+  gh_ready || die "gh not authenticated — run: gh auth login"
+  gh_repo >/dev/null || die "no GitHub repo — run: ./scripts/bootstrap-deploy.sh github"
+
+  echo "Dispatching CI/CD on main (Verify → Deploy Railway ∥ Deploy Cloudflare) …"
+  gh workflow run "CI/CD" --ref main -f reason="bootstrap-deploy.sh ci" \
+    || die "dispatch failed — is .github/workflows/ci-cd.yml on main in the remote repo?"
+
+  echo "Waiting for the run to register …"
+  sleep 5
+  local run_id
+  run_id="$(gh run list --workflow 'CI/CD' --branch main --limit 1 --json databaseId -q '.[0].databaseId' 2>/dev/null || true)"
+  if [[ -z "$run_id" ]]; then
+    warn "could not locate the dispatched run — follow it with: gh run list --workflow CI/CD"
+    return 0
+  fi
+  echo "Watching run ${run_id} (Ctrl-C is safe — the run keeps going on GitHub) …"
+  gh run watch "$run_id" --exit-status
+  echo
+  echo "CI deploy finished. Next: ./scripts/bootstrap-deploy.sh verify"
 }
 
 # --- railway -----------------------------------------------------------------
@@ -293,7 +426,8 @@ push_railway_service_id() {
 
 do_secrets() {
   need_cmd gh
-  gh auth status >/dev/null 2>&1 || die "gh not authenticated — run: gh auth login"
+  gh_ready || die "gh not authenticated — run: gh auth login"
+  gh_repo >/dev/null || die "no GitHub repo to push secrets to — run: ./scripts/bootstrap-deploy.sh github"
 
   push_railway_service_id
 
@@ -333,7 +467,7 @@ do_secrets() {
   fi
 
   echo
-  echo "Secrets stage done. Next: ./scripts/bootstrap-deploy.sh cloudflare"
+  echo "Secrets stage done. Next: ./scripts/bootstrap-deploy.sh cloudflare  (or 'ci' to deploy via Actions without Docker)"
 }
 
 # --- cloudflare --------------------------------------------------------------
@@ -341,7 +475,8 @@ do_secrets() {
 do_cloudflare() {
   need_cmd npx
   wrangler_local || die "wrangler not installed — run: npm ci"
-  have_cmd docker && docker info >/dev/null 2>&1 || die "Docker must be running: wrangler builds the container image locally (or let CI do this deploy)"
+  have_cmd docker && docker info >/dev/null 2>&1 \
+    || die "Docker must be running: wrangler builds the container image locally. No Docker? Deploy from CI instead: ./scripts/bootstrap-deploy.sh ci"
   if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] && ! npx wrangler whoami >/dev/null 2>&1; then
     die "wrangler not logged in — run: npx wrangler login"
   fi
@@ -422,26 +557,37 @@ do_verify() {
 
 case "$ACTION" in
   doctor)     do_doctor ;;
+  github)     do_github ;;
   railway)    do_railway ;;
   secrets)    do_secrets ;;
   cloudflare) do_cloudflare ;;
+  ci)         do_ci ;;
   verify)     do_verify ;;
   all)
+    do_github
     do_railway
     do_secrets
-    do_cloudflare
+    if have_cmd docker && docker info >/dev/null 2>&1; then
+      do_cloudflare
+    else
+      echo
+      echo "Docker not available — deploying both platforms via GitHub Actions instead."
+      do_ci
+    fi
     do_verify
     ;;
   *)
     cat >&2 <<EOF
-usage: $0 <doctor|railway|secrets|cloudflare|verify|all>
+usage: $0 <doctor|github|railway|secrets|cloudflare|ci|verify|all>
 
-  doctor      read-only report: tools, auth, Railway project, GitHub secrets, Worker state
+  doctor      read-only report: tools, auth, GitHub repo/Actions, Railway project, secrets, Worker state
+  github      create/verify the GitHub repo, enable Actions, ensure the 'production' environment
   railway     link/create the Railway project, apply .railway/railway.ts, domain, backups
   secrets     push the GitHub Actions secrets CI deploys with
-  cloudflare  first local wrangler deploy (Worker + container + MySQL secrets)
+  cloudflare  first local wrangler deploy (Worker + container + MySQL secrets; needs Docker)
+  ci          dispatch the CI/CD workflow on main and watch it (deploys both platforms, no local Docker)
   verify      curl /health on Railway and the Cloudflare Worker
-  all         railway → secrets → cloudflare → verify
+  all         github → railway → secrets → cloudflare (or ci without Docker) → verify
 EOF
     exit 2
     ;;

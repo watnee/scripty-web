@@ -8958,6 +8958,74 @@ body.has-toolbar-brand {
     padding: 0 var(--project-chrome-inset, 0);
 }
 
+/* Wide screens: lift the tools row up onto the breadcrumb row so the editor
+   chrome uses one row instead of two. The toolbar overlays the top bar, so it
+   must not steal clicks from the breadcrumb/Share (pointer-events) while its
+   own controls stay clickable. */
+@media (min-width: 1280px) {
+    .has-toolbar-brand .project-script-toolbar {
+        position: relative;
+        /* Above .project-top-bar (z 20); menus that open (z 1300+) still win. */
+        z-index: 30;
+        /* Breadcrumb row min-height (2.25rem) + top bar bottom margin (0.25rem). */
+        margin-top: -2.5rem;
+        pointer-events: none;
+    }
+
+    /* Focus mode empties the top bar, so there is no row to lift into. */
+    body.focus-mode .project-script-toolbar {
+        margin-top: 0;
+    }
+
+    .has-toolbar-brand .project-script-toolbar .project-toolbar-main,
+    .has-toolbar-brand .project-script-toolbar .project-toolbar-left,
+    .has-toolbar-brand .project-script-toolbar .project-toolbar-right {
+        pointer-events: auto;
+    }
+
+    .has-toolbar-brand .project-script-toolbar > .project-toolbar-row.project-tools-row {
+        min-height: 2.25rem;
+        align-content: center;
+        margin-bottom: 0;
+    }
+
+    /* Keep the word-count stats clear of Share and the account menu. */
+    .has-toolbar-brand .project-script-toolbar > .project-tools-row .project-toolbar-right {
+        margin-right: 10rem;
+        pointer-events: none;
+    }
+
+    .has-toolbar-brand .project-script-toolbar > .project-tools-row .project-toolbar-right > * {
+        pointer-events: auto;
+    }
+
+    /* Long titles must truncate before they run under the centered toolbar. */
+    .has-toolbar-brand .project-top-bar-breadcrumb > nav[aria-label="Breadcrumb"] {
+        flex: 0 1 auto;
+        max-width: calc((100% - var(--screenplay-action-width, 6in)) / 2 - 2rem);
+    }
+
+    .has-toolbar-brand .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol {
+        flex-wrap: nowrap;
+    }
+
+    .has-toolbar-brand .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol > li {
+        flex-shrink: 0;
+    }
+
+    .has-toolbar-brand .project-top-bar-breadcrumb nav[aria-label="Breadcrumb"] ol > li:last-child {
+        flex-shrink: 1;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .has-toolbar-brand .project-top-bar-breadcrumb .breadcrumb-name-meta .project-breadcrumb-name-wrap {
+        flex-shrink: 1;
+        min-width: 0;
+    }
+}
+
 .has-toolbar-brand .project-script-select-toolbar {
     margin: 0;
     padding: 0;

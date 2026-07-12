@@ -19,7 +19,10 @@
     "rules:check": "node scripts/sync-rules.js --check",
     "rules:setup-hooks": "./scripts/setup-git-hooks.sh",
     "db:backup": "./scripts/backup-mysql.sh",
-    "db:restore": "./scripts/restore-mysql.sh"
+    "db:restore": "./scripts/restore-mysql.sh",
+    "secrets:backup": "./scripts/backup-secrets.sh backup",
+    "secrets:restore": "./scripts/backup-secrets.sh restore",
+    "secrets:list": "./scripts/backup-secrets.sh list"
   },
   "dependencies": {
     "railway": "^3.5.5"

@@ -118,6 +118,36 @@ npm run db:backup
 
 Requires `mysqldump`, `gzip`, `gunzip`, `openssl`, and Node/`npx wrangler` (ensure you have run `npx wrangler login` or set `CLOUDFLARE_API_TOKEN`).
 
+## Secrets backup (Railway variables → encrypted snapshot in R2)
+
+Script: [`scripts/backup-secrets.sh`](../scripts/backup-secrets.sh)
+
+Database backups don't cover configuration: Railway variables (`RESEND_API_KEY`,
+`MAIL_FROM`, `METRICS_TOKEN`, MySQL credentials, …) exist only on Railway.
+GitHub Actions secrets and Cloudflare Worker secrets are **write-only** and
+cannot be exported — but both are re-pushed *from Railway* by
+`./scripts/bootstrap-deploy.sh secrets` and `npm run cf:sync`, so snapshotting
+Railway covers everything recoverable.
+
+```bash
+npm run secrets:backup    # read Railway vars (web + MySQL) + local .dev.vars,
+                          # encrypt (AES-256, PBKDF2), upload to r2://scripty-db-backups/secrets/
+npm run secrets:list      # list snapshots in R2 (needs CLOUDFLARE_API_TOKEN)
+npm run secrets:restore                       # decrypt latest to stdout
+npm run secrets:restore -- <file> -- --keys   # key names only, no values
+```
+
+- **Passphrase:** prompted (or `SECRETS_BACKUP_PASSPHRASE`). Keep it in your
+  password manager — without it a snapshot is unreadable, by design.
+- Plaintext never touches disk: variables are piped straight into
+  `openssl enc`; restore decrypts to stdout after validating the payload.
+- Requires `railway login` (backup) and wrangler auth (upload/download).
+- Run a fresh snapshot after rotating any secret; old snapshots hold old values.
+- **Root credentials are out of scope on purpose:** the GitHub, Railway,
+  Cloudflare, and Resend account logins + 2FA recovery codes belong in a
+  password manager. With those, every secret here can be re-minted even
+  without a snapshot.
+
 ## Snapshot History retention (app)
 
 Auto-saves in Snapshot History are pruned per screenplay edition: the newest **30** auto-saves are kept. Manually named snapshots and “Before restore …” entries are never pruned by this policy.
@@ -131,4 +161,6 @@ Auto-saves in Snapshot History are pruned per screenplay edition: the newest **3
 - [x] `MYSQL*` / `CLOUDFLARE_*` / `R2_BUCKET` GitHub secrets set
 - [x] Manual **Backup database** workflow succeeded once
 - [x] You know how to restore from Railway and from an R2 dump using scripts/workflows
+- [ ] Account logins + 2FA recovery codes (GitHub, Railway, Cloudflare, Resend) in a password manager
+- [ ] First `npm run secrets:backup` uploaded and its passphrase stored in the password manager
 

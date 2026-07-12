@@ -5914,6 +5914,17 @@ body:has(main.text-documents-page) > main.text-documents-page {
     flex: 0 0 auto;
 }
 
+.text-documents-heading-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    vertical-align: middle;
+}
+
+.text-documents-heading-row h2 {
+    margin: 0;
+}
+
 .text-document-about {
     position: relative;
     top: auto;

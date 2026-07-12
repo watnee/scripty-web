@@ -21,25 +21,19 @@
                 </ol>
             </nav>
             <div class="text-documents-top-actions">
-                <a th:if="${isSongList}"
-                   th:href="@{/project/documents/notes(projectId=${viewModel.projectId})}"
-                   class="project-list-action-btn project-list-action-btn--secondary">Notes</a>
                 <a th:unless="${isSongList}"
                    th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}"
                    class="project-list-action-btn project-list-action-btn--secondary">Songs</a>
-                <a th:href="@{/project/show(id=${viewModel.projectId})}"
+                <a th:unless="${isSongList}"
+                   th:href="@{/project/show(id=${viewModel.projectId})}"
                    class="project-list-action-btn project-list-action-btn--secondary">Open Script</a>
             </div>
         </div>
 
-        <header class="text-documents-header"
-                th:classappend="${isSongList} ? ' text-documents-header--song' : ' text-documents-header--draft'">
+        <header th:unless="${isSongList}" class="text-documents-header text-documents-header--draft">
             <div class="text-documents-header-text">
-                <p class="text-documents-kicker">Outside the screenplay</p>
-                <h1 th:text="${isSongList} ? 'Songs' : 'Notes'">Documents</h1>
-                <p class="muted"
-                   th:text="${isSongList} ? 'Write lyrics here, then insert them into the script as Lyrics blocks. Edits sync to places already inserted.' : 'Write scratch text here, then insert into the script as Note blocks. Edits sync to places already inserted.'">
-                    Write outside the screenplay.
+                <p class="muted">
+                    Write scratch text here, then insert into the script as Note blocks. Edits sync to places already inserted.
                 </p>
             </div>
         </header>
@@ -59,8 +53,20 @@
                           th:text="${isSongList} ? '♪' : '¶'"
                           aria-hidden="true">♪</span>
                     <div>
-                        <h2 th:id="${isSongList} ? 'songs-heading' : 'drafts-heading'"
-                            th:text="${isSongList} ? 'Your songs' : 'Your notes'">Documents</h2>
+                        <div class="text-documents-heading-row">
+                            <h2 th:id="${isSongList} ? 'songs-heading' : 'drafts-heading'"
+                                th:text="${isSongList} ? 'Your songs' : 'Your notes'">Documents</h2>
+                            <a th:if="${isSongList}"
+                               th:href="@{/project/read(id=${viewModel.projectId})}"
+                               class="project-list-action-btn project-list-action-btn--icon"
+                               aria-label="Read script"
+                               title="Read script">
+                                <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h6z"></path>
+                                </svg>
+                            </a>
+                        </div>
                         <p class="muted"
                            th:text="${isSongList} ? 'Import a file or start a new song.' : 'Import a file or start a new note.'">
                             Manage documents.

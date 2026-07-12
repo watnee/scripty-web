@@ -10,7 +10,6 @@ RUN mvn -B -DskipTests package
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /app/target/scripty.jar ./scripty.jar
-RUN mkdir -p /app/uploads
 ENV PORT=8080 \
     JAVA_OPTS="-XX:MaxRAMPercentage=75.0" \
     SPRING_PROFILES_ACTIVE=prod

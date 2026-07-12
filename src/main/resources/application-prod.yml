@@ -46,7 +46,6 @@ logging:
       console: ${LOG_FORMAT:ecs}
 
 app:
-  uploads-dir: ./uploads
   headshot-max-bytes: 5242880
   base-url: ${APP_BASE_URL:}
   mail-from: ${MAIL_FROM:Scripty <noreply@localhost>}
@@ -57,6 +56,6 @@ app:
   # above are ignored; MAIL_ENABLED is not required.
   email-worker-url: ${EMAIL_WORKER_URL:}
   email-worker-secret: ${EMAIL_WORKER_SECRET:}
-  asset-version: ${APP_ASSET_VERSION:210}
+  asset-version: ${APP_ASSET_VERSION:212}
   # Static assets + public offline shells only; project HTML lives in IndexedDB.
   service-worker-enabled: true

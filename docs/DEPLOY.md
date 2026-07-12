@@ -42,7 +42,8 @@ doubles as a setup audit in scripts.
   (`railway init -n scripty`).
 - Previews and (with confirmation) applies **`.railway/railway.ts`** — the
   IaC source of truth that provisions the `web` service (Dockerfile build,
-  `/health` check, prod start command), managed `MySQL`, and both volumes.
+  `/health` check, prod start command, no volume — headshots live in MySQL)
+  and managed `MySQL` with its volume.
 - Generates a Railway domain for `web` if none exists and sets
   `APP_BASE_URL` from it.
 - Ensures MySQL volume snapshot schedules (Daily/Weekly/Monthly) via
@@ -124,12 +125,28 @@ a new address.
 Curls `/health` on the Railway domain and the Worker URL. The first container
 cold start on Cloudflare can take a few minutes.
 
-## One manual dashboard step
+## Zero-downtime deploys: no GitHub source, no volume on web
 
-If the Railway service was ever connected to GitHub, **turn off Railway
-auto-deploy** (service → Settings → Source) so pushes are not deployed twice —
-once by Railway and once by GitHub Actions. Fresh IaC-created projects don't
-have this problem.
+Two deliberate absences on the `web` service keep deploys downtime-free:
+
+- **No GitHub source connected** — GitHub Actions deploys with
+  `railway up --ci`, and a connected repo would auto-deploy every `main`
+  push a second time. If a source ever gets reconnected (e.g. via the
+  dashboard), disconnect it again:
+
+  ```bash
+  railway service source disconnect --service web
+  ```
+
+- **No volume mounted** — Railway cannot overlap old/new containers when a
+  volume is attached (it mounts to one container at a time), so every deploy
+  becomes a stop-start swap with an "Application failed to respond" window.
+  Actor headshots are stored in MySQL (`actor_headshot` table, V35 migration)
+  instead of on disk; with no volume, Railway keeps the old container serving
+  until the new one passes `/health`.
+
+`prometheus` and `grafana` keep their GitHub sources — CI does not `railway
+up` those; Railway builds them from the repo when their watch patterns match.
 
 ## After bootstrap: steady state
 

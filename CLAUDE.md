@@ -9,6 +9,7 @@ This file is the single source of truth for Claude Code. It contains common deve
 - **Headless server (agents/routines/CI)**: `scripts/dev-server.sh {start|stop|restart|status|wait|logs}`
 - **Build**: `mvn clean package` or `mvn compile`
 - **Test**: `mvn verify`
+- **Deploy from scratch / audit deploy setup**: `npm run deploy:doctor` (read-only) or `./scripts/bootstrap-deploy.sh all` (see docs/DEPLOY.md)
 - **Run Cloudflare dev**: `npm run cf:dev`
 - **Deploy Cloudflare**: `npm run cf:deploy`
 - **Sync secrets**: `npm run cf:sync`

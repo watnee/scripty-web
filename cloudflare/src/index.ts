@@ -17,6 +17,9 @@ export interface Env {
   MYSQL_SSL_MODE?: string;
   MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL?: string;
   APP_BASE_URL?: string;
+  // Preferred mail transport (Resend HTTP API); the MAIL_* SMTP settings
+  // below are the legacy fallback and are ignored when this is set.
+  RESEND_API_KEY?: string;
   MAIL_ENABLED?: string;
   MAIL_HOST?: string;
   MAIL_PORT?: string;
@@ -54,6 +57,7 @@ function buildContainerEnv(env: Env): Record<string, string> {
 
   const optional: (keyof Env)[] = [
     "APP_BASE_URL",
+    "RESEND_API_KEY",
     "MAIL_ENABLED",
     "MAIL_HOST",
     "MAIL_PORT",

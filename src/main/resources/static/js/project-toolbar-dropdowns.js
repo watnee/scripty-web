@@ -16,6 +16,7 @@
         { id: 'project-element-type-dropdown', toggle: '.element-type-toolbar-btn' },
         { id: 'project-view-dropdown', toggle: '.view-toolbar-btn', keepOpenOnItemClick: true },
         { id: 'script-edition-dropdown', toggle: '.script-edition-toggle' },
+        { id: 'project-docs-dropdown', toggle: '.docs-toolbar-btn' },
         { id: 'project-share-dropdown', toggle: '.project-share-toggle' },
         { id: 'project-text-format-dropdown', toggle: '.text-format-toolbar-btn', keepOpenOnItemClick: true }
     ];

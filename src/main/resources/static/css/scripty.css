@@ -2372,7 +2372,8 @@ html.scripty-block-edit-locked .script-edition-toggle-lock,
     opacity: 0.7;
 }
 
-.script-edition-dropdown.open .script-edition-toggle-caret {
+.script-edition-dropdown.open .script-edition-toggle-caret,
+.docs-dropdown.open .script-edition-toggle-caret {
     transform: rotate(180deg);
 }
 
@@ -2418,10 +2419,16 @@ html.scripty-block-edit-locked .script-edition-toggle-lock,
 }
 
 .script-edition-row .script-edition-switch {
+    display: block;
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.script-edition-row .controls-wrapper {
+    flex-shrink: 0;
 }
 
 .script-edition-row-edited {

@@ -47,7 +47,6 @@ export default defineRailway(() => {
       JAVA_OPTS: preserve(),
       MAIL_FROM: preserve(),
       RAILPACK_JDK_VERSION: preserve(),
-      RESEND_API_KEY: preserve(),
 
       // Observability configuration
       LOG_FORMAT: "ecs",

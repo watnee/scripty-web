@@ -2691,7 +2691,7 @@ h1:hover > small .project-delete-btn,
     border-radius: var(--border-radius);
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 0.25rem;
     padding: 0.2em 0.55em;
     font-size: 0.85rem;
@@ -2813,7 +2813,7 @@ h1:hover > small .project-delete-btn,
     border-radius: var(--border-radius);
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     color: var(--fg);
     font-size: 0.85rem;
     padding: 0.15em 0.5em;
@@ -2870,6 +2870,7 @@ body.htmx-swapping {
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 0.25rem;
     transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
     border-radius: 4px;
@@ -2930,6 +2931,7 @@ body.htmx-swapping {
 .nav-dropdown-item {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 0.5rem;
     width: 100%;
     padding: 0.45rem 0.65rem;
@@ -3937,6 +3939,7 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
     width: 100%;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     border: none;
     background: none;
     cursor: pointer;
@@ -10783,7 +10786,7 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
 .text-size-control .text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 0.25rem;
     margin: 0;
     padding: 0.2em 0.55em;

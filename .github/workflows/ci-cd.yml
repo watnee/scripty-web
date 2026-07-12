@@ -402,6 +402,13 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli@5.26.0
 
+      - name: Apply Railway configuration (IaC)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "Applying Railway Infrastructure-as-Code configuration..."
+          railway config apply --yes --confirm-destructive
+
       - name: Deploy to Railway
         id: deploy
         env:

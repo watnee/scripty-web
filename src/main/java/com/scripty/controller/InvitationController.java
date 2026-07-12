@@ -2,9 +2,11 @@ package com.scripty.controller;
 
 import com.scripty.commandmodel.invitation.AcceptInvitationCommandModel;
 import com.scripty.commandmodel.invitation.SendInvitationCommandModel;
+import com.scripty.commandmodel.invitation.SendViewInvitationCommandModel;
 import com.scripty.dto.User;
 import com.scripty.service.InvitationService;
 import com.scripty.service.UserService;
+import com.scripty.service.ViewInvitationService;
 import com.scripty.viewmodel.invitation.AcceptInvitationViewModel;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ public class InvitationController {
 
     @Autowired
     InvitationService invitationService;
+
+    @Autowired
+    ViewInvitationService viewInvitationService;
 
     @Autowired
     UserService userService;
@@ -66,6 +71,45 @@ public class InvitationController {
             redirectAttributes.addFlashAttribute("inviteSuccess", "Invitation revoked.");
         } catch (IllegalArgumentException | IllegalStateException e) {
             redirectAttributes.addFlashAttribute("inviteError", e.getMessage());
+        }
+        return redirectForProject(projectId, returnTo);
+    }
+
+    @RequestMapping(value = "/view/send", method = RequestMethod.POST)
+    public String sendViewInvite(@Valid @ModelAttribute("viewInviteCommand") SendViewInvitationCommandModel command,
+                                 BindingResult bindingResult,
+                                 @RequestParam(defaultValue = "show") String returnTo,
+                                 RedirectAttributes redirectAttributes) {
+        String redirect = redirectForProject(command.getProjectId(), returnTo);
+
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("viewInviteError",
+                    bindingResult.getFieldError() != null
+                            ? bindingResult.getFieldError().getDefaultMessage()
+                            : "Could not send invitation.");
+            return redirect;
+        }
+
+        try {
+            viewInvitationService.sendInvitation(command, currentUser());
+            redirectAttributes.addFlashAttribute("viewInviteSuccess",
+                    "A view-only link is on its way to " + command.getEmail().trim() + ".");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("viewInviteError", e.getMessage());
+        }
+        return redirect;
+    }
+
+    @RequestMapping(value = "/view/revoke", method = RequestMethod.POST)
+    public String revokeViewInvite(@RequestParam Integer id,
+                                   @RequestParam Integer projectId,
+                                   @RequestParam(defaultValue = "show") String returnTo,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            viewInvitationService.revoke(id, projectId, currentUser());
+            redirectAttributes.addFlashAttribute("viewInviteSuccess", "View access revoked.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("viewInviteError", e.getMessage());
         }
         return redirectForProject(projectId, returnTo);
     }
@@ -112,6 +156,9 @@ public class InvitationController {
     }
 
     private String redirectForProject(Integer projectId, String returnTo) {
+        if (projectId == null) {
+            return "redirect:/project/list";
+        }
         if ("production".equals(returnTo)) {
             return "redirect:/project/production?id=" + projectId;
         }

@@ -25,6 +25,7 @@ import com.scripty.service.ScriptStatsService;
 import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.InvitationService;
+import com.scripty.service.ViewInvitationService;
 import com.scripty.service.ProjectActivityService;
 import com.scripty.service.ScriptEditionService;
 import com.scripty.service.TeamService;
@@ -33,6 +34,7 @@ import com.scripty.service.UserService;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
 import com.scripty.commandmodel.invitation.SendInvitationCommandModel;
+import com.scripty.commandmodel.invitation.SendViewInvitationCommandModel;
 import com.scripty.security.ProjectAccessSupport;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -86,6 +88,9 @@ public class ProjectController {
 
     @Autowired
     InvitationService invitationService;
+
+    @Autowired
+    ViewInvitationService viewInvitationService;
 
     @Autowired
     ProjectActivityService projectActivityService;
@@ -181,6 +186,11 @@ public class ProjectController {
         SendInvitationCommandModel inviteCommand = new SendInvitationCommandModel();
         inviteCommand.setProjectId(id);
         model.addAttribute("inviteCommand", inviteCommand);
+        model.addAttribute("viewInvitations",
+                viewInvitationService.getActiveInvitationsForProject(id, currentUser));
+        SendViewInvitationCommandModel viewInviteCommand = new SendViewInvitationCommandModel();
+        viewInviteCommand.setProjectId(id);
+        model.addAttribute("viewInviteCommand", viewInviteCommand);
 
         TextDocumentListViewModel documents = textDocumentService.getListViewModel(id, currentUser);
         List<Map<String, Object>> projectSongs = new ArrayList<>();

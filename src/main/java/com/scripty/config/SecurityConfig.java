@@ -121,6 +121,8 @@ public class SecurityConfig {
                         "/help",
                         "/shortcuts",
                         "/invitation/accept",
+                        // Tokenized read-only screenplay links from view invites.
+                        "/view",
                         "/forgot-password",
                         "/forgot-password/**")
                     .permitAll()

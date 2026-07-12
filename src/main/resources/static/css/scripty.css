@@ -1620,7 +1620,7 @@ body.login-body main.login-page {
 .table-blocks-all .block-left-controls {
     vertical-align: middle;
     white-space: nowrap !important;
-    padding-right: 0;
+    padding-right: 0.5rem;
 }
 
 .block-left-controls-inner {
@@ -10584,6 +10584,11 @@ html.scripty-screenplay-full-width.scripty-page-view-mode .project-script::after
     background: transparent;
     overflow: visible;
     white-space: nowrap;
+}
+
+/* Breathing room between the drag handle and the text caret */
+.project-script aside.block-left-controls {
+    padding-right: 0.5rem;
 }
 
 .project-script aside.block-left-controls .block-left-controls-inner {

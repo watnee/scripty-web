@@ -23,12 +23,58 @@ require_var() {
   fi
 }
 
+resolve_mysql_coordinates() {
+  # 1. Try to read from local cloudflare/.dev.vars first if variables are not set
+  if [[ -f "cloudflare/.dev.vars" ]]; then
+    echo "Reading database coordinates from cloudflare/.dev.vars..." >&2
+    local dev_vars
+    dev_vars=$(cat cloudflare/.dev.vars)
+    # Extract values only if they are not already set in env
+    MYSQLHOST="${MYSQLHOST:-$(echo "$dev_vars" | grep "^MYSQLHOST=" | cut -d'=' -f2-)}"
+    MYSQLPORT="${MYSQLPORT:-$(echo "$dev_vars" | grep "^MYSQLPORT=" | cut -d'=' -f2-)}"
+    MYSQLUSER="${MYSQLUSER:-$(echo "$dev_vars" | grep "^MYSQLUSER=" | cut -d'=' -f2-)}"
+    MYSQLPASSWORD="${MYSQLPASSWORD:-$(echo "$dev_vars" | grep "^MYSQLPASSWORD=" | cut -d'=' -f2-)}"
+    MYSQLDATABASE="${MYSQLDATABASE:-$(echo "$dev_vars" | grep "^MYSQLDATABASE=" | cut -d'=' -f2-)}"
+  fi
+
+  # 2. If variables are still missing, try to fetch from Railway CLI
+  if [[ -z "${MYSQLHOST:-}" || -z "${MYSQLPASSWORD:-}" ]]; then
+    if command -v railway >/dev/null 2>&1; then
+      local variables
+      if variables=$(railway variable list --service MySQL --json 2>/dev/null); then
+        echo "Auto-detected MySQL coordinates from Railway CLI." >&2
+        local r_host r_port r_user r_pass r_db
+        r_host=$(echo "$variables" | python3 -c "import sys, json; print(json.load(sys.stdin).get('RAILWAY_TCP_PROXY_DOMAIN', ''))")
+        r_port=$(echo "$variables" | python3 -c "import sys, json; print(json.load(sys.stdin).get('RAILWAY_TCP_PROXY_PORT', ''))")
+        r_user=$(echo "$variables" | python3 -c "import sys, json; print(json.load(sys.stdin).get('MYSQLUSER', ''))")
+        r_pass=$(echo "$variables" | python3 -c "import sys, json; print(json.load(sys.stdin).get('MYSQLPASSWORD', ''))")
+        r_db=$(echo "$variables" | python3 -c "import sys, json; print(json.load(sys.stdin).get('MYSQLDATABASE', ''))")
+
+        # If TCP proxy is not enabled or not returned, fall back to standard host/port
+        if [[ -z "$r_host" ]]; then
+          r_host=$(echo "$variables" | python3 -c "import sys, json; print(json.load(sys.stdin).get('MYSQLHOST', ''))")
+          r_port=$(echo "$variables" | python3 -c "import sys, json; print(json.load(sys.stdin).get('MYSQLPORT', ''))")
+        fi
+
+        MYSQLHOST="${MYSQLHOST:-$r_host}"
+        MYSQLPORT="${MYSQLPORT:-$r_port}"
+        MYSQLUSER="${MYSQLUSER:-$r_user}"
+        MYSQLPASSWORD="${MYSQLPASSWORD:-$r_pass}"
+        MYSQLDATABASE="${MYSQLDATABASE:-$r_db}"
+      fi
+    fi
+  fi
+}
+
+resolve_mysql_coordinates
+
 # Fall back to deploy credentials if dedicated backup coordinates are not set
 MYSQL_BACKUP_HOST="${MYSQL_BACKUP_HOST:-${MYSQLHOST:-}}"
 MYSQL_BACKUP_PORT="${MYSQL_BACKUP_PORT:-${MYSQLPORT:-}}"
 MYSQL_BACKUP_USER="${MYSQL_BACKUP_USER:-${MYSQLUSER:-}}"
 MYSQL_BACKUP_PASSWORD="${MYSQL_BACKUP_PASSWORD:-${MYSQLPASSWORD:-}}"
 MYSQL_BACKUP_DATABASE="${MYSQL_BACKUP_DATABASE:-${MYSQLDATABASE:-}}"
+R2_BUCKET="${R2_BUCKET:-scripty-db-backups}"
 
 require_var MYSQL_BACKUP_HOST
 require_var MYSQL_BACKUP_PORT
@@ -49,6 +95,31 @@ done
 if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] && ! npx --yes wrangler whoami >/dev/null 2>&1; then
   echo "error: set CLOUDFLARE_API_TOKEN or run: npx wrangler login" >&2
   exit 1
+fi
+
+# Auto-resolve CLOUDFLARE_ACCOUNT_ID if missing but CLOUDFLARE_API_TOKEN is present
+if [[ -n "${CLOUDFLARE_API_TOKEN:-}" && -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+  echo "CLOUDFLARE_ACCOUNT_ID not set. Attempting to auto-resolve from Cloudflare API..." >&2
+  RESP_ACCTS=$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "https://api.cloudflare.com/client/v4/accounts?per_page=50" || true)
+  if [[ -n "${RESP_ACCTS}" ]]; then
+    DETECTED_ACCOUNT_ID=$(python3 - "${RESP_ACCTS}" <<'PY'
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    accounts = data.get("result") or []
+    if len(accounts) == 1:
+        print(accounts[0]["id"])
+    elif len(accounts) > 1:
+        print(accounts[0]["id"])
+except Exception:
+    pass
+PY
+)
+    if [[ -n "${DETECTED_ACCOUNT_ID}" ]]; then
+      export CLOUDFLARE_ACCOUNT_ID="${DETECTED_ACCOUNT_ID}"
+      echo "Auto-resolved CLOUDFLARE_ACCOUNT_ID to: ${CLOUDFLARE_ACCOUNT_ID}" >&2
+    fi
+  fi
 fi
 
 OBJECT_KEY="${BACKUP_FILENAME}"

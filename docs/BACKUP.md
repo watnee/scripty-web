@@ -81,20 +81,17 @@ You can restore a database backup directly from Cloudflare R2 into your target M
 
 #### Restore via script (Local / CLI)
 
-Run the restore script with the backup filename as the first argument. If you omit the filename (or specify `latest`), it will automatically query the Cloudflare API to detect and download the most recent backup file:
+You can run the restore script using npm or directly. The script automatically detects your database coordinates if you are logged in to the `railway` CLI (via `railway login`) or if you have a local `cloudflare/.dev.vars` file.
 
 ```bash
-# Set coordinates (falls back to MYSQLHOST etc. if MYSQL_BACKUP_* are not defined)
-export R2_BUCKET=scripty-db-backups
-export CLOUDFLARE_API_TOKEN=...
-export CLOUDFLARE_ACCOUNT_ID=...
-
-# Auto-detect and restore the latest backup
-./scripts/restore-mysql.sh
+# Auto-detect coordinates and restore the latest backup (defaults bucket to scripty-db-backups)
+npm run db:restore
 
 # Or restore a specific backup
-./scripts/restore-mysql.sh scripty-YYYYMMDD-HHMMSS.sql.gz
+npm run db:restore -- scripty-YYYYMMDD-HHMMSS.sql.gz
 ```
+
+*Note: If auto-detecting the `latest` backup, the script will also attempt to resolve your `CLOUDFLARE_ACCOUNT_ID` automatically from the Cloudflare API if `CLOUDFLARE_API_TOKEN` is exported in the environment.*
 
 The script will validate the backup integrity (gzip structure + SQL headers), prompt for confirmation, restore the data, and print a verification report with table row counts.
 
@@ -110,17 +107,16 @@ For safety and ease of use, you can trigger a restore directly from the GitHub A
 
 Warning: Restoring will overwrite all existing data in the target database. Make sure to stop application services or put them in offline mode during the import to prevent dirty writes.
 
-### Manual dump (local)
+### Manual dump / backup (local)
 
-With the same env vars as the workflow (or after `npx wrangler login`):
+Like the restore process, the backup script automatically detects database coordinates via the `railway` CLI or local `.dev.vars`. You can run it via npm:
 
 ```bash
-export R2_BUCKET=scripty-db-backups
-# MYSQLHOST/PORT/USER/PASSWORD/DATABASE = Railway TCP proxy values
-./scripts/backup-mysql.sh
+# Auto-detect credentials and dump/upload to R2 (defaults bucket to scripty-db-backups)
+npm run db:backup
 ```
 
-Requires `mysqldump`, `gzip`, `gunzip`, `openssl`, and Node/`npx wrangler`.
+Requires `mysqldump`, `gzip`, `gunzip`, `openssl`, and Node/`npx wrangler` (ensure you have run `npx wrangler login` or set `CLOUDFLARE_API_TOKEN`).
 
 ## Snapshot History retention (app)
 

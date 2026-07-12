@@ -87,7 +87,9 @@ export default defineRailway(() => {
     },
     env: {
       METRICS_TOKEN: web.env.METRICS_TOKEN,
-      SCRAPE_TARGET: "web:8080",
+      // Railway private DNS requires the .railway.internal suffix; bare
+      // service names do not resolve.
+      SCRAPE_TARGET: "web.railway.internal:8080",
       RAILWAY_RUN_UID: "0",
     },
   });
@@ -107,7 +109,7 @@ export default defineRailway(() => {
       "/var/lib/grafana": grafanaVolume,
     },
     env: {
-      PROMETHEUS_URL: "http://prometheus:9090",
+      PROMETHEUS_URL: "http://prometheus.railway.internal:9090",
       RAILWAY_RUN_UID: "0",
       // No GF_SECURITY_ADMIN_PASSWORD here: preserve() on a service that does
       // not exist yet makes `railway config apply` fail ("Unrecognized key(s)

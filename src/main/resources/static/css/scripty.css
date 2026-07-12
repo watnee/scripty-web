@@ -12202,3 +12202,102 @@ body.focus-mode #project-lists-dropdown {
 }
 .script-stats-footnote { margin-top: 1.5rem; font-size: 0.85rem; }
 .script-stats-empty { margin-top: 2rem; }
+
+/* View button blue styling on project page */
+.project-tools-group #nav-view {
+    background: linear-gradient(to bottom, #3b82f6, #2563eb) !important;
+    border-color: #1d4ed8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.project-tools-group #nav-view:hover,
+.project-tools-group #nav-view:focus {
+    background: linear-gradient(to bottom, #4f46e5, #3b82f6) !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important;
+    filter: brightness(1.05) !important;
+}
+
+/* When the view dropdown is open */
+.project-tools-group .view-dropdown.open > #nav-view,
+.project-tools-group #nav-view[aria-expanded="true"] {
+    background: #1d4ed8 !important;
+    border-color: #1e40af !important;
+    color: #ffffff !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Keep blue styling in active state */
+.project-tools-group #nav-view.is-active {
+    background: linear-gradient(to bottom, #3b82f6, #2563eb) !important;
+    border-color: #1d4ed8 !important;
+    color: #ffffff !important;
+}
+.project-tools-group #nav-view.is-active:hover {
+    background: linear-gradient(to bottom, #4f46e5, #3b82f6) !important;
+    border-color: #2563eb !important;
+}
+
+/* Dark theme overrides */
+:root.-dark-theme .project-tools-group #nav-view,
+:root[data-theme-setting="dark"] .project-tools-group #nav-view {
+    background: linear-gradient(to bottom, #2563eb, #1d4ed8) !important;
+    border-color: #3b82f6 !important;
+    color: #ffffff !important;
+}
+
+:root.-dark-theme .project-tools-group #nav-view:hover,
+:root.-dark-theme .project-tools-group #nav-view:focus,
+:root[data-theme-setting="dark"] .project-tools-group #nav-view:hover,
+:root[data-theme-setting="dark"] .project-tools-group #nav-view:focus {
+    background: linear-gradient(to bottom, #3b82f6, #2563eb) !important;
+    border-color: #60a5fa !important;
+    color: #ffffff !important;
+}
+
+:root.-dark-theme .project-tools-group .view-dropdown.open > #nav-view,
+:root.-dark-theme .project-tools-group #nav-view[aria-expanded="true"],
+:root[data-theme-setting="dark"] .project-tools-group .view-dropdown.open > #nav-view,
+:root[data-theme-setting="dark"] .project-tools-group #nav-view[aria-expanded="true"] {
+    background: #1e40af !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important;
+}
+
+:root.-dark-theme .project-tools-group #nav-view.is-active,
+:root[data-theme-setting="dark"] .project-tools-group #nav-view.is-active {
+    background: linear-gradient(to bottom, #2563eb, #1d4ed8) !important;
+    border-color: #3b82f6 !important;
+    color: #ffffff !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.-no-dark-theme) .project-tools-group #nav-view {
+        background: linear-gradient(to bottom, #2563eb, #1d4ed8) !important;
+        border-color: #3b82f6 !important;
+        color: #ffffff !important;
+    }
+    
+    :root:not(.-no-dark-theme) .project-tools-group #nav-view:hover,
+    :root:not(.-no-dark-theme) .project-tools-group #nav-view:focus {
+        background: linear-gradient(to bottom, #3b82f6, #2563eb) !important;
+        border-color: #60a5fa !important;
+        color: #ffffff !important;
+    }
+    
+    :root:not(.-no-dark-theme) .project-tools-group .view-dropdown.open > #nav-view,
+    :root:not(.-no-dark-theme) .project-tools-group #nav-view[aria-expanded="true"] {
+        background: #1e40af !important;
+        border-color: #2563eb !important;
+        color: #ffffff !important;
+    }
+    
+    :root:not(.-no-dark-theme) .project-tools-group #nav-view.is-active {
+        background: linear-gradient(to bottom, #2563eb, #1d4ed8) !important;
+        border-color: #3b82f6 !important;
+        color: #ffffff !important;
+    }
+}
+

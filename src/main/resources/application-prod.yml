@@ -55,6 +55,6 @@ app:
   # When set, emails go through the Resend HTTP API and the SMTP settings above
   # are ignored; MAIL_ENABLED is not required.
   resend-api-key: ${RESEND_API_KEY:}
-  asset-version: ${APP_ASSET_VERSION:203}
+  asset-version: ${APP_ASSET_VERSION:204}
   # Static assets + public offline shells only; project HTML lives in IndexedDB.
   service-worker-enabled: true

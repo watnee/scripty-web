@@ -150,7 +150,10 @@ if not data.get("success"):
     msgs = "; ".join(f"{e.get('code', '?')}: {e.get('message', '?')}" for e in errs)
     sys.exit(f"Cloudflare API error: {msgs}")
 
-objects = data.get("result", {}).get("objects", [])
+# The v4 R2 listing returns "result" as a list of objects; older payloads
+# nested them under result.objects. Accept both.
+result = data.get("result") or []
+objects = result if isinstance(result, list) else result.get("objects", [])
 backups = [obj for obj in objects if obj.get("key", "").startswith("scripty-") and obj.get("key", "").endswith(".sql.gz")]
 if not backups:
     sys.exit("no backups matching scripty-*.sql.gz found in bucket")

@@ -27,7 +27,8 @@
                 <a th:unless="${isSongList}"
                    th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}"
                    class="project-list-action-btn project-list-action-btn--secondary">Songs</a>
-                <a th:href="@{/project/show(id=${viewModel.projectId})}"
+                <a th:unless="${isSongList}"
+                   th:href="@{/project/show(id=${viewModel.projectId})}"
                    class="project-list-action-btn project-list-action-btn--secondary">Open Script</a>
             </div>
         </div>

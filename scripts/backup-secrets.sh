@@ -155,6 +155,17 @@ PY
   else
     echo "Skipped upload (--no-upload). Encrypted file kept locally."
   fi
+
+  # Emit machine-readable metadata for CI summaries.
+  if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+    {
+      echo "filename=${filename}"
+      echo "size_bytes=${size}"
+      echo "sha256=${sha256}"
+      echo "object_key=${R2_PREFIX}/${filename}"
+      echo "bucket=${R2_BUCKET}"
+    } >> "${GITHUB_OUTPUT}"
+  fi
   echo "Keep the passphrase in your password manager — without it this snapshot is unreadable."
 }
 

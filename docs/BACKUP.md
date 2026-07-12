@@ -120,6 +120,7 @@ Requires `mysqldump`, `gzip`, `gunzip`, `openssl`, and Node/`npx wrangler` (ensu
 
 ## Secrets backup (Railway variables → encrypted snapshot in R2)
 
+Workflow: [`.github/workflows/backup-secrets.yml`](../.github/workflows/backup-secrets.yml)  
 Script: [`scripts/backup-secrets.sh`](../scripts/backup-secrets.sh)
 
 Database backups don't cover configuration: Railway variables (`RESEND_API_KEY`,
@@ -137,12 +138,33 @@ npm run secrets:restore                       # decrypt latest to stdout
 npm run secrets:restore -- <file> -- --keys   # key names only, no values
 ```
 
+### Automated (GitHub Actions)
+
+- **Schedule:** weekly, Sundays 07:30 UTC, plus manual **Run workflow**.
+- Reuses the existing `RAILWAY_TOKEN`, `CLOUDFLARE_API_TOKEN`,
+  `CLOUDFLARE_ACCOUNT_ID`, and `R2_BUCKET` GitHub secrets.
+- **One-time setup:** generate a strong passphrase, store it in your password
+  manager, then add it as the `SECRETS_BACKUP_PASSPHRASE` GitHub secret:
+
+  ```bash
+  PASS="$(openssl rand -base64 30)" \
+    && echo "Store in password manager: $PASS" \
+    && gh secret set SECRETS_BACKUP_PASSPHRASE --body "$PASS"
+  ```
+
+  Then run **Actions → Backup secrets → Run workflow** once to verify.
+
+### Notes
+
 - **Passphrase:** prompted (or `SECRETS_BACKUP_PASSPHRASE`). Keep it in your
   password manager — without it a snapshot is unreadable, by design.
 - Plaintext never touches disk: variables are piped straight into
   `openssl enc`; restore decrypts to stdout after validating the payload.
-- Requires `railway login` (backup) and wrangler auth (upload/download).
-- Run a fresh snapshot after rotating any secret; old snapshots hold old values.
+- Local runs require `railway login` and wrangler auth; CI uses `RAILWAY_TOKEN`.
+- The bucket's 30-day lifecycle rule applies to `secrets/` too — weekly runs
+  keep ~4 snapshots around at any time.
+- After rotating a secret, trigger the workflow (or `npm run secrets:backup`)
+  so the latest snapshot holds the new values.
 - **Root credentials are out of scope on purpose:** the GitHub, Railway,
   Cloudflare, and Resend account logins + 2FA recovery codes belong in a
   password manager. With those, every secret here can be re-minted even
@@ -162,5 +184,6 @@ Auto-saves in Snapshot History are pruned per screenplay edition: the newest **3
 - [x] Manual **Backup database** workflow succeeded once
 - [x] You know how to restore from Railway and from an R2 dump using scripts/workflows
 - [ ] Account logins + 2FA recovery codes (GitHub, Railway, Cloudflare, Resend) in a password manager
-- [ ] First `npm run secrets:backup` uploaded and its passphrase stored in the password manager
+- [ ] `SECRETS_BACKUP_PASSPHRASE` GitHub secret set and its passphrase stored in the password manager
+- [ ] Manual **Backup secrets** workflow succeeded once
 

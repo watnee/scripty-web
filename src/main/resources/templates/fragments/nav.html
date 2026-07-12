@@ -7,9 +7,11 @@
     </div>
     <meta name="app-asset-version" th:content="${assetVersion}">
     <meta name="service-worker-enabled" th:content="${serviceWorkerEnabled}">
-    <th:block th:replace="~{fragments/blockMenuTemplates :: templates}"></th:block>
+    <!-- CSRF metas render before the large block-menu fragment: reading the token
+         must happen before the 8KB response buffer commits (see CsrfTokenEagerLoadingFilter). -->
     <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+    <th:block th:replace="~{fragments/blockMenuTemplates :: templates}"></th:block>
     <script th:src="@{/js/csrf.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/scripty-project-utils.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/theme-boot.js(v=${assetVersion})}"></script>

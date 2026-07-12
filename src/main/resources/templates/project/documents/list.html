@@ -120,6 +120,17 @@
                             aria-label="Clear search"
                             hidden>&times;</button>
                 </div>
+                <div class="project-list-toolbar-actions">
+                    <label class="project-list-sort-label" for="text-documents-sort">
+                        <span class="visually-hidden" th:text="${isSongList} ? 'Sort songs' : 'Sort notes'">Sort</span>
+                        <select id="text-documents-sort"
+                                class="project-list-sort"
+                                th:attr="aria-label=${isSongList} ? 'Sort songs' : 'Sort notes'">
+                            <option value="last-edited" selected>Last edited</option>
+                            <option value="title">Name A&ndash;Z</option>
+                        </select>
+                    </label>
+                </div>
             </div>
 
             <div class="text-documents-empty-state" th:if="${#lists.isEmpty(documents)}">
@@ -145,7 +156,7 @@
                     class="text-document-card"
                     th:classappend="${isSongList} ? ' text-document-card--song' : ' text-document-card--draft'"
                     th:style="'--card-i:' + ${iter.index}"
-                    th:attr="data-doc-title=${#strings.toLowerCase(doc.title)}">
+                    th:attr="data-doc-title=${#strings.toLowerCase(doc.title)}, data-sort-edited=${doc.updatedAt != null ? #temporals.format(doc.updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}">
                     <div class="text-document-card-main">
                         <a class="text-document-card-title"
                            th:href="@{/project/documents/edit(id=${doc.id})}"
@@ -251,7 +262,31 @@
             var noResultsEl = document.getElementById('text-documents-no-results');
             var noResultsQueryEl = document.getElementById('text-documents-search-query');
             var listEl = document.getElementById('text-documents-list');
+            var sortSelect = document.getElementById('text-documents-sort');
             if (!searchInput || !listEl) return;
+
+            function sortDocuments(skipRiseAnimation) {
+                if (!sortSelect) return;
+                var mode = sortSelect.value;
+                var cards = Array.prototype.slice.call(listEl.querySelectorAll('.text-document-card'));
+                cards.sort(function(a, b) {
+                    if (mode === 'last-edited') {
+                        var aTime = Date.parse(a.getAttribute('data-sort-edited') || '') || 0;
+                        var bTime = Date.parse(b.getAttribute('data-sort-edited') || '') || 0;
+                        if (bTime !== aTime) {
+                            return bTime - aTime;
+                        }
+                    }
+                    return (a.getAttribute('data-doc-title') || '').localeCompare(b.getAttribute('data-doc-title') || '');
+                });
+                cards.forEach(function(card, i) {
+                    if (skipRiseAnimation) {
+                        card.style.animation = 'none';
+                    }
+                    card.style.setProperty('--card-i', i);
+                    listEl.appendChild(card);
+                });
+            }
 
             function performSearch() {
                 var query = searchInput.value.trim();
@@ -300,6 +335,20 @@
                     performSearch();
                     searchInput.focus();
                 });
+            }
+
+            if (sortSelect) {
+                var isSongs = !!document.querySelector('.text-documents-page--songs');
+                var sortStorageKey = isSongs ? 'songListSort' : 'noteListSort';
+                var savedSort = sessionStorage.getItem(sortStorageKey);
+                if (savedSort && sortSelect.querySelector('option[value="' + savedSort + '"]')) {
+                    sortSelect.value = savedSort;
+                }
+                sortSelect.addEventListener('change', function() {
+                    sessionStorage.setItem(sortStorageKey, sortSelect.value);
+                    sortDocuments(true);
+                });
+                sortDocuments();
             }
         })();
     </script>

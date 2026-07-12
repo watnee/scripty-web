@@ -2,6 +2,7 @@ package com.scripty.config;
 
 import com.scripty.repository.UserRepository;
 import com.scripty.security.CsrfAccessDeniedHandler;
+import com.scripty.security.CsrfTokenEagerLoadingFilter;
 import com.scripty.security.EmailResolvingUserDetailsManager;
 import com.scripty.security.ForcedPasswordChangeFilter;
 import com.scripty.security.HtmxLoginUrlAuthenticationEntryPoint;
@@ -24,6 +25,7 @@ import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -92,6 +94,10 @@ public class SecurityConfig {
             // the change-password page until they choose a real password.
             .addFilterAfter(new ForcedPasswordChangeFilter(userRepository),
                     UsernamePasswordAuthenticationFilter.class)
+            // Resolve the deferred CSRF token before rendering: reading it for the
+            // first time mid-render (nav fragment) fails once the response buffer
+            // has committed and the token's session can't be created.
+            .addFilterAfter(new CsrfTokenEagerLoadingFilter(), CsrfFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health/**").permitAll()
                 .requestMatchers("/actuator/prometheus")

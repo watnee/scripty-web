@@ -33,10 +33,12 @@
         <header class="text-documents-header"
                 th:classappend="${isSongList} ? ' text-documents-header--song' : ' text-documents-header--draft'">
             <div class="text-documents-header-text">
-                <p class="muted"
-                   th:text="${isSongList} ? 'Write lyrics here, then insert them into the script as Lyrics blocks. Edits sync to places already inserted.' : 'Write scratch text here, then insert into the script as Note blocks. Edits sync to places already inserted.'">
-                    Write outside the screenplay.
+                <p th:unless="${isSongList}" class="muted">
+                    Write scratch text here, then insert into the script as Note blocks. Edits sync to places already inserted.
                 </p>
+                <a th:if="${isSongList}"
+                   th:href="@{/project/read(id=${viewModel.projectId})}"
+                   class="project-list-action-btn project-list-action-btn--secondary">Read</a>
             </div>
         </header>
 

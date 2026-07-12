@@ -88,6 +88,7 @@ export default defineRailway(() => {
     env: {
       METRICS_TOKEN: web.env.METRICS_TOKEN,
       SCRAPE_TARGET: "web:8080",
+      RAILWAY_RUN_UID: "0",
     },
   });
 
@@ -107,6 +108,7 @@ export default defineRailway(() => {
     },
     env: {
       PROMETHEUS_URL: "http://prometheus:9090",
+      RAILWAY_RUN_UID: "0",
       // No GF_SECURITY_ADMIN_PASSWORD here: preserve() on a service that does
       // not exist yet makes `railway config apply` fail ("Unrecognized key(s)
       // in object: 'type'") — there is no existing value to preserve. Grafana

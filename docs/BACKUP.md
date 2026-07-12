@@ -118,6 +118,32 @@ npm run db:backup
 
 Requires `mysqldump`, `gzip`, `gunzip`, `openssl`, and Node/`npx wrangler` (ensure you have run `npx wrangler login` or set `CLOUDFLARE_API_TOKEN`).
 
+### Verification (weekly)
+
+Workflow: [`.github/workflows/verify-backup.yml`](../.github/workflows/verify-backup.yml)  
+Script: [`scripts/verify-backup.sh`](../scripts/verify-backup.sh)
+
+Backups that are written but never read are a silent-failure risk, so the newest
+R2 dump is verified weekly — without touching any database:
+
+- a `scripty-*.sql.gz` object exists and is **fresh** (< 26h old, `MAX_AGE_HOURS`)
+- its size is plausible: ≥ 1 KiB (`BACKUP_MIN_BYTES`) and ≥ 70% of the previous
+  dump (`MIN_SIZE_RATIO`)
+- it downloads and passes `gunzip -t`
+- the full decompressed SQL contains `CREATE TABLE`s, `INSERT`s, and the key
+  application tables (`user project scene actor person block`)
+
+Runs twice, independently:
+
+- **GitHub Actions** — Mondays 09:00 UTC (2h after that morning's backup), plus
+  manual **Run workflow**. Needs only the existing `CLOUDFLARE_*`/`R2_BUCKET`
+  secrets. A red run means the backup layer needs attention.
+- **Claude Code routine** — same schedule; also checks Railway volume snapshots
+  (`./scripts/railway-mysql-backups.sh status`) and files/updates a GitHub issue
+  labeled `backup` on failure. See [docs/ROUTINES.md](ROUTINES.md).
+
+Local run: `npm run db:verify` (needs `CLOUDFLARE_API_TOKEN` for the R2 listing).
+
 ## Secrets backup (Railway variables → encrypted snapshot in R2)
 
 Workflow: [`.github/workflows/backup-secrets.yml`](../.github/workflows/backup-secrets.yml)  

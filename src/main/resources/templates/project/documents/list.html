@@ -21,9 +21,6 @@
                 </ol>
             </nav>
             <div class="text-documents-top-actions">
-                <a th:if="${isSongList}"
-                   th:href="@{/project/documents/notes(projectId=${viewModel.projectId})}"
-                   class="project-list-action-btn project-list-action-btn--secondary">Notes</a>
                 <a th:unless="${isSongList}"
                    th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}"
                    class="project-list-action-btn project-list-action-btn--secondary">Songs</a>

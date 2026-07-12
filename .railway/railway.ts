@@ -47,10 +47,11 @@ export default defineRailway(() => {
 
       // Keep existing Railway values; set real values in the dashboard or via CLI.
       APP_BASE_URL: preserve(),
+      EMAIL_WORKER_SECRET: preserve(),
+      EMAIL_WORKER_URL: preserve(),
       JAVA_OPTS: preserve(),
       MAIL_FROM: preserve(),
       RAILPACK_JDK_VERSION: preserve(),
-      RESEND_API_KEY: preserve(),
 
       // Observability configuration
       LOG_FORMAT: "ecs",

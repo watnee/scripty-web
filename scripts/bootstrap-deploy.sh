@@ -7,10 +7,11 @@
 #   ./scripts/bootstrap-deploy.sh github      # create/verify the repo, enable Actions, 'production' environment
 #   ./scripts/bootstrap-deploy.sh railway     # link/create project, apply IaC, domain, backups, RAILWAY_SERVICE_ID
 #   ./scripts/bootstrap-deploy.sh secrets     # push GitHub Actions secrets (Railway token, Cloudflare token, MYSQL* fallback)
+#   ./scripts/bootstrap-deploy.sh resend      # production email: RESEND_API_KEY + MAIL_FROM (Railway + Worker), domain status
 #   ./scripts/bootstrap-deploy.sh cloudflare  # first wrangler deploy (Worker + container image + MySQL secrets)
 #   ./scripts/bootstrap-deploy.sh ci          # dispatch the CI/CD workflow on main and watch it (deploys both platforms)
 #   ./scripts/bootstrap-deploy.sh verify      # curl /health on the deployed platforms
-#   ./scripts/bootstrap-deploy.sh all         # github → railway → secrets → cloudflare (or ci) → verify
+#   ./scripts/bootstrap-deploy.sh all         # github → railway → secrets → resend → cloudflare (or ci) → verify
 #
 # Reuses the focused scripts rather than duplicating them:
 #   scripts/cf-token.sh                Cloudflare CI token mint/rotate (no dashboard tokens)
@@ -125,6 +126,57 @@ iac_source_repo() {
   sed -n 's/.*github("\([^"]*\)").*/\1/p' .railway/railway.ts | head -n1
 }
 
+# --- Resend helpers ----------------------------------------------------------
+
+# Prints the value of one variable on the Railway web service (raw), or "".
+railway_web_var() {
+  railway variable list --service "$WEB_SERVICE" --json 2>/dev/null \
+    | RAILWAY_VAR_NAME="$1" python3 -c 'import json,os,sys; d=json.load(sys.stdin) or {}; print(d.get(os.environ["RAILWAY_VAR_NAME"]) or "")' 2>/dev/null || true
+}
+
+# resend_api KEY PATH → response body on stdout, fails on non-2xx.
+resend_api() {
+  curl -fsS --max-time 20 -H "Authorization: Bearer $1" "https://api.resend.com$2"
+}
+
+# Keys are often scoped "Sending access" only, which cannot read /domains —
+# validate with an empty POST /emails instead: 422/400 = authenticated but
+# invalid payload (nothing is sent), 401/403 = bad key.
+resend_key_ok() {
+  local status
+  status="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+    -X POST -H "Authorization: Bearer $1" -H 'Content-Type: application/json' \
+    -d '{}' https://api.resend.com/emails)"
+  [[ "$status" == "422" || "$status" == "400" ]]
+}
+
+# Domain of "Name <user@domain>" or "user@domain"; empty if unparsable.
+mail_from_domain() {
+  printf '%s' "$1" | sed -n 's/.*@\([A-Za-z0-9._-]*\).*/\1/p' | tr '[:upper:]' '[:lower:]'
+}
+
+# Prints the Resend verification status of a domain ("verified", "pending",
+# "not_started", …), "absent" when the domain is not in the account, or
+# "noscope" when the key cannot read /domains (sending-only key).
+resend_domain_status() {
+  local key="$1" domain="$2" body
+  body="$(resend_api "$key" /domains 2>/dev/null)" || { echo "noscope"; return 0; }
+  printf '%s' "$body" | RESEND_DOMAIN="$domain" python3 -c '
+import json, os, sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+wanted = os.environ["RESEND_DOMAIN"].lower()
+for d in data.get("data") or []:
+    if (d.get("name") or "").lower() == wanted:
+        print(d.get("status") or "unknown")
+        break
+else:
+    print("absent")
+'
+}
+
 wrangler_local() {
   [[ -x node_modules/.bin/wrangler ]]
 }
@@ -219,6 +271,41 @@ do_doctor() {
     miss "no linked Railway project" "./scripts/bootstrap-deploy.sh railway   # railway link or railway init"
   fi
 
+  section "Resend email (password recovery)"
+  if have_cmd railway && railway_logged_in && [[ -n "${ctx:-}" ]]; then
+    local resend_key mail_from
+    resend_key="$(railway_web_var RESEND_API_KEY)"
+    mail_from="$(railway_web_var MAIL_FROM)"
+    if [[ -z "$resend_key" ]]; then
+      miss "RESEND_API_KEY not set on Railway '${WEB_SERVICE}' — password-recovery email is off" "./scripts/bootstrap-deploy.sh resend"
+    elif ! resend_key_ok "$resend_key"; then
+      miss "RESEND_API_KEY on Railway '${WEB_SERVICE}' is invalid/revoked" "./scripts/bootstrap-deploy.sh resend"
+    else
+      ok "RESEND_API_KEY set and accepted by Resend"
+      if [[ -z "$mail_from" ]]; then
+        warn "MAIL_FROM unset — falls back to 'Scripty <noreply@localhost>' (Resend will reject it)"
+      else
+        ok "MAIL_FROM: ${mail_from}"
+        local from_domain
+        from_domain="$(mail_from_domain "$mail_from")"
+        if [[ "$from_domain" == "resend.dev" ]]; then
+          warn "resend.dev sandbox sender — delivers ONLY to the Resend account owner; verify a domain at https://resend.com/domains"
+        elif [[ -n "$from_domain" ]]; then
+          local dstatus
+          dstatus="$(resend_domain_status "$resend_key" "$from_domain")"
+          case "$dstatus" in
+            verified) ok "sender domain ${from_domain} verified" ;;
+            noscope)  warn "key is sending-only (cannot read /domains) — confirm ${from_domain} is verified at https://resend.com/domains" ;;
+            absent)   warn "sender domain ${from_domain} not in the Resend account — add + verify it or sends will fail" ;;
+            *)        warn "sender domain ${from_domain} status: ${dstatus:-unknown} — publish its DNS records at https://resend.com/domains" ;;
+          esac
+        fi
+      fi
+    fi
+  else
+    warn "railway unavailable or project not linked — skipped Resend checks"
+  fi
+
   section "GitHub Actions secrets (CI deploy)"
   if have_cmd gh && gh auth status >/dev/null 2>&1; then
     local name
@@ -247,6 +334,13 @@ do_doctor() {
       if [[ "$missing_cf" -ne 0 ]]; then
         miss "Worker missing required MySQL secrets (or Worker not deployed yet)" "./scripts/bootstrap-deploy.sh cloudflare"
       fi
+      for name in RESEND_API_KEY MAIL_FROM; do
+        if printf '%s' "$cf_secrets" | python3 -c 'import json,sys; names={x.get("name") for x in json.load(sys.stdin)}; sys.exit(0 if sys.argv[1] in names else 1)' "$name" 2>/dev/null; then
+          ok "Worker secret $name (optional)"
+        else
+          warn "Worker secret $name absent — no password-recovery email from the Cloudflare instance; fix: ./scripts/bootstrap-deploy.sh resend"
+        fi
+      done
     else
       miss "Worker 'scripty' not deployed (or token lacks access)" "./scripts/bootstrap-deploy.sh cloudflare"
     fi
@@ -467,7 +561,94 @@ do_secrets() {
   fi
 
   echo
-  echo "Secrets stage done. Next: ./scripts/bootstrap-deploy.sh cloudflare  (or 'ci' to deploy via Actions without Docker)"
+  echo "Secrets stage done. Next: ./scripts/bootstrap-deploy.sh resend"
+}
+
+# --- resend ------------------------------------------------------------------
+
+# Production email (password recovery) goes through the Resend HTTP API:
+# RESEND_API_KEY + MAIL_FROM on the Railway web service, and the same pair as
+# Worker secrets so the Cloudflare container can send too.
+do_resend() {
+  need_cmd railway
+  need_cmd curl
+  need_cmd python3
+  railway_logged_in || die "not logged in to Railway — run: railway login"
+
+  # 1. Find or collect the API key (env → Railway → prompt). Like
+  #    RAILWAY_TOKEN, the first key comes from a dashboard once:
+  #    https://resend.com/api-keys ("Sending access" is enough).
+  local key="${RESEND_API_KEY:-}"
+  [[ -n "$key" ]] || key="$(railway_web_var RESEND_API_KEY)"
+  if [[ -z "$key" ]]; then
+    if ! interactive; then
+      die "no RESEND_API_KEY (env or Railway web service) — create one at https://resend.com/api-keys and re-run: RESEND_API_KEY=re_... $0 resend"
+    fi
+    echo "Resend API key needed (create at https://resend.com/api-keys — 'Sending access' is enough)."
+    read -rsp "Paste the key (input hidden, sent only to Resend/Railway/Cloudflare): " key
+    echo
+    [[ -n "$key" ]] || die "empty key"
+  fi
+
+  # 2. Validate it before writing it anywhere (no email is sent).
+  resend_key_ok "$key" || die "Resend rejected the API key — check it at https://resend.com/api-keys"
+  echo "Resend API key verified."
+
+  # 3. MAIL_FROM — keep the existing value; sandbox default otherwise.
+  #    onboarding@resend.dev works without a verified domain but only
+  #    delivers to the Resend account owner's own address.
+  local mail_from
+  mail_from="$(railway_web_var MAIL_FROM)"
+  if [[ -z "$mail_from" ]]; then
+    local default_from="Scripty <onboarding@resend.dev>"
+    if interactive; then
+      read -rp "MAIL_FROM [${default_from}]: " mail_from
+    fi
+    mail_from="${mail_from:-$default_from}"
+  fi
+  echo "MAIL_FROM: ${mail_from}"
+
+  # 4. Railway web service vars (skip-deploys: the next deploy picks them up).
+  if [[ "$(railway_web_var RESEND_API_KEY)" == "$key" && "$(railway_web_var MAIL_FROM)" == "$mail_from" ]]; then
+    echo "Railway web service already has RESEND_API_KEY + MAIL_FROM."
+  else
+    railway variable set "RESEND_API_KEY=${key}" "MAIL_FROM=${mail_from}" --service "$WEB_SERVICE" --skip-deploys \
+      && echo "Set RESEND_API_KEY + MAIL_FROM on Railway '${WEB_SERVICE}'." \
+      || die "could not set Railway variables"
+  fi
+
+  # 5. Worker secrets so the Cloudflare container can send the same mail.
+  if wrangler_local && { [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]] || npx wrangler whoami >/dev/null 2>&1; }; then
+    if printf '%s' "$key" | npx wrangler secret put RESEND_API_KEY --config "$WRANGLER_CONFIG" >/dev/null 2>&1 \
+       && printf '%s' "$mail_from" | npx wrangler secret put MAIL_FROM --config "$WRANGLER_CONFIG" >/dev/null 2>&1; then
+      echo "Set RESEND_API_KEY + MAIL_FROM Worker secrets."
+    else
+      warn "could not set Worker secrets (Worker not deployed yet?) — re-run this stage after 'cloudflare'/'ci'"
+    fi
+  else
+    warn "wrangler unavailable/not logged in — skipped Worker secrets; re-run this stage later"
+  fi
+
+  # 6. Deliverability: without a verified domain, Resend only delivers to the
+  #    account owner (see memory of the current setup + Resend docs).
+  local domain status
+  domain="$(mail_from_domain "$mail_from")"
+  if [[ "$domain" == "resend.dev" ]]; then
+    warn "MAIL_FROM uses the resend.dev sandbox — emails deliver ONLY to the Resend account owner's address. Verify a real domain (https://resend.com/domains), then re-run with MAIL_FROM on it."
+  elif [[ -n "$domain" ]]; then
+    status="$(resend_domain_status "$key" "$domain")"
+    case "$status" in
+      verified) echo "Domain ${domain}: verified — full deliverability." ;;
+      noscope)  warn "key is sending-only (cannot read /domains) — confirm ${domain} is verified at https://resend.com/domains" ;;
+      absent)   warn "domain ${domain} is not in this Resend account — add it at https://resend.com/domains and publish the DNS records, or emails will fail/land in sandbox limits" ;;
+      *)        warn "domain ${domain} status: ${status} — publish the DNS records shown at https://resend.com/domains, then wait for verification" ;;
+    esac
+  else
+    warn "could not parse a domain from MAIL_FROM='${mail_from}'"
+  fi
+
+  echo
+  echo "Resend stage done. Next: ./scripts/bootstrap-deploy.sh cloudflare  (or 'ci')"
 }
 
 # --- cloudflare --------------------------------------------------------------
@@ -560,6 +741,7 @@ case "$ACTION" in
   github)     do_github ;;
   railway)    do_railway ;;
   secrets)    do_secrets ;;
+  resend)     do_resend ;;
   cloudflare) do_cloudflare ;;
   ci)         do_ci ;;
   verify)     do_verify ;;
@@ -567,6 +749,7 @@ case "$ACTION" in
     do_github
     do_railway
     do_secrets
+    do_resend
     if have_cmd docker && docker info >/dev/null 2>&1; then
       do_cloudflare
     else
@@ -578,16 +761,17 @@ case "$ACTION" in
     ;;
   *)
     cat >&2 <<EOF
-usage: $0 <doctor|github|railway|secrets|cloudflare|ci|verify|all>
+usage: $0 <doctor|github|railway|secrets|resend|cloudflare|ci|verify|all>
 
-  doctor      read-only report: tools, auth, GitHub repo/Actions, Railway project, secrets, Worker state
+  doctor      read-only report: tools, auth, GitHub repo/Actions, Railway project, Resend, secrets, Worker state
   github      create/verify the GitHub repo, enable Actions, ensure the 'production' environment
   railway     link/create the Railway project, apply .railway/railway.ts, domain, backups
   secrets     push the GitHub Actions secrets CI deploys with
+  resend      production email: RESEND_API_KEY + MAIL_FROM on Railway and the Worker, domain status
   cloudflare  first local wrangler deploy (Worker + container + MySQL secrets; needs Docker)
   ci          dispatch the CI/CD workflow on main and watch it (deploys both platforms, no local Docker)
   verify      curl /health on Railway and the Cloudflare Worker
-  all         github → railway → secrets → cloudflare (or ci without Docker) → verify
+  all         github → railway → secrets → resend → cloudflare (or ci without Docker) → verify
 EOF
     exit 2
     ;;

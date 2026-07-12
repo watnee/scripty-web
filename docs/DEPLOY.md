@@ -1,12 +1,13 @@
-# Deploying Scripty from scratch (GitHub + Railway + Cloudflare)
+# Deploying Scripty from scratch (GitHub + Railway + Cloudflare + Resend)
 
-Everything needed to take a fresh clone (or brand-new GitHub/Railway/Cloudflare
-accounts) to a running production deploy, driven by one script:
+Everything needed to take a fresh clone (or brand-new GitHub/Railway/
+Cloudflare/Resend accounts) to a running production deploy, driven by one
+script:
 
 ```bash
 npm ci                              # wrangler + Railway TS SDK (also needed by CI's IaC apply)
 npm run deploy:doctor               # read-only: what exists, what's missing, how to fix it
-./scripts/bootstrap-deploy.sh all   # github → railway → secrets → cloudflare (or ci) → verify
+./scripts/bootstrap-deploy.sh all   # github → railway → secrets → resend → cloudflare (or ci) → verify
 ```
 
 Every stage is idempotent — re-run any of them at any time. `doctor` never
@@ -22,6 +23,7 @@ doubles as a setup audit in scripts.
 | Node 22+ | wrangler (devDependency) | `npm ci` |
 | Docker (running) | `cloudflare` stage only (container image build) | skip it — the `ci` stage deploys from Actions |
 | Cloudflare account | Workers **Paid** plan (Containers requirement) | `npx wrangler login` (OAuth — no token needed) |
+| Resend account | `resend` stage (production email) | one API key from [resend.com/api-keys](https://resend.com/api-keys) |
 
 ## The stages
 
@@ -48,10 +50,10 @@ doubles as a setup audit in scripts.
   `scripts/railway-mysql-backups.sh ensure`.
 - Pushes the `RAILWAY_SERVICE_ID` GitHub Actions secret.
 
-After this stage, also set the app's remaining env vars on `web` when you
-have them: `RESEND_API_KEY`, `MAIL_FROM`, `METRICS_TOKEN` (see
-[OBSERVABILITY.md](OBSERVABILITY.md)). They are declared `preserve()` in the
-IaC so applies never clobber them.
+After this stage, also set `METRICS_TOKEN` on `web` when you have it (see
+[OBSERVABILITY.md](OBSERVABILITY.md)); `RESEND_API_KEY`/`MAIL_FROM` are
+handled by the `resend` stage. These are declared `preserve()` in the IaC so
+applies never clobber them.
 
 ### 3. `./scripts/bootstrap-deploy.sh secrets`
 
@@ -75,7 +77,24 @@ Optional extras:
 - R2 backup secrets for the nightly `mysqldump` workflow — see
   [BACKUP.md](BACKUP.md).
 
-### 4. `./scripts/bootstrap-deploy.sh cloudflare` — or `ci` without Docker
+### 4. `./scripts/bootstrap-deploy.sh resend`
+
+Production email (password recovery) uses the **Resend HTTP API** — outbound
+SMTP is restricted on Railway (`app.resend-api-key` in
+`application-prod.yml`):
+
+- Finds `RESEND_API_KEY` (env → Railway web service → one-time prompt; create
+  keys at [resend.com/api-keys](https://resend.com/api-keys), "Sending access"
+  is enough) and validates it against the Resend API without sending anything.
+- Sets `RESEND_API_KEY` + `MAIL_FROM` on the Railway `web` service **and** as
+  Worker secrets, so the Cloudflare container sends the same mail.
+- Reports sender-domain deliverability: `onboarding@resend.dev` works out of
+  the box but **only delivers to the Resend account owner's address** — for
+  real users, verify a domain at [resend.com/domains](https://resend.com/domains)
+  (publish its DNS records), then re-run this stage with a `MAIL_FROM` on that
+  domain.
+
+### 5. `./scripts/bootstrap-deploy.sh cloudflare` — or `ci` without Docker
 
 `cloudflare` is the local first Worker deploy (needs Docker running):
 
@@ -95,7 +114,7 @@ unavailable). The Railway deploy job also runs `railway config apply` first,
 so IaC changes land with every push to `main`; destructive plans are refused
 in CI by design and must be applied deliberately from a laptop.
 
-### 5. `./scripts/bootstrap-deploy.sh verify`
+### 6. `./scripts/bootstrap-deploy.sh verify`
 
 Curls `/health` on the Railway domain and the Worker URL. The first container
 cold start on Cloudflare can take a few minutes.

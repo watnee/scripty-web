@@ -13,6 +13,7 @@ This file is the single source of truth for Claude Code. It contains common deve
 - **Run Cloudflare dev**: `npm run cf:dev`
 - **Deploy Cloudflare**: `npm run cf:deploy`
 - **Sync secrets**: `npm run cf:sync`
+- **Observability (Grafana/Prometheus)**: `npm run obs:open` (prod dashboards), `npm run obs:up` (local stack), `npm run obs:doctor` (health check, see docs/OBSERVABILITY.md)
 - **Provision/rotate CI Cloudflare API token**: `npm run cf:token` (no dashboard token creation)
 - **Sync project rules**: `npm run rules:sync`
 

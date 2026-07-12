@@ -4122,8 +4122,8 @@ html.scripty-screenplay-full-width .view-menu .full-width-toolbar-btn .full-widt
 
 .project-tools-group .view-toolbar-btn.is-active,
 .text-size-control .view-toolbar-btn.is-active {
-    color: var(--accent, #475569);
-    border-color: var(--accent, #475569);
+    color: var(--fg);
+    border-color: var(--fg);
 }
 
 .project-share-intro {

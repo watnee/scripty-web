@@ -2388,6 +2388,7 @@ html.scripty-block-edit-locked .script-edition-toggle-lock,
     right: 0;
     left: auto;
     min-width: 14rem;
+    max-width: calc(100vw - 1rem);
     padding: 0.35rem;
     transform-origin: top right;
     z-index: 1100;
@@ -2548,6 +2549,12 @@ button.script-edition-publish-toggle:focus-visible {
     height: 13px;
     display: block;
     flex-shrink: 0;
+}
+
+/* Icon-only buttons can't fit the injected ⌘-hint text; the title tooltip already carries it. */
+.script-edition-row .script-edition-lock-toggle .nav-dropdown-shortcut,
+.script-edition-row .script-edition-history-toggle .nav-dropdown-shortcut {
+    display: none;
 }
 
 .script-edition-menu .nav-dropdown-item.active {

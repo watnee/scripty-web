@@ -103,10 +103,27 @@
         });
     }
 
+    function clampMenuWithinViewport(dropdown) {
+        var menu = dropdown.querySelector('.nav-dropdown-menu');
+        if (!menu) return;
+        menu.style.marginLeft = '';
+        if (!dropdown.classList.contains('open')) return;
+        var pad = 8;
+        // Offsets are layout-based, immune to the dropdownIn scale animation.
+        var left = dropdown.getBoundingClientRect().left + menu.offsetLeft;
+        var right = left + menu.offsetWidth;
+        var overflow = right - (document.documentElement.clientWidth - pad);
+        if (overflow > 0) {
+            var shift = Math.min(overflow, Math.max(0, left - pad));
+            if (shift > 0) menu.style.marginLeft = '-' + shift + 'px';
+        }
+    }
+
     function setOpen(dropdown, toggle, isOpen) {
         if (!dropdown || !toggle) return;
         dropdown.classList.toggle('open', isOpen);
         toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        clampMenuWithinViewport(dropdown);
     }
 
     function findConfigForToggle(toggle) {

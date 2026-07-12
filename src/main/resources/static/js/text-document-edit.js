@@ -60,6 +60,14 @@
         }
 
         form.addEventListener('keydown', function (e) {
+            var isS = (e.key === 's' || e.key === 'S');
+            var isMod = (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey;
+            if (isS && isMod) {
+                e.preventDefault();
+                saveNow(false);
+                return;
+            }
+
             var target = e.target;
             if (!target || target.id !== 'text-document-content') {
                 return;
@@ -117,12 +125,13 @@
                 pad(date.getSeconds());
         }
 
-        function updateLastEditedTimestamp() {
+        function updateLastEditedTimestamp(updatedAtStr) {
             var container = document.getElementById('text-document-last-edited');
             if (!container) return;
             var timeEl = container.querySelector('.last-edited-time');
             if (timeEl) {
-                timeEl.setAttribute('data-timestamp', formatLocalDateTime(new Date()));
+                var timestamp = updatedAtStr || formatLocalDateTime(new Date());
+                timeEl.setAttribute('data-timestamp', timestamp);
                 if (window.scriptyUpdateLastEditedTimes) {
                     window.scriptyUpdateLastEditedTimes();
                 }
@@ -228,13 +237,10 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                    'Accept': 'text/html'
+                    'Accept': 'application/json'
                 },
                 body: buildBody().toString(),
-                credentials: 'same-origin',
-                // Follow the stay=true redirect so we can read the saved id from res.url.
-                // redirect:'manual' yields an opaque redirect with no Location in browsers.
-                redirect: 'follow'
+                credentials: 'same-origin'
             };
             if (keepalive) {
                 fetchOpts.keepalive = true;
@@ -243,20 +249,22 @@
             fetch(action, fetchOpts)
                 .then(function (res) {
                     if (!res.ok) {
-                        throw new Error('save failed');
+                        return res.json().then(function (errData) {
+                            throw new Error(errData.error || (errData.errors && errData.errors.join(', ')) || 'save failed');
+                        }).catch(function (e) {
+                            throw new Error(e.message || 'save failed');
+                        });
                     }
-                    var finalUrl = res.url || '';
-                    if (finalUrl.indexOf('/project/documents/edit') === -1) {
-                        // Validation error returns the edit form without redirecting.
-                        throw new Error('validation');
-                    }
-                    return { location: finalUrl };
+                    return res.json();
                 })
-                .then(function (result) {
+                .then(function (data) {
+                    if (!data.success) {
+                        throw new Error(data.error || (data.errors && data.errors.join(', ')) || 'validation');
+                    }
                     var titleAtSend = titleInput ? titleInput.value : '';
                     var currentTa = getTa();
                     var contentAtSend = currentTa ? currentTa.value : '';
-                    applySaved(result.location);
+                    applySaved(data.id);
                     if ((titleInput ? titleInput.value : '') === titleAtSend && currentTa && currentTa.value === contentAtSend) {
                         lastSavedKey = snapshotKey();
                         state.pending = false;
@@ -270,10 +278,10 @@
                         state.pending = true;
                     }
                     setStatus('Saved', 'saved');
-                    updateLastEditedTimestamp();
+                    updateLastEditedTimestamp(data.updatedAt);
                 })
-                .catch(function () {
-                    setStatus('Couldn’t save', 'error');
+                .catch(function (err) {
+                    setStatus(err.message === 'validation' || (err.message && err.message.indexOf(':') !== -1) ? 'Validation error' : 'Couldn’t save', 'error');
                     state.pending = true;
                 })
                 .finally(function () {
@@ -286,17 +294,21 @@
                 });
         }
 
-        function applySaved(location) {
+        function applySaved(locationOrId) {
             var wasNew = idInput && !idInput.value;
             var id = idInput && idInput.value;
-            if (location) {
-                try {
-                    var url = new URL(location, window.location.href);
-                    var fromQuery = url.searchParams.get('id');
-                    if (fromQuery) {
-                        id = fromQuery;
-                    }
-                } catch (err) { /* ignore */ }
+            if (locationOrId) {
+                if (typeof locationOrId === 'number' || (typeof locationOrId === 'string' && !isNaN(locationOrId) && locationOrId.indexOf('/') === -1)) {
+                    id = String(locationOrId);
+                } else {
+                    try {
+                        var url = new URL(locationOrId, window.location.href);
+                        var fromQuery = url.searchParams.get('id');
+                        if (fromQuery) {
+                            id = fromQuery;
+                        }
+                    } catch (err) { /* ignore */ }
+                }
             }
             if (!id) {
                 return;

@@ -25,6 +25,14 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestHeader;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping(value = "/project/documents")
@@ -126,14 +134,26 @@ public class TextDocumentController {
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public String save(@Valid @ModelAttribute("commandModel") TextDocumentCommandModel commandModel,
+    public Object save(@Valid @ModelAttribute("commandModel") TextDocumentCommandModel commandModel,
                        BindingResult bindingResult,
                        @RequestParam(defaultValue = "false") boolean stay,
+                       @RequestHeader(value = "Accept", required = false) String acceptHeader,
                        Model model,
                        Principal principal) {
         User user = currentUser(principal);
         boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(commandModel.getDocumentType());
+        boolean wantsJson = acceptHeader != null && acceptHeader.contains("application/json");
+
         if (bindingResult.hasErrors()) {
+            if (wantsJson) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                List<String> errors = bindingResult.getFieldErrors().stream()
+                        .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                        .collect(Collectors.toList());
+                errorResponse.put("errors", errors);
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
             TextDocumentListViewModel listVm = textDocumentService.getListViewModel(commandModel.getProjectId(), user);
             if (listVm == null) {
                 return "redirect:/project/list";
@@ -149,12 +169,29 @@ public class TextDocumentController {
 
         TextDocument saved = textDocumentService.save(commandModel, user);
         if (saved == null) {
+            if (wantsJson) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("error", "Project or user not found");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+            }
             return "redirect:/project/list";
         }
         if (commandModel.getId() != null
                 && textDocumentService.syncInsertedBlocks(saved.getId(), user)) {
             projectVersionService.autoSaveVersion(commandModel.getProjectId());
         }
+
+        if (wantsJson) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("id", saved.getId());
+            response.put("updatedAt", saved.getUpdatedAt() != null 
+                    ? saved.getUpdatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) 
+                    : LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            return ResponseEntity.ok(response);
+        }
+
         if (stay) {
             return "redirect:/project/documents/edit?id=" + saved.getId();
         }

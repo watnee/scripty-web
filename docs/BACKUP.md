@@ -75,28 +75,40 @@ Script: [`scripts/backup-mysql.sh`](../scripts/backup-mysql.sh)
 5. Run **Actions → Backup database → Run workflow** once to verify upload.
 6. (Recommended) Set an R2 lifecycle rule: expire objects after **30 days**.
 
-### Download a dump from R2
+### Automated Recovery / Restore from R2
+
+You can restore a database backup directly from Cloudflare R2 into your target MySQL database using the automated script.
+
+#### Restore via script (Local / CLI)
+
+Run the restore script with the backup filename as the first argument. If you omit the filename (or specify `latest`), it will automatically query the Cloudflare API to detect and download the most recent backup file:
 
 ```bash
-npx wrangler r2 object get scripty-db-backups/scripty-YYYYMMDD-HHMMSS.sql.gz \
-  --file ./scripty-YYYYMMDD-HHMMSS.sql.gz \
-  --remote
+# Set coordinates (falls back to MYSQLHOST etc. if MYSQL_BACKUP_* are not defined)
+export R2_BUCKET=scripty-db-backups
+export CLOUDFLARE_API_TOKEN=...
+export CLOUDFLARE_ACCOUNT_ID=...
+
+# Auto-detect and restore the latest backup
+./scripts/restore-mysql.sh
+
+# Or restore a specific backup
+./scripts/restore-mysql.sh scripty-YYYYMMDD-HHMMSS.sql.gz
 ```
 
-### Restore a dump into MySQL
+The script will validate the backup integrity (gzip structure + SQL headers), prompt for confirmation, restore the data, and print a verification report with table row counts.
 
-Prefer restoring into a **new** empty database (or a staging MySQL) and verifying before pointing production at it.
+#### Restore via GitHub Actions (CI / Cloud)
 
-```bash
-gunzip -c scripty-YYYYMMDD-HHMMSS.sql.gz | mysql \
-  -h "$MYSQLHOST" \
-  -P "$MYSQLPORT" \
-  -u "$MYSQLUSER" \
-  -p"$MYSQLPASSWORD" \
-  "$MYSQLDATABASE"
-```
+For safety and ease of use, you can trigger a restore directly from the GitHub Actions tab:
 
-Warning: restoring over a live production database replaces all data. Stop the app (or take the service offline) during restore to avoid writes mid-import.
+1. Go to **Actions** -> **Restore database** -> **Run workflow**.
+2. Input the backup filename (default: `latest`).
+3. Input the target database name (default: `scripty`).
+4. Check the **CONFIRM RESTORE** box.
+5. Click **Run workflow**.
+
+Warning: Restoring will overwrite all existing data in the target database. Make sure to stop application services or put them in offline mode during the import to prevent dirty writes.
 
 ### Manual dump (local)
 
@@ -122,4 +134,5 @@ Auto-saves in Snapshot History are pruned per screenplay edition: the newest **3
 - [x] `CLOUDFLARE_API_TOKEN` includes R2 edit
 - [x] `MYSQL*` / `CLOUDFLARE_*` / `R2_BUCKET` GitHub secrets set
 - [x] Manual **Backup database** workflow succeeded once
-- [ ] You know how to restore from Railway and from an R2 dump
+- [x] You know how to restore from Railway and from an R2 dump using scripts/workflows
+

@@ -1,5 +1,5 @@
 /**
- * Project editor toolbar dropdowns (file, lists, view, edition, share, text align/style).
+ * Project editor toolbar dropdowns (file, lists, view, tools, edition, share, text align/style).
  *
  * Loaded from nav.html so handlers survive HTMX-boosted navigation into
  * /project/show (page scripts are not executed when allowScriptTags is false).
@@ -15,6 +15,7 @@
         { id: 'project-lists-dropdown', toggle: '.lists-toolbar-btn' },
         { id: 'project-element-type-dropdown', toggle: '.element-type-toolbar-btn' },
         { id: 'project-view-dropdown', toggle: '.view-toolbar-btn', keepOpenOnItemClick: true },
+        { id: 'project-tools-dropdown', toggle: '.tools-toolbar-btn', keepOpenOnItemClick: true },
         { id: 'script-edition-dropdown', toggle: '.script-edition-toggle' },
         { id: 'project-docs-dropdown', toggle: '.docs-toolbar-btn' },
         { id: 'project-share-dropdown', toggle: '.project-share-toggle' },
@@ -103,10 +104,27 @@
         });
     }
 
+    function clampMenuWithinViewport(dropdown) {
+        var menu = dropdown.querySelector('.nav-dropdown-menu');
+        if (!menu) return;
+        menu.style.marginLeft = '';
+        if (!dropdown.classList.contains('open')) return;
+        var pad = 8;
+        // Offsets are layout-based, immune to the dropdownIn scale animation.
+        var left = dropdown.getBoundingClientRect().left + menu.offsetLeft;
+        var right = left + menu.offsetWidth;
+        var overflow = right - (document.documentElement.clientWidth - pad);
+        if (overflow > 0) {
+            var shift = Math.min(overflow, Math.max(0, left - pad));
+            if (shift > 0) menu.style.marginLeft = '-' + shift + 'px';
+        }
+    }
+
     function setOpen(dropdown, toggle, isOpen) {
         if (!dropdown || !toggle) return;
         dropdown.classList.toggle('open', isOpen);
         toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        clampMenuWithinViewport(dropdown);
     }
 
     function findConfigForToggle(toggle) {

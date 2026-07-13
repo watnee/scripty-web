@@ -21,11 +21,11 @@ import org.springframework.util.StringUtils;
 public class EmailServiceImpl implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
-    private static final String RESEND_API_URL = "https://api.resend.com/emails";
 
     private final JavaMailSender mailSender;
     private final String mailFrom;
-    private final String resendApiKey;
+    private final String emailWorkerUrl;
+    private final String emailWorkerSecret;
     private final boolean smtpEnabled;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -37,19 +37,21 @@ public class EmailServiceImpl implements EmailService {
                             @Value("${app.mail-from:Scripty <noreply@localhost>}") String mailFrom,
                             @Value("${app.mail-enabled:false}") boolean mailEnabled,
                             @Value("${spring.mail.host:}") String mailHost,
-                            @Value("${app.resend-api-key:}") String resendApiKey) {
+                            @Value("${app.email-worker-url:}") String emailWorkerUrl,
+                            @Value("${app.email-worker-secret:}") String emailWorkerSecret) {
         this.mailSender = mailSender;
         this.mailFrom = mailFrom;
-        this.resendApiKey = resendApiKey == null ? "" : resendApiKey.trim();
+        this.emailWorkerUrl = emailWorkerUrl == null ? "" : emailWorkerUrl.trim();
+        this.emailWorkerSecret = emailWorkerSecret == null ? "" : emailWorkerSecret.trim();
         this.smtpEnabled = mailEnabled && mailSender != null && StringUtils.hasText(mailHost);
     }
 
     @Override
     public void send(String to, String subject, String htmlBody) {
-        // Setting a Resend API key is an explicit opt-in: it takes precedence over
-        // SMTP because Railway restricts outbound SMTP ports.
-        if (StringUtils.hasText(resendApiKey)) {
-            sendViaResend(to, subject, htmlBody);
+        // The Cloudflare email Worker is an explicit opt-in: it takes precedence
+        // over SMTP because Railway restricts outbound SMTP ports.
+        if (StringUtils.hasText(emailWorkerUrl) && StringUtils.hasText(emailWorkerSecret)) {
+            sendViaEmailWorker(to, subject, htmlBody);
             return;
         }
         if (!smtpEnabled) {
@@ -60,24 +62,24 @@ public class EmailServiceImpl implements EmailService {
         sendViaSmtp(to, subject, htmlBody);
     }
 
-    private void sendViaResend(String to, String subject, String htmlBody) {
+    private void sendViaEmailWorker(String to, String subject, String htmlBody) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(RESEND_API_URL))
+                    .uri(URI.create(emailWorkerUrl))
                     .timeout(Duration.ofSeconds(20))
-                    .header("Authorization", "Bearer " + resendApiKey)
+                    .header("Authorization", "Bearer " + emailWorkerSecret)
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(
-                            buildResendPayload(to, subject, htmlBody)))
+                            buildEmailPayload(to, subject, htmlBody)))
                     .build();
             HttpResponse<String> response =
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("Resend API returned status "
+                throw new IllegalStateException("Email Worker returned status "
                         + response.statusCode() + " for email to " + to
                         + ": " + response.body());
             }
-            log.info("Sent email via Resend to={} subject={}", to, subject);
+            log.info("Sent email via Cloudflare to={} subject={}", to, subject);
         } catch (IllegalStateException e) {
             throw e;
         } catch (InterruptedException e) {
@@ -88,11 +90,11 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    String buildResendPayload(String to, String subject, String htmlBody) {
+    String buildEmailPayload(String to, String subject, String htmlBody) {
         try {
             ObjectNode payload = objectMapper.createObjectNode();
             payload.put("from", mailFrom);
-            payload.putArray("to").add(to);
+            payload.put("to", to);
             payload.put("subject", subject);
             payload.put("html", htmlBody);
             return objectMapper.writeValueAsString(payload);

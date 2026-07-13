@@ -1,6 +1,6 @@
 <th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{block/showCharacterNameInline :: characterName(${block})}"></th:block>
 <span class="script-block-text reader-visible-text"><th:block th:if="${#strings.isEmpty(commandModel.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(commandModel.content)}" th:text="${commandModel.content}"></th:block></span>
-<form xmlns:th="http://www.thymeleaf.org" class="hide-in-reader-view sidebar menu block-inline-edit-form" th:attr="hx-post=@{/block/editInline}" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="change from:find select, focusout[target.value.trim()!=''] from:find textarea">
+<form xmlns:th="http://www.thymeleaf.org" class="hide-in-reader-view sidebar menu block-inline-edit-form" th:attr="hx-post=@{/block/editInline}" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="change from:find select, focusout from:find textarea">
     <input type="hidden" name="id" th:value="${commandModel.id}" />
     <input type="hidden" name="personId" th:id="'block-person-id-' + ${commandModel.id}" th:value="${commandModel.personId}" />
     <input type="hidden" name="tags" th:value="${commandModel.tags}" />

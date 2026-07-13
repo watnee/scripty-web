@@ -112,7 +112,7 @@
             renderMirrorTextHtml(ctx.content) +
             '<form class="hide-in-reader-view sidebar menu block-inline-edit-form" hx-post="/block/editInline" ' +
             'hx-target="closest .block-content" hx-swap="innerHTML" ' +
-            'hx-trigger="change from:find select, focusout[target.value.trim()!=\'\'] from:find textarea">' +
+            'hx-trigger="change from:find select, focusout from:find textarea">' +
             '<input type="hidden" name="id" value="' + escAttr(ctx.blockId) + '" />' +
             '<input type="hidden" name="personId" id="block-person-id-' + escAttr(ctx.blockId) + '" value="' + escAttr(ctx.personId) + '" />' +
             '<input type="hidden" name="tags" value="' + escAttr(ctx.tags) + '" />' +
@@ -192,7 +192,7 @@
             '</div></aside>' +
             '<div class="block-content script-block block-type-action script-block--action" ' +
             'hx-get="/block/editInline?id=' + escAttr(opts.tempBlockId) + '" ' +
-            'hx-trigger="click[!event.target.closest(\'a\')&amp;&amp;!event.target.closest(\'form\')&amp;&amp;!window.scriptySuppressBlockEditClick&amp;&amp;!window.scriptyBlockEditLocked]" hx-swap="innerHTML">' +
+            'hx-trigger="scripty-edit-block" hx-swap="innerHTML">' +
             contentHtml +
             '</div>' +
             '<aside class="block-actions hide-in-reader-view sidebar menu"></aside>' +

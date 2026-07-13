@@ -5951,6 +5951,14 @@
             }
         });
 
+        // Keyboard access for the focusable project title (htmx event filters
+        // like keyup[key=='Enter'] are unavailable with allowEval disabled).
+        document.body.addEventListener('keyup', function(e) {
+            if (e.key !== 'Enter') return;
+            const display = e.target.closest && e.target.closest('.project-header-name-display');
+            if (display) display.click();
+        });
+
         function focusBlockTextareaFromClick() {
             if (!window.scriptyPendingBlockCaret) return;
             const pending = window.scriptyPendingBlockCaret;

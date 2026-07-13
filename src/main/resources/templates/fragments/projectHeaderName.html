@@ -5,7 +5,7 @@
           id="reader-visible-project-title"
           class="project-header-name-display reader-visible-project-title"
           th:attr="hx-get=@{/project/editNameInline(id=${projectId},surface='header')}"
-          hx-trigger="click, keyup[key=='Enter']"
+          hx-trigger="click"
           hx-target="closest .project-header-name-wrap"
           hx-swap="innerHTML"
           title="Click to rename project"

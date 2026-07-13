@@ -205,6 +205,13 @@ if ".railway.internal" in host.lower():
         "(need the public TCP proxy domain)"
     )
 
+# A non-numeric port pushed to secrets fails downstream with mysqldump's
+# cryptic "option 'port': value adjusted to 0" (2026-07-10 incident).
+if not port.isdigit():
+    sys.exit(f"refusing non-numeric MySQL port for sync: {port!r}")
+if "/" in host or ":" in host or " " in host:
+    sys.exit(f"refusing malformed MySQL host for sync: {host!r}")
+
 # Prefer TLS to the public proxy; container can override via Worker secret.
 ssl_mode = (vars.get("MYSQL_SSL_MODE") or "PREFERRED").strip() or "PREFERRED"
 allow_pk = (vars.get("MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL") or "true").strip() or "true"

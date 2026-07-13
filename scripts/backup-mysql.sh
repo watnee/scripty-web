@@ -84,11 +84,15 @@ require_var R2_BUCKET
 
 # Fail fast on placeholder/garbage coordinates (e.g. secrets accidentally set to "-").
 if ! [[ "${MYSQL_BACKUP_PORT}" =~ ^[0-9]+$ ]]; then
-  echo "error: MYSQL_BACKUP_PORT is not a number — the MYSQLPORT/MYSQL_BACKUP_PORT secret looks corrupted" >&2
+  echo "error: MYSQL_BACKUP_PORT is not a number — the MYSQLPORT/MYSQL_BACKUP_PORT secret looks corrupted; run: ./scripts/sync-railway-cloudflare.sh push-github" >&2
   exit 1
 fi
 if [[ "${MYSQL_BACKUP_HOST}" != *.* ]]; then
-  echo "error: MYSQL_BACKUP_HOST does not look like a hostname — the MYSQLHOST/MYSQL_BACKUP_HOST secret looks corrupted" >&2
+  echo "error: MYSQL_BACKUP_HOST does not look like a hostname — the MYSQLHOST/MYSQL_BACKUP_HOST secret looks corrupted; run: ./scripts/sync-railway-cloudflare.sh push-github" >&2
+  exit 1
+fi
+if [[ "${MYSQL_BACKUP_HOST}" == *.railway.internal ]]; then
+  echo "error: MYSQL_BACKUP_HOST is Railway-private (.railway.internal), unreachable outside Railway; run: ./scripts/sync-railway-cloudflare.sh push-github" >&2
   exit 1
 fi
 

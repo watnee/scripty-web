@@ -42,6 +42,31 @@
                 </ol>
             </nav>
             <div class="text-document-top-bar-actions">
+                <div class="nav-dropdown text-document-edit-dropdown" id="text-doc-edit-dropdown">
+                    <button type="button"
+                            class="nav-dropdown-toggle text-doc-edit-toggle"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            aria-label="Edit"
+                            title="Edit">
+                        Edit
+                    </button>
+                    <div class="nav-dropdown-menu" role="menu" aria-label="Edit">
+                        <button id="text-doc-undo" type="button" class="nav-dropdown-item" role="menuitem" aria-label="Undo" title="Undo">
+                            <span class="nav-dropdown-item-label">Undo</span>
+                            <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
+                        </button>
+                        <button id="text-doc-redo" type="button" class="nav-dropdown-item" role="menuitem" aria-label="Redo" title="Redo">
+                            <span class="nav-dropdown-item-label">Redo</span>
+                            <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
+                        </button>
+                        <div class="nav-dropdown-divider" role="separator"></div>
+                        <button id="text-doc-find-open" type="button" class="nav-dropdown-item" role="menuitem" aria-label="Find and replace" title="Find and replace">
+                            <span class="nav-dropdown-item-label">Find &amp; Replace</span>
+                            <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </div>
                 <div class="spellcheck-toggle-container" th:if="${isSong}">
                     <button id="nav-spellcheck-toggle"
                             type="button"
@@ -82,6 +107,40 @@
            th:if="${documentImportMessage != null}"
            th:text="${documentImportMessage}"
            role="status"></p>
+
+        <div id="text-doc-find-panel" class="text-document-find-panel" role="search" aria-label="Find and replace" hidden>
+            <div class="text-document-find-row">
+                <input id="text-doc-find-input"
+                       type="text"
+                       class="text-document-find-input"
+                       placeholder="Find"
+                       aria-label="Find"
+                       autocomplete="off"
+                       spellcheck="false" />
+                <span id="text-doc-find-count" class="text-document-find-count muted" aria-live="polite"></span>
+                <button id="text-doc-find-case" type="button" class="text-document-find-btn text-document-find-case" aria-pressed="false" title="Match case" aria-label="Match case">Aa</button>
+                <button id="text-doc-find-prev" type="button" class="text-document-find-btn" title="Previous match" aria-label="Previous match">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                </button>
+                <button id="text-doc-find-next" type="button" class="text-document-find-btn" title="Next match" aria-label="Next match">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+            </div>
+            <div class="text-document-find-row">
+                <input id="text-doc-replace-input"
+                       type="text"
+                       class="text-document-find-input"
+                       placeholder="Replace with"
+                       aria-label="Replace with"
+                       autocomplete="off"
+                       spellcheck="false" />
+                <button id="text-doc-replace-one" type="button" class="text-document-find-btn text-document-find-text-btn">Replace</button>
+                <button id="text-doc-replace-all" type="button" class="text-document-find-btn text-document-find-text-btn">All</button>
+                <button id="text-doc-find-close" type="button" class="text-document-find-btn text-document-find-close" title="Close" aria-label="Close find and replace">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+        </div>
 
         <form th:action="@{/project/documents/save}"
               method="post"

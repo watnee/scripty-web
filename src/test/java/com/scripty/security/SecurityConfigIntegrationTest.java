@@ -37,4 +37,16 @@ class SecurityConfigIntegrationTest {
         mockMvc.perform(get("/swagger-ui.html").with(user("developer").roles("DEVELOPER")))
                 .andExpect(status().is3xxRedirection()); // redirects to /swagger-ui/index.html
     }
+
+    @Test
+    void tokenizedScreenplayViewIsPublicButManagementIsNot() throws Exception {
+        // The emailed view link must work without a session (renders the
+        // invalid-link page for a bogus token, but is not gated by login).
+        mockMvc.perform(get("/view").param("token", "bogus"))
+                .andExpect(status().isOk());
+
+        // Sending/revoking view invites stays behind login.
+        mockMvc.perform(get("/invitation/view/send"))
+                .andExpect(status().is3xxRedirection());
+    }
 }

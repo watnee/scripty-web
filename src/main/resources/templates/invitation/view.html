@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/scriptReader :: head(${viewModel.valid ? (#strings.isEmpty(viewModel.screenplay.title) || #strings.isEmpty(viewModel.screenplay.title.trim()) ? 'Untitled Project' : viewModel.screenplay.title) : 'Screenplay'})}"></head>
+<body class="script-reader-page">
+    <main role="main">
+        <article th:if="${viewModel.valid}" class="entry-content" role="article">
+            <h1 class="entry-title"
+                th:text="${#strings.isEmpty(viewModel.screenplay.title) || #strings.isEmpty(viewModel.screenplay.title.trim()) ? 'Untitled Project' : viewModel.screenplay.title}">Project</h1>
+            <p class="script-reader-byline">Shared with you as a view-only screenplay.</p>
+            <th:block th:replace="~{fragments/scriptReader :: scenes(${viewModel.screenplay.scenes})}"></th:block>
+        </article>
+        <article th:unless="${viewModel.valid}" class="entry-content" role="article">
+            <h1 class="entry-title">This link isn't available</h1>
+            <p th:text="${viewModel.errorMessage}">This viewing link is invalid, expired, or has been revoked.</p>
+            <p class="muted">Ask the person who shared the screenplay to send you a fresh invitation.</p>
+        </article>
+    </main>
+</body>
+</html>

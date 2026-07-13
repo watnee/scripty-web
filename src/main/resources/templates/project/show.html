@@ -112,7 +112,7 @@
                         <span class="project-share-toggle-label">Share</span>
                     </button>
                     <div class="nav-dropdown-menu project-share-menu">
-                        <div th:replace="~{fragments/projectSharePanel :: panel(${viewModel.id}, ${shareAccessUsers}, ${viewModel.teams}, ${inviteTeams}, ${pendingInvitations}, ${inviteCommand})}"></div>
+                        <div th:replace="~{fragments/projectSharePanel :: panel(${viewModel.id}, ${shareAccessUsers}, ${viewModel.teams}, ${inviteTeams}, ${pendingInvitations}, ${inviteCommand}, ${viewInvitations}, ${viewInviteCommand})}"></div>
                     </div>
                 </div>
                 <dialog id="script-edition-create-dialog" class="script-edition-dialog">

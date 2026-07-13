@@ -1,4 +1,4 @@
-<div xmlns:th="http://www.thymeleaf.org" th:fragment="panel(projectId, shareAccessUsers, teams, inviteTeams, pendingInvitations, inviteCommand)" class="project-share-panel">
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="panel(projectId, shareAccessUsers, teams, inviteTeams, pendingInvitations, inviteCommand, viewInvitations, viewInviteCommand)" class="project-share-panel">
     <p class="project-share-intro muted">Share this link with people who can view the project, or invite someone by email. Viewers always open the screenplay version you shared with the team (eye icon in the Version menu).</p>
     <div class="project-share-link-row">
         <label class="visually-hidden" th:for="'project-share-link-' + ${projectId}">Project link</label>
@@ -15,6 +15,8 @@
 
     <div th:replace="~{fragments/projectSharePanel :: inviteForm(${projectId}, ${inviteTeams}, ${inviteCommand}, 'show')}"></div>
     <div th:replace="~{fragments/projectSharePanel :: pendingList(${projectId}, ${pendingInvitations}, 'show')}"></div>
+    <div th:replace="~{fragments/projectSharePanel :: viewInviteForm(${projectId}, ${viewInviteCommand}, 'show')}"></div>
+    <div th:replace="~{fragments/projectSharePanel :: viewInviteList(${projectId}, ${viewInvitations}, 'show')}"></div>
     <div th:replace="~{fragments/projectSharePanel :: accessList(${shareAccessUsers}, ${teams})}"></div>
     <a th:href="@{/project/production(id=${projectId})}"
        class="project-share-manage-link"
@@ -63,6 +65,56 @@
         </label>
         <button type="submit" class="project-share-invite-btn">Send invite</button>
     </form>
+</div>
+
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="viewInviteForm(projectId, viewInviteCommand, returnTo)" class="project-share-invite project-share-view-invite">
+    <h3 class="project-share-access-title">Invite to view screenplay</h3>
+    <p class="project-share-access-note muted">
+        Sends a view-only reading link by email. No account needed; the link expires after 30 days.
+    </p>
+    <p class="project-share-flash project-share-flash-success"
+       th:if="${viewInviteSuccess}"
+       th:text="${viewInviteSuccess}">Invitation sent.</p>
+    <p class="project-share-flash project-share-flash-error"
+       th:if="${viewInviteError}"
+       th:text="${viewInviteError}">Could not send invitation.</p>
+    <form th:action="@{/invitation/view/send}"
+          method="post"
+          class="project-share-invite-form"
+          th:object="${viewInviteCommand}"
+          hx-boost="false">
+        <input type="hidden" name="projectId" th:value="${projectId}" />
+        <input type="hidden" name="returnTo" th:value="${returnTo}" />
+        <label class="project-share-invite-field">
+            <span class="visually-hidden">Email</span>
+            <input type="email"
+                   name="email"
+                   th:value="*{email}"
+                   placeholder="reader@example.com"
+                   required
+                   autocomplete="email" />
+        </label>
+        <button type="submit" class="project-share-invite-btn">Send view link</button>
+    </form>
+</div>
+
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="viewInviteList(projectId, viewInvitations, returnTo)" class="project-share-pending"
+     th:if="${viewInvitations != null and !#lists.isEmpty(viewInvitations)}">
+    <h3 class="project-share-access-title">View-only readers</h3>
+    <ul class="project-share-user-list">
+        <li th:each="invite : ${viewInvitations}" class="project-share-user">
+            <span>
+                <span class="project-share-user-name" th:text="${invite.email}"></span>
+                <span class="project-share-user-access muted" th:text="${invite.statusLabel}"></span>
+            </span>
+            <form th:action="@{/invitation/view/revoke}" method="post" class="project-share-revoke-form" hx-boost="false">
+                <input type="hidden" name="id" th:value="${invite.id}" />
+                <input type="hidden" name="projectId" th:value="${projectId}" />
+                <input type="hidden" name="returnTo" th:value="${returnTo}" />
+                <button type="submit" class="project-share-revoke-btn" title="Revoke view access">Revoke</button>
+            </form>
+        </li>
+    </ul>
 </div>
 
 <div xmlns:th="http://www.thymeleaf.org" th:fragment="pendingList(projectId, pendingInvitations, returnTo)" class="project-share-pending"

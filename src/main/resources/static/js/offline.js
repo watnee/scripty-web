@@ -252,10 +252,22 @@
                 }
                 var row = document.querySelector('[data-block-id="' + edit.blockId + '"]');
                 if (!row) return;
+                if (edit.type === 'blockDelete') {
+                    row.remove();
+                    return;
+                }
                 var blockContent = row.querySelector('.block-content');
                 if (!blockContent) return;
                 var ctx = window.scriptyGetBlockEditContext(blockContent);
                 ctx.content = edit.payload.content;
+                if (edit.type === 'blockSetType' && edit.payload.type) {
+                    ctx.blockType = edit.payload.type;
+                    if (window.scriptyApplyBlockTypeClass) {
+                        window.scriptyApplyBlockTypeClass(blockContent, edit.payload.type);
+                    } else {
+                        row.setAttribute('data-block-type', edit.payload.type);
+                    }
+                }
                 blockContent.innerHTML = window.scriptyRenderBlockShowInline(ctx);
                 if (typeof htmx !== 'undefined') {
                     htmx.process(blockContent);
@@ -291,7 +303,8 @@
         var anchor = anchorId ? document.querySelector('[data-block-id="' + anchorId + '"]') : null;
         var html = window.scriptyRenderOptimisticBlockRow({
             tempBlockId: edit.tempBlockId,
-            content: content
+            content: content,
+            blockType: edit.payload && edit.payload.type
         });
         var template = document.createElement('template');
         template.innerHTML = html.trim();

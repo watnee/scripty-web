@@ -69,7 +69,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         vm.setProjectTitle(project.getTitle());
         List<TextDocumentViewModel> songs = new ArrayList<>();
         List<TextDocumentViewModel> drafts = new ArrayList<>();
-        for (TextDocument doc : textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(projectId)) {
+        for (TextDocument doc : textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(projectId)) {
             TextDocumentViewModel docVm = toViewModel(doc, project, false);
             if (TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
                 songs.add(docVm);
@@ -79,6 +79,18 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         }
         vm.setSongs(songs);
         vm.setDrafts(drafts);
+        List<TextDocumentViewModel> deletedSongs = new ArrayList<>();
+        List<TextDocumentViewModel> deletedDrafts = new ArrayList<>();
+        for (TextDocument doc : textDocumentRepository.findByProjectIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(projectId)) {
+            TextDocumentViewModel docVm = toViewModel(doc, project, false);
+            if (TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+                deletedSongs.add(docVm);
+            } else {
+                deletedDrafts.add(docVm);
+            }
+        }
+        vm.setDeletedSongs(deletedSongs);
+        vm.setDeletedDrafts(deletedDrafts);
         return vm;
     }
 
@@ -86,7 +98,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     @Transactional(readOnly = true)
     public TextDocumentViewModel getViewModel(Integer id, User currentUser) {
         TextDocument doc = textDocumentRepository.findById(id).orElse(null);
-        if (doc == null || doc.getProject() == null) {
+        if (doc == null || doc.getProject() == null || doc.isDeleted()) {
             return null;
         }
         if (!projectService.canUserAccessProject(doc.getProject().getId(), currentUser)) {
@@ -99,7 +111,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     @Transactional(readOnly = true)
     public TextDocumentCommandModel getCommandModel(Integer id, User currentUser) {
         TextDocument doc = textDocumentRepository.findById(id).orElse(null);
-        if (doc == null || doc.getProject() == null) {
+        if (doc == null || doc.getProject() == null || doc.isDeleted()) {
             return null;
         }
         if (!projectService.canUserAccessProject(doc.getProject().getId(), currentUser)) {
@@ -151,7 +163,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         if (!isNew) {
             doc = textDocumentRepository.findByIdAndProjectId(commandModel.getId(), commandModel.getProjectId())
                     .orElse(null);
-            if (doc == null) {
+            if (doc == null || doc.isDeleted()) {
                 return null;
             }
         } else {
@@ -207,7 +219,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             return null;
         }
         TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
-        if (doc == null) {
+        if (doc == null || doc.isDeleted()) {
             return null;
         }
         String newTitle = PlainTextSanitizer.sanitizeSingleLine(title != null ? title : "");
@@ -246,30 +258,92 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             return;
         }
         TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
-        if (doc == null) {
+        if (doc == null || doc.isDeleted()) {
             return;
         }
-        String title = doc.getTitle();
+        LocalDateTime now = LocalDateTime.now();
+        doc.setDeletedAt(now);
+        textDocumentRepository.save(doc);
         Project project = doc.getProject();
-        textDocumentRepository.delete(doc);
         if (project != null) {
-            project.setLastEdited(LocalDateTime.now());
+            project.setLastEdited(now);
             projectRepository.save(project);
         }
         projectActivityService.record(
                 projectId,
                 currentUser.getId(),
                 ProjectActivity.ACTION_DOCUMENT_DELETED,
-                "deleted \"" + title + "\"",
+                "deleted \"" + doc.getTitle() + "\"",
                 ProjectActivity.ENTITY_DOCUMENT,
                 id);
     }
 
     @Override
     @Transactional
+    public TextDocument restore(Integer id, Integer projectId, User currentUser) {
+        if (id == null || projectId == null || currentUser == null) {
+            return null;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return null;
+        }
+        TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+        if (doc == null || !doc.isDeleted()) {
+            return null;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        doc.setDeletedAt(null);
+        doc.setUpdatedAt(now);
+        TextDocument saved = textDocumentRepository.save(doc);
+        Project project = doc.getProject();
+        if (project != null) {
+            project.setLastEdited(now);
+            projectRepository.save(project);
+        }
+        projectActivityService.record(
+                projectId,
+                currentUser.getId(),
+                ProjectActivity.ACTION_DOCUMENT_RESTORED,
+                "restored \"" + saved.getTitle() + "\"",
+                ProjectActivity.ENTITY_DOCUMENT,
+                saved.getId());
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public void deletePermanently(Integer id, Integer projectId, User currentUser) {
+        if (id == null || projectId == null || currentUser == null) {
+            return;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return;
+        }
+        TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+        // Only documents already in Recently deleted can be removed for good.
+        if (doc == null || !doc.isDeleted()) {
+            return;
+        }
+        textDocumentRepository.delete(doc);
+    }
+
+    @Override
+    @Transactional
+    public int purgeExpiredDeleted() {
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(TRASH_RETENTION_DAYS);
+        List<TextDocument> expired = textDocumentRepository.findByDeletedAtBefore(cutoff);
+        if (expired.isEmpty()) {
+            return 0;
+        }
+        textDocumentRepository.deleteAll(expired);
+        return expired.size();
+    }
+
+    @Override
+    @Transactional
     public List<Block> insertIntoScript(Integer documentId, Integer afterBlockId, String asType, User currentUser) {
         TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
-        if (doc == null || doc.getProject() == null) {
+        if (doc == null || doc.getProject() == null || doc.isDeleted()) {
             return List.of();
         }
 
@@ -331,7 +405,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     @Transactional
     public boolean syncInsertedBlocks(Integer documentId, User currentUser) {
         TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
-        if (doc == null || doc.getProject() == null) {
+        if (doc == null || doc.getProject() == null || doc.isDeleted()) {
             return false;
         }
         if (!projectService.canUserAccessProject(doc.getProject().getId(), currentUser)
@@ -505,6 +579,14 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         vm.setSortOrder(doc.getSortOrder());
         vm.setCreatedAt(doc.getCreatedAt());
         vm.setUpdatedAt(doc.getUpdatedAt());
+        vm.setDeletedAt(doc.getDeletedAt());
+        if (doc.getDeletedAt() != null) {
+            LocalDateTime purgeAt = doc.getDeletedAt().plusDays(TRASH_RETENTION_DAYS);
+            java.time.Duration remaining = java.time.Duration.between(LocalDateTime.now(), purgeAt);
+            // Round up so a just-deleted document shows the full 30 days.
+            long daysLeft = remaining.isNegative() ? 0 : (remaining.toHours() + 23) / 24;
+            vm.setDaysUntilPurge(daysLeft);
+        }
         String content = doc.getContent() != null ? doc.getContent() : "";
         if (includeFullContent) {
             vm.setContent(content);

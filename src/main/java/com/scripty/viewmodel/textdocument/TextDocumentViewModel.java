@@ -14,6 +14,8 @@ public class TextDocumentViewModel {
     private Integer sortOrder;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime deletedAt;
+    private long daysUntilPurge;
     private String preview;
 
     public Integer getId() {
@@ -94,6 +96,22 @@ public class TextDocumentViewModel {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public long getDaysUntilPurge() {
+        return daysUntilPurge;
+    }
+
+    public void setDaysUntilPurge(long daysUntilPurge) {
+        this.daysUntilPurge = daysUntilPurge;
     }
 
     public String getPreview() {

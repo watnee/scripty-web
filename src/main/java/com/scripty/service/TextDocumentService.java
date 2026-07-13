@@ -12,6 +12,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface TextDocumentService {
 
+    /** How long a deleted document stays recoverable before it is purged for good. */
+    int TRASH_RETENTION_DAYS = 30;
+
     TextDocument read(Integer id);
 
     TextDocumentListViewModel getListViewModel(Integer projectId, User currentUser);
@@ -32,7 +35,26 @@ public interface TextDocumentService {
      */
     TextDocument rename(Integer id, Integer projectId, String title, User currentUser);
 
+    /**
+     * Moves a document to Recently deleted. It stays recoverable for
+     * {@link #TRASH_RETENTION_DAYS} days, then the purge job removes it permanently.
+     */
     void delete(Integer id, Integer projectId, User currentUser);
+
+    /**
+     * Restores a document from Recently deleted.
+     * @return the restored document, or null if not found/accessible or not deleted
+     */
+    TextDocument restore(Integer id, Integer projectId, User currentUser);
+
+    /** Permanently deletes a document that is already in Recently deleted. */
+    void deletePermanently(Integer id, Integer projectId, User currentUser);
+
+    /**
+     * Permanently removes documents deleted more than {@link #TRASH_RETENTION_DAYS} days ago.
+     * @return number of documents purged
+     */
+    int purgeExpiredDeleted();
 
     /**
      * Inserts document content into the screenplay as typed blocks (default LYRICS for songs).

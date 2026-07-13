@@ -90,6 +90,7 @@ public class TextDocumentController {
         model.addAttribute("listType", isSong ? TextDocument.TYPE_SONG : TextDocument.TYPE_NOTES);
         model.addAttribute("isSongList", isSong);
         model.addAttribute("documents", isSong ? viewModel.getSongs() : viewModel.getDrafts());
+        model.addAttribute("deletedDocuments", isSong ? viewModel.getDeletedSongs() : viewModel.getDeletedDrafts());
         model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
         return "project/documents/list";
     }
@@ -229,6 +230,24 @@ public class TextDocumentController {
                          @RequestParam(required = false) String type,
                          Principal principal) {
         textDocumentService.delete(id, projectId, currentUser(principal));
+        return "redirect:" + listUrl(projectId, TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type)));
+    }
+
+    @RequestMapping(value = "/restore", method = RequestMethod.POST)
+    public String restore(@RequestParam Integer id,
+                          @RequestParam Integer projectId,
+                          @RequestParam(required = false) String type,
+                          Principal principal) {
+        textDocumentService.restore(id, projectId, currentUser(principal));
+        return "redirect:" + listUrl(projectId, TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type)));
+    }
+
+    @RequestMapping(value = "/delete-permanently", method = RequestMethod.POST)
+    public String deletePermanently(@RequestParam Integer id,
+                                    @RequestParam Integer projectId,
+                                    @RequestParam(required = false) String type,
+                                    Principal principal) {
+        textDocumentService.deletePermanently(id, projectId, currentUser(principal));
         return "redirect:" + listUrl(projectId, TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type)));
     }
 

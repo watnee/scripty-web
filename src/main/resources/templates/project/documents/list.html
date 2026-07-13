@@ -212,7 +212,7 @@
                               method="post"
                               class="text-document-delete-form"
                               hx-boost="false"
-                              th:attr="onsubmit=${isSongList} ? 'return confirm(\'Delete this song? This cannot be undone.\');' : 'return confirm(\'Delete this note? This cannot be undone.\');'">
+                              th:attr="onsubmit=${isSongList} ? 'return confirm(\'Delete this song? It will move to Recently deleted and be removed for good after 30 days.\');' : 'return confirm(\'Delete this note? It will move to Recently deleted and be removed for good after 30 days.\');'">
                             <input type="hidden" name="id" th:value="${doc.id}" />
                             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
                             <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
@@ -225,6 +225,57 @@
                 No <span th:text="${isSongList} ? 'songs' : 'notes'">documents</span> match
                 <strong id="text-documents-search-query"></strong>.
             </p>
+        </section>
+
+        <section class="text-documents-trash"
+                 th:if="${deletedDocuments != null && !#lists.isEmpty(deletedDocuments)}"
+                 aria-labelledby="trash-heading">
+            <details class="text-documents-trash-details">
+                <summary class="text-documents-trash-summary">
+                    <span id="trash-heading">
+                        Recently deleted
+                        <span class="text-documents-trash-count" th:text="'(' + ${#lists.size(deletedDocuments)} + ')'">(0)</span>
+                    </span>
+                </summary>
+                <p class="muted text-documents-trash-hint"
+                   th:text="${isSongList} ? 'Deleted songs stay here for 30 days, then they are removed for good.' : 'Deleted notes stay here for 30 days, then they are removed for good.'">
+                    Retention hint.
+                </p>
+                <ul class="text-documents-trash-list">
+                    <li th:each="doc : ${deletedDocuments}" class="text-document-trash-row">
+                        <div class="text-document-trash-main">
+                            <span class="text-document-trash-title" th:text="${doc.title}">Untitled</span>
+                            <span class="muted text-document-trash-meta"
+                                  th:title="${doc.deletedAt != null ? #temporals.format(doc.deletedAt, 'MMM d, yyyy, h:mm a') : ''}">
+                                Deleted <span th:replace="~{fragments/lastEditedTime :: relativeTime(${doc.deletedAt})}"></span>
+                                &middot;
+                                <span th:if="${doc.daysUntilPurge > 1}" th:text="'gone for good in ' + ${doc.daysUntilPurge} + ' days'">gone in 30 days</span>
+                                <span th:if="${doc.daysUntilPurge == 1}">gone for good in 1 day</span>
+                                <span th:if="${doc.daysUntilPurge == 0}">gone for good within a day</span>
+                            </span>
+                        </div>
+                        <div class="text-document-trash-actions">
+                            <form th:action="@{/project/documents/restore}" method="post" hx-boost="false">
+                                <input type="hidden" name="id" th:value="${doc.id}" />
+                                <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                                <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                                <button type="submit"
+                                        class="project-list-action-btn project-list-action-btn--secondary"
+                                        th:title="${isSongList} ? 'Put this song back in your list' : 'Put this note back in your list'">Restore</button>
+                            </form>
+                            <form th:action="@{/project/documents/delete-permanently}"
+                                  method="post"
+                                  hx-boost="false"
+                                  th:attr="onsubmit=${isSongList} ? 'return confirm(\'Permanently delete this song now? This cannot be undone.\');' : 'return confirm(\'Permanently delete this note now? This cannot be undone.\');'">
+                                <input type="hidden" name="id" th:value="${doc.id}" />
+                                <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                                <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                                <button type="submit" class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn">Delete now</button>
+                            </form>
+                        </div>
+                    </li>
+                </ul>
+            </details>
         </section>
     </main>
     <script src="/js/htmx.min.js"></script>

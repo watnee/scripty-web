@@ -1,4 +1,7 @@
 # Keep railway up uploads small — Railway builds from source on their side.
+# Root-anchor directory patterns (leading /) — a bare "db/" matches at ANY
+# depth, which silently excluded src/main/resources/db/ (all Flyway
+# migrations) from railway up builds.
 .git/
 .github/
 .agents/
@@ -8,9 +11,9 @@ node_modules/
 package.json
 package-lock.json
 target/
-tmp/
-uploads/
-db/
+/tmp/
+/uploads/
+/db/
 *.log
 *.pid
 *.command

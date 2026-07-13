@@ -5,6 +5,9 @@
 (function() {
     'use strict';
 
+    if (window._scriptySpellcheckInit) return;
+    window._scriptySpellcheckInit = true;
+
     var DICT_BASE = '/dictionaries';
     var DEBOUNCE_MS = 280;
     var MAX_SUGGESTIONS = 6;
@@ -49,6 +52,20 @@
         return !!(el && el.tagName === 'TEXTAREA' && el.name === 'content' &&
             el.classList.contains('block-input-textarea') &&
             el.closest('.project-script, .table-blocks-all, #table-blocks'));
+    }
+
+    // Song/note editor content textarea — suggestions popup only; visual
+    // marks stay with the browser's native spellcheck (no mirror/overlay).
+    function isDocTextarea(el) {
+        return !!(el && el.tagName === 'TEXTAREA' && el.id === 'text-document-content');
+    }
+
+    function isSpellTarget(el) {
+        return isBlockTextarea(el) || isDocTextarea(el);
+    }
+
+    function isSpellPage() {
+        return isScriptPage() || !!document.getElementById('text-document-content');
     }
 
     function escapeHtml(s) {
@@ -498,7 +515,7 @@
     }
 
     function openSuggestionsForTextarea(textarea, pendingClick) {
-        if (!isBlockTextarea(textarea) || !isEnabled()) return;
+        if (!isSpellTarget(textarea) || !isEnabled()) return;
         loadDictionary().then(function() {
             var offset = (pendingClick && pendingClick.start != null) ? pendingClick.start : textarea.selectionStart;
             var token = wordAtOffset(textarea.value || '', offset);
@@ -513,7 +530,7 @@
     }
 
     function refreshAll() {
-        if (!isScriptPage()) return;
+        if (!isSpellPage()) return;
         if (!isEnabled()) {
             document.querySelectorAll('.project-script form.scripty-spell-active, .table-blocks-all form.scripty-spell-active').forEach(function(form) {
                 clearOverlay(form);
@@ -540,8 +557,8 @@
     // --- Events ---
 
     document.addEventListener('input', function(e) {
-        if (!isScriptPage()) return;
-        if (isBlockTextarea(e.target)) {
+        if (!isSpellPage()) return;
+        if (isSpellTarget(e.target)) {
             scheduleCheck(e.target);
             if (popupTarget === e.target) hidePopup();
         }
@@ -576,9 +593,9 @@
     }, true);
 
     document.addEventListener('contextmenu', function(e) {
-        if (!isScriptPage() || !isEnabled()) return;
+        if (!isSpellPage() || !isEnabled()) return;
         var textarea = e.target.closest && e.target.closest('textarea');
-        if (!isBlockTextarea(textarea)) return;
+        if (!isSpellTarget(textarea)) return;
         if (!dictionary || !dictionary.loaded) return;
 
         var token = wordAtOffset(textarea.value || '', textarea.selectionStart);
@@ -590,7 +607,7 @@
     }, true);
 
     document.addEventListener('keydown', function(e) {
-        if (!isScriptPage()) return;
+        if (!isSpellPage()) return;
 
         // Suggestion list navigation
         if (popupEl && !popupEl.hidden) {
@@ -640,7 +657,7 @@
         // Ctrl/Cmd+. — open suggestions for word at caret
         if ((e.ctrlKey || e.metaKey) && e.key === '.' && !e.altKey) {
             var ta = e.target;
-            if (isBlockTextarea(ta) && isEnabled()) {
+            if (isSpellTarget(ta) && isEnabled()) {
                 e.preventDefault();
                 openSuggestionsForTextarea(ta);
             }
@@ -660,10 +677,10 @@
     // Click on a misspelled word inside the textarea itself — the caret is already
     // placed by the browser, so the word can be resolved from selectionStart.
     document.addEventListener('click', function(e) {
-        if (!isScriptPage() || !isEnabled()) return;
+        if (!isSpellPage() || !isEnabled()) return;
         if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
         var ta = e.target;
-        if (!isBlockTextarea(ta)) return;
+        if (!isSpellTarget(ta)) return;
         if (ta.selectionStart !== ta.selectionEnd) return;
         openSuggestionsForTextarea(ta);
     }, true);
@@ -735,7 +752,7 @@
 
     function init() {
         loadIgnored();
-        if (!isScriptPage()) return;
+        if (!isSpellPage()) return;
         if (isEnabled()) {
             loadDictionary().then(function() {
                 refreshAll();

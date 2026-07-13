@@ -149,8 +149,8 @@ Local run: `npm run db:verify` (needs `CLOUDFLARE_API_TOKEN` for the R2 listing)
 Workflow: [`.github/workflows/backup-secrets.yml`](../.github/workflows/backup-secrets.yml)  
 Script: [`scripts/backup-secrets.sh`](../scripts/backup-secrets.sh)
 
-Database backups don't cover configuration: Railway variables (`RESEND_API_KEY`,
-`MAIL_FROM`, `METRICS_TOKEN`, MySQL credentials, …) exist only on Railway.
+Database backups don't cover configuration: Railway variables (`EMAIL_WORKER_URL`,
+`EMAIL_WORKER_SECRET`, `MAIL_FROM`, `METRICS_TOKEN`, MySQL credentials, …) exist only on Railway.
 GitHub Actions secrets and Cloudflare Worker secrets are **write-only** and
 cannot be exported — but both are re-pushed *from Railway* by
 `./scripts/bootstrap-deploy.sh secrets` and `npm run cf:sync`, so snapshotting
@@ -192,7 +192,7 @@ npm run secrets:restore -- <file> -- --keys   # key names only, no values
 - After rotating a secret, trigger the workflow (or `npm run secrets:backup`)
   so the latest snapshot holds the new values.
 - **Root credentials are out of scope on purpose:** the GitHub, Railway,
-  Cloudflare, and Resend account logins + 2FA recovery codes belong in a
+  and Cloudflare account logins + 2FA recovery codes belong in a
   password manager. With those, every secret here can be re-minted even
   without a snapshot.
 
@@ -209,7 +209,7 @@ Auto-saves in Snapshot History are pruned per screenplay edition: the newest **3
 - [x] `MYSQL*` / `CLOUDFLARE_*` / `R2_BUCKET` GitHub secrets set
 - [x] Manual **Backup database** workflow succeeded once
 - [x] You know how to restore from Railway and from an R2 dump using scripts/workflows
-- [ ] Account logins + 2FA recovery codes (GitHub, Railway, Cloudflare, Resend) in a password manager
+- [ ] Account logins + 2FA recovery codes (GitHub, Railway, Cloudflare) in a password manager
 - [ ] `SECRETS_BACKUP_PASSPHRASE` GitHub secret set and its passphrase stored in the password manager
 - [ ] Manual **Backup secrets** workflow succeeded once
 

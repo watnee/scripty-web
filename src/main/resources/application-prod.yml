@@ -2,6 +2,9 @@ server:
   forward-headers-strategy: framework
   servlet:
     session:
+      # Default 30m expired active sessions mid-edit; remember-me re-authenticates
+      # silently after expiry, but a longer window avoids the session/CSRF churn.
+      timeout: 12h
       cookie:
         secure: true
         http-only: true
@@ -46,15 +49,16 @@ logging:
       console: ${LOG_FORMAT:ecs}
 
 app:
-  uploads-dir: ./uploads
   headshot-max-bytes: 5242880
   base-url: ${APP_BASE_URL:}
   mail-from: ${MAIL_FROM:Scripty <noreply@localhost>}
   mail-enabled: ${MAIL_ENABLED:false}
   # Preferred email transport on Railway (outbound SMTP is restricted there).
-  # When set, emails go through the Resend HTTP API and the SMTP settings above
-  # are ignored; MAIL_ENABLED is not required.
-  resend-api-key: ${RESEND_API_KEY:}
-  asset-version: ${APP_ASSET_VERSION:209}
+  # When both are set, emails go through the Cloudflare email Worker
+  # (POST /internal/email, Cloudflare Email Sending) and the SMTP settings
+  # above are ignored; MAIL_ENABLED is not required.
+  email-worker-url: ${EMAIL_WORKER_URL:}
+  email-worker-secret: ${EMAIL_WORKER_SECRET:}
+  asset-version: ${APP_ASSET_VERSION:216}
   # Static assets + public offline shells only; project HTML lives in IndexedDB.
   service-worker-enabled: true

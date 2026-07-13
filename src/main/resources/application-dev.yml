@@ -1,4 +1,15 @@
 spring:
+  # Dev-only boot-speed tuning. Lazy init defers MVC/Thymeleaf/springdoc bean
+  # creation to first use (bean *wiring* errors still fail at startup; only
+  # instantiation moves to first request). Deferred JPA bootstrap builds the
+  # EntityManagerFactory on a background thread so the web server comes up
+  # sooner. Prod keeps eager init.
+  main:
+    lazy-initialization: true
+  data:
+    jpa:
+      repositories:
+        bootstrap-mode: deferred
   devtools:
     restart:
       poll-interval: 1s
@@ -40,9 +51,8 @@ ADMIN_USERNAME: admin
 ADMIN_PASSWORD: admin
 
 app:
-  asset-version: 209
+  asset-version: 216
   service-worker-enabled: true
-  uploads-dir: ./uploads
   headshot-max-bytes: 5242880
   base-url: http://localhost:8080
   mail-from: Scripty <noreply@localhost>

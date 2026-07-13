@@ -8,19 +8,17 @@ export default defineRailway(() => {
     region: "sfo",
     sizeMB: 50000,
   });
-  const webVolume = volume("web-volume", {
-    alerts: { usage: { "100": {}, "80": {}, "95": {} } },
-    allowOnlineResize: true,
-    region: "sfo",
-    sizeMB: 50000,
-  });
-
   const web = service("web", {
-    source: github("watnee/scripty"),
+    // No GitHub source on purpose: CI deploys via `railway up --ci`, and a
+    // connected repo would auto-deploy every main push a second time.
+    // No volume on purpose either: headshots live in MySQL (actor_headshot),
+    // and a volume would force a stop-start swap (downtime) on every deploy.
     build: {
       buildEnvironment: "V3",
       builder: "DOCKERFILE",
       dockerfilePath: "Dockerfile",
+      // Kept although no repo is connected: `railway config apply` cannot
+      // unset watchPatterns, so omitting them leaves a permanent plan diff.
       watchPatterns: [
         "src/**",
         "pom.xml",
@@ -32,9 +30,6 @@ export default defineRailway(() => {
     healthcheck: "/health",
     healthcheckTimeout: 900,
     replicas: 1,
-    volumeMounts: {
-      "/app/uploads": webVolume,
-    },
     env: {
       // application-prod.yml datasource (private Railway networking)
       MYSQLDATABASE: MySQL.env.MYSQLDATABASE,
@@ -47,10 +42,11 @@ export default defineRailway(() => {
 
       // Keep existing Railway values; set real values in the dashboard or via CLI.
       APP_BASE_URL: preserve(),
+      EMAIL_WORKER_SECRET: preserve(),
+      EMAIL_WORKER_URL: preserve(),
       JAVA_OPTS: preserve(),
       MAIL_FROM: preserve(),
       RAILPACK_JDK_VERSION: preserve(),
-      RESEND_API_KEY: preserve(),
 
       // Observability configuration
       LOG_FORMAT: "ecs",
@@ -111,13 +107,16 @@ export default defineRailway(() => {
     env: {
       PROMETHEUS_URL: "http://prometheus.railway.internal:9090",
       RAILWAY_RUN_UID: "0",
-      // No GF_SECURITY_ADMIN_PASSWORD here: preserve() on a service that does
-      // not exist yet makes `railway config apply` fail ("Unrecognized key(s)
-      // in object: 'type'") — there is no existing value to preserve. Grafana
-      // boots as admin/admin (private networking only, no public domain) and
-      // forces a change on first login. To pin it after the service exists:
-      //   railway variable set GF_SECURITY_ADMIN_PASSWORD=... --service grafana
-      // then switch this back to preserve().
+      // No GF_SECURITY_ADMIN_PASSWORD here, for two reasons:
+      // 1. preserve() on a service that does not exist yet makes
+      //    `railway config apply` fail ("Unrecognized key(s) in object:
+      //    'type'") — there is no existing value to preserve.
+      // 2. The env var only seeds the admin password when the grafana volume
+      //    is fresh. Grafana boots as admin/admin, forces a change on first
+      //    login, and stores the new password in its DB on grafana-volume —
+      //    setting the var afterwards has no effect.
+      // Access dashboards with `npm run obs:open` (generates the public
+      // domain); log in immediately to claim the admin account.
     },
   });
 
@@ -126,7 +125,6 @@ export default defineRailway(() => {
       MySQL,
       web,
       mysqlVolume,
-      webVolume,
       prometheusVolume,
       grafanaVolume,
       prometheus,

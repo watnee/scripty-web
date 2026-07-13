@@ -1,13 +1,13 @@
-# Deploying Scripty from scratch (GitHub + Railway + Cloudflare + Resend)
+# Deploying Scripty from scratch (GitHub + Railway + Cloudflare)
 
 Everything needed to take a fresh clone (or brand-new GitHub/Railway/
-Cloudflare/Resend accounts) to a running production deploy, driven by one
+Cloudflare accounts) to a running production deploy, driven by one
 script:
 
 ```bash
 npm ci                              # wrangler + Railway TS SDK (also needed by CI's IaC apply)
 npm run deploy:doctor               # read-only: what exists, what's missing, how to fix it
-./scripts/bootstrap-deploy.sh all   # github → railway → secrets → resend → cloudflare (or ci) → verify
+./scripts/bootstrap-deploy.sh all   # github → railway → secrets → cloudflare (or ci) → email → verify
 ```
 
 Every stage is idempotent — re-run any of them at any time. `doctor` never
@@ -22,8 +22,7 @@ doubles as a setup audit in scripts.
 | GitHub CLI (`gh`) | `github`, `secrets`, `ci`, doctor's repo/secret checks | `gh auth login` |
 | Node 22+ | wrangler (devDependency) | `npm ci` |
 | Docker (running) | `cloudflare` stage only (container image build) | skip it — the `ci` stage deploys from Actions |
-| Cloudflare account | Workers **Paid** plan (Containers requirement) | `npx wrangler login` (OAuth — no token needed) |
-| Resend account | `resend` stage (production email) | one API key from [resend.com/api-keys](https://resend.com/api-keys) |
+| Cloudflare account | Workers **Paid** plan (Containers requirement); also production email (`email` stage) | `npx wrangler login` (OAuth — no token needed) |
 
 ## The stages
 
@@ -43,7 +42,8 @@ doubles as a setup audit in scripts.
   (`railway init -n scripty`).
 - Previews and (with confirmation) applies **`.railway/railway.ts`** — the
   IaC source of truth that provisions the `web` service (Dockerfile build,
-  `/health` check, prod start command), managed `MySQL`, and both volumes.
+  `/health` check, prod start command, no volume — headshots live in MySQL)
+  and managed `MySQL` with its volume.
 - Generates a Railway domain for `web` if none exists and sets
   `APP_BASE_URL` from it.
 - Ensures MySQL volume snapshot schedules (Daily/Weekly/Monthly) via
@@ -51,9 +51,9 @@ doubles as a setup audit in scripts.
 - Pushes the `RAILWAY_SERVICE_ID` GitHub Actions secret.
 
 After this stage, also set `METRICS_TOKEN` on `web` when you have it (see
-[OBSERVABILITY.md](OBSERVABILITY.md)); `RESEND_API_KEY`/`MAIL_FROM` are
-handled by the `resend` stage. These are declared `preserve()` in the IaC so
-applies never clobber them.
+[OBSERVABILITY.md](OBSERVABILITY.md)); `EMAIL_WORKER_URL`/`EMAIL_WORKER_SECRET`/
+`MAIL_FROM` are handled by the `email` stage. These are declared `preserve()`
+in the IaC so applies never clobber them.
 
 ### 3. `./scripts/bootstrap-deploy.sh secrets`
 
@@ -77,24 +77,7 @@ Optional extras:
 - R2 backup secrets for the nightly `mysqldump` workflow — see
   [BACKUP.md](BACKUP.md).
 
-### 4. `./scripts/bootstrap-deploy.sh resend`
-
-Production email (password recovery) uses the **Resend HTTP API** — outbound
-SMTP is restricted on Railway (`app.resend-api-key` in
-`application-prod.yml`):
-
-- Finds `RESEND_API_KEY` (env → Railway web service → one-time prompt; create
-  keys at [resend.com/api-keys](https://resend.com/api-keys), "Sending access"
-  is enough) and validates it against the Resend API without sending anything.
-- Sets `RESEND_API_KEY` + `MAIL_FROM` on the Railway `web` service **and** as
-  Worker secrets, so the Cloudflare container sends the same mail.
-- Reports sender-domain deliverability: `onboarding@resend.dev` works out of
-  the box but **only delivers to the Resend account owner's address** — for
-  real users, verify a domain at [resend.com/domains](https://resend.com/domains)
-  (publish its DNS records), then re-run this stage with a `MAIL_FROM` on that
-  domain.
-
-### 5. `./scripts/bootstrap-deploy.sh cloudflare` — or `ci` without Docker
+### 4. `./scripts/bootstrap-deploy.sh cloudflare` — or `ci` without Docker
 
 `cloudflare` is the local first Worker deploy (needs Docker running):
 
@@ -114,17 +97,56 @@ unavailable). The Railway deploy job also runs `railway config apply` first,
 so IaC changes land with every push to `main`; destructive plans are refused
 in CI by design and must be applied deliberately from a laptop.
 
+### 5. `./scripts/bootstrap-deploy.sh email`
+
+Production email (password recovery) uses **Cloudflare Email Sending** through
+the Worker's `POST /internal/email` endpoint — outbound SMTP is restricted on
+Railway, and the Workers `send_email` binding needs no API token
+(`app.email-worker-url`/`app.email-worker-secret` in `application-prod.yml`):
+
+- Requires a domain onboarded to Email Sending once:
+  `npx wrangler email sending enable <zone>` — Cloudflare auto-publishes the
+  bounce MX, SPF, DKIM and DMARC records for zones it hosts.
+- Picks `MAIL_FROM` (existing value if its domain is onboarded, else
+  `Scripty <noreply@<first onboarded domain>>`).
+- Mints `EMAIL_PROXY_SECRET` (the endpoint's bearer secret) if Railway has no
+  `EMAIL_WORKER_SECRET` yet, and sets it on the Worker.
+- Sets `EMAIL_WORKER_URL` + `EMAIL_WORKER_SECRET` + `MAIL_FROM` on the Railway
+  `web` service **and** as Worker secrets, so the Cloudflare container sends
+  the same mail; removes any legacy `RESEND_API_KEY`.
+- Probes the endpoint: an unauthenticated POST must return 401.
+
+The binding is restricted to `allowed_sender_addresses` in
+`cloudflare/wrangler.jsonc` — extend that list before changing `MAIL_FROM` to
+a new address.
+
 ### 6. `./scripts/bootstrap-deploy.sh verify`
 
 Curls `/health` on the Railway domain and the Worker URL. The first container
 cold start on Cloudflare can take a few minutes.
 
-## One manual dashboard step
+## Zero-downtime deploys: no GitHub source, no volume on web
 
-If the Railway service was ever connected to GitHub, **turn off Railway
-auto-deploy** (service → Settings → Source) so pushes are not deployed twice —
-once by Railway and once by GitHub Actions. Fresh IaC-created projects don't
-have this problem.
+Two deliberate absences on the `web` service keep deploys downtime-free:
+
+- **No GitHub source connected** — GitHub Actions deploys with
+  `railway up --ci`, and a connected repo would auto-deploy every `main`
+  push a second time. If a source ever gets reconnected (e.g. via the
+  dashboard), disconnect it again:
+
+  ```bash
+  railway service source disconnect --service web
+  ```
+
+- **No volume mounted** — Railway cannot overlap old/new containers when a
+  volume is attached (it mounts to one container at a time), so every deploy
+  becomes a stop-start swap with an "Application failed to respond" window.
+  Actor headshots are stored in MySQL (`actor_headshot` table, V35 migration)
+  instead of on disk; with no volume, Railway keeps the old container serving
+  until the new one passes `/health`.
+
+`prometheus` and `grafana` keep their GitHub sources — CI does not `railway
+up` those; Railway builds them from the repo when their watch patterns match.
 
 ## After bootstrap: steady state
 

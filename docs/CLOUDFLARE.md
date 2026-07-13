@@ -115,7 +115,7 @@ CI deploys this in parallel with Railway when `CLOUDFLARE_API_TOKEN` is set (see
 
 ## Notes
 
-- Uploads live on the container filesystem and are **ephemeral** (lost when the instance sleeps/stops). Prefer Railway for durable upload files, or move uploads to R2 later.
+- Uploads (actor headshots) are stored in MySQL (`actor_headshot` table), so they are durable on any host — no filesystem or volume required.
 - Keep `APP_BASE_URL` pointing at the hostname you want users to hit for that environment.
-- Railway and Cloudflare can share the same MySQL if Cloudflare uses the public TCP proxy. Expect two app processes against one DB (sessions/uploads are not shared).
+- Railway and Cloudflare can share the same MySQL if Cloudflare uses the public TCP proxy. Expect two app processes against one DB (sessions are not shared).
 - A Worker cron (`*/30 * * * *`) pings `/health` on the sticky container so the JVM stays warm under the 2h `sleepAfter` window and cold Spring Boot boots do not hit interactive traffic.

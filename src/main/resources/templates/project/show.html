@@ -387,6 +387,32 @@
                         <span th:replace="~{fragments/elementLabelIcon :: toolbarIcon}"></span>
                         <span>Element labels</span>
                     </button>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/read(id=${viewModel.id}, editionId=${viewModel.editionId})}"
+                       hx-boost="false"
+                       title="Open a minimal read-only view (works with Safari Reader)">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        <span>Read Script</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="nav-dropdown tools-dropdown" id="project-tools-dropdown">
+                <button id="nav-tools"
+                        type="button"
+                        class="nav-dropdown-toggle tools-toolbar-btn"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-label="Tools"
+                        title="Tools">
+                    Tools
+                </button>
+                <div class="nav-dropdown-menu tools-menu" role="menu" aria-label="Tools">
                     <button id="nav-word-count-toggle"
                             type="button"
                             class="nav-dropdown-item word-count-filter-toggle is-active"
@@ -418,17 +444,6 @@
                             <line x1="6" y1="20" x2="6" y2="14"></line>
                         </svg>
                         <span>Script stats</span>
-                    </a>
-                    <a class="nav-dropdown-item"
-                       role="menuitem"
-                       th:href="@{/project/read(id=${viewModel.id}, editionId=${viewModel.editionId})}"
-                       hx-boost="false"
-                       title="Open a minimal read-only view (works with Safari Reader)">
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                        </svg>
-                        <span>Read Script</span>
                     </a>
                 </div>
             </div>
@@ -784,8 +799,6 @@
     <script th:src="@{/js/block-empty-guard.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/element-type.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/fountain-power.js(v=${assetVersion})}"></script>
-    <script th:src="@{/js/vendor/typo.js(v=${assetVersion})}"></script>
-    <script th:src="@{/js/spellcheck.js(v=${assetVersion})}"></script>
     <script th:inline="javascript">
     if (window.scriptyCanEditScript !== false) {
         document.querySelectorAll('.project-script .scene-blocks').forEach(function(sceneBlocks) {

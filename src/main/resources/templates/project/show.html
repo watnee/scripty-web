@@ -188,6 +188,11 @@
                        role="menuitem"
                        th:href="@{/project/export(id=${viewModel.id}, format=fountain, editionId=${viewModel.editionId})}"
                        hx-boost="false">Fountain</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       title="Full project backup: title page, versions, characters, script, and documents"
+                       th:href="@{/project/export(id=${viewModel.id}, format=scripty)}"
+                       hx-boost="false">Project file (.scripty.json)</a>
                     <div class="nav-dropdown-divider" role="separator"></div>
                     <button id="nav-print"
                             type="button"

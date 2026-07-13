@@ -16,6 +16,10 @@
             <span>Your password is set — welcome to Scripty. Create a project below to start writing.</span>
         </div>
 
+        <div class="login-error" th:if="${projectImportMessage != null}" role="alert">
+            <span th:text="${projectImportMessage}"></span>
+        </div>
+
         <div class="project-list-header">
             <div class="project-list-header-text">
                 <h1>Projects</h1>
@@ -27,11 +31,31 @@
                 </p>
                 <p class="muted" th:if="${#lists.isEmpty(viewModel.projects)}">Your screenplays live here.</p>
             </div>
-            <a th:href="@{/project/create}" role="button" class="project-list-create-btn">
-                <span class="project-list-create-icon" aria-hidden="true">+</span>
-                New Project
-            </a>
+            <div class="project-list-header-actions">
+                <button type="button"
+                        id="project-list-import-btn"
+                        class="project-list-import-btn"
+                        title="Import a project from a .scripty.json file">Import Project</button>
+                <a th:href="@{/project/create}" role="button" class="project-list-create-btn">
+                    <span class="project-list-create-icon" aria-hidden="true">+</span>
+                    New Project
+                </a>
+            </div>
         </div>
+
+        <form id="project-list-import-form"
+              th:action="@{/project/importProject}"
+              method="post"
+              enctype="multipart/form-data"
+              hx-boost="false"
+              hidden>
+            <input type="file"
+                   id="project-list-import-file"
+                   name="file"
+                   accept=".json,.scripty.json,application/json"
+                   aria-hidden="true"
+                   tabindex="-1" />
+        </form>
 
         <div class="project-list-toolbar" th:if="${!#lists.isEmpty(viewModel.projects)}">
             <div class="project-list-search-wrap" id="project-list-search-wrap">
@@ -139,6 +163,23 @@
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:inline="javascript">
+    (function() {
+        const importBtn = document.getElementById('project-list-import-btn');
+        const importForm = document.getElementById('project-list-import-form');
+        const importFile = document.getElementById('project-list-import-file');
+        if (!importBtn || !importForm || !importFile) return;
+
+        importBtn.addEventListener('click', function() {
+            importFile.click();
+        });
+        importFile.addEventListener('change', function() {
+            if (importFile.files && importFile.files.length > 0) {
+                importBtn.disabled = true;
+                importBtn.textContent = 'Importing…';
+                importForm.submit();
+            }
+        });
+    })();
     (function() {
         const searchInput = document.getElementById('project-list-search');
         const clearBtn = document.getElementById('project-list-search-clear');

@@ -20,7 +20,9 @@ import com.scripty.service.FdxExportService;
 import com.scripty.service.FountainExportService;
 import com.scripty.service.FountainImportService;
 import com.scripty.service.PdfExportService;
+import com.scripty.service.ProjectArchiveService;
 import com.scripty.service.ProjectService;
+import com.scripty.service.ScriptImportException;
 import com.scripty.service.ScriptStatsService;
 import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
@@ -126,6 +128,9 @@ public class ProjectController {
 
     @Autowired
     FdxExportService fdxExportService;
+
+    @Autowired
+    ProjectArchiveService projectArchiveService;
 
     @RequestMapping(value = "/list")
     public String list(Model model, Principal principal) {
@@ -687,6 +692,17 @@ public class ProjectController {
         Integer resolvedEditionId = edition != null ? edition.getId() : editionId;
 
         String normalized = format == null ? "fountain" : format.trim().toLowerCase();
+        if ("scripty".equals(normalized) || "json".equals(normalized) || "project".equals(normalized)) {
+            byte[] archive = projectArchiveService.exportProject(id);
+            if (archive == null) {
+                return ResponseEntity.notFound().build();
+            }
+            String filename = exportFilename(project, "scripty.json");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(archive);
+        }
         if ("pdf".equals(normalized)) {
             byte[] pdf = pdfExportService.exportProject(id, resolvedEditionId);
             String filename = exportFilename(project, "pdf");
@@ -745,6 +761,18 @@ public class ProjectController {
             sanitized = sanitized.substring(0, 80).replaceAll("[.-]+$", "");
         }
         return sanitized + "." + extension;
+    }
+
+    @RequestMapping(value = "/importProject", method = RequestMethod.POST)
+    public String importProject(@RequestParam("file") MultipartFile file,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            Project project = projectArchiveService.importProject(file);
+            return "redirect:/project/show?id=" + project.getId();
+        } catch (ScriptImportException e) {
+            redirectAttributes.addFlashAttribute("projectImportMessage", e.getUserMessage());
+            return "redirect:/project/list";
+        }
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)

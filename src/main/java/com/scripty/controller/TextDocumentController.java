@@ -26,7 +26,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import java.nio.charset.StandardCharsets;
 import org.springframework.web.bind.annotation.RequestHeader;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -131,6 +133,19 @@ public class TextDocumentController {
         model.addAttribute("listPath", listPath(isSong));
         model.addAttribute("canEditScript", projectAccess.canEditScript(viewModel.getProjectId(), user));
         return "project/documents/edit";
+    }
+
+    @RequestMapping(value = "/text")
+    public ResponseEntity<String> text(@RequestParam Integer id, Principal principal) {
+        TextDocumentViewModel viewModel = textDocumentService.getViewModel(id, currentUser(principal));
+        if (viewModel == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        String content = viewModel.getContent() == null ? "" : viewModel.getContent();
+        String body = viewModel.getTitle() + "\n\n" + content;
+        return ResponseEntity.ok()
+                .contentType(new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
+                .body(body);
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)

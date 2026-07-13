@@ -1033,6 +1033,79 @@ public class BlockServiceImpl implements BlockService {
         }
     }
 
+    @Override
+    @Transactional
+    public FindReplaceResult findReplaceInBlocks(Integer projectId, Integer editionId,
+                                                 String find, String replace,
+                                                 boolean matchCase, boolean wholeWord,
+                                                 Integer blockId, Integer occurrence) {
+        if (projectId == null || find == null || find.isEmpty()) {
+            return FindReplaceResult.empty();
+        }
+
+        List<Block> scope;
+        if (blockId != null) {
+            Block block = blockRepository.findById(blockId).orElse(null);
+            scope = block != null ? List.of(block) : List.of();
+        } else if (editionId != null) {
+            scope = blockRepository.findByScriptEditionIdOrderByOrderAsc(editionId);
+        } else {
+            scope = blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+        }
+
+        String regex = java.util.regex.Pattern.quote(find);
+        if (wholeWord) {
+            regex = "(?<![\\p{L}\\p{N}_])" + regex + "(?![\\p{L}\\p{N}_])";
+        }
+        int flags = matchCase ? 0
+                : java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.UNICODE_CASE;
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regex, flags);
+        String replacement = java.util.regex.Matcher.quoteReplacement(replace != null ? replace : "");
+
+        List<Block> updatedBlocks = new ArrayList<>();
+        int replacements = 0;
+        java.util.Set<Integer> touchedProjectIds = new java.util.HashSet<>();
+        for (Block block : scope) {
+            if (block.getProject() == null || !projectId.equals(block.getProject().getId())) {
+                continue;
+            }
+            String content = block.getContent();
+            if (content == null || content.isEmpty()) {
+                continue;
+            }
+            java.util.regex.Matcher matcher = pattern.matcher(content);
+            StringBuilder rebuilt = new StringBuilder();
+            int replacedHere = 0;
+            int matchIndex = 0;
+            while (matcher.find()) {
+                matchIndex++;
+                if (occurrence == null || occurrence == matchIndex) {
+                    matcher.appendReplacement(rebuilt, replacement);
+                    replacedHere++;
+                } else {
+                    matcher.appendReplacement(rebuilt, java.util.regex.Matcher.quoteReplacement(matcher.group()));
+                }
+            }
+            if (replacedHere == 0) {
+                continue;
+            }
+            matcher.appendTail(rebuilt);
+            String newContent = PlainTextSanitizer.sanitize(rebuilt.toString());
+            if (newContent.equals(content)) {
+                continue;
+            }
+            block.setContent(newContent);
+            blockRepository.save(block);
+            updatedBlocks.add(block);
+            replacements += replacedHere;
+            touchedProjectIds.add(block.getProject().getId());
+        }
+        for (Integer touchedProjectId : touchedProjectIds) {
+            projectRepository.findById(touchedProjectId).ifPresent(this::recordScriptEdited);
+        }
+        return new FindReplaceResult(updatedBlocks, replacements);
+    }
+
     private void recordScriptEdited(Project project) {
         recordScriptEdited(project, null);
     }

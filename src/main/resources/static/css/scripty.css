@@ -6047,6 +6047,139 @@ body:has(main.text-documents-page) > main.text-documents-page {
     max-width: min(100%, 28rem);
 }
 
+/* Song/note editor Edit menu + find & replace panel */
+.text-document-edit-dropdown .nav-dropdown-toggle {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.9rem;
+}
+
+.text-document-edit-dropdown .nav-dropdown-item:disabled,
+.text-document-file-dropdown .nav-dropdown-item:disabled {
+    opacity: 0.45;
+    cursor: default;
+    background: none;
+    color: var(--fg, #333333);
+}
+
+.text-document-find-panel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin: 0.5rem 0 0;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--td-line, var(--border, #cbd5e1));
+    border-radius: var(--border-radius, 0.5rem);
+    background: var(--box-bg, #ffffff);
+}
+
+.text-document-find-panel[hidden] {
+    display: none;
+}
+
+.text-document-find-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    vertical-align: middle;
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
+.text-document-find-input {
+    flex: 1 1 8rem;
+    min-width: 6rem;
+    padding: 0.3rem 0.55rem;
+    font-size: 0.9rem;
+    line-height: 1.35;
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 0.45rem;
+    background: var(--bg, #ffffff);
+    color: var(--fg, #0f172a);
+    box-shadow: none;
+}
+
+.text-document-find-input:focus-visible {
+    outline: 2px solid var(--accent, #475569);
+    outline-offset: 1px;
+}
+
+.text-document-find-count {
+    flex: 0 0 auto;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.text-document-find-btn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.9rem;
+    height: 1.9rem;
+    padding: 0 0.45rem;
+    border: none;
+    border-radius: 0.45rem;
+    background: transparent;
+    color: var(--fg, #334155);
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.text-document-find-btn:hover,
+.text-document-find-btn:focus-visible {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    color: var(--accent, inherit);
+    outline: none;
+    box-shadow: none;
+    filter: none;
+}
+
+.text-document-find-btn[aria-pressed="true"] {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    color: var(--accent, inherit);
+    font-weight: 700;
+}
+
+.text-document-menu-danger,
+.text-document-menu-danger:hover,
+.text-document-menu-danger:focus-visible {
+    color: var(--bad-fg-color, #e11d48);
+}
+
+/* Print-only mirror of the song/note (the textarea clips when printed). */
+.text-document-print-sheet {
+    display: none;
+}
+
+@media print {
+    body.text-document-printing > *:not(main),
+    body.text-document-printing .text-document-edit-page > *:not(.text-document-print-sheet) {
+        display: none !important;
+    }
+
+    body.text-document-printing .text-document-print-sheet {
+        display: block !important;
+        color: #000;
+    }
+
+    body.text-document-printing .text-document-print-title {
+        margin: 0 0 1rem;
+        font-size: 16pt;
+    }
+
+    body.text-document-printing .text-document-print-body {
+        white-space: pre-wrap;
+        font-family: "Courier Prime", "Courier New", Courier, monospace;
+        font-size: 12pt;
+        line-height: 1.5;
+    }
+}
+
 .text-document-breadcrumb-title-label {
     display: inline-flex;
     align-items: center;

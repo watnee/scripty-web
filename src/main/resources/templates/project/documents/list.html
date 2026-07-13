@@ -180,6 +180,11 @@
                                     class="project-list-action-btn project-list-action-btn--secondary"
                                     th:title="${isSongList} ? 'Rename this song' : 'Rename this note'">Rename</button>
                         </form>
+                        <button th:if="${isSongList}"
+                                type="button"
+                                class="project-list-action-btn project-list-action-btn--secondary text-document-share-btn"
+                                th:attr="data-share-url=@{/project/documents/text(id=${doc.id})},data-share-title=${doc.title}"
+                                title="Share this song">Share</button>
                         <form th:if="${canEditScript}"
                               th:action="@{/project/documents/insert}"
                               method="post"
@@ -242,6 +247,36 @@
                         return;
                     }
                     titleInput.value = next;
+                });
+            });
+
+            document.querySelectorAll('.text-document-share-btn').forEach(function(shareBtn) {
+                shareBtn.addEventListener('click', function() {
+                    var url = shareBtn.getAttribute('data-share-url');
+                    var title = shareBtn.getAttribute('data-share-title') || 'Song';
+                    if (!url) return;
+                    shareBtn.disabled = true;
+                    fetch(url, { headers: { 'Accept': 'text/plain' } })
+                        .then(function(res) {
+                            if (!res.ok) throw new Error('Failed to load song text');
+                            return res.text();
+                        })
+                        .then(function(text) {
+                            if (navigator.share) {
+                                return navigator.share({ title: title, text: text });
+                            }
+                            return navigator.clipboard.writeText(text).then(function() {
+                                var original = shareBtn.textContent;
+                                shareBtn.textContent = 'Copied!';
+                                setTimeout(function() { shareBtn.textContent = original; }, 2000);
+                            });
+                        })
+                        .catch(function(err) {
+                            if (!err || err.name !== 'AbortError') {
+                                window.alert('Could not share this song.');
+                            }
+                        })
+                        .then(function() { shareBtn.disabled = false; });
                 });
             });
 

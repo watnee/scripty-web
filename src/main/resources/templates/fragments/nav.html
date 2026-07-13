@@ -3742,8 +3742,7 @@
                 var viewBtn = document.querySelector('#project-view-dropdown .view-toolbar-btn');
                 if (!viewBtn) return;
                 // Highlight when any marker visibility is currently off.
-                var wordCountHidden = document.documentElement.classList.contains('scripty-word-count-hidden');
-                var anyHidden = !showBookmarks || !showPins || !showSelect || !showElementLabels || wordCountHidden;
+                var anyHidden = !showBookmarks || !showPins || !showSelect || !showElementLabels;
                 viewBtn.classList.toggle('is-active', anyHidden);
             }
 

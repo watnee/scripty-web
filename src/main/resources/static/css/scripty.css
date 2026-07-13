@@ -3817,6 +3817,7 @@ input.project-list-search:focus-visible {
 .project-tools-group .lists-dropdown,
 .text-size-control .lists-dropdown,
 .project-tools-group .docs-dropdown,
+.project-tools-group .tools-dropdown,
 .project-tools-group .element-type-dropdown,
 .project-tools-group .script-edition-dropdown,
 .project-tools-group .help-dropdown {
@@ -3829,6 +3830,7 @@ input.project-list-search:focus-visible {
 .project-tools-group .lists-dropdown.open,
 .text-size-control .lists-dropdown.open,
 .project-tools-group .docs-dropdown.open,
+.project-tools-group .tools-dropdown.open,
 .project-tools-group .element-type-dropdown.open,
 .project-tools-group .script-edition-dropdown.open,
 .project-tools-group .help-dropdown.open {
@@ -3839,6 +3841,7 @@ input.project-list-search:focus-visible {
 .project-tools-group .lists-dropdown .nav-dropdown-menu.lists-menu,
 .text-size-control .lists-dropdown .nav-dropdown-menu.lists-menu,
 .project-tools-group .docs-dropdown .nav-dropdown-menu.docs-menu,
+.project-tools-group .tools-dropdown .nav-dropdown-menu.tools-menu,
 .project-tools-group .element-type-dropdown .nav-dropdown-menu.element-type-menu,
 .project-tools-group .script-edition-dropdown .nav-dropdown-menu.script-edition-menu,
 .project-tools-group .help-dropdown .nav-dropdown-menu.help-dropdown-menu {
@@ -3855,6 +3858,7 @@ input.project-list-search:focus-visible {
 .project-tools-group .lists-dropdown.open .nav-dropdown-menu.lists-menu,
 .text-size-control .lists-dropdown.open .nav-dropdown-menu.lists-menu,
 .project-tools-group .docs-dropdown.open .nav-dropdown-menu.docs-menu,
+.project-tools-group .tools-dropdown.open .nav-dropdown-menu.tools-menu,
 .project-tools-group .element-type-dropdown.open .nav-dropdown-menu.element-type-menu,
 .project-tools-group .script-edition-dropdown.open .nav-dropdown-menu.script-edition-menu,
 .project-tools-group .help-dropdown.open .nav-dropdown-menu.help-dropdown-menu {
@@ -4036,30 +4040,35 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
     display: block;
 }
 
-.view-menu .nav-dropdown-item {
+.view-menu .nav-dropdown-item,
+.tools-menu .nav-dropdown-item {
     font-size: 0.84rem;
     font-weight: 500;
     gap: 0.55rem;
 }
 
-.view-menu .nav-dropdown-item svg {
+.view-menu .nav-dropdown-item svg,
+.tools-menu .nav-dropdown-item svg {
     flex-shrink: 0;
     width: 14px;
     height: 14px;
 }
 
-.view-menu .nav-dropdown-item.is-active {
+.view-menu .nav-dropdown-item.is-active,
+.tools-menu .nav-dropdown-item.is-active {
     color: inherit;
     font-weight: 500;
     background: none;
 }
 
-.view-menu .nav-dropdown-item[aria-checked="true"] {
+.view-menu .nav-dropdown-item[aria-checked="true"],
+.tools-menu .nav-dropdown-item[aria-checked="true"] {
     color: var(--accent, #475569);
     font-weight: 600;
 }
 
-.view-menu .nav-dropdown-item[aria-checked="true"]::after {
+.view-menu .nav-dropdown-item[aria-checked="true"]::after,
+.tools-menu .nav-dropdown-item[aria-checked="true"]::after {
     content: "✓";
     margin-left: auto;
     font-size: 0.8rem;

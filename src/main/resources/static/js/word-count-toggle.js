@@ -30,8 +30,7 @@
         }
         var viewBtn = document.querySelector('#project-view-dropdown .view-toolbar-btn');
         if (viewBtn) {
-            var anyHidden = hidden
-                || document.documentElement.classList.contains('scripty-hide-block-bookmarks')
+            var anyHidden = document.documentElement.classList.contains('scripty-hide-block-bookmarks')
                 || document.documentElement.classList.contains('scripty-hide-block-pins')
                 || document.documentElement.classList.contains('scripty-hide-block-select')
                 || document.documentElement.classList.contains('scripty-hide-block-element-labels');

@@ -1,5 +1,5 @@
 /**
- * Project editor toolbar dropdowns (file, lists, view, edition, share, text align/style).
+ * Project editor toolbar dropdowns (file, lists, view, tools, edition, share, text align/style).
  *
  * Loaded from nav.html so handlers survive HTMX-boosted navigation into
  * /project/show (page scripts are not executed when allowScriptTags is false).
@@ -15,6 +15,7 @@
         { id: 'project-lists-dropdown', toggle: '.lists-toolbar-btn' },
         { id: 'project-element-type-dropdown', toggle: '.element-type-toolbar-btn' },
         { id: 'project-view-dropdown', toggle: '.view-toolbar-btn', keepOpenOnItemClick: true },
+        { id: 'project-tools-dropdown', toggle: '.tools-toolbar-btn', keepOpenOnItemClick: true },
         { id: 'script-edition-dropdown', toggle: '.script-edition-toggle' },
         { id: 'project-docs-dropdown', toggle: '.docs-toolbar-btn' },
         { id: 'project-share-dropdown', toggle: '.project-share-toggle' },

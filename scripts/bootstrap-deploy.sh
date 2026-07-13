@@ -491,7 +491,8 @@ push_railway_service_id() {
   ctx="$(railway_context)" || { warn "cannot resolve service id (project not linked)"; return 0; }
   web_id="$(cut -f4 <<<"$ctx")"
   [[ -n "$web_id" ]] || { warn "service '${WEB_SERVICE}' not found — apply the IaC plan first"; return 0; }
-  printf '%s' "$web_id" | gh secret set RAILWAY_SERVICE_ID --body -
+  # No --body flag: gh reads the value from stdin ("--body -" would store a literal "-").
+  printf '%s' "$web_id" | gh secret set RAILWAY_SERVICE_ID
   echo "GitHub secret RAILWAY_SERVICE_ID set (${web_id})."
 }
 
@@ -513,7 +514,7 @@ do_secrets() {
     read -rsp "Paste the project token (input hidden, pushed straight to GitHub): " token
     echo
     if [[ -n "$token" ]]; then
-      printf '%s' "$token" | gh secret set RAILWAY_TOKEN --body -
+      printf '%s' "$token" | gh secret set RAILWAY_TOKEN
       echo "GitHub secret RAILWAY_TOKEN set."
     else
       warn "skipped RAILWAY_TOKEN (empty input)"

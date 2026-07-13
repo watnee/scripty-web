@@ -82,6 +82,16 @@ require_var MYSQL_BACKUP_PASSWORD
 require_var MYSQL_BACKUP_DATABASE
 require_var R2_BUCKET
 
+# Fail fast on placeholder/garbage coordinates (e.g. secrets accidentally set to "-").
+if ! [[ "${MYSQL_BACKUP_PORT}" =~ ^[0-9]+$ ]]; then
+  echo "error: MYSQL_BACKUP_PORT is not a number — the MYSQLPORT/MYSQL_BACKUP_PORT secret looks corrupted" >&2
+  exit 1
+fi
+if [[ "${MYSQL_BACKUP_HOST}" != *.* ]]; then
+  echo "error: MYSQL_BACKUP_HOST does not look like a hostname — the MYSQLHOST/MYSQL_BACKUP_HOST secret looks corrupted" >&2
+  exit 1
+fi
+
 if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] && ! npx --yes wrangler whoami >/dev/null 2>&1; then
   echo "error: set CLOUDFLARE_API_TOKEN or run: npx wrangler login" >&2
   exit 1

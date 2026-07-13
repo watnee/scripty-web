@@ -459,7 +459,8 @@ push_github() {
   for key in "${GITHUB_KEYS[@]}"; do
     value="$(kv_get "$lines" "$key")"
     [[ -n "$value" ]] || die "missing ${key} from Railway sync payload"
-    printf '%s' "$value" | gh secret set "$key" --body -
+    # No --body flag: gh reads the value from stdin ("--body -" would store a literal "-").
+    printf '%s' "$value" | gh secret set "$key"
     echo "  set ${key}"
   done
   echo "GitHub Actions MYSQL* secrets updated (incl. SSL mode)."

@@ -170,6 +170,9 @@
                     <a class="nav-dropdown-item"
                        role="menuitem"
                        th:href="@{/project/titlePage(id=${viewModel.id})}">Title page</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/block/trash(projectId=${viewModel.id})}">Recently deleted</a>
                     <div class="nav-dropdown-divider" role="separator"></div>
                     <div class="file-menu-label" aria-hidden="true">Export</div>
                     <a class="nav-dropdown-item"

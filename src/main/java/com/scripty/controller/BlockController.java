@@ -108,6 +108,39 @@ public class BlockController {
         return ResponseEntity.ok("");
     }
 
+    @RequestMapping(value = "/trash")
+    public String trash(@RequestParam Integer projectId, Principal principal, Model model) {
+        if (!projectAccess.canAccessProject(projectId, principal)) {
+            return denyRedirect();
+        }
+
+        com.scripty.viewmodel.block.trash.TrashViewModel viewModel = blockService.getTrashViewModel(projectId);
+        if (viewModel == null) {
+            return denyRedirect();
+        }
+        model.addAttribute("viewModel", viewModel);
+        model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
+        return "block/trash";
+    }
+
+    @RequestMapping(value = "/restore", method = RequestMethod.POST)
+    public String restore(@RequestParam Integer id, Principal principal) {
+        Block trashed = blockService.readDeleted(id);
+        if (trashed == null || trashed.getProject() == null) {
+            return denyRedirect();
+        }
+        Integer projectId = trashed.getProject().getId();
+        if (denyEditProject(projectId, principal)) {
+            return denyRedirect();
+        }
+
+        Block restored = blockService.restoreBlock(id);
+        if (restored != null) {
+            projectVersionService.autoSaveVersion(projectId);
+        }
+        return "redirect:/block/trash?projectId=" + projectId;
+    }
+
     @RequestMapping(value = "/moveUp")
     public String moveUp(@RequestParam Integer id, Principal principal) {
         if (denyEditBlock(id, principal)) {

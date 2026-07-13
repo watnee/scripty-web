@@ -10,9 +10,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "`block`")
+@SQLDelete(sql = "UPDATE `block` SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class Block {
 
     // Fountain screenplay element types
@@ -162,6 +166,10 @@ public class Block {
     @Column(name = "source_document_id")
     private Integer sourceDocumentId;
 
+    /** Soft-delete marker: set on delete, cleared on restore, purged after 30 days. */
+    @Column(name = "deleted_at")
+    private java.time.Instant deletedAt;
+
     public Integer getId() {
         return id;
     }
@@ -304,5 +312,13 @@ public class Block {
 
     public void setSourceDocumentId(Integer sourceDocumentId) {
         this.sourceDocumentId = sourceDocumentId;
+    }
+
+    public java.time.Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(java.time.Instant deletedAt) {
+        this.deletedAt = deletedAt;
     }
 }

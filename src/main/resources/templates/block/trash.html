@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - Recently Deleted</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main>
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li><a th:href="@{/project/list}">Projects</a></li>
+                <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}"></a></li>
+                <li aria-current="page">Recently Deleted</li>
+            </ol>
+        </nav>
+        <h1>Recently Deleted</h1>
+        <p class="version-history-intro">
+            Deleted blocks are kept here for
+            <strong th:text="${viewModel.retentionDays} + ' days'">30 days</strong>
+            and then removed permanently. Restoring puts a block back near its original position.
+        </p>
+        <th:block th:if="${#lists.isEmpty(viewModel.blocks)}">
+            <p>No recently deleted blocks.</p>
+        </th:block>
+        <table th:if="${not #lists.isEmpty(viewModel.blocks)}" class="version-history-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Content</th>
+                    <th>Character</th>
+                    <th>Deleted</th>
+                    <th>Expires</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="block : ${viewModel.blocks}">
+                    <td class="nowrap" th:text="${block.typeLabel}"></td>
+                    <td>
+                        <span th:if="${not #strings.isEmpty(block.contentPreview)}" th:text="${block.contentPreview}"></span>
+                        <em th:if="${#strings.isEmpty(block.contentPreview)}">(empty)</em>
+                    </td>
+                    <td class="nowrap" th:text="${block.personName}"></td>
+                    <td class="nowrap" th:text="${block.deletedAt != null ? #temporals.format(block.deletedAt, 'MMM d, yyyy h:mm a') : ''}"></td>
+                    <td class="nowrap" th:text="${block.daysLeft} + (${block.daysLeft == 1} ? ' day' : ' days')"></td>
+                    <td class="nowrap" th:if="${canEditScript == null or canEditScript}">
+                        <form th:action="@{/block/restore}" method="POST" hx-boost="false" style="display: inline">
+                            <input type="hidden" name="id" th:value="${block.id}" />
+                            <button type="submit" role="button">Restore</button>
+                        </form>
+                    </td>
+                    <td class="nowrap" th:unless="${canEditScript == null or canEditScript}"></td>
+                </tr>
+            </tbody>
+        </table>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

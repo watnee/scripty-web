@@ -54,10 +54,12 @@
             el.closest('.project-script, .table-blocks-all, #table-blocks'));
     }
 
-    // Song/note editor content textarea — suggestions popup only; visual
+    // Song/note editor content textareas (whole-document textarea or the
+    // song editor's per-line block rows) — suggestions popup only; visual
     // marks stay with the browser's native spellcheck (no mirror/overlay).
     function isDocTextarea(el) {
-        return !!(el && el.tagName === 'TEXTAREA' && el.id === 'text-document-content');
+        return !!(el && el.tagName === 'TEXTAREA' && (el.id === 'text-document-content'
+            || el.classList.contains('song-block-textarea')));
     }
 
     function isSpellTarget(el) {

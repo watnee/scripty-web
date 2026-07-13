@@ -6517,6 +6517,89 @@ body:has(main.text-documents-page) > main.text-documents-page {
     }
 }
 
+/* Song block editor: per-line block rows like the screenplay editor.
+   The original content textarea stays hidden as the autosave source. */
+.text-document-editor-shell.song-blocks-on .text-document-content-label {
+    display: none;
+}
+
+.song-block-editor {
+    min-height: 24rem;
+    padding: 0.25rem 0;
+    cursor: text;
+}
+
+.song-block-row {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    border-radius: 4px;
+}
+
+.song-block-row:hover,
+.song-block-row:focus-within {
+    background: color-mix(in srgb, var(--accent, #64748b) 7%, transparent);
+}
+
+.song-block-handle {
+    position: absolute;
+    left: -1.3rem;
+    top: 0.15rem;
+    width: 1.1rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    color: var(--muted-fg, #64748b);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    letter-spacing: -0.12em;
+    text-align: center;
+    cursor: grab;
+    opacity: 0;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.song-block-row:hover .song-block-handle,
+.song-block-row:focus-within .song-block-handle {
+    opacity: 0.55;
+}
+
+.song-block-row .song-block-handle:hover {
+    opacity: 1;
+}
+
+.song-block-row--dragging {
+    opacity: 0.45;
+}
+
+.song-block-textarea {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 1.7em;
+    font-family: "Courier Prime", "Courier New", Courier, monospace;
+    font-size: 1rem;
+    line-height: 1.6;
+    padding: 0.05rem 0;
+    resize: none;
+    overflow: hidden;
+    white-space: pre-wrap;
+    border: none !important;
+    border-radius: 0;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent;
+}
+
+.song-block-textarea:focus,
+.song-block-textarea:focus-visible {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
 .text-document-save-status {
     margin: 0.35rem 0 0;
     font-size: 0.85rem;
@@ -12596,5 +12679,11 @@ body.focus-mode #project-lists-dropdown {
     .project-tools-group .nav-dropdown-toggle,
     .project-tools-group a.nav-dropdown-toggle {
         padding: 0.35em 0.6em;
+    }
+
+    /* Song block editor: the drag handle hangs into the left margin, which
+       narrow screens don't have (and touch drag isn't supported anyway). */
+    .song-block-handle {
+        display: none;
     }
 }

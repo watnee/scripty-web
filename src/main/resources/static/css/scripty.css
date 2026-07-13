@@ -6258,6 +6258,76 @@ body:has(main.text-documents-page) > main.text-documents-page {
     font-size: 0.9rem;
 }
 
+.text-documents-trash {
+    margin-top: 2rem;
+}
+
+.text-documents-trash-details {
+    border: 1px dashed var(--td-line, var(--border, #cbd5e1));
+    border-radius: var(--border-radius, 0.5rem);
+    padding: 0.75rem 1rem;
+}
+
+.text-documents-trash-summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--muted-fg, #64748b);
+}
+
+.text-documents-trash-count {
+    font-weight: 400;
+}
+
+.text-documents-trash-hint {
+    margin: 0.6rem 0 0.75rem;
+    font-size: 0.85rem;
+}
+
+.text-documents-trash-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.text-document-trash-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--td-line, var(--border, #cbd5e1));
+    border-radius: var(--border-radius, 0.5rem);
+    background: color-mix(in srgb, var(--muted-fg, #64748b) 4%, transparent);
+}
+
+.text-document-trash-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.text-document-trash-title {
+    font-weight: 600;
+    color: var(--muted-fg, #64748b);
+}
+
+.text-document-trash-meta {
+    font-size: 0.82rem;
+}
+
+.text-document-trash-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    vertical-align: middle;
+}
+
 .text-document-import-banner {
     margin: 0 0 1.25rem;
     padding: 0.7rem 1rem;

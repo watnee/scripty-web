@@ -277,10 +277,11 @@ deliver_token() {
     return 0
   fi
   need_cmd gh
-  printf '%s' "$value" | gh secret set "$GH_SECRET_NAME" --app actions --body -
+  # No --body flag: gh reads the value from stdin ("--body -" would store a literal "-").
+  printf '%s' "$value" | gh secret set "$GH_SECRET_NAME" --app actions
   echo "GitHub secret ${GH_SECRET_NAME} updated."
   if [[ -n "$ACCOUNT_ID" ]]; then
-    printf '%s' "$ACCOUNT_ID" | gh secret set CLOUDFLARE_ACCOUNT_ID --app actions --body -
+    printf '%s' "$ACCOUNT_ID" | gh secret set CLOUDFLARE_ACCOUNT_ID --app actions
     echo "GitHub secret CLOUDFLARE_ACCOUNT_ID updated."
   fi
 }
@@ -449,8 +450,8 @@ PY
     echo "(PRINT_TOKEN=1 — not pushed to GitHub)"
   else
     need_cmd gh
-    printf '%s' "$value" | gh secret set CLOUDFLARE_BOOTSTRAP_TOKEN --app actions --body -
-    printf '%s' "$ACCOUNT_ID" | gh secret set CLOUDFLARE_ACCOUNT_ID --app actions --body -
+    printf '%s' "$value" | gh secret set CLOUDFLARE_BOOTSTRAP_TOKEN --app actions
+    printf '%s' "$ACCOUNT_ID" | gh secret set CLOUDFLARE_ACCOUNT_ID --app actions
     echo "GitHub secrets CLOUDFLARE_BOOTSTRAP_TOKEN + CLOUDFLARE_ACCOUNT_ID updated."
   fi
   echo ""

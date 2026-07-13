@@ -67,6 +67,7 @@ public class ProjectArchive {
         public String content;
         public boolean sceneDelimiter;
         public String textAlign;
+        public String font;
         public boolean textBold;
         public boolean textItalic;
         public boolean textUnderline;

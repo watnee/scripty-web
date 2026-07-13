@@ -87,10 +87,33 @@
         });
     }
 
+    function readBlockFont(row) {
+        if (!row) return '';
+        var content = row.querySelector('.block-content') || row;
+        if (content.classList.contains('block-font-courier-prime')) return 'COURIER_PRIME';
+        if (content.classList.contains('block-font-arial')) return 'ARIAL';
+        if (content.classList.contains('block-font-times-new-roman')) return 'TIMES_NEW_ROMAN';
+        return '';
+    }
+
+    function syncTextFontMenu(font) {
+        var current = font || '';
+        var menu = document.querySelector('#project-text-format-dropdown .text-format-menu');
+        if (!menu) return;
+        menu.querySelectorAll('.bulk-font-btn').forEach(function (btn) {
+            var btnFont = (btn.getAttribute('data-bulk-font') || '').toUpperCase();
+            var isActive = btnFont === current;
+            btn.classList.toggle('is-active', isActive);
+            btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            btn.setAttribute('role', 'menuitemradio');
+        });
+    }
+
     function syncFormatToolbarFromRow(row) {
         if (!row) return;
         syncTextAlignMenu(readBlockAlign(row));
         syncTextStyleButtons(row);
+        syncTextFontMenu(readBlockFont(row));
     }
 
     function closeAllDropdowns(exceptDropdown) {

@@ -18,6 +18,7 @@ public class BlockResource extends RepresentationModel<BlockResource> {
     private Boolean scene;
     private String tags;
     private String textAlign;
+    private String font;
     private Boolean textBold;
     private Boolean textItalic;
     private Boolean textUnderline;
@@ -116,6 +117,14 @@ public class BlockResource extends RepresentationModel<BlockResource> {
 
     public void setTextAlign(String textAlign) {
         this.textAlign = textAlign;
+    }
+
+    public String getFont() {
+        return font;
+    }
+
+    public void setFont(String font) {
+        this.font = font;
     }
 
     public Boolean getTextBold() {

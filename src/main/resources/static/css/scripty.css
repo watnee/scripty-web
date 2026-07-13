@@ -11244,6 +11244,27 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     text-decoration: underline;
 }
 
+.block-content.block-font-courier-prime .script-block-text,
+.block-content.block-font-courier-prime .reader-visible-text,
+.block-content.block-font-courier-prime .block-input-textarea,
+.block-content.block-font-courier-prime textarea {
+    font-family: "Courier Prime", "Courier New", monospace !important;
+}
+
+.block-content.block-font-arial .script-block-text,
+.block-content.block-font-arial .reader-visible-text,
+.block-content.block-font-arial .block-input-textarea,
+.block-content.block-font-arial textarea {
+    font-family: Arial, Helvetica, sans-serif !important;
+}
+
+.block-content.block-font-times-new-roman .script-block-text,
+.block-content.block-font-times-new-roman .reader-visible-text,
+.block-content.block-font-times-new-roman .block-input-textarea,
+.block-content.block-font-times-new-roman textarea {
+    font-family: "Times New Roman", Times, serif !important;
+}
+
 .scripty-offline-banner {
     --scripty-offline-banner-height: 2.75rem;
     position: fixed;

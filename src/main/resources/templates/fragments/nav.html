@@ -169,7 +169,7 @@
         });
 
         document.addEventListener('click', function(e) {
-            if (e.target.closest('.bulk-type-btn, .bulk-align-btn, .bulk-style-btn, .project-script-toolbar')) {
+            if (e.target.closest('.bulk-type-btn, .bulk-align-btn, .bulk-style-btn, .bulk-font-btn, .project-script-toolbar')) {
                 return;
             }
             rememberActiveBlockRow(findBlockRow(e.target));
@@ -3421,7 +3421,7 @@
                 // Keep the test caret when interacting with chrome (outline, toolbars, etc.)
                 if (e.target.closest(
                     '#project-lists-dropdown, #nav-outline-toggle, #fountain-outline, #nav-character-list-toggle, #fountain-character-list, #nav-location-list-toggle, #fountain-location-list, .project-script-toolbar, ' +
-                    '.text-size-control, .bulk-type-btn, .bulk-align-btn, .bulk-style-btn, ' +
+                    '.text-size-control, .bulk-type-btn, .bulk-align-btn, .bulk-style-btn, .bulk-font-btn, ' +
                     '.header-actions-group, .nav-dropdown'
                 )) {
                     return;
@@ -4137,7 +4137,7 @@
             document.body.addEventListener('mousedown', function(e) {
                 if (!document.querySelector('.project-script')) return;
                 var formatControl = e.target.closest(
-                    '.bulk-align-btn, .bulk-style-btn, .text-format-toolbar-btn'
+                    '.bulk-align-btn, .bulk-style-btn, .bulk-font-btn, .text-format-toolbar-btn'
                 );
                 if (!formatControl) return;
                 e.preventDefault();
@@ -4179,6 +4179,25 @@
                         fields: {
                             ids: styleIds.join(','),
                             style: styleBtn.getAttribute('data-bulk-style'),
+                            projectId: resolveBulkProjectId()
+                        }
+                    });
+                    return;
+                }
+
+                var fontBtn = e.target.closest('.bulk-font-btn');
+                if (fontBtn) {
+                    e.preventDefault();
+                    var fontIds = resolveAlignStyleTargetIds(fontBtn);
+                    if (fontIds.length === 0) {
+                        window.scriptyBulkSelectionAlert();
+                        return;
+                    }
+                    runBulkAction({
+                        action: '/block/bulkSetFont',
+                        fields: {
+                            ids: fontIds.join(','),
+                            font: fontBtn.getAttribute('data-bulk-font') || '',
                             projectId: resolveBulkProjectId()
                         }
                     });

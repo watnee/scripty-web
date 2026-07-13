@@ -666,6 +666,25 @@ public class BlockController {
         return redirectAfterBulkAction(projectId, blockIds);
     }
 
+    @RequestMapping(value = "/bulkSetFont", method = RequestMethod.POST)
+    public String bulkSetFont(@RequestParam String ids, @RequestParam String font,
+                              @RequestParam(required = false) Integer projectId,
+                              Principal principal) {
+        List<Integer> blockIds = parseBlockIds(ids);
+        if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
+            return denyRedirect();
+        }
+        Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectUndoRedoService.recordCheckpoint(resolvedProjectId);
+        }
+        blockService.setBlockFonts(blockIds, font);
+        if (resolvedProjectId != null) {
+            projectVersionService.autoSaveVersion(resolvedProjectId);
+        }
+        return redirectAfterBulkAction(projectId, blockIds);
+    }
+
     @RequestMapping(value = "/bulkToggleStyle", method = RequestMethod.POST)
     public String bulkToggleStyle(@RequestParam String ids, @RequestParam String style,
                                   @RequestParam(required = false) Integer projectId,

@@ -386,6 +386,7 @@ public class ScriptEditionServiceImpl implements ScriptEditionService {
             copy.setType(sourceBlock.getType());
             copy.setSceneDelimiter(sourceBlock.isSceneDelimiter());
             copy.setTextAlign(sourceBlock.getTextAlign());
+            copy.setFont(sourceBlock.getFont());
             copy.setTextBold(sourceBlock.isTextBold());
             copy.setTextItalic(sourceBlock.isTextItalic());
             copy.setTextUnderline(sourceBlock.isTextUnderline());

@@ -46,6 +46,13 @@ public class Block {
     public static final java.util.Set<String> TEXT_STYLES = java.util.Set.of(
             STYLE_BOLD, STYLE_ITALIC, STYLE_UNDERLINE);
 
+    public static final String FONT_COURIER_PRIME = "COURIER_PRIME";
+    public static final String FONT_ARIAL = "ARIAL";
+    public static final String FONT_TIMES_NEW_ROMAN = "TIMES_NEW_ROMAN";
+
+    public static final java.util.Set<String> FONTS = java.util.Set.of(
+            FONT_COURIER_PRIME, FONT_ARIAL, FONT_TIMES_NEW_ROMAN);
+
     /** Character cue types whose content is the speaker name (including dual-dialogue cues). */
     public static final java.util.Set<String> CHARACTER_CUE_TYPES = java.util.Set.of(
             TYPE_CHARACTER, TYPE_DUAL_DIALOGUE);
@@ -127,6 +134,9 @@ public class Block {
     @Column(name = "text_align")
     private String textAlign;
 
+    @Column(name = "font")
+    private String font;
+
     @Column(name = "text_bold", nullable = false)
     private boolean textBold = false;
 
@@ -203,6 +213,14 @@ public class Block {
 
     public void setTextAlign(String textAlign) {
         this.textAlign = textAlign;
+    }
+
+    public String getFont() {
+        return font;
+    }
+
+    public void setFont(String font) {
+        this.font = font;
     }
 
     public boolean isTextBold() {

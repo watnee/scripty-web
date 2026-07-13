@@ -136,6 +136,7 @@ public class BlockServiceImpl implements BlockService {
         vm.setType(block.getType());
         vm.setTags(block.getTags());
         vm.setTextAlign(block.getTextAlign());
+        vm.setFont(block.getFont());
         vm.setTextBold(block.isTextBold());
         vm.setTextItalic(block.isTextItalic());
         vm.setTextUnderline(block.isTextUnderline());
@@ -958,6 +959,30 @@ public class BlockServiceImpl implements BlockService {
             Block block = blockRepository.findById(id).orElse(null);
             if (block != null && !normalized.equals(block.getTextAlign())) {
                 block.setTextAlign(normalized);
+                blockRepository.save(block);
+                if (block.getProject() != null) {
+                    touchedProjectIds.add(block.getProject().getId());
+                }
+            }
+        }
+        for (Integer projectId : touchedProjectIds) {
+            projectRepository.findById(projectId).ifPresent(this::recordScriptEdited);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void setBlockFonts(List<Integer> ids, String font) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        String normalized = font != null && Block.FONTS.contains(font.toUpperCase())
+                ? font.toUpperCase() : null;
+        java.util.Set<Integer> touchedProjectIds = new java.util.HashSet<>();
+        for (Integer id : ids) {
+            Block block = blockRepository.findById(id).orElse(null);
+            if (block != null && !java.util.Objects.equals(normalized, block.getFont())) {
+                block.setFont(normalized);
                 blockRepository.save(block);
                 if (block.getProject() != null) {
                     touchedProjectIds.add(block.getProject().getId());

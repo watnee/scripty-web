@@ -32,7 +32,7 @@
         </th:block>
         <div th:if="${block.type != 'SCENE' and block.type != 'SECTION' and block.type != 'SYNOPSIS' and block.type != 'NOTE'}"
              class="script-block block-content"
-             th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (block.textAlign != null ? ' block-text-align-' + #strings.toLowerCase(block.textAlign) : '') + (block.textBold ? ' block-text-bold' : '') + (block.textItalic ? ' block-text-italic' : '') + (block.textUnderline ? ' block-text-underline' : '') + (block.type == 'DIALOGUE' ? ' script-block--dialogue' : ' script-block--action')}">
+             th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (block.textAlign != null ? ' block-text-align-' + #strings.toLowerCase(block.textAlign) : '') + (block.font != null ? ' block-font-' + #strings.replace(#strings.toLowerCase(block.font),'_','-') : '') + (block.textBold ? ' block-text-bold' : '') + (block.textItalic ? ' block-text-italic' : '') + (block.textUnderline ? ' block-text-underline' : '') + (block.type == 'DIALOGUE' ? ' script-block--dialogue' : ' script-block--action')}">
             <p th:if="${not #strings.isEmpty(block.personName) and block.type != 'CHARACTER' and block.type != 'DUAL_DIALOGUE'}" class="script-character-name">
                 <strong th:text="${#strings.toUpperCase(block.personName)}"></strong>
             </p>

@@ -111,6 +111,16 @@ public class BlockViewModel {
         this.textAlign = textAlign;
     }
 
+    private String font;
+
+    public String getFont() {
+        return font;
+    }
+
+    public void setFont(String font) {
+        this.font = font;
+    }
+
     private boolean textBold;
     private boolean textItalic;
     private boolean textUnderline;

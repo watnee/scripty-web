@@ -45,5 +45,7 @@ public interface BlockService {
     void deleteBlocks(java.util.List<Integer> ids);
     void setBlockTypes(java.util.List<Integer> ids, String type);
     void setBlockAlignments(java.util.List<Integer> ids, String align);
+
+    void setBlockFonts(java.util.List<Integer> ids, String font);
     void toggleBlockTextStyles(java.util.List<Integer> ids, String style);
 }

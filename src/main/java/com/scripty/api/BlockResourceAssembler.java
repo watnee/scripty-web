@@ -81,6 +81,7 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
         resource.setScene(block.isScene());
         resource.setTags(block.getTags());
         resource.setTextAlign(block.getTextAlign());
+        resource.setFont(block.getFont());
         resource.setTextBold(block.isTextBold());
         resource.setTextItalic(block.isTextItalic());
         resource.setTextUnderline(block.isTextUnderline());
@@ -98,6 +99,7 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
         resource.setScene(block.isScene());
         resource.setTags(block.getTags());
         resource.setTextAlign(block.getTextAlign());
+        resource.setFont(block.getFont());
         resource.setTextBold(block.isTextBold());
         resource.setTextItalic(block.isTextItalic());
         resource.setTextUnderline(block.isTextUnderline());

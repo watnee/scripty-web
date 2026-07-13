@@ -10,10 +10,10 @@ import com.scripty.viewmodel.actor.editactor.EditActorViewModel;
 
 public interface ActorService {
 
-    ActorListViewModel getActorListViewModel();
+    ActorListViewModel getActorListViewModel(Integer projectId);
     ActorProfileViewModel getActorProfileViewModel(Integer id);
 
-    CreateActorViewModel getCreateActorViewModel();
+    CreateActorViewModel getCreateActorViewModel(Integer projectId);
     EditActorViewModel getEditActorViewModel(Integer id);
 
     Actor saveCreateActorCommandModel(CreateActorCommandModel createActorCommandModel);

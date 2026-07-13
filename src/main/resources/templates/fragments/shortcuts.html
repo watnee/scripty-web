@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="shortcutsContent">
+        <div class="help-card-grid">
+            <div class="help-card" data-keywords="keyboard shortcuts undo redo edit history control command">
+                <h3>🕒 Edit &amp; Undo</h3>
+                <p class="muted shortcuts-context">Available on the project page from the Edit toolbar menu.</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Undo edit</span>
+                        <kbd class="kb-mod-z">Cmd + Z</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Redo edit</span>
+                        <kbd class="kb-mod-shift-z">Cmd + Shift + Z</kbd>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-card" data-keywords="search find filter script project outline scene songs drafts lyrics notes documents focus page view full width lists">
+                <h3>🔍 Search &amp; Navigation</h3>
+                <p class="muted shortcuts-context">On the project page:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Search script</span>
+                        <kbd class="kb-mod-f">Cmd + F</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Close search</span>
+                        <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Focus mode</span>
+                        <kbd class="kb-mod-shift-f">Cmd + Shift + F</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Outline mode</span>
+                        <kbd class="kb-mod-shift-o">Cmd + Shift + O</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Page view</span>
+                        <kbd class="kb-mod-shift-p">Cmd + Shift + P</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Full width</span>
+                        <kbd class="kb-mod-backslash">Cmd + \</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Scene outline navigator</span>
+                        <kbd class="kb-mod-shift-g">Cmd + Shift + G</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Character list</span>
+                        <kbd class="kb-mod-shift-c">Cmd + Shift + C</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Location list</span>
+                        <kbd class="kb-mod-shift-a">Cmd + Shift + A</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Song list</span>
+                        <kbd class="kb-mod-shift-m">Cmd + Shift + M</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Open Songs</span>
+                        <kbd class="kb-mod-shift-s">Cmd + Shift + S</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Open Notes</span>
+                        <kbd class="kb-mod-shift-d">Cmd + Shift + D</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Toggle Spellcheck</span>
+                        <kbd class="kb-mod-shift-k">Cmd + Shift + K</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Toggle Word count</span>
+                        <kbd class="kb-mod-shift-y">Cmd + Shift + Y</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>View keyboard shortcuts</span>
+                        <span class="shortcut-keys"><kbd>?</kbd></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-card" data-keywords="move block reorder arrow alt shift keyboard shortcut">
+                <h3>↕️ Block Reordering</h3>
+                <p class="muted shortcuts-context">Focus a block row or hover over it, then use:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Move block up</span>
+                        <span class="shortcut-keys">
+                            <kbd>Alt</kbd> + <kbd>↑</kbd>
+                            <span class="shortcut-or">or</span>
+                            <kbd class="kb-ctrl">Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>↑</kbd>
+                        </span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Move block down</span>
+                        <span class="shortcut-keys">
+                            <kbd>Alt</kbd> + <kbd>↓</kbd>
+                            <span class="shortcut-or">or</span>
+                            <kbd class="kb-ctrl">Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>↓</kbd>
+                        </span>
+                    </div>
+                </div>
+                <p class="muted shortcuts-context">Move shortcuts are disabled while typing in a block textarea.</p>
+            </div>
+
+            <div class="help-card" data-keywords="copy cut paste delete selection clipboard fountain import">
+                <h3>📋 Text Selection</h3>
+                <p class="muted shortcuts-context">Select text across blocks in the script view, then use:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Copy selection</span>
+                        <kbd class="kb-mod-c">Cmd + C</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Cut selection</span>
+                        <kbd class="kb-mod-x">Cmd + X</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Paste at caret</span>
+                        <kbd class="kb-mod-v">Cmd + V</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Delete selection</span>
+                        <span class="shortcut-keys"><kbd>Delete</kbd> <span class="shortcut-or">or</span> <kbd>Backspace</kbd></span>
+                    </div>
+                </div>
+                <p class="muted shortcuts-context">Paste from Scripty keeps element types. Paste from elsewhere (Fountain or plain screenplay text) splits into typed blocks when it looks like a script; short prose stays in the current block.</p>
+            </div>
+
+            <div class="help-card" data-keywords="format bold italic underline text style align">
+                <h3>✏️ Format</h3>
+                <p class="muted shortcuts-context">On the project page, with an active or selected block (works while typing):</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Bold</span>
+                        <kbd class="kb-mod-b">Cmd + B</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Italic</span>
+                        <kbd class="kb-mod-i">Cmd + I</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Underline</span>
+                        <kbd class="kb-mod-u">Cmd + U</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Align Left</span>
+                        <kbd class="kb-mod-shift-l">Cmd + Shift + L</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Align Center</span>
+                        <kbd class="kb-mod-shift-e">Cmd + Shift + E</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Align Right</span>
+                        <kbd class="kb-mod-shift-r">Cmd + Shift + R</kbd>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-card" data-keywords="element type scene action character parenthetical dialogue transition shot text dual lyrics centered section synopsis note page break tab cycle keyboard shortcut option alt">
+                <h3>🎬 Elements</h3>
+                <p class="muted shortcuts-context">On the project page, with an active or selected block (works while typing):</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Scene</span>
+                        <kbd class="kb-mod-alt-1">Cmd + Option + 1</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Action</span>
+                        <kbd class="kb-mod-alt-2">Cmd + Option + 2</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Character</span>
+                        <kbd class="kb-mod-alt-3">Cmd + Option + 3</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Parenthetical</span>
+                        <kbd class="kb-mod-alt-4">Cmd + Option + 4</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Dialogue</span>
+                        <kbd class="kb-mod-alt-5">Cmd + Option + 5</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Transition</span>
+                        <kbd class="kb-mod-alt-6">Cmd + Option + 6</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Shot</span>
+                        <kbd class="kb-mod-alt-7">Cmd + Option + 7</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Text</span>
+                        <kbd class="kb-mod-alt-t">Cmd + Option + T</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Dual</span>
+                        <kbd class="kb-mod-alt-u">Cmd + Option + U</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Lyrics</span>
+                        <kbd class="kb-mod-alt-y">Cmd + Option + Y</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Centered</span>
+                        <kbd class="kb-mod-alt-m">Cmd + Option + M</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Section</span>
+                        <kbd class="kb-mod-alt-x">Cmd + Option + X</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Synopsis</span>
+                        <kbd class="kb-mod-alt-o">Cmd + Option + O</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Note</span>
+                        <kbd class="kb-mod-alt-n">Cmd + Option + N</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Page Break</span>
+                        <kbd class="kb-mod-alt-b">Cmd + Option + B</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Cycle element type</span>
+                        <span class="shortcut-keys"><kbd>Tab</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Cycle element type backward</span>
+                        <span class="shortcut-keys"><kbd>Shift</kbd> + <kbd>Tab</kbd></span>
+                    </div>
+                </div>
+                <p class="muted shortcuts-context">In Outline mode, <kbd class="kb-mod-alt-1">Cmd + Option + 1</kbd>–<kbd class="kb-mod-alt-3">Cmd + Option + 3</kbd> set Scene, Section, and Synopsis. With the Elements menu open, press the digit or letter directly. <kbd class="kb-mod-1">Cmd + 1</kbd>–<kbd class="kb-mod-7">Cmd + 7</kbd> still work in the installed app (browsers often reserve those for tabs).</p>
+            </div>
+
+            <div class="help-card" data-keywords="inline editing enter escape shift submit save block scene character autocomplete suggestion spellcheck spelling">
+                <h3>✍️ Inline Editing</h3>
+                <p class="muted shortcuts-context">While editing blocks, scenes, or project titles inline:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Save / submit block</span>
+                        <span class="shortcut-keys"><kbd>Enter</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>New line in block</span>
+                        <span class="shortcut-keys"><kbd>Shift</kbd> + <kbd>Enter</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Spelling suggestions</span>
+                        <kbd class="kb-mod-period">Cmd + .</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Autocomplete navigate</span>
+                        <span class="shortcut-keys"><kbd>↑</kbd> <span class="shortcut-or">/</span> <kbd>↓</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Accept suggestion</span>
+                        <span class="shortcut-keys"><kbd>Enter</kbd> <span class="shortcut-or">or</span> <kbd>Tab</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Dismiss autocomplete</span>
+                        <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Delete empty block</span>
+                        <span class="shortcut-keys"><kbd>Backspace</kbd> <span class="shortcut-or">or</span> <kbd>Delete</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Cancel empty create row</span>
+                        <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Save scene name</span>
+                        <span class="shortcut-keys"><kbd>Enter</kbd></span>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Cancel project rename</span>
+                        <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-card" data-keywords="text size zoom font readability">
+                <h3>🔤 Text Size</h3>
+                <p class="muted shortcuts-context">On the project page:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Increase text size</span>
+                        <kbd class="kb-mod-plus">Cmd + +</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Decrease text size</span>
+                        <kbd class="kb-mod-minus">Cmd + −</kbd>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-card" data-keywords="bookmarks pins block controls select element labels markers toggle">
+                <h3>📌 Toggles &amp; Markers</h3>
+                <p class="muted shortcuts-context">On the project page:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Toggle Bookmarks</span>
+                        <kbd class="kb-mod-shift-b">Cmd + Shift + B</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Toggle Pins</span>
+                        <kbd class="kb-mod-shift-n">Cmd + Shift + N</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Toggle Block controls</span>
+                        <kbd class="kb-mod-shift-v">Cmd + Shift + V</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Toggle Element labels</span>
+                        <kbd class="kb-mod-shift-u">Cmd + Shift + U</kbd>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-card" data-keywords="import title page print pdf word fdx fountain lock version new version history export">
+                <h3>💾 File &amp; Versions</h3>
+                <p class="muted shortcuts-context">On the project page:</p>
+                <div class="shortcuts-list">
+                    <div class="help-shortcut-row">
+                        <span>Import file</span>
+                        <kbd class="kb-mod-shift-i">Cmd + Shift + I</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Title page</span>
+                        <kbd class="kb-mod-shift-t">Cmd + Shift + T</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Print script</span>
+                        <kbd class="kb-mod-p">Cmd + P</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Lock this version</span>
+                        <kbd class="kb-mod-shift-q">Cmd + Shift + Q</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>New version...</span>
+                        <kbd class="kb-mod-shift-j">Cmd + Shift + J</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Snapshot history</span>
+                        <kbd class="kb-mod-shift-h">Cmd + Shift + H</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Read Script view</span>
+                        <kbd class="kb-mod-shift-x">Cmd + Shift + X</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Export PDF</span>
+                        <kbd class="kb-mod-shift-1">Cmd + Shift + 1</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Export Word (.docx)</span>
+                        <kbd class="kb-mod-shift-2">Cmd + Shift + 2</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Export Final Draft (.fdx)</span>
+                        <kbd class="kb-mod-shift-3">Cmd + Shift + 3</kbd>
+                    </div>
+                    <div class="help-shortcut-row">
+                        <span>Export Fountain</span>
+                        <kbd class="kb-mod-shift-4">Cmd + Shift + 4</kbd>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="help-tip-box">
+            <h4>💡 Tip</h4>
+            <p>While typing in a block, undo and redo change text within that field. Otherwise they undo or redo block create, delete, move, and edit actions for the whole project.</p>
+        </div>
+    </div>
+
+</body>
+</html>

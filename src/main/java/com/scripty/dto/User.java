@@ -34,8 +34,14 @@ public class User {
     @Column(length = 50)
     private String team;
 
+    @Column(length = 100)
+    private String email;
+
     @Column(name = "default_project_id")
     private Integer defaultProjectId;
+
+    @Column(name = "password_change_required", nullable = false)
+    private boolean passwordChangeRequired;
 
     @Transient
     private boolean admin;
@@ -44,6 +50,20 @@ public class User {
     private boolean director;
     @Transient
     private boolean producer;
+    @Transient
+    private boolean writer;
+    @Transient
+    private boolean actor;
+    @Transient
+    private boolean crew;
+    @Transient
+    private boolean directorOfPhotography;
+    @Transient
+    private boolean castingDirector;
+    @Transient
+    private boolean viewCasting;
+    @Transient
+    private boolean developer;
 
     public Integer getId() {
         return id;
@@ -101,6 +121,14 @@ public class User {
         this.team = team;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public boolean isAdmin() {
         return admin;
     }
@@ -123,6 +151,70 @@ public class User {
 
     public void setProducer(boolean producer) {
         this.producer = producer;
+    }
+
+    public boolean isWriter() {
+        return writer;
+    }
+
+    public void setWriter(boolean writer) {
+        this.writer = writer;
+    }
+
+    public boolean isActor() {
+        return actor;
+    }
+
+    public void setActor(boolean actor) {
+        this.actor = actor;
+    }
+
+    public boolean isCrew() {
+        return crew;
+    }
+
+    public void setCrew(boolean crew) {
+        this.crew = crew;
+    }
+
+    public boolean isDirectorOfPhotography() {
+        return directorOfPhotography;
+    }
+
+    public void setDirectorOfPhotography(boolean directorOfPhotography) {
+        this.directorOfPhotography = directorOfPhotography;
+    }
+
+    public boolean isCastingDirector() {
+        return castingDirector;
+    }
+
+    public void setCastingDirector(boolean castingDirector) {
+        this.castingDirector = castingDirector;
+    }
+
+    public boolean isViewCasting() {
+        return viewCasting;
+    }
+
+    public void setViewCasting(boolean viewCasting) {
+        this.viewCasting = viewCasting;
+    }
+
+    public boolean isDeveloper() {
+        return developer;
+    }
+
+    public void setDeveloper(boolean developer) {
+        this.developer = developer;
+    }
+
+    public boolean isPasswordChangeRequired() {
+        return passwordChangeRequired;
+    }
+
+    public void setPasswordChangeRequired(boolean passwordChangeRequired) {
+        this.passwordChangeRequired = passwordChangeRequired;
     }
 
     public Integer getDefaultProjectId() {

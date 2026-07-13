@@ -1,0 +1,14 @@
+<th:block xmlns:th="http://www.thymeleaf.org">
+    <span th:replace="~{fragments/projectBreadcrumbName :: display(${project.id}, ${project.title})}"></span>
+    <span id="project-last-edited"
+          class="script-edition-row-edited"
+          th:if="${project.lastEdited != null}"
+          th:title="${#temporals.format(project.lastEdited, 'MMM d, yyyy, h:mm a')}"
+          hx-swap-oob="true">
+        <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.lastEdited})}"></span>
+    </span>
+    <span hx-swap-oob="innerHTML:#project-header-name-wrap">
+        <span th:replace="~{fragments/projectHeaderName :: display(${project.id}, ${project.title})}"></span>
+    </span>
+    <title th:text="'Scripty - ' + (${#strings.isEmpty(project.title) || #strings.isEmpty(project.title.trim()) ? 'Project' : project.title})" hx-swap-oob="true">Scripty</title>
+</th:block>

@@ -1,0 +1,78 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="templates">
+    <!-- Shared per-block menu contents, rendered once per page. Block rows carry
+         empty .create-below-menu / .block-drag-menu shells that are hydrated from
+         these templates on first open (see hydrateCreateBelowMenu /
+         hydrateBlockDragMenu in fragments/nav.html). This keeps editor page weight
+         flat as scripts grow instead of ~10KB of repeated menu markup per block. -->
+    <template id="scripty-create-below-menu-template">
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SCENE">Scene</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="ACTION">Action</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="TEXT">Text</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="CHARACTER">Character</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="DIALOGUE">Dialogue</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="DUAL_DIALOGUE">Dual</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="PARENTHETICAL">(Paren)</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="TRANSITION">Transition</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SHOT">Shot</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="LYRICS">Lyrics</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="CENTERED">Centered</button>
+        <hr class="nav-dropdown-divider" />
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SECTION">Section</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="SYNOPSIS">Synopsis</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="NOTE">Note</button>
+        <button type="button" class="nav-dropdown-item" role="menuitem" data-create-type="PAGE_BREAK">Page Break</button>
+        <div class="create-below-songs-section" hidden>
+            <hr class="nav-dropdown-divider" />
+            <div class="create-below-songs-heading" role="presentation">Songs</div>
+            <div class="create-below-songs-list" role="group" aria-label="Insert song"></div>
+        </div>
+        <div class="create-below-drafts-section" hidden>
+            <hr class="nav-dropdown-divider" />
+            <div class="create-below-drafts-heading" role="presentation">Notes</div>
+            <div class="create-below-drafts-list" role="group" aria-label="Insert note"></div>
+        </div>
+    </template>
+    <template id="scripty-block-drag-menu-template">
+        <div class="block-drag-submenu" data-block-drag-submenu="elements">
+            <button type="button"
+                    class="nav-dropdown-item block-drag-submenu-toggle"
+                    role="menuitem"
+                    aria-haspopup="true"
+                    aria-expanded="false">Elements<span class="block-drag-submenu-caret" aria-hidden="true">›</span></button>
+            <div class="nav-dropdown-menu block-drag-submenu-menu" role="menu" aria-label="Element types">
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SCENE">Scene</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="ACTION">Action</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="TEXT">Text</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="CHARACTER">Character</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="DIALOGUE">Dialogue</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="DUAL_DIALOGUE">Dual</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="PARENTHETICAL">(Paren)</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="TRANSITION">Transition</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SHOT">Shot</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="LYRICS">Lyrics</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="CENTERED">Centered</button>
+                <hr class="nav-dropdown-divider" />
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SECTION">Section</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="SYNOPSIS">Synopsis</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="NOTE">Note</button>
+                <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="PAGE_BREAK">Page Break</button>
+            </div>
+        </div>
+        <hr class="nav-dropdown-divider block-drag-menu-saved-divider" />
+        <button type="button"
+                class="nav-dropdown-item block-drag-menu-bookmark"
+                role="menuitem"
+                data-block-drag-action="toggle-bookmark"
+                data-bookmarked="false">Bookmark block</button>
+        <button type="button"
+                class="nav-dropdown-item block-drag-menu-pin"
+                role="menuitem"
+                data-block-drag-action="toggle-pin"
+                data-pinned="false">Pin block</button>
+        <hr class="nav-dropdown-divider" />
+        <button type="button"
+                class="nav-dropdown-item block-drag-menu-delete"
+                role="menuitem"
+                data-block-drag-action="delete">Delete block</button>
+    </template>
+</th:block>

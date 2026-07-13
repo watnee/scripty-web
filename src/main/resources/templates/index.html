@@ -1,22 +1,88 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#111111">
-    <link rel="manifest" th:href="@{/manifest.json}">
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
     <meta charset="UTF-8">
-    <title>Scripty</title>
-    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
-    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <title>Scripty — Collaborative Screenwriting</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
-<body hx-boost="true">
+<body class="landing-body" hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('index')}"></div>
-    <main class="home">
-        <h1>Scripty</h1>
-        <p sec:authorize="!isAuthenticated()"><a th:href="@{/login}" role="button">Login</a></p>
+    <main class="landing-page">
+        <section class="landing-hero" aria-labelledby="landing-brand">
+            <div class="landing-hero-copy">
+                <h1 id="landing-brand" class="landing-brand">Scripty</h1>
+                <p class="landing-title">Write screenplays together</p>
+                <p class="landing-lead">Semantic blocks, inline auto-save, and live sync — built for writing rooms that share one page.</p>
+                <div class="landing-actions" sec:authorize="!isAuthenticated()">
+                    <a class="landing-cta-primary" th:href="@{/login}" hx-boost="false">
+                        <span>Sign In</span>
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <a class="landing-cta-secondary" th:href="@{/help}">Explore the help center</a>
+                </div>
+            </div>
+
+            <div class="landing-stage" aria-hidden="true">
+                <div class="landing-stage-glow"></div>
+                <div class="landing-script-stack">
+                    <div class="landing-script-page landing-script-page--back"></div>
+                    <div class="landing-script-page landing-script-page--front">
+                        <p class="landing-script-scene">INT. WRITERS' ROOM — NIGHT</p>
+                        <p class="landing-script-action">Two cursors blink on the same page. Rain taps the window.</p>
+                        <p class="landing-script-character">ALEX</p>
+                        <p class="landing-script-dialogue">Did you just change my line?</p>
+                        <p class="landing-script-character">JORDAN</p>
+                        <p class="landing-script-dialogue landing-script-dialogue--live">Our line.<span class="landing-script-caret"></span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-features" aria-labelledby="landing-features-heading">
+            <h2 id="landing-features-heading" class="landing-features-heading">Built for the writing room</h2>
+            <p class="landing-features-lead">Everything you need to draft, revise, and ship a screenplay as a team.</p>
+            <ol class="landing-feature-list">
+                <li class="landing-feature">
+                    <span class="landing-feature-index" aria-hidden="true">01</span>
+                    <div class="landing-feature-body">
+                        <h3>Block-based writing</h3>
+                        <p>Scene headings, action, dialogue, and more — each as its own editable block with Fountain-style formatting.</p>
+                    </div>
+                </li>
+                <li class="landing-feature">
+                    <span class="landing-feature-index" aria-hidden="true">02</span>
+                    <div class="landing-feature-body">
+                        <h3>Team collaboration</h3>
+                        <p>Share projects with your team and work on the same script with live sync and granular editing.</p>
+                    </div>
+                </li>
+                <li class="landing-feature">
+                    <span class="landing-feature-index" aria-hidden="true">03</span>
+                    <div class="landing-feature-body">
+                        <h3>Undo &amp; reorder</h3>
+                        <p>Drag blocks to reorder scenes, undo changes project-wide, and keep your script organized as it grows.</p>
+                    </div>
+                </li>
+            </ol>
+        </section>
+
+        <footer class="landing-footer">
+            <a class="landing-footer-link" th:href="@{/help}">Help center</a>
+            <span class="landing-footer-sep" aria-hidden="true">·</span>
+            <a class="landing-footer-link" th:href="@{/shortcuts}">Keyboard shortcuts</a>
+        </footer>
     </main>
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
 </body>
 </html>

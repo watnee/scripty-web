@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title th:text="${isSongList} ? ('Scripty - Songs — ' + ${viewModel.projectTitle}) : ('Scripty - Notes — ' + ${viewModel.projectTitle})">Scripty - Documents</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main class="text-documents-page"
+          th:classappend="${isSongList} ? ' text-documents-page--songs' : ' text-documents-page--drafts'">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}">Project</a></li>
+                    <li aria-current="page" th:text="${isSongList} ? 'Songs' : 'Notes'">Documents</li>
+                </ol>
+            </nav>
+            <div class="text-documents-top-actions">
+                <a th:unless="${isSongList}"
+                   th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}"
+                   class="project-list-action-btn project-list-action-btn--secondary">Songs</a>
+                <a th:unless="${isSongList}"
+                   th:href="@{/project/show(id=${viewModel.projectId})}"
+                   class="project-list-action-btn project-list-action-btn--secondary">Open Script</a>
+            </div>
+        </div>
+
+        <header th:unless="${isSongList}" class="text-documents-header text-documents-header--draft">
+            <div class="text-documents-header-text">
+                <p class="muted">
+                    Write scratch text here, then insert into the script as Note blocks. Edits sync to places already inserted.
+                </p>
+            </div>
+        </header>
+
+        <p class="text-document-import-banner"
+           th:if="${documentImportMessage != null}"
+           th:text="${documentImportMessage}"
+           role="status"></p>
+
+        <section class="text-documents-section"
+                 th:classappend="${isSongList} ? ' text-documents-section--songs' : ' text-documents-section--drafts'"
+                 th:attr="aria-labelledby=${isSongList} ? 'songs-heading' : 'drafts-heading'">
+            <div class="text-documents-section-header">
+                <div class="text-documents-section-intro">
+                    <span class="text-documents-section-mark"
+                          th:classappend="${!isSongList} ? ' text-documents-section-mark--draft'"
+                          th:text="${isSongList} ? '♪' : '¶'"
+                          aria-hidden="true">♪</span>
+                    <div>
+                        <div class="text-documents-heading-row">
+                            <h2 th:id="${isSongList} ? 'songs-heading' : 'drafts-heading'"
+                                th:text="${isSongList} ? 'Your songs' : 'Your notes'">Documents</h2>
+                            <a th:if="${isSongList}"
+                               th:href="@{/project/read(id=${viewModel.projectId})}"
+                               class="project-list-action-btn project-list-action-btn--icon"
+                               aria-label="Read script"
+                               title="Read script">
+                                <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h6z"></path>
+                                </svg>
+                            </a>
+                        </div>
+                        <p class="muted" th:unless="${isSongList}">
+                            Import a file or start a new note.
+                        </p>
+                    </div>
+                </div>
+                <div class="text-documents-section-actions">
+                    <button type="button"
+                            class="project-list-action-btn project-list-action-btn--secondary"
+                            id="import-doc-btn"
+                            th:title="${isSongList} ? 'Import a song from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file' : 'Import a note from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file'">Import</button>
+                    <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
+                       class="project-list-action-btn project-list-action-btn--primary"
+                       th:text="${isSongList} ? 'New Song' : 'New Note'">New</a>
+                </div>
+            </div>
+
+            <form id="import-doc-form"
+                  th:action="@{/project/documents/import(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  hx-boost="false"
+                  hidden>
+                <input type="file"
+                       id="import-doc-file"
+                       name="file"
+                       accept=".txt,.fountain,.docx,.doc,.fdx,.pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml,application/pdf"
+                       aria-hidden="true"
+                       tabindex="-1" />
+            </form>
+
+            <div class="text-documents-toolbar" th:if="${!#lists.isEmpty(documents)}">
+                <div class="project-list-search-wrap text-documents-search-wrap" id="text-documents-search-wrap">
+                    <label class="visually-hidden"
+                           for="text-documents-search"
+                           th:text="${isSongList} ? 'Search songs' : 'Search notes'">Search</label>
+                    <span class="project-list-search-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
+                        </svg>
+                    </span>
+                    <input type="search"
+                           id="text-documents-search"
+                           class="project-list-search"
+                           th:placeholder="${isSongList} ? 'Search songs...' : 'Search notes...'"
+                           autocomplete="off"
+                           enterkeyhint="search" />
+                    <button type="button"
+                            id="text-documents-search-clear"
+                            class="project-list-search-clear"
+                            aria-label="Clear search"
+                            hidden>&times;</button>
+                </div>
+                <div class="project-list-toolbar-actions">
+                    <label class="project-list-sort-label" for="text-documents-sort">
+                        <span class="visually-hidden" th:text="${isSongList} ? 'Sort songs' : 'Sort notes'">Sort</span>
+                        <select id="text-documents-sort"
+                                class="project-list-sort"
+                                th:attr="aria-label=${isSongList} ? 'Sort songs' : 'Sort notes'">
+                            <option value="last-edited" selected>Last edited</option>
+                            <option value="title">Name A&ndash;Z</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+
+            <div class="text-documents-empty-state" th:if="${#lists.isEmpty(documents)}">
+                <p class="text-documents-empty-title"
+                   th:text="${isSongList} ? 'No songs yet' : 'No notes yet'">Empty</p>
+                <p class="muted"
+                   th:text="${isSongList} ? 'Start lyrics here, or import a .txt, .fountain, Word, Final Draft, or PDF file.' : 'Keep scene notes, dialogue scraps, or research here until you need them in the script.'">
+                    Empty state help.
+                </p>
+                <div class="text-documents-empty-actions">
+                    <button type="button"
+                            class="project-list-action-btn project-list-action-btn--secondary"
+                            onclick="document.getElementById('import-doc-file').click()"
+                            th:text="${isSongList} ? 'Import Song' : 'Import Note'">Import</button>
+                    <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
+                       class="project-list-action-btn project-list-action-btn--primary"
+                       th:text="${isSongList} ? 'New Song' : 'New Note'">New</a>
+                </div>
+            </div>
+
+            <ul class="text-documents-list" id="text-documents-list" th:if="${!#lists.isEmpty(documents)}">
+                <li th:each="doc, iter : ${documents}"
+                    class="text-document-card"
+                    th:classappend="${isSongList} ? ' text-document-card--song' : ' text-document-card--draft'"
+                    th:style="'--card-i:' + ${iter.index}"
+                    th:attr="data-doc-title=${#strings.toLowerCase(doc.title)}, data-sort-edited=${doc.updatedAt != null ? #temporals.format(doc.updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}">
+                    <div class="text-document-card-main">
+                        <a class="text-document-card-title"
+                           th:href="@{/project/documents/edit(id=${doc.id})}"
+                           th:text="${doc.title}">Untitled</a>
+                        <div class="text-document-card-meta">
+                            <span class="text-document-type-badge"
+                                  th:classappend="${isSongList} ? ' text-document-type-badge--song'"
+                                  th:text="${isSongList} ? 'Song' : ${doc.documentTypeLabel}">Type</span>
+                            <span class="muted"
+                                  th:if="${doc.updatedAt != null}"
+                                  th:title="${#temporals.format(doc.updatedAt, 'MMM d, yyyy, h:mm a')}">
+                                Last edited <span th:replace="~{fragments/lastEditedTime :: relativeTime(${doc.updatedAt})}"></span>
+                            </span>
+                        </div>
+                        <p class="text-document-preview"
+                           th:if="${!#strings.isEmpty(doc.preview)}"
+                           th:text="${doc.preview}"></p>
+                        <p class="text-document-preview text-document-preview--empty" th:if="${#strings.isEmpty(doc.preview)}">Empty</p>
+                    </div>
+                    <div class="text-document-card-actions">
+                        <a th:href="@{/project/documents/edit(id=${doc.id})}"
+                           class="project-list-action-btn project-list-action-btn--secondary">Edit</a>
+                        <form th:action="@{/project/documents/rename}"
+                              method="post"
+                              class="text-document-rename-form"
+                              hx-boost="false">
+                            <input type="hidden" name="id" th:value="${doc.id}" />
+                            <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                            <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                            <input type="hidden" name="title" th:attr="data-current-title=${doc.title}" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--secondary"
+                                    th:title="${isSongList} ? 'Rename this song' : 'Rename this note'">Rename</button>
+                        </form>
+                        <button th:if="${isSongList}"
+                                type="button"
+                                class="project-list-action-btn project-list-action-btn--secondary text-document-share-btn"
+                                th:attr="data-share-url=@{/project/documents/text(id=${doc.id})},data-share-title=${doc.title}"
+                                title="Share this song">Share</button>
+                        <form th:if="${canEditScript}"
+                              th:action="@{/project/documents/insert}"
+                              method="post"
+                              class="text-document-insert-form"
+                              hx-boost="false">
+                            <input type="hidden" name="id" th:value="${doc.id}" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--primary"
+                                    th:title="${isSongList} ? 'Insert as Lyrics blocks at end of script' : 'Insert as Note blocks at end of script'">
+                                Insert
+                            </button>
+                        </form>
+                        <form th:action="@{/project/documents/delete}"
+                              method="post"
+                              class="text-document-delete-form"
+                              hx-boost="false"
+                              th:attr="onsubmit=${isSongList} ? 'return confirm(\'Delete this song? This cannot be undone.\');' : 'return confirm(\'Delete this note? This cannot be undone.\');'">
+                            <input type="hidden" name="id" th:value="${doc.id}" />
+                            <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                            <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                            <button type="submit" class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn">Delete</button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+            <p class="text-documents-no-results" id="text-documents-no-results" hidden>
+                No <span th:text="${isSongList} ? 'songs' : 'notes'">documents</span> match
+                <strong id="text-documents-search-query"></strong>.
+            </p>
+        </section>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script>
+        (function() {
+            var btn = document.getElementById('import-doc-btn');
+            var file = document.getElementById('import-doc-file');
+            var form = document.getElementById('import-doc-form');
+            if (btn && file && form) {
+                btn.addEventListener('click', function() { file.click(); });
+                file.addEventListener('change', function() {
+                    if (!file.files || !file.files.length) return;
+                    form.submit();
+                });
+            }
+
+            document.querySelectorAll('.text-document-rename-form').forEach(function(renameForm) {
+                renameForm.addEventListener('submit', function(e) {
+                    var titleInput = renameForm.querySelector('input[name="title"]');
+                    var current = titleInput ? (titleInput.getAttribute('data-current-title') || '') : '';
+                    var next = window.prompt('Rename to:', current);
+                    if (next === null) {
+                        e.preventDefault();
+                        return;
+                    }
+                    next = next.trim();
+                    if (!next || next === current) {
+                        e.preventDefault();
+                        return;
+                    }
+                    titleInput.value = next;
+                });
+            });
+
+            document.querySelectorAll('.text-document-share-btn').forEach(function(shareBtn) {
+                shareBtn.addEventListener('click', function() {
+                    var url = shareBtn.getAttribute('data-share-url');
+                    var title = shareBtn.getAttribute('data-share-title') || 'Song';
+                    if (!url) return;
+                    shareBtn.disabled = true;
+                    fetch(url, { headers: { 'Accept': 'text/plain' } })
+                        .then(function(res) {
+                            if (!res.ok) throw new Error('Failed to load song text');
+                            return res.text();
+                        })
+                        .then(function(text) {
+                            if (navigator.share) {
+                                return navigator.share({ title: title, text: text });
+                            }
+                            return navigator.clipboard.writeText(text).then(function() {
+                                var original = shareBtn.textContent;
+                                shareBtn.textContent = 'Copied!';
+                                setTimeout(function() { shareBtn.textContent = original; }, 2000);
+                            });
+                        })
+                        .catch(function(err) {
+                            if (!err || err.name !== 'AbortError') {
+                                window.alert('Could not share this song.');
+                            }
+                        })
+                        .then(function() { shareBtn.disabled = false; });
+                });
+            });
+
+            var searchInput = document.getElementById('text-documents-search');
+            var clearBtn = document.getElementById('text-documents-search-clear');
+            var searchWrap = document.getElementById('text-documents-search-wrap');
+            var noResultsEl = document.getElementById('text-documents-no-results');
+            var noResultsQueryEl = document.getElementById('text-documents-search-query');
+            var listEl = document.getElementById('text-documents-list');
+            var sortSelect = document.getElementById('text-documents-sort');
+            if (!searchInput || !listEl) return;
+
+            function sortDocuments(skipRiseAnimation) {
+                if (!sortSelect) return;
+                var mode = sortSelect.value;
+                var cards = Array.prototype.slice.call(listEl.querySelectorAll('.text-document-card'));
+                cards.sort(function(a, b) {
+                    if (mode === 'last-edited') {
+                        var aTime = Date.parse(a.getAttribute('data-sort-edited') || '') || 0;
+                        var bTime = Date.parse(b.getAttribute('data-sort-edited') || '') || 0;
+                        if (bTime !== aTime) {
+                            return bTime - aTime;
+                        }
+                    }
+                    return (a.getAttribute('data-doc-title') || '').localeCompare(b.getAttribute('data-doc-title') || '');
+                });
+                cards.forEach(function(card, i) {
+                    if (skipRiseAnimation) {
+                        card.style.animation = 'none';
+                    }
+                    card.style.setProperty('--card-i', i);
+                    listEl.appendChild(card);
+                });
+            }
+
+            function performSearch() {
+                var query = searchInput.value.trim();
+                var normalizedQuery = query.toLowerCase();
+
+                if (clearBtn) {
+                    clearBtn.hidden = !query;
+                }
+                if (searchWrap) {
+                    searchWrap.classList.toggle('has-value', !!query);
+                }
+
+                var cards = listEl.querySelectorAll('.text-document-card');
+                var visibleCount = 0;
+
+                cards.forEach(function(card) {
+                    var titleText = (card.getAttribute('data-doc-title') || '').toLowerCase();
+                    if (!titleText) {
+                        var titleLink = card.querySelector('.text-document-card-title');
+                        titleText = titleLink ? titleLink.textContent.toLowerCase() : '';
+                    }
+                    var matches = !normalizedQuery || titleText.indexOf(normalizedQuery) !== -1;
+                    card.hidden = !matches;
+                    if (matches) visibleCount++;
+                });
+
+                if (noResultsEl) {
+                    noResultsEl.hidden = visibleCount > 0 || !query;
+                }
+                if (noResultsQueryEl) {
+                    noResultsQueryEl.textContent = query ? '"' + query + '"' : '';
+                }
+            }
+
+            searchInput.addEventListener('input', performSearch);
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    searchInput.value = '';
+                    performSearch();
+                    searchInput.focus();
+                }
+            });
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function() {
+                    searchInput.value = '';
+                    performSearch();
+                    searchInput.focus();
+                });
+            }
+
+            if (sortSelect) {
+                var isSongs = !!document.querySelector('.text-documents-page--songs');
+                var sortStorageKey = isSongs ? 'songListSort' : 'noteListSort';
+                var savedSort = sessionStorage.getItem(sortStorageKey);
+                if (savedSort && sortSelect.querySelector('option[value="' + savedSort + '"]')) {
+                    sortSelect.value = savedSort;
+                }
+                sortSelect.addEventListener('change', function() {
+                    sessionStorage.setItem(sortStorageKey, sortSelect.value);
+                    sortDocuments(true);
+                });
+                sortDocuments();
+            }
+        })();
+    </script>
+</body>
+</html>

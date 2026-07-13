@@ -5,7 +5,7 @@ import com.scripty.commandmodel.user.edituser.EditUserCommandModel;
 import com.scripty.dto.User;
 import com.scripty.viewmodel.user.createuser.CreateUserViewModel;
 import com.scripty.viewmodel.user.edituser.EditUserViewModel;
-import com.scripty.viewmodel.user.accountprofile.AccountProfileViewModel;
+import com.scripty.viewmodel.user.userprofile.UserProfileViewModel;
 import com.scripty.viewmodel.user.userlist.UserListViewModel;
 import java.util.List;
 
@@ -26,7 +26,9 @@ public interface UserService {
     User saveCreateUserCommandModel(CreateUserCommandModel createUserCommandModel);
     User saveEditUserCommandModel(EditUserCommandModel editUserCommandModel);
 
-    User deleteUser(Integer id);
+    void changePassword(String username, String currentPassword, String newPassword);
 
-    AccountProfileViewModel getAccountProfileViewModel(Integer id);
+    User deleteUser(Integer id, String actingUsername);
+
+    UserProfileViewModel getUserProfileViewModel(Integer id);
 }

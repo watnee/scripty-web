@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - Keyboard Shortcuts</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('shortcuts')}"></div>
+    <main class="help-container">
+
+        <div class="help-header">
+            <h1>Keyboard Shortcuts</h1>
+            <p class="muted">Quick reference for editing, reordering, and history actions in Scripty.</p>
+            <p class="muted" style="margin-top: 0.75rem;">
+                <a th:href="@{/help}">← Back to Help Center</a>
+            </p>
+        </div>
+
+        <div th:replace="~{fragments/shortcuts :: shortcutsContent}"></div>
+    </main>
+
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

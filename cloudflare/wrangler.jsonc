@@ -1,0 +1,49 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "scripty",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "containers": [
+    {
+      "class_name": "ScriptyContainer",
+      "image": "../Dockerfile",
+      "instance_type": "standard-1",
+      "max_instances": 2
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "SCRIPTY_CONTAINER",
+        "class_name": "ScriptyContainer"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ScriptyContainer"]
+    }
+  ],
+  "secrets": {
+    "required": [
+      "MYSQLHOST",
+      "MYSQLPORT",
+      "MYSQLUSER",
+      "MYSQLPASSWORD",
+      "MYSQLDATABASE"
+    ]
+  },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      // Sender allowlist: a leaked EMAIL_PROXY_SECRET must not allow spoofing
+      // arbitrary addresses on the onboarded domain.
+      "allowed_sender_addresses": ["noreply@solfege.app"]
+    }
+  ],
+  "triggers": {
+    // Keep the sticky Spring Boot container warm (sleepAfter is 2h).
+    "crons": ["*/30 * * * *"]
+  }
+}

@@ -1,0 +1,809 @@
+# Scripty CI/CD
+#
+# Flow:
+#   push to cursor/* (no PR)  →  Ensure PR + Verify + Ship → dispatch deploy (skip re-verify)
+#   push to cursor/* (PR open)→  no-op here; pull_request synchronize handles verify → ship
+#   pull_request              →  Verify (Maven)
+#   pull_request (cursor/*)   →  Verify → Ship to main → dispatch deploy (skip re-verify)
+#   push to main              →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
+#   Run workflow              →  Verify (Maven)  →  Deploy Railway + Deploy Cloudflare (parallel)
+#   Run workflow (secrets only) → Sync Cloudflare Worker MySQL secrets from Railway
+#
+# Mobile Cursor cloud agents push cursor/* branches (often without a PR). Those
+# never reach Railway until they land on main. ensure-cursor-pr opens + ships
+# orphan branches (GITHUB_TOKEN PR create does not fire pull_request workflows).
+# When a PR already exists, ship-cursor-pr squash-merges after Verify (unless
+# labeled hold / no-ship) and dispatches deploy with skip_verify.
+#
+# One-time setup (repo Settings → Secrets and variables → Actions):
+#   RAILWAY_TOKEN           Project token: Railway → Project → Settings → Tokens
+#                           (scope to the production environment)
+#   RAILWAY_SERVICE_ID      Service ID: Railway → service → Settings → copy ID
+#   CLOUDFLARE_API_TOKEN    auto-provisioned: `npm run cf:token` mints a scoped token
+#                           via the Cloudflare API and sets this + CLOUDFLARE_ACCOUNT_ID
+#                           (manual alternative: Workers Scripts Edit + Containers write)
+#   CLOUDFLARE_BOOTSTRAP_TOKEN  optional: lets deploys self-provision — if the token
+#                           above is missing/dead, CI mints a short-lived deploy token
+#                           on the spot (seed once: ./scripts/cf-token.sh seed-bootstrap)
+#   MYSQL*                  Optional fallback if RAILWAY_TOKEN is unset; CI prefers
+#                           scripts/sync-railway-cloudflare.sh (Railway TCP proxy → Worker)
+#
+# Also disable Railway's automatic GitHub deploys for this service so pushes
+# are not deployed twice (Actions + Railway). Cloudflare deploys only via this
+# workflow (or manual `wrangler deploy`).
+
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "cursor/**"
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why are you redeploying?"
+        required: false
+        default: "Manual redeploy from Actions"
+      sync_secrets_only:
+        description: "Only sync Railway MySQL TCP proxy → Cloudflare Worker secrets (no Maven / no image rebuild)"
+        type: boolean
+        required: false
+        default: false
+      skip_verify:
+        description: "Skip Maven verify (already passed on the cursor/* PR before auto-ship)"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Least privilege by default; jobs that merge PRs or dispatch workflows
+# elevate explicitly with their own permissions block.
+permissions:
+  contents: read
+
+jobs:
+  # Orphan cursor/* pushes (no PR yet) never hit pull_request → auto-ship.
+  # GITHUB_TOKEN-created PRs do not fire workflows, so verify + merge here.
+  # When a PR already exists, pull_request synchronize handles verify → ship.
+  ensure-cursor-pr:
+    name: Ensure Cursor mobile PR
+    if: >
+      github.event_name == 'push' &&
+      startsWith(github.ref, 'refs/heads/cursor/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Open PR and ship if missing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          existing="$(gh pr list --head "$HEAD_REF" --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            echo "Open PR #$existing already covers \`$HEAD_REF\` — pull_request workflow will verify + ship."
+            {
+              echo "## Ensure Cursor mobile PR"
+              echo ""
+              echo "PR [#$existing](${{ github.server_url }}/${{ github.repository }}/pull/$existing) already open for \`$HEAD_REF\`."
+              echo "Relying on **Verify** → **Ship Cursor mobile PR** from the pull_request event."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          subject="$(gh api "repos/${{ github.repository }}/commits/$SHA" --jq '.commit.message' | head -n1)"
+          [ -n "$subject" ] || subject="Ship $HEAD_REF"
+
+          url="$(gh pr create \
+            --base main \
+            --head "$HEAD_REF" \
+            --draft \
+            --title "$subject" \
+            --body "$(printf '%s\n' \
+              "Auto-opened from Cursor mobile branch \`$HEAD_REF\` (no PR existed on push)." \
+              "" \
+              "This job verifies and auto-ships because \`GITHUB_TOKEN\` PR creation does not trigger workflows." \
+              "Add label \`hold\` or \`no-ship\` on future pushes once a PR exists to skip auto-ship.")")"
+          PR_NUMBER="$(gh pr list --head "$HEAD_REF" --base main --state open --json number --jq '.[0].number')"
+          echo "Opened $url (#$PR_NUMBER)"
+
+          echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
+          echo "PR_URL=$url" >> "$GITHUB_ENV"
+          echo "SUBJECT=$subject" >> "$GITHUB_ENV"
+          echo "NEED_SHIP=1" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        if: env.NEED_SHIP == '1'
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: false
+
+      - name: Set up Java 17
+        if: env.NEED_SHIP == '1'
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Verify rules sync
+        if: env.NEED_SHIP == '1'
+        run: npm run rules:check
+
+      - name: Run Maven verify
+        if: env.NEED_SHIP == '1'
+        run: mvn -B verify
+
+      - name: Squash-merge and dispatch deploy
+        if: env.NEED_SHIP == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          echo "Shipping PR #$PR_NUMBER ($HEAD_REF → main) after orphan-branch Verify."
+
+          if gh pr view "$PR_NUMBER" --json isDraft --jq '.isDraft' | grep -q true; then
+            gh pr ready "$PR_NUMBER"
+          fi
+
+          set +e
+          gh pr merge "$PR_NUMBER" \
+            --squash \
+            --delete-branch \
+            --subject "$SUBJECT" \
+            --body "Auto-shipped from Cursor mobile branch \`$HEAD_REF\` after Maven verify (orphan push path). Triggers Railway + Cloudflare deploy on main."
+          status=$?
+          set -e
+
+          {
+            echo "## Ensure Cursor mobile PR"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| PR | [#$PR_NUMBER]($PR_URL) |"
+            echo "| Branch | \`$HEAD_REF\` |"
+            echo "| Result | $([ "$status" -eq 0 ] && echo success || echo failed) |"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$status" -ne 0 ]; then
+            body="$(printf '%s\n' \
+              '## Auto-ship blocked (orphan push)' \
+              '' \
+              'Maven verify passed, but this `cursor/*` PR could not be squash-merged into `main` (likely a conflict).' \
+              '' \
+              '**To get it on Railway:** resolve conflicts, or from desktop: `./scripts/ship-mobile-changes.sh --apply`')"
+            gh pr comment "$PR_NUMBER" --body "$body" || true
+            echo "Merge failed (exit $status)." >> "$GITHUB_STEP_SUMMARY"
+            exit "$status"
+          fi
+
+          echo "Dispatching CI/CD on main (Railway + Cloudflare, skip re-verify)…"
+          gh workflow run "CI/CD" --ref main \
+            -f reason="Auto-ship orphan PR #$PR_NUMBER ($HEAD_REF)" \
+            -f skip_verify=true
+
+          echo "Merged and dispatched deploy." >> "$GITHUB_STEP_SUMMARY"
+          gh pr comment "$PR_NUMBER" --body "Opened + shipped to \`main\` after verify (orphan \`cursor/*\` push). Dispatched **Railway** + Cloudflare deploy." || true
+
+  verify:
+    name: Verify (Maven)
+    if: >
+      (github.event_name != 'push' || github.ref == 'refs/heads/main') &&
+      (github.event_name != 'workflow_dispatch' ||
+        (inputs.sync_secrets_only != true && inputs.skip_verify != true))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Verify rules sync
+        run: npm run rules:check
+
+      - name: Run Maven verify
+        run: mvn -B verify
+
+      - name: Summarize
+        if: always()
+        env:
+          # Never interpolate head_ref into the script — branch names are
+          # attacker-controlled on fork PRs (script injection vector).
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          {
+            echo "## Verify (Maven)"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Event | \`${{ github.event_name }}\` |"
+            echo "| Ref | \`${{ github.ref_name }}\` |"
+            echo "| Commit | \`${{ github.sha }}\` |"
+            echo "| Result | ${{ job.status }} |"
+            echo ""
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              case "$HEAD_REF" in
+                cursor/*)
+                  echo "Cursor mobile PR: after verify, **Ship Cursor mobile PR** squash-merges into \`main\` (unless labeled \`hold\` / \`no-ship\`), which triggers Railway + Cloudflare deploy."
+                  ;;
+                *)
+                  echo "PRs only run verify. Merge to \`main\` (or use **Run workflow**) to deploy."
+                  ;;
+              esac
+            else
+              echo "Next: **Deploy to Railway** and **Deploy to Cloudflare** run in parallel after this job succeeds."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Mobile Cursor → Railway: land cursor/* PRs on main after verify so the
+  # existing push-to-main deploy path runs (Railway + Cloudflare).
+  ship-cursor-pr:
+    name: Ship Cursor mobile PR
+    needs: verify
+    if: >
+      github.event_name == 'pull_request' &&
+      github.base_ref == 'main' &&
+      startsWith(github.head_ref, 'cursor/') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.action != 'closed' &&
+      !contains(github.event.pull_request.labels.*.name, 'hold') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-ship')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Squash-merge cursor/* PR into main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          echo "Shipping PR #$PR_NUMBER ($HEAD_REF → main) after Verify succeeded."
+
+          if gh pr view "$PR_NUMBER" --json isDraft --jq '.isDraft' | grep -q true; then
+            echo "Marking draft PR ready for review…"
+            gh pr ready "$PR_NUMBER"
+          fi
+
+          set +e
+          gh pr merge "$PR_NUMBER" \
+            --squash \
+            --delete-branch \
+            --subject "$(gh pr view "$PR_NUMBER" --json title --jq '.title')" \
+            --body "Auto-shipped from Cursor mobile branch \`$HEAD_REF\` after Maven verify. Triggers Railway + Cloudflare deploy on main."
+          status=$?
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            # Merges via GITHUB_TOKEN do not fire the push workflow — dispatch deploy explicitly.
+            # skip_verify: Maven already passed on this PR; avoid a second full verify before deploy.
+            echo "Dispatching CI/CD on main (Railway + Cloudflare deploy, skip re-verify)…"
+            gh workflow run "CI/CD" --ref main \
+              -f reason="Auto-ship PR #$PR_NUMBER ($HEAD_REF)" \
+              -f skip_verify=true
+          fi
+
+          {
+            echo "## Ship Cursor mobile PR"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| PR | [#${PR_NUMBER}](${{ github.server_url }}/${{ github.repository }}/pull/${PR_NUMBER}) |"
+            echo "| Branch | \`$HEAD_REF\` |"
+            echo "| Result | $([ "$status" -eq 0 ] && echo success || echo failed) |"
+            echo ""
+            if [ "$status" -eq 0 ]; then
+              echo "Merged to \`main\` and dispatched **CI/CD** (Railway + Cloudflare, verify skipped)."
+              echo "Add label \`hold\` or \`no-ship\` on a Cursor PR to skip auto-ship."
+            else
+              echo "Merge failed (exit \`$status\`). Resolve conflicts or merge manually, then push to \`main\`."
+              echo "Or run locally: \`./scripts/ship-mobile-changes.sh --apply\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$status" -ne 0 ]; then
+            body="$(printf '%s\n' \
+              '## Auto-ship blocked' \
+              '' \
+              'Maven verify passed, but this `cursor/*` PR could not be squash-merged into `main` (likely a conflict).' \
+              '' \
+              '**To get it on Railway:**' \
+              '1. Resolve conflicts and merge into `main`, or' \
+              '2. From a desktop checkout: `./scripts/ship-mobile-changes.sh --ensure-pr` then fix the PR, or' \
+              '3. `./scripts/ship-mobile-changes.sh --apply`' \
+              '' \
+              'Add label `hold` or `no-ship` to skip auto-ship next time.')"
+            gh pr comment "$PR_NUMBER" --body "$body" || true
+            exit "$status"
+          fi
+
+          gh pr comment "$PR_NUMBER" --body "Shipped to \`main\` after verify. Dispatched CI/CD so **Railway** + Cloudflare deploy (Maven re-verify skipped)." || true
+
+  deploy-railway:
+    name: Deploy to Railway
+    needs: verify
+    if: >
+      always() &&
+      !cancelled() &&
+      (needs.verify.result == 'success' ||
+        (needs.verify.result == 'skipped' &&
+          github.event_name == 'workflow_dispatch' &&
+          inputs.skip_verify == true)) &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.event_name != 'workflow_dispatch' || inputs.sync_secrets_only != true)
+    runs-on: ubuntu-latest
+    # Build + 15 min healthcheck window (.railway/railway.ts healthcheckTimeout) +
+    # up to 15 min of status polling in Confirm deployment status.
+    timeout-minutes: 40
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Check Railway secrets
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: |
+          missing=0
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::error title=Missing secret::Add RAILWAY_TOKEN (Railway → Project → Settings → Tokens, production environment)."
+            missing=1
+          fi
+          if [ -z "$RAILWAY_SERVICE_ID" ]; then
+            echo "::error title=Missing secret::Add RAILWAY_SERVICE_ID (Railway → service → Settings → copy ID)."
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            {
+              echo "## Deploy blocked — Railway secrets missing"
+              echo ""
+              echo "Add these under **Settings → Secrets and variables → Actions**:"
+              echo ""
+              echo "| Secret | Where to get it |"
+              echo "|--------|-----------------|"
+              echo "| \`RAILWAY_TOKEN\` | Railway → Project → Settings → Tokens (production) |"
+              echo "| \`RAILWAY_SERVICE_ID\` | Railway → service → Settings → copy ID |"
+              echo ""
+              echo "Also turn off Railway auto-deploy from GitHub so deploys only come from this workflow."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Railway secrets are present."
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@5.26.0
+
+      # `railway config apply` evaluates .railway/railway.ts via the `railway`
+      # npm package (TypeScript SDK) — it must be installed in node_modules or
+      # the CLI fails with "Could not find Railway configuration support".
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install npm dependencies (Railway TS SDK)
+        run: npm ci
+
+      - name: Apply Railway configuration (IaC)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "Applying Railway Infrastructure-as-Code configuration..."
+          # No --confirm-destructive: never auto-delete services/volumes (MySQL
+          # data lives on one) from CI. If the plan contains destructive
+          # changes, this fails — review with `railway config plan` locally and
+          # apply deliberately: railway config apply --confirm-destructive
+          #
+          # --decrypt-variables: without it, existing encrypted variables read
+          # back as preserve() markers, so the diff re-sets every variable and
+          # the apply payload is rejected by the backend ("Invalid
+          # RailwayChangeSet patch: unrecognized key 'type'"). With it, current
+          # values are compared for real and an in-sync config is a no-op.
+          if ! railway config apply --yes --decrypt-variables; then
+            echo "::error title=Railway IaC apply failed::If the plan includes destructive changes, CI refuses them by design. Run 'railway config plan' locally, review, then 'railway config apply --confirm-destructive' yourself."
+            exit 1
+          fi
+
+      - name: Deploy to Railway
+        id: deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          message="GitHub ${{ github.sha }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            message="Manual: ${REASON} (${{ github.sha }})"
+          fi
+          echo "Deploying commit ${{ github.sha }} via railway up --ci (waits for healthcheck)"
+          set +e
+          railway up \
+            --service "$RAILWAY_SERVICE_ID" \
+            --message "$message" \
+            --ci
+          status=$?
+          set -e
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          if [ "$status" -ne 0 ]; then
+            # Don't fail yet: railway up can exit non-zero on a slow healthcheck
+            # while Railway keeps retrying and the deploy ultimately succeeds
+            # (Boot + Flyway startup can exceed the CLI's wait). The next step
+            # polls the deployment's real status and decides pass/fail.
+            echo "::warning title=railway up exited $status::Deployment may still be in progress. Confirming real status via Railway API…"
+          fi
+
+      - name: Confirm deployment status
+        id: confirm
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          UP_EXIT: ${{ steps.deploy.outputs.exit_code }}
+        run: |
+          if [ "${UP_EXIT:-1}" = "0" ]; then
+            echo "railway up exited 0 — deployment healthy."
+            echo "outcome=success" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Poll the latest deployment until it reaches a terminal state.
+          # healthcheckTimeout is 900s (.railway/railway.ts), so allow up to 15 more
+          # minutes here before declaring the deploy dead.
+          deadline=$(( $(date +%s) + 900 ))
+          outcome=timeout
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            deploy_status=$(railway deployment list --json --limit 1 --service "$RAILWAY_SERVICE_ID" 2>/dev/null \
+              | jq -r 'if type == "array" then .[0].status else (.deployments[0].status // empty) end // empty' 2>/dev/null || true)
+            echo "$(date -u +%H:%M:%S) latest deployment status: ${deploy_status:-<unknown>}"
+            case "$deploy_status" in
+              SUCCESS)
+                outcome=recovered
+                break
+                ;;
+              FAILED|CRASHED|REMOVED|SKIPPED)
+                outcome=failed
+                break
+                ;;
+              *)
+                # QUEUED / BUILDING / DEPLOYING / INITIALIZING / WAITING, or a
+                # transient API hiccup — keep polling.
+                sleep 30
+                ;;
+            esac
+          done
+          echo "outcome=$outcome" >> "$GITHUB_OUTPUT"
+          case "$outcome" in
+            recovered)
+              echo "::notice title=Deploy succeeded after retry::railway up exited $UP_EXIT, but the deployment reached SUCCESS (slow startup — healthcheck retried past the CLI wait)."
+              ;;
+            failed)
+              echo "::error title=Railway deploy failed::Deployment ended in status $deploy_status. Check build/runtime logs in the Railway dashboard."
+              exit 1
+              ;;
+            timeout)
+              echo "::error title=Railway deploy unconfirmed::Deployment did not reach a terminal status within 15 minutes of railway up exiting $UP_EXIT. Check the Railway dashboard."
+              exit 1
+              ;;
+          esac
+
+      - name: Summarize
+        if: always()
+        env:
+          DEPLOY_EXIT: ${{ steps.deploy.outputs.exit_code }}
+          CONFIRM_OUTCOME: ${{ steps.confirm.outputs.outcome }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          {
+            echo "## Deploy to Railway"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Trigger | \`${{ github.event_name }}\` |"
+            echo "| Branch | \`main\` |"
+            echo "| Commit | [\`${GITHUB_SHA:0:7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |"
+            echo "| Result | ${{ job.status }} |"
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "| Reason | ${REASON} |"
+            fi
+            echo ""
+            if [ "${CONFIRM_OUTCOME:-}" = "recovered" ]; then
+              echo "Deploy succeeded after a slow startup: \`railway up --ci\` exited \`$DEPLOY_EXIT\`, but Railway kept retrying \`/health\` and the deployment reached **SUCCESS** (confirmed via \`railway deployment list\`)."
+            elif [ "${{ job.status }}" = "success" ]; then
+              echo "Deploy finished successfully (\`railway up --ci\`). Railway waited for \`/health\` before marking the release live."
+            elif [ "${CONFIRM_OUTCOME:-}" = "timeout" ]; then
+              echo "Deploy unconfirmed: the deployment never reached a terminal status within the polling window after \`railway up\` exited \`$DEPLOY_EXIT\`. Check the Railway dashboard — it may still complete."
+            elif [ -n "${DEPLOY_EXIT:-}" ] && [ "$DEPLOY_EXIT" != "0" ]; then
+              echo "Railway reported a failed deploy (\`railway up\` exit \`$DEPLOY_EXIT\`, confirmed terminal failure via the deployments API). Open the service’s latest deployment in the Railway dashboard for build/runtime logs."
+            else
+              echo "Deploy did not succeed. Check the **Check Railway secrets** and **Deploy to Railway** steps above."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-cloudflare:
+    name: Deploy to Cloudflare
+    needs: verify
+    if: >
+      always() &&
+      !cancelled() &&
+      (needs.verify.result == 'success' ||
+        (needs.verify.result == 'skipped' &&
+          github.event_name == 'workflow_dispatch' &&
+          inputs.skip_verify == true)) &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.event_name != 'workflow_dispatch' || inputs.sync_secrets_only != true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Resolve Cloudflare API token
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_BOOTSTRAP_TOKEN: ${{ secrets.CLOUDFLARE_BOOTSTRAP_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Never blocks on a human: uses the stored token if it still verifies,
+          # otherwise mints a short-lived deploy token from the bootstrap secret.
+          set -euo pipefail
+          if token="$(./scripts/cf-token.sh ci-resolve)"; then
+            echo "::add-mask::$token"
+            echo "CLOUDFLARE_API_TOKEN=$token" >> "$GITHUB_ENV"
+            if [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+              echo "CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID" >> "$GITHUB_ENV"
+            fi
+            echo "Cloudflare API token resolved."
+          else
+            {
+              echo "## Deploy blocked — no Cloudflare credentials"
+              echo ""
+              echo "Self-provisioning needs one of these Actions secrets:"
+              echo "- \`CLOUDFLARE_API_TOKEN\` — a working deploy token (\`npm run cf:token\` mints + pushes one), or"
+              echo "- \`CLOUDFLARE_BOOTSTRAP_TOKEN\` — lets CI mint its own short-lived deploy tokens (\`./scripts/cf-token.sh seed-bootstrap\`)."
+              echo ""
+              echo "MySQL secrets sync from Railway when \`RAILWAY_TOKEN\` is set (see [docs/CLOUDFLARE.md](../../docs/CLOUDFLARE.md))."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=No Cloudflare credentials::Seed CLOUDFLARE_BOOTSTRAP_TOKEN (scripts/cf-token.sh seed-bootstrap) or CLOUDFLARE_API_TOKEN (npm run cf:token)."
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Install Railway CLI
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            npm install -g @railway/cli@5.26.0
+            echo "Railway CLI installed (will sync MySQL TCP proxy secrets)."
+          else
+            echo "RAILWAY_TOKEN unset — will fall back to GitHub MYSQL* secrets."
+          fi
+
+      - name: Write Worker secrets file
+        id: secrets
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          MYSQLHOST: ${{ secrets.MYSQLHOST }}
+          MYSQLPORT: ${{ secrets.MYSQLPORT }}
+          MYSQLUSER: ${{ secrets.MYSQLUSER }}
+          MYSQLPASSWORD: ${{ secrets.MYSQLPASSWORD }}
+          MYSQLDATABASE: ${{ secrets.MYSQLDATABASE }}
+          MYSQL_SSL_MODE: ${{ secrets.MYSQL_SSL_MODE }}
+          MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL: ${{ secrets.MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL }}
+        run: |
+          set -euo pipefail
+          # Prefer live Railway TCP proxy values so Cloudflare stays aligned with MySQL.
+          if [ -n "${RAILWAY_TOKEN:-}" ] && command -v railway >/dev/null 2>&1; then
+            ./scripts/sync-railway-cloudflare.sh write
+            echo "source=railway" >> "$GITHUB_OUTPUT"
+            echo "Synced MySQL TCP proxy secrets from Railway → cloudflare/.deploy-secrets"
+            # Non-secret summary for the job log (no password).
+            echo "MYSQLHOST=$(sed -n 's/^MYSQLHOST=//p' cloudflare/.deploy-secrets)"
+            echo "MYSQLPORT=$(sed -n 's/^MYSQLPORT=//p' cloudflare/.deploy-secrets)"
+            echo "MYSQLDATABASE=$(sed -n 's/^MYSQLDATABASE=//p' cloudflare/.deploy-secrets)"
+            echo "MYSQL_SSL_MODE=$(sed -n 's/^MYSQL_SSL_MODE=//p' cloudflare/.deploy-secrets)"
+            exit 0
+          fi
+
+          missing=0
+          for name in MYSQLHOST MYSQLPORT MYSQLUSER MYSQLPASSWORD MYSQLDATABASE; do
+            if [ -z "${!name}" ]; then
+              echo "::error title=Missing secret::Add $name (Railway MySQL TCP proxy) or RAILWAY_TOKEN under Actions secrets."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+          # First-time Worker deploy requires --secrets-file (see docs/CLOUDFLARE.md).
+          umask 077
+          {
+            printf 'MYSQLHOST=%s\n' "$MYSQLHOST"
+            printf 'MYSQLPORT=%s\n' "$MYSQLPORT"
+            printf 'MYSQLUSER=%s\n' "$MYSQLUSER"
+            printf 'MYSQLPASSWORD=%s\n' "$MYSQLPASSWORD"
+            printf 'MYSQLDATABASE=%s\n' "$MYSQLDATABASE"
+            printf 'MYSQL_SSL_MODE=%s\n' "${MYSQL_SSL_MODE:-PREFERRED}"
+            printf 'MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=%s\n' "${MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL:-true}"
+          } > cloudflare/.deploy-secrets
+          echo "source=github-fallback" >> "$GITHUB_OUTPUT"
+          echo "Wrote cloudflare/.deploy-secrets from GitHub MYSQL* secrets (fallback)."
+
+      - name: Deploy to Cloudflare
+        id: deploy
+        working-directory: cloudflare
+        # CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID come from GITHUB_ENV,
+        # exported by "Resolve Cloudflare API token" (stored secret or a
+        # freshly minted ephemeral token).
+        run: |
+          echo "Deploying commit ${{ github.sha }} via wrangler deploy (builds Dockerfile + Worker)"
+          set +e
+          npx wrangler deploy --secrets-file .deploy-secrets
+          status=$?
+          set -e
+          rm -f .deploy-secrets
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          if [ "$status" -ne 0 ]; then
+            echo "::error title=Cloudflare deploy failed::wrangler deploy exited $status. Check Worker secrets (MYSQL*) and Containers provisioning in the Cloudflare dashboard."
+            exit "$status"
+          fi
+
+      # Belt-and-braces: the deploy step deletes the secrets file itself, but a
+      # cancelled or crashed step would skip that — always scrub it here.
+      - name: Remove Worker secrets file
+        if: always()
+        run: rm -f cloudflare/.deploy-secrets
+
+      - name: Summarize
+        if: always()
+        env:
+          DEPLOY_EXIT: ${{ steps.deploy.outputs.exit_code }}
+          SECRETS_SOURCE: ${{ steps.secrets.outputs.source }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          {
+            echo "## Deploy to Cloudflare"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Trigger | \`${{ github.event_name }}\` |"
+            echo "| Branch | \`main\` |"
+            echo "| Commit | [\`${GITHUB_SHA:0:7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |"
+            echo "| MySQL secrets | \`${SECRETS_SOURCE:-unknown}\` |"
+            echo "| Result | ${{ job.status }} |"
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "| Reason | ${REASON} |"
+            fi
+            echo ""
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "\`wrangler deploy\` succeeded (Worker + container image). MySQL secrets source: \`${SECRETS_SOURCE:-unknown}\`. First container cold start can take a few minutes."
+            elif [ -n "${DEPLOY_EXIT:-}" ] && [ "$DEPLOY_EXIT" != "0" ]; then
+              echo "Cloudflare deploy failed (exit \`$DEPLOY_EXIT\`). Confirm \`CLOUDFLARE_API_TOKEN\`, Worker secrets, and [docs/CLOUDFLARE.md](../../docs/CLOUDFLARE.md)."
+            else
+              echo "Deploy did not succeed. Check the **Check Cloudflare secrets** and **Deploy to Cloudflare** steps above."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Fast path: refresh Worker MySQL secrets from Railway without rebuilding the image.
+  sync-cloudflare-secrets:
+    name: Sync Cloudflare MySQL secrets
+    if: >
+      github.event_name == 'workflow_dispatch' &&
+      inputs.sync_secrets_only == true &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Check secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          missing=0
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error title=Missing secret::Add CLOUDFLARE_API_TOKEN."
+            missing=1
+          fi
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::error title=Missing secret::Add RAILWAY_TOKEN (required for secrets-only sync)."
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@5.26.0
+
+      - name: Push Railway MySQL TCP proxy → Cloudflare Worker
+        id: sync
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          ./scripts/sync-railway-cloudflare.sh push-cloudflare
+          echo "Synced Worker secrets from Railway (no container rebuild)."
+
+      - name: Summarize
+        if: always()
+        env:
+          REASON: ${{ inputs.reason }}
+        run: |
+          {
+            echo "## Sync Cloudflare MySQL secrets"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Trigger | \`workflow_dispatch\` (secrets only) |"
+            echo "| Reason | ${REASON} |"
+            echo "| Result | ${{ job.status }} |"
+            echo ""
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "Worker MySQL secrets updated from Railway’s TCP proxy via \`wrangler secret bulk\` (no image rebuild)."
+              echo "To also refresh GitHub \`MYSQL*\` fallback secrets locally: \`./scripts/sync-railway-cloudflare.sh push-github\`."
+            else
+              echo "Sync failed. Confirm \`RAILWAY_TOKEN\`, MySQL TCP proxy, and \`CLOUDFLARE_API_TOKEN\`."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

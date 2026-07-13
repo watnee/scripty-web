@@ -5,6 +5,10 @@
  */
 package com.scripty.viewmodel.actor.actorlist;
 
+import com.scripty.viewmodel.person.personlist.CharacterViewModel;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  * @author chris
@@ -16,6 +20,10 @@ public class ActorViewModel {
     private String last;
     private String phone;
     private String email;
+    private boolean hasHeadshot;
+    private List<CharacterViewModel> assignedCharacters = new ArrayList<>();
+    private List<CharacterViewModel> auditionCharacters = new ArrayList<>();
+    private List<Integer> auditionCharacterIds = new ArrayList<>();
 
     public int getId() {
         return id;
@@ -56,5 +64,41 @@ public class ActorViewModel {
     public void setEmail(String email) {
         this.email = email;
     }
-    
+
+    public boolean isHasHeadshot() {
+        return hasHeadshot;
+    }
+
+    public void setHasHeadshot(boolean hasHeadshot) {
+        this.hasHeadshot = hasHeadshot;
+    }
+
+    public List<CharacterViewModel> getAssignedCharacters() {
+        return assignedCharacters;
+    }
+
+    public void setAssignedCharacters(List<CharacterViewModel> assignedCharacters) {
+        this.assignedCharacters = assignedCharacters;
+    }
+
+    public List<CharacterViewModel> getAuditionCharacters() {
+        return auditionCharacters;
+    }
+
+    public void setAuditionCharacters(List<CharacterViewModel> auditionCharacters) {
+        this.auditionCharacters = auditionCharacters;
+    }
+
+    public List<Integer> getAuditionCharacterIds() {
+        return auditionCharacterIds;
+    }
+
+    public void setAuditionCharacterIds(List<Integer> auditionCharacterIds) {
+        this.auditionCharacterIds = auditionCharacterIds;
+    }
+
+    public boolean isAuditioningFor(int characterId) {
+        return auditionCharacterIds.contains(characterId);
+    }
+
 }

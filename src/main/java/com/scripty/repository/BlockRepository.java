@@ -9,25 +9,39 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface BlockRepository extends JpaRepository<Block, Integer> {
 
-    List<Block> findBySceneIdOrderByOrderAsc(Integer sceneId);
+    List<Block> findByProjectIdOrderByOrderAsc(Integer projectId);
 
-    int countBySceneId(Integer sceneId);
+    List<Block> findByScriptEditionIdOrderByOrderAsc(Integer scriptEditionId);
 
-    Optional<Block> findBySceneIdAndOrder(Integer sceneId, Integer order);
+    int countByProjectId(Integer projectId);
 
-    @Modifying
-    @Query("UPDATE Block b SET b.order = b.order + 1 WHERE b.order > :order AND b.scene.id = :sceneId")
-    void incrementOrdersAbove(Integer order, Integer sceneId);
+    int countByScriptEditionId(Integer scriptEditionId);
 
-    @Modifying
-    @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :order AND b.scene.id = :sceneId")
-    void decrementOrdersAbove(Integer order, Integer sceneId);
+    Optional<Block> findByProjectIdAndOrder(Integer projectId, Integer order);
 
-    @Modifying
-    @Query("UPDATE Block b SET b.order = b.order + 1 WHERE b.order >= :newOrder AND b.order < :currentOrder AND b.scene.id = :sceneId")
-    void incrementOrdersInRange(Integer newOrder, Integer currentOrder, Integer sceneId);
+    Optional<Block> findByScriptEditionIdAndOrder(Integer scriptEditionId, Integer order);
 
-    @Modifying
-    @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :currentOrder AND b.order <= :newOrder AND b.scene.id = :sceneId")
-    void decrementOrdersInRange(Integer currentOrder, Integer newOrder, Integer sceneId);
+    List<Block> findBySourceDocumentIdOrderByOrderAsc(Integer sourceDocumentId);
+
+    List<Block> findBySourceDocumentIdAndScriptEditionIdOrderByOrderAsc(Integer sourceDocumentId, Integer scriptEditionId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Block b SET b.order = b.order + 1 WHERE b.order > :order AND b.scriptEdition.id = :scriptEditionId")
+    void incrementOrdersAbove(Integer order, Integer scriptEditionId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Block b SET b.order = b.order + :amount WHERE b.order > :order AND b.scriptEdition.id = :scriptEditionId")
+    void incrementOrdersAboveBy(Integer order, Integer scriptEditionId, int amount);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :order AND b.scriptEdition.id = :scriptEditionId")
+    void decrementOrdersAbove(Integer order, Integer scriptEditionId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Block b SET b.order = b.order + 1 WHERE b.order >= :newOrder AND b.order < :currentOrder AND b.scriptEdition.id = :scriptEditionId")
+    void incrementOrdersInRange(Integer newOrder, Integer currentOrder, Integer scriptEditionId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :currentOrder AND b.order <= :newOrder AND b.scriptEdition.id = :scriptEditionId")
+    void decrementOrdersInRange(Integer currentOrder, Integer newOrder, Integer scriptEditionId);
 }

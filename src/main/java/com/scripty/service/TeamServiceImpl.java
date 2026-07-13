@@ -6,6 +6,7 @@ import com.scripty.dto.User;
 import com.scripty.repository.TeamRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.UserRepository;
+import com.scripty.util.PlainTextSanitizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +40,10 @@ public class TeamServiceImpl implements TeamService {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Team name cannot be empty");
         }
-        String trimmed = name.trim();
+        String trimmed = PlainTextSanitizer.sanitizeSingleLine(name);
+        if (trimmed == null || trimmed.isEmpty()) {
+            throw new IllegalArgumentException("Team name cannot be empty");
+        }
         if (teamRepository.findByName(trimmed).isPresent()) {
             throw new IllegalArgumentException("Team with this name already exists");
         }
@@ -55,22 +59,19 @@ public class TeamServiceImpl implements TeamService {
             return;
         }
         String oldName = team.getName();
-        String newName = name.trim();
+        String newName = PlainTextSanitizer.sanitizeSingleLine(name);
 
-        if (newName.isEmpty()) {
+        if (newName == null || newName.isEmpty()) {
             throw new IllegalArgumentException("Team name cannot be empty");
         }
 
-        // 1. Rename team on projects and users if changed
         if (!oldName.equals(newName)) {
-            // Check if name already exists
             if (teamRepository.findByName(newName).isPresent()) {
                 throw new IllegalArgumentException("Team with this name already exists");
             }
             team.setName(newName);
             teamRepository.save(team);
 
-            // Update users
             List<User> users = userRepository.findAll();
             for (User u : users) {
                 if (oldName.equals(u.getTeam())) {
@@ -78,27 +79,22 @@ public class TeamServiceImpl implements TeamService {
                     userRepository.save(u);
                 }
             }
-
-            // Update projects currently assigned to this team
-            List<Project> projects = projectRepository.findAll();
-            for (Project p : projects) {
-                if (oldName.equals(p.getTeam())) {
-                    p.setTeam(newName);
-                    projectRepository.save(p);
-                }
-            }
         }
 
-        // 2. Handle project assignments
-        List<Project> allProjects = projectRepository.findAll();
-        for (Project p : allProjects) {
-            boolean isTarget = projectIds != null && projectIds.contains(p.getId());
-            if (isTarget) {
-                p.setTeam(newName);
-                projectRepository.save(p);
-            } else if (newName.equals(p.getTeam())) {
-                p.setTeam(null);
-                projectRepository.save(p);
+        if (projectIds == null) {
+            return;
+        }
+
+        List<Project> allProjects = projectRepository.findAllWithTeams();
+        for (Project project : allProjects) {
+            boolean isTarget = projectIds.contains(project.getId());
+            boolean currentlyAssigned = project.isAssignedToTeam(team);
+            if (isTarget && !currentlyAssigned) {
+                project.getTeams().add(team);
+                projectRepository.save(project);
+            } else if (!isTarget && currentlyAssigned) {
+                project.getTeams().removeIf(assignedTeam -> assignedTeam.getId().equals(team.getId()));
+                projectRepository.save(project);
             }
         }
     }
@@ -111,16 +107,6 @@ public class TeamServiceImpl implements TeamService {
         }
         String teamName = team.getName();
 
-        // Update projects
-        List<Project> projects = projectRepository.findAll();
-        for (Project p : projects) {
-            if (teamName.equals(p.getTeam())) {
-                p.setTeam(null);
-                projectRepository.save(p);
-            }
-        }
-
-        // Update users
         List<User> users = userRepository.findAll();
         for (User u : users) {
             if (teamName.equals(u.getTeam())) {

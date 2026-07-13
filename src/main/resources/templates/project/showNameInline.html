@@ -1,0 +1,25 @@
+<div xmlns:th="http://www.thymeleaf.org" class="project-title-container">
+    <div class="project-list-title-wrap">
+        <div class="project-list-title-row">
+            <a th:href="@{/project/show(id=${project.id})}" class="project-list-title" th:text="${project.title}"></a>
+            <span class="project-list-default-label" th:if="${defaultProjectId != null and project.id == defaultProjectId}">Default</span>
+        </div>
+        <div class="project-list-meta">
+            <span class="project-list-last-edited" th:if="${project.lastEdited != null}" th:title="${#temporals.format(project.lastEdited, 'MMM d, yyyy, h:mm a')}">
+                <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <polyline points="12 7 12 12 15 14"></polyline>
+                </svg>
+                <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.lastEdited})}"></span>
+            </span>
+            <th:block th:if="${!#lists.isEmpty(project.sortedTeams)}">
+                <span class="project-list-meta-sep" aria-hidden="true" th:if="${project.lastEdited != null}"></span>
+                <span class="project-list-teams">
+                    <th:block th:each="team : ${project.sortedTeams}"
+                              th:replace="~{fragments/projectListTeam :: link(${team.id}, ${team.name})}"></th:block>
+                </span>
+            </th:block>
+        </div>
+    </div>
+    <div th:replace="~{fragments/projectListActions :: actions(${project})}"></div>
+</div>

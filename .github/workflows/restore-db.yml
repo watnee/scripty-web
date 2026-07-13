@@ -1,0 +1,103 @@
+# Manual MySQL restore from Cloudflare R2
+#
+# One-time setup: see docs/BACKUP.md
+# Uses the same MYSQL* / MYSQL_BACKUP* + CLOUDFLARE_* secrets as the backup job.
+
+name: Restore database
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_filename:
+        description: "The filename of the backup on R2 to restore (e.g. scripty-YYYYMMDD-HHMMSS.sql.gz). Set to 'latest' to restore the most recent backup."
+        required: true
+        default: "latest"
+      target_database:
+        description: "The target database name to restore into (replaces all existing data in that database)."
+        required: true
+        default: "scripty"
+      confirm_restore:
+        description: "CONFIRM RESTORE: Check this box to confirm database overwrite."
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: restore-database
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    name: R2 → mysql restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm_restore }}" != "true" ]; then
+            echo "::error::You must check the confirmation box to proceed with restoring the database."
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install mysql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+          mysql --version
+
+      - name: Run restore script
+        id: restore
+        env:
+          # Target DB configuration from secrets (with fallbacks)
+          MYSQL_BACKUP_HOST: ${{ secrets.MYSQL_BACKUP_HOST }}
+          MYSQL_BACKUP_PORT: ${{ secrets.MYSQL_BACKUP_PORT }}
+          MYSQL_BACKUP_USER: ${{ secrets.MYSQL_BACKUP_USER }}
+          MYSQL_BACKUP_PASSWORD: ${{ secrets.MYSQL_BACKUP_PASSWORD }}
+          # Override target database name with user input
+          MYSQL_BACKUP_DATABASE: ${{ github.event.inputs.target_database }}
+          MYSQLHOST: ${{ secrets.MYSQLHOST }}
+          MYSQLPORT: ${{ secrets.MYSQLPORT }}
+          MYSQLUSER: ${{ secrets.MYSQLUSER }}
+          MYSQLPASSWORD: ${{ secrets.MYSQLPASSWORD }}
+          
+          # Cloudflare R2 credentials
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          
+          # Bypass interactive prompts in CI
+          FORCE: "1"
+        run: |
+          chmod +x scripts/restore-mysql.sh
+          ./scripts/restore-mysql.sh "${{ github.event.inputs.backup_filename }}"
+
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "## Restore database"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Target Database | \`${{ github.event.inputs.target_database }}\` |"
+            echo "| Backup Source | \`${{ github.event.inputs.backup_filename }}\` |"
+            echo "| Result | ${{ job.status }} |"
+            echo ""
+            echo "Refer to [docs/BACKUP.md](../blob/main/docs/BACKUP.md) for more details."
+          } >> "$GITHUB_STEP_SUMMARY"

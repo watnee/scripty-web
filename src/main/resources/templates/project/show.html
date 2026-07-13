@@ -1,311 +1,837 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:class="${(canEditScript == null or canEditScript) ? 'scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select scripty-hide-block-element-labels' : 'scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select scripty-hide-block-element-labels scripty-script-readonly scripty-block-edit-locked'}">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#111111">
-    <link rel="manifest" th:href="@{/manifest.json}">
-    <meta charset="UTF-8">
-    <title>Scripty - Project Profile</title>
-    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
-    <link th:href="@{/css/scripty.css}" rel="stylesheet">
-    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
-</head>
-<body hx-boost="true">
-    <div th:replace="~{fragments/nav :: nav('')}"></div>
-    <main>
-        <div th:replace="~{fragments/logout :: logout}"></div>
-        <nav aria-label="Breadcrumb">
-            <ol>
-                <li><a th:href="@{/project/list}">Projects</a></li>
-                <li aria-current="page" th:text="${viewModel.title}"></li>
-            </ol>
-        </nav>
-        <div th:replace="~{fragments/editorToolbar :: editorToolbar(${lastEditedAt})}"></div>
-        <h1>
-            <span th:text="${viewModel.title}"></span>
-            <form th:action="@{/project/toggleDefault}" method="POST" style="display: inline-block; margin-left: 0.5rem; vertical-align: middle;">
-                <input type="hidden" name="id" th:value="${viewModel.id}" />
-                <button type="submit" 
-                        class="default-project-badge" 
-                        th:classappend="${isDefault} ? 'is-default' : ''"
-                        th:title="${isDefault} ? 'Remove as default project' : 'Set as default project'">
-                    <span class="badge-text" th:text="${isDefault} ? 'Default Project' : 'Set as Default'"></span>
-                </button>
-            </form>
-            <small><a th:href="@{/project/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/project/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this project?') halt">delete</a></small>
-        </h1>
-        <div class="f-row" style="gap: 2rem; align-items: start">
-            <div style="flex: 3">
-                <h2>Scenes <small><a th:href="@{/scene/all(projectId=${viewModel.id})}" role="button">View All</a></small></h2>
-                <div class="tags-bulk-action" style="margin-bottom: 1.5rem;">
-                    <label style="display: flex; align-items: center; margin: 0 0.5rem 0 0; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="project-select-all-blocks" style="margin-right: 6px;" /> Select All
-                    </label>
-                    <input type="text" id="project-bulk-tags-input" placeholder="Add tags to selected blocks (comma separated)..." style="flex-grow: 1; max-width: 400px; margin: 0;" />
-                    <button type="button" id="project-bulk-add-tags-btn" style="margin: 0;">Add Tags</button>
-                    <button type="button" id="project-bulk-delete-btn" class="bad" style="margin: 0;" title="Delete selected blocks">🗑️</button>
-                </div>
-                <th:block th:each="scene : ${viewModel.scenes}">
-                    <h3 class="scene-header" style="margin-bottom: 0.25em">
-                        <span class="scene-name-wrap">
-                            <span class="scene-name-display" th:attr="hx-get=@{/scene/editNameInline(id=${scene.id})}" hx-trigger="click" hx-target="closest .scene-name-wrap" hx-swap="innerHTML" style="cursor: pointer; min-width: 10em; display: inline-block">
-                                <th:block th:if="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}">
-                                    <span style="color: #ccc; font-style: italic">click to name scene</span>
-                                </th:block>
-                                <th:block th:unless="${#strings.isEmpty(scene.name) || #strings.isEmpty(scene.name.trim())}" th:text="${scene.name}"></th:block>
-                            </span>
-                        </span>
-                        <small>
-                            <a th:href="@{/scene/show(id=${scene.id})}" role="button">view</a>
-                        </small>
-                    </h3>
-                    <table class="table-blocks-all" th:id="'table-blocks-' + ${scene.id}">
-                        <tr th:each="block : ${scene.blocks}" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order}">
-                            <td class="block-left-controls">
-                                <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" style="margin-right: 8px;" />
-                                <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" role="button" class="create-below">+</a>
-                                <span class="drag-handle">&#8942;&#8942;</span>
-                            </td>
-                            <td class="block-content" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML" style="cursor: pointer">
-                                <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
-                                    <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
-                                </p>
-                                <span th:text="${block.content}"></span>
-                            </td>
-                            <td>
-                                <span class="nowrap">
-                                    <a th:href="@{/block/toggleBookmark(id=${block.id})}" th:title="${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:attr="aria-label=${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:text="${block.bookmarked} ? '★' : '☆'"></a>
-                                    <a th:href="@{/block/togglePinned(id=${block.id})}" th:title="${block.pinned} ? 'Unpin block' : 'Pin block'" th:attr="aria-label=${block.pinned} ? 'Unpin block' : 'Pin block'" th:style="${block.pinned} ? 'text-decoration: none;' : 'filter: grayscale(100%); opacity: 0.3; text-decoration: none;'">📌</a>
-                                </span>
-                            </td>
-                        </tr>
-                        <tr th:attr="hx-get=@{/block/createInline(sceneId=${scene.id})}" hx-trigger="load" hx-swap="outerHTML"></tr>
-                    </table>
-                </th:block>
-                <form th:action="@{/scene/createAndReturn}" method="POST" hx-boost="false" style="display:inline">
-                    <input type="hidden" name="projectId" th:value="${viewModel.id}" />
-                    <button type="submit" role="button">Create New Scene</button>
-                </form>
-            </div>
-            <aside style="flex: 1">
-                <p th:if="${viewModel.team != null and !viewModel.team.isEmpty()}">Team: <span th:text="${viewModel.team}"></span></p>
-                <p><a th:href="@{/character/list(projectId=${viewModel.id})}" role="button">Characters</a></p>
-            </aside>
-        </div>
-    </main>
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-    <script th:src="@{/js/_hyperscript.min.js}"></script>
-    <script th:src="@{/js/text-size.js}"></script>
-    <script th:inline="javascript">
-    document.querySelectorAll('.table-blocks-all').forEach(function(table) {
-        var dragRow = null;
-
-        table.addEventListener('dragstart', function(e) {
-            var tr = e.target.closest('tr');
-            if (!tr || !table.contains(tr)) { e.preventDefault(); return; }
-            dragRow = tr;
-            tr.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        });
-
-        table.addEventListener('dragend', function() {
-            if (dragRow) dragRow.classList.remove('dragging');
-            table.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
-            dragRow = null;
-        });
-
-        table.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            var tr = e.target.closest('tr');
-            if (!tr || !table.contains(tr) || tr === dragRow) return;
-            table.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
-            tr.classList.add('drag-over');
-        });
-
-        table.addEventListener('dragleave', function(e) {
-            var tr = e.target.closest('tr');
-            if (tr) tr.classList.remove('drag-over');
-        });
-
-        table.addEventListener('drop', function(e) {
-            e.preventDefault();
-            var targetRow = e.target.closest('tr');
-            if (!targetRow || !table.contains(targetRow) || !dragRow || targetRow === dragRow) return;
-            var blockId = dragRow.getAttribute('data-block-id');
-            var targetOrder = targetRow.getAttribute('data-block-order');
-            if (blockId && targetOrder) {
-                var params = new URLSearchParams();
-                params.append('id', blockId);
-                params.append('position', targetOrder);
-                fetch(/*[[@{/block/moveTo}]]*/ '/block/moveTo', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: params.toString(),
-                    redirect: 'manual'
-                }).then(function() { window.location.reload(); });
-            } else {
-                var rect = targetRow.getBoundingClientRect();
-                var mid = rect.top + rect.height / 2;
-                if (e.clientY < mid) {
-                    targetRow.parentNode.insertBefore(dragRow, targetRow);
-                } else {
-                    targetRow.parentNode.insertBefore(dragRow, targetRow.nextSibling);
-                }
-            }
-        });
-    });
-    </script>
     <script th:inline="javascript">
     (function() {
-        var bulkAddTagsBtn = document.getElementById('project-bulk-add-tags-btn');
-        if (bulkAddTagsBtn) {
-            bulkAddTagsBtn.addEventListener('click', function() {
-                var checkboxes = document.querySelectorAll('.block-select-checkbox:checked');
-                if (checkboxes.length === 0) {
-                    alert('Please select at least one block.');
-                    return;
-                }
-                var tagsInput = document.getElementById('project-bulk-tags-input');
-                var tags = tagsInput ? tagsInput.value.trim() : '';
-                if (!tags) {
-                    alert('Please enter tags to add.');
-                    return;
-                }
-                
-                var ids = Array.from(checkboxes).map(function(cb) {
-                    return cb.value;
-                });
-                
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = /*[[@{/block/bulkAddTags}]]*/ '/block/bulkAddTags';
-                
-                var idsInput = document.createElement('input');
-                idsInput.type = 'hidden';
-                idsInput.name = 'ids';
-                idsInput.value = ids.join(',');
-                form.appendChild(idsInput);
-                
-                var tagsValInput = document.createElement('input');
-                tagsValInput.type = 'hidden';
-                tagsValInput.name = 'tags';
-                tagsValInput.value = tags;
-                form.appendChild(tagsValInput);
-                
-                var projectIdInput = document.createElement('input');
-                projectIdInput.type = 'hidden';
-                projectIdInput.name = 'projectId';
-                projectIdInput.value = /*[[${viewModel.id}]]*/ '';
-                form.appendChild(projectIdInput);
-                
-                var sceneIdInput = document.createElement('input');
-                sceneIdInput.type = 'hidden';
-                sceneIdInput.name = 'sceneId';
-                var firstTr = checkboxes[0].closest('tr');
-                var sceneId = '';
-                if (firstTr) {
-                    var table = firstTr.closest('table');
-                    if (table) {
-                        sceneId = table.id.replace('table-blocks-', '');
+        var projectId = /*[[${viewModel.id}]]*/ 0;
+        var editionId = /*[[${viewModel.editionId}]]*/ null;
+        var canEditScript = /*[[${canEditScript == null or canEditScript}]]*/ true;
+        window.scriptyCanEditScript = canEditScript;
+        window.scriptyProjectId = projectId || null;
+        window.scriptyEditionId = editionId || null;
+        if (projectId) {
+            try {
+                var params = new URLSearchParams(window.location.search);
+                if (canEditScript && !params.has('editionId')) {
+                    var storedEdition = localStorage.getItem('scripty-edition-project-' + projectId);
+                    if (storedEdition && String(storedEdition) !== String(editionId || '')) {
+                        var url = new URL(window.location.href);
+                        url.searchParams.set('editionId', storedEdition);
+                        window.location.replace(url.toString());
+                        return;
                     }
                 }
-                sceneIdInput.value = sceneId;
-                form.appendChild(sceneIdInput);
-                
-                document.body.appendChild(form);
-                form.submit();
-            });
+                if (canEditScript && editionId) {
+                    localStorage.setItem('scripty-edition-project-' + projectId, String(editionId));
+                }
+            } catch (e) {}
         }
-
-        var bulkDeleteBtn = document.getElementById('project-bulk-delete-btn');
-        if (bulkDeleteBtn) {
-            bulkDeleteBtn.addEventListener('click', function() {
-                var checkboxes = document.querySelectorAll('.block-select-checkbox:checked');
-                if (checkboxes.length === 0) {
-                    alert('Please select at least one block.');
-                    return;
-                }
-                
-                var count = checkboxes.length;
-                var confirmMsg = 'Are you sure you want to delete the ' + count + ' selected block' + (count > 1 ? 's' : '') + '?';
-                if (!confirm(confirmMsg)) {
-                    return;
-                }
-                
-                var ids = Array.from(checkboxes).map(function(cb) {
-                    return cb.value;
-                });
-                
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = /*[[@{/block/bulkDelete}]]*/ '/block/bulkDelete';
-                
-                var idsInput = document.createElement('input');
-                idsInput.type = 'hidden';
-                idsInput.name = 'ids';
-                idsInput.value = ids.join(',');
-                form.appendChild(idsInput);
-                
-                var projectIdInput = document.createElement('input');
-                projectIdInput.type = 'hidden';
-                projectIdInput.name = 'projectId';
-                projectIdInput.value = /*[[${viewModel.id}]]*/ '';
-                form.appendChild(projectIdInput);
-                
-                var sceneIdInput = document.createElement('input');
-                sceneIdInput.type = 'hidden';
-                sceneIdInput.name = 'sceneId';
-                var firstTr = checkboxes[0].closest('tr');
-                var sceneId = '';
-                if (firstTr) {
-                    var table = firstTr.closest('table');
-                    if (table) {
-                        sceneId = table.id.replace('table-blocks-', '');
-                    }
-                }
-                sceneIdInput.value = sceneId;
-                form.appendChild(sceneIdInput);
-                
-                document.body.appendChild(form);
-                form.submit();
-            });
+        window.scriptyProjectSongs = /*[[${projectSongs}]]*/ [];
+        if (!Array.isArray(window.scriptyProjectSongs)) {
+            window.scriptyProjectSongs = [];
         }
-
-        var selectAllCheckbox = document.getElementById('project-select-all-blocks');
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function() {
-                var checkboxes = document.querySelectorAll('.block-select-checkbox');
-                checkboxes.forEach(function(cb) {
-                    cb.checked = selectAllCheckbox.checked;
-                });
-            });
+        window.scriptyProjectDrafts = /*[[${projectDrafts}]]*/ [];
+        if (!Array.isArray(window.scriptyProjectDrafts)) {
+            window.scriptyProjectDrafts = [];
         }
+        if (!projectId) return;
+        var showBookmarks = localStorage.getItem('scripty-show-block-bookmarks-project-' + projectId);
+        var showPins = localStorage.getItem('scripty-show-block-pins-project-' + projectId);
+        var showSelect = localStorage.getItem('scripty-show-block-select-project-' + projectId);
+        var showElementLabels = localStorage.getItem('scripty-show-block-element-labels-project-' + projectId);
+        var blockEditLockedKey = editionId
+            ? 'scripty-block-edit-locked-edition-' + editionId
+            : 'scripty-block-edit-locked-project-' + projectId;
+        var blockEditLockedStored = localStorage.getItem(blockEditLockedKey);
+        if (blockEditLockedStored === null && editionId) {
+            blockEditLockedStored = localStorage.getItem('scripty-block-edit-locked-project-' + projectId);
+        }
+        var blockEditLocked = !canEditScript || blockEditLockedStored === 'true';
+        showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
+        showPins = showPins === null ? false : showPins !== 'false';
+        showSelect = showSelect === null ? false : showSelect !== 'false';
+        showElementLabels = showElementLabels === null ? false : showElementLabels !== 'false';
+        window.scriptyBlockEditLocked = blockEditLocked;
+        var root = document.documentElement;
+        root.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);
+        root.classList.toggle('scripty-hide-block-pins', !showPins);
+        root.classList.toggle('scripty-hide-block-select', !showSelect);
+        root.classList.toggle('scripty-hide-block-element-labels', !showElementLabels);
+        root.classList.toggle('scripty-block-edit-locked', blockEditLocked);
+        root.classList.toggle('scripty-script-readonly', !canEditScript);
+        try { localStorage.removeItem('scripty-toolbar-hidden'); } catch (e) {}
+        root.classList.remove('scripty-toolbar-hidden');
+        var wordCountHidden = localStorage.getItem('scripty-word-count-hidden') !== 'false';
+        root.classList.toggle('scripty-word-count-hidden', wordCountHidden);
+        var fullWidth = localStorage.getItem('scripty-screenplay-full-width') === 'true';
+        root.classList.toggle('scripty-screenplay-full-width', fullWidth);
+        var outlineMode = localStorage.getItem('scripty-outline-mode') === '1';
+        var pageViewMode = localStorage.getItem('scripty-page-view-mode') === '1';
+        if (pageViewMode && outlineMode) {
+            outlineMode = false;
+            localStorage.setItem('scripty-outline-mode', '0');
+        }
+        root.classList.toggle('scripty-outline-mode', outlineMode);
+        root.classList.toggle('scripty-page-view-mode', pageViewMode);
+    })();
+    </script>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title th:text="'Scripty - ' + (${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim()) ? 'Project' : viewModel.title})">Scripty - Project</title>
+    <meta property="og:title" th:content="${#strings.isEmpty(viewModel.title) || #strings.isEmpty(viewModel.title.trim()) ? 'Untitled Project' : viewModel.title}">
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true" class="has-toolbar-brand">
+    <div th:replace="~{fragments/nav :: nav('project')}"></div>
+    <aside class="top-bar project-top-bar hide-in-reader-view sidebar menu">
+        <div class="project-top-bar-breadcrumb">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}" hx-boost="false">Projects</a></li>
+                    <li th:replace="~{fragments/projectBreadcrumbName :: item(${viewModel.id}, ${viewModel.title})}"></li>
+                </ol>
+            </nav>
+            <div class="project-top-bar-actions">
+                <div class="nav-dropdown project-share-dropdown" id="project-share-dropdown">
+                    <button class="nav-dropdown-toggle project-share-toggle share-toolbar-btn"
+                            type="button"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            aria-label="Share project"
+                            title="Share project">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                        <span class="project-share-toggle-label">Share</span>
+                    </button>
+                    <div class="nav-dropdown-menu project-share-menu">
+                        <div th:replace="~{fragments/projectSharePanel :: panel(${viewModel.id}, ${shareAccessUsers}, ${viewModel.teams}, ${inviteTeams}, ${pendingInvitations}, ${inviteCommand}, ${viewInvitations}, ${viewInviteCommand})}"></div>
+                    </div>
+                </div>
+                <dialog id="script-edition-create-dialog" class="script-edition-dialog">
+                    <form th:if="${canEditScript == null or canEditScript}"
+                          th:action="@{/project/edition/create}" method="POST" hx-boost="false" class="script-edition-create-form">
+                        <h2>New screenplay version</h2>
+                        <p class="muted">Creates an editable copy of the current version. Songs, notes, and casting stay shared.</p>
+                        <input type="hidden" name="projectId" th:value="${viewModel.id}" />
+                        <input type="hidden" name="copyFromEditionId" th:value="${viewModel.editionId}" />
+                        <label>
+                            Name
+                            <input type="text" name="name" required maxlength="100" placeholder="e.g. Workshop Draft, Alt Ending" autofocus />
+                        </label>
+                        <div class="script-edition-dialog-actions">
+                            <button type="button" class="script-edition-dialog-cancel" value="cancel">Cancel</button>
+                            <button type="submit">Create version</button>
+                        </div>
+                    </form>
+                </dialog>
+            </div>
+        </div>
+        <div class="text-size-control"
+             th:if="${canEditScript != null and !canEditScript}">
+            <div class="project-script-stats project-script-stats--top-bar"
+                 id="project-script-stats"
+                 role="status"
+                 aria-live="polite"
+                 title="Word count and estimated pages (≈250 words/page)">
+                <span data-stat="words">0</span> words
+                <span class="project-script-stats-sep" aria-hidden="true">·</span>
+                ~<span data-stat="pages">0</span> pages
+            </div>
+        </div>
+    </aside>
+    <aside class="project-script-toolbar hide-in-reader-view sidebar menu">
+        <div class="project-toolbar-row project-tools-row">
+            <div class="project-toolbar-main">
+            <div class="project-tools-group" role="group" aria-label="Project tools">
+            <div class="nav-dropdown file-dropdown" id="project-file-dropdown">
+                <button id="nav-file"
+                        type="button"
+                        class="nav-dropdown-toggle file-toolbar-btn"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        th:aria-label="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}"
+                        th:title="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}">
+                    File
+                </button>
+                <div class="nav-dropdown-menu file-menu" role="menu" th:aria-label="${(canEditScript == null or canEditScript) ? 'Import, export, and print' : 'Export and print'}">
+                    <button id="nav-import"
+                            type="button"
+                            class="nav-dropdown-item"
+                            role="menuitem"
+                            th:if="${canEditScript == null or canEditScript}">Import</button>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/titlePage(id=${viewModel.id})}">Title page</a>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <div class="file-menu-label" aria-hidden="true">Export</div>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=pdf, editionId=${viewModel.editionId})}"
+                       hx-boost="false">PDF</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=docx, editionId=${viewModel.editionId})}"
+                       hx-boost="false">Word (.docx)</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=fdx, editionId=${viewModel.editionId})}"
+                       hx-boost="false">Final Draft (.fdx)</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=fountain, editionId=${viewModel.editionId})}"
+                       hx-boost="false">Fountain</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       title="Full project backup: title page, versions, characters, script, and documents"
+                       th:href="@{/project/export(id=${viewModel.id}, format=scripty)}"
+                       hx-boost="false">Project file (.scripty.json)</a>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <button id="nav-print"
+                            type="button"
+                            class="nav-dropdown-item"
+                            role="menuitem"
+                            onclick="window.print()">Print</button>
+                </div>
+            </div>
+            <form id="project-import-form"
+                  th:if="${canEditScript == null or canEditScript}"
+                  th:action="@{/project/import(id=${viewModel.id})}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  hx-boost="false"
+                  hidden>
+                <input type="hidden"
+                       name="editionId"
+                       th:if="${viewModel.editionId != null}"
+                       th:value="${viewModel.editionId}" />
+                <input type="file"
+                       id="project-import-file"
+                       name="file"
+                       accept=".fountain,.txt,.doc,.docx,.fdx,.pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml,application/pdf"
+                       aria-hidden="true"
+                       tabindex="-1" />
+            </form>
+            <span th:replace="~{fragments/historyToolbarButtons :: buttons}"></span>
+            <div class="nav-dropdown view-dropdown" id="project-view-dropdown">
+                <button id="nav-view"
+                        type="button"
+                        class="nav-dropdown-toggle view-toolbar-btn"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-label="View"
+                        title="View">
+                    View
+                </button>
+                <div class="nav-dropdown-menu view-menu" role="menu" aria-label="View">
+                    <button id="focus-toggle"
+                            type="button"
+                            class="nav-dropdown-item focus-toolbar-btn"
+                            role="menuitemcheckbox"
+                            aria-pressed="false"
+                            aria-checked="false"
+                            aria-label="Focus mode"
+                            title="Hide distractions while writing">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                        </svg>
+                        <span>Focus mode</span>
+                    </button>
+                    <button id="nav-full-width-toggle"
+                            type="button"
+                            class="nav-dropdown-item full-width-toolbar-btn"
+                            role="menuitemcheckbox"
+                            aria-pressed="false"
+                            aria-checked="false"
+                            aria-label="Use full page width"
+                            title="Use full page width">
+                        <svg class="full-width-icon full-width-icon--expand" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                        <svg class="full-width-icon full-width-icon--compress" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="4 14 10 14 10 20"></polyline>
+                            <polyline points="20 10 14 10 14 4"></polyline>
+                            <line x1="14" y1="10" x2="21" y2="3"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                        <span>Full width</span>
+                    </button>
+                    <button id="outline-mode-toggle"
+                            type="button"
+                            class="nav-dropdown-item outline-mode-toolbar-btn"
+                            role="menuitemcheckbox"
+                            aria-pressed="false"
+                            aria-checked="false"
+                            aria-label="Show only scenes, sections, and synopses"
+                            title="Show only scenes, sections, and synopses">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 6h16"></path>
+                            <path d="M4 12h10"></path>
+                            <path d="M4 18h6"></path>
+                        </svg>
+                        <span>Outline mode</span>
+                    </button>
+                    <button id="page-view-mode-toggle"
+                            type="button"
+                            class="nav-dropdown-item page-view-mode-toolbar-btn"
+                            role="menuitemcheckbox"
+                            aria-pressed="false"
+                            aria-checked="false"
+                            aria-label="View screenplay as pages"
+                            title="View screenplay as pages">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="5" y="3" width="14" height="18" rx="1.5"></rect>
+                            <line x1="8" y1="8" x2="16" y2="8"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                            <line x1="8" y1="16" x2="13" y2="16"></line>
+                        </svg>
+                        <span>Page view</span>
+                    </button>
+                    <div class="nav-dropdown lists-dropdown" id="project-lists-dropdown">
+                        <button id="nav-lists"
+                                type="button"
+                                class="nav-dropdown-item lists-toolbar-btn nav-dropdown-toggle"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                aria-label="Outline, characters, locations, and songs"
+                                title="Outline, characters, locations, and songs">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="8" y1="6" x2="21" y2="6"></line>
+                                <line x1="8" y1="12" x2="21" y2="12"></line>
+                                <line x1="8" y1="18" x2="21" y2="18"></line>
+                                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                            </svg>
+                            <span>Lists</span>
+                            <span class="lists-submenu-caret" aria-hidden="true">›</span>
+                        </button>
+                        <div class="nav-dropdown-menu lists-menu" role="menu" aria-label="Outline, characters, locations, and songs">
+                            <button id="nav-outline-toggle"
+                                    type="button"
+                                    class="nav-dropdown-item outline-toolbar-btn"
+                                    role="menuitem"
+                                    aria-pressed="false">Outline</button>
+                            <button id="nav-character-list-toggle"
+                                    type="button"
+                                    class="nav-dropdown-item character-list-toolbar-btn"
+                                    role="menuitem"
+                                    aria-pressed="false">Character list</button>
+                            <button id="nav-location-list-toggle"
+                                    type="button"
+                                    class="nav-dropdown-item location-list-toolbar-btn"
+                                    role="menuitem"
+                                    aria-pressed="false">Location list</button>
+                            <button id="nav-song-list-toggle"
+                                    type="button"
+                                    class="nav-dropdown-item song-list-toolbar-btn"
+                                    role="menuitem"
+                                    aria-pressed="false">Song list</button>
+                        </div>
+                    </div>
+                    <div class="view-menu-text-size" role="group" aria-label="Text size">
+                        <span class="view-menu-text-size-label">Text size</span>
+                        <span class="text-size-buttons">
+                            <button id="text-size-decrease" type="button" class="text-size-btn" aria-label="Decrease text size">A−</button>
+                            <button id="text-size-increase" type="button" class="text-size-btn" aria-label="Increase text size">A+</button>
+                        </span>
+                    </div>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <button id="nav-bookmarks-toggle"
+                            type="button"
+                            class="nav-dropdown-item bookmark-filter-toggle is-active"
+                            role="menuitemcheckbox"
+                            aria-pressed="true"
+                            aria-label="Show bookmark buttons in blocks"
+                            title="Show bookmark buttons in blocks">
+                        <span th:replace="~{fragments/bookmarkIcon :: toolbarIcon}"></span>
+                        <span>Bookmarks</span>
+                    </button>
+                    <button id="nav-pins-toggle"
+                            type="button"
+                            class="nav-dropdown-item pin-filter-toggle is-active"
+                            role="menuitemcheckbox"
+                            aria-pressed="true"
+                            aria-label="Show pin buttons in blocks"
+                            title="Show pin buttons in blocks">
+                        <span th:replace="~{fragments/pinIcon :: toolbarIcon}"></span>
+                        <span>Pins</span>
+                    </button>
+                    <button id="nav-select-toggle"
+                            type="button"
+                            class="nav-dropdown-item select-filter-toggle is-active"
+                            role="menuitemcheckbox"
+                            aria-pressed="true"
+                            aria-label="Show block controls"
+                            title="Show block controls">
+                        <span th:replace="~{fragments/selectIcon :: toolbarIcon}"></span>
+                        <span>Block controls</span>
+                    </button>
+                    <button id="nav-element-labels-toggle"
+                            type="button"
+                            class="nav-dropdown-item element-label-filter-toggle is-active"
+                            role="menuitemcheckbox"
+                            aria-pressed="true"
+                            aria-label="Show element labels in blocks"
+                            title="Show element labels in blocks">
+                        <span th:replace="~{fragments/elementLabelIcon :: toolbarIcon}"></span>
+                        <span>Element labels</span>
+                    </button>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/read(id=${viewModel.id}, editionId=${viewModel.editionId})}"
+                       hx-boost="false"
+                       title="Open a minimal read-only view (works with Safari Reader)">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        <span>Read Script</span>
+                    </a>
+                </div>
+            </div>
 
-        document.addEventListener('change', function(e) {
-            if (e.target && e.target.classList.contains('block-select-checkbox')) {
-                var selectAllCheckbox = document.getElementById('project-select-all-blocks');
-                if (selectAllCheckbox) {
-                    var checkboxes = document.querySelectorAll('.block-select-checkbox');
-                    var allChecked = checkboxes.length > 0;
-                    checkboxes.forEach(function(cb) {
-                        if (!cb.checked) allChecked = false;
-                    });
-                    selectAllCheckbox.checked = allChecked;
-                }
+            <div class="nav-dropdown tools-dropdown" id="project-tools-dropdown">
+                <button id="nav-tools"
+                        type="button"
+                        class="nav-dropdown-toggle tools-toolbar-btn"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-label="Tools"
+                        title="Tools">
+                    Tools
+                </button>
+                <div class="nav-dropdown-menu tools-menu" role="menu" aria-label="Tools">
+                    <button id="nav-word-count-toggle"
+                            type="button"
+                            class="nav-dropdown-item word-count-filter-toggle is-active"
+                            role="menuitemcheckbox"
+                            aria-pressed="true"
+                            aria-checked="false"
+                            aria-label="Show word count"
+                            title="Show word count">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 19V5"></path>
+                            <path d="M4 19h16"></path>
+                            <path d="M8 15V9"></path>
+                            <path d="M12 15v-3"></path>
+                            <path d="M16 15V7"></path>
+                        </svg>
+                        <span>Word count</span>
+                    </button>
+                    <th:block th:if="${canEditScript == null or canEditScript}">
+                        <button th:replace="~{fragments/spellcheckToggle :: menuItem}"></button>
+                    </th:block>
+                    <div class="nav-dropdown-divider" role="separator"></div>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
+                       th:href="@{/project/stats(id=${viewModel.id}, editionId=${viewModel.editionId})}"
+                       title="Scene, page, character, and location statistics">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                        <span>Script stats</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="text-format-actions hide-in-reader-view sidebar menu">
+                    <div class="nav-dropdown text-format-dropdown" id="project-text-format-dropdown">
+                        <button type="button"
+                                class="nav-dropdown-toggle text-format-toolbar-btn"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                aria-pressed="false"
+                                aria-label="Text format"
+                                title="Text format">
+                            Format
+                        </button>
+                        <div class="nav-dropdown-menu text-format-menu" role="menu" aria-label="Text format">
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-align-btn"
+                                    role="menuitemradio"
+                                    aria-checked="true"
+                                    data-bulk-align="LEFT"
+                                    title="Align left"
+                                    aria-label="Align left">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <line x1="3" y1="12" x2="15" y2="12"></line>
+                                    <line x1="3" y1="18" x2="18" y2="18"></line>
+                                </svg>
+                                <span>Left</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-align-btn"
+                                    role="menuitemradio"
+                                    aria-checked="false"
+                                    data-bulk-align="CENTER"
+                                    title="Align center"
+                                    aria-label="Align center">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <line x1="6" y1="12" x2="18" y2="12"></line>
+                                    <line x1="4" y1="18" x2="20" y2="18"></line>
+                                </svg>
+                                <span>Center</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-align-btn"
+                                    role="menuitemradio"
+                                    aria-checked="false"
+                                    data-bulk-align="RIGHT"
+                                    title="Align right"
+                                    aria-label="Align right">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <line x1="9" y1="12" x2="21" y2="12"></line>
+                                    <line x1="6" y1="18" x2="21" y2="18"></line>
+                                </svg>
+                                <span>Right</span>
+                            </button>
+                            <div class="nav-dropdown-separator" role="separator"></div>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-style-btn"
+                                    role="menuitemcheckbox"
+                                    aria-checked="false"
+                                    data-bulk-style="BOLD"
+                                    title="Toggle bold"
+                                    aria-label="Bold">
+                                <strong>B</strong>
+                                <span>Bold</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-style-btn"
+                                    role="menuitemcheckbox"
+                                    aria-checked="false"
+                                    data-bulk-style="ITALIC"
+                                    title="Toggle italic"
+                                    aria-label="Italic">
+                                <em>I</em>
+                                <span>Italic</span>
+                            </button>
+                            <button type="button"
+                                    class="nav-dropdown-item bulk-style-btn bulk-style-btn--underline"
+                                    role="menuitemcheckbox"
+                                    aria-checked="false"
+                                    data-bulk-style="UNDERLINE"
+                                    title="Toggle underline"
+                                    aria-label="Underline">
+                                <span class="text-style-menu-mark">U</span>
+                                <span>Underline</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            <div class="nav-dropdown script-edition-dropdown" id="script-edition-dropdown">
+                <button class="nav-dropdown-toggle script-edition-toggle"
+                        type="button"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        th:attr="data-edition-name=${viewModel.editionName != null ? viewModel.editionName : 'Main'}"
+                        th:aria-label="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}"
+                        th:title="'Screenplay version: ' + ${viewModel.editionName != null ? viewModel.editionName : 'Main'}">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="6" y1="3" x2="6" y2="15"></line>
+                        <circle cx="18" cy="6" r="3"></circle>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <path d="M18 9a9 9 0 0 1-9 9"></path>
+                    </svg>
+                    <span class="script-edition-toggle-label">Version</span>
+                    <svg class="script-edition-toggle-lock"
+                         viewBox="0 0 24 24"
+                         width="12"
+                         height="12"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         fill="currentColor"
+                         stroke-linecap="round"
+                         stroke-linejoin="round"
+                         aria-hidden="true">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="currentColor" stroke="currentColor"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none"></path>
+                    </svg>
+                    <svg class="script-edition-toggle-caret" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="nav-dropdown-menu script-edition-menu">
+                    <div class="script-edition-menu-label">Versions</div>
+                    <div th:if="${canEditScript == null or canEditScript}"
+                         class="script-edition-menu-hint muted"
+                         th:with="publishedEdition=${viewModel.editions.?[published].![name]}">
+                        <span th:if="${!#lists.isEmpty(publishedEdition)}">
+                            Team sees: <strong th:text="${publishedEdition[0]}">Main</strong>
+                        </span>
+                    </div>
+                    <div th:each="edition : ${viewModel.editions}"
+                         class="script-edition-row"
+                         th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'is-active'">
+                        <a class="nav-dropdown-item script-edition-switch"
+                           th:classappend="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'active'"
+                           th:href="@{/project/show(id=${viewModel.id}, editionId=${edition.id})}"
+                           hx-boost="false"
+                           th:text="${edition.name}">Main</a>
+                        <span class="script-edition-row-edited"
+                              th:if="${edition.lastEdited != null}"
+                              th:id="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'project-last-edited' : null"
+                              th:title="${#temporals.format(edition.lastEdited, 'MMM d, yyyy, h:mm a')}">
+                            <span th:replace="~{fragments/lastEditedTime :: relativeTime(${edition.lastEdited})}"></span>
+                        </span>
+                        <div class="controls-wrapper">
+                            <button th:if="${(canEditScript == null or canEditScript) and viewModel.editionId != null and viewModel.editionId == edition.id}"
+                                    id="nav-lock-toggle"
+                                    type="button"
+                                    class="nav-dropdown-item lock-filter-toggle script-edition-lock-toggle"
+                                    role="menuitemcheckbox"
+                                    aria-pressed="false"
+                                    aria-checked="false"
+                                    aria-label="Lock this version"
+                                    title="Lock this version">
+                                <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
+                            </button>
+                            <a class="nav-dropdown-item script-edition-history-toggle"
+                               th:id="${viewModel.editionId != null and viewModel.editionId == edition.id} ? 'nav-version-history' : null"
+                               role="menuitem"
+                               th:href="@{/project/version/list(projectId=${viewModel.id}, editionId=${edition.id})}"
+                               hx-boost="false"
+                               th:aria-label="'Snapshot history for ' + ${edition.name}"
+                               th:title="'Snapshot history for ' + ${edition.name}">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </a>
+                            <form th:if="${(canEditScript == null or canEditScript) and !edition.published}"
+                                  th:action="@{/project/edition/setPublished}"
+                                  method="POST"
+                                  hx-boost="false"
+                                  class="script-edition-publish-form">
+                                <input type="hidden" name="projectId" th:value="${viewModel.id}" />
+                                <input type="hidden" name="editionId" th:value="${edition.id}" />
+                                <button type="submit"
+                                        class="script-edition-publish-toggle"
+                                        th:aria-label="'Share ' + ${edition.name} + ' with the team'"
+                                        th:title="'Share with team — others will see this version'">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </form>
+                            <span th:if="${edition.published}"
+                                  class="script-edition-publish-toggle is-published"
+                                  aria-label="Shared with team"
+                                  title="Shared with team — this is the version others see">
+                                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
+                                </svg>
+                            </span>
+                            <form th:if="${(canEditScript == null or canEditScript) and !edition.default}"
+                                  th:action="@{/project/edition/setDefault}"
+                                  method="POST"
+                                  hx-boost="false"
+                                  class="script-edition-default-form">
+                                <input type="hidden" name="projectId" th:value="${viewModel.id}" />
+                                <input type="hidden" name="editionId" th:value="${edition.id}" />
+                                <button type="submit"
+                                        class="default-project-toggle script-edition-default-toggle"
+                                        th:aria-label="'Set ' + ${edition.name} + ' as default version'"
+                                        th:title="'Set as default version'">
+                                    <span class="icon-outline" aria-hidden="true">☆</span>
+                                    <span class="icon-filled" aria-hidden="true">★</span>
+                                </button>
+                            </form>
+                            <span th:if="${edition.default}"
+                                  class="default-project-toggle script-edition-default-toggle is-default"
+                                  aria-label="Default version"
+                                  title="Default version">
+                                <span class="icon-outline" aria-hidden="true">☆</span>
+                                <span class="icon-filled" aria-hidden="true">★</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="nav-dropdown-divider" th:if="${canEditScript == null or canEditScript}"></div>
+                    <button th:if="${canEditScript == null or canEditScript}"
+                            type="button"
+                            class="nav-dropdown-item script-edition-create-btn"
+                            id="script-edition-create-open">New version…</button>
+                </div>
+            </div>
+            <div class="nav-dropdown docs-dropdown" id="project-docs-dropdown">
+                <button id="nav-docs"
+                        type="button"
+                        class="nav-dropdown-toggle docs-toolbar-btn"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-label="Documents"
+                        title="Documents">
+                    Documents
+                    <svg class="script-edition-toggle-caret" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="nav-dropdown-menu docs-menu" role="menu" aria-label="Documents">
+                    <a class="nav-dropdown-item drafts-toolbar-btn"
+                       id="nav-drafts"
+                       th:href="@{/project/documents/notes(projectId=${viewModel.id})}"
+                       hx-boost="false"
+                       role="menuitem"
+                       title="Notes">
+                        Notes
+                    </a>
+                    <a class="nav-dropdown-item songs-toolbar-btn"
+                       id="nav-songs"
+                       th:href="@{/project/documents/songs(projectId=${viewModel.id})}"
+                       hx-boost="false"
+                       role="menuitem"
+                       title="Songs">
+                        Songs
+                    </a>
+                </div>
+            </div>
+            <div class="nav-dropdown element-type-dropdown hide-in-reader-view sidebar menu"
+                 id="project-element-type-dropdown"
+                 th:if="${canEditScript == null or canEditScript}">
+                <button id="nav-element-type"
+                        type="button"
+                        class="nav-dropdown-toggle element-type-toolbar-btn"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-label="Elements"
+                        title="Elements">
+                    <span class="element-type-toolbar-label">Elements</span>
+                </button>
+                <div class="nav-dropdown-menu element-type-menu element-type-actions"
+                     id="element-type-actions"
+                     role="menu"
+                     aria-label="Elements">
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="SCENE" title="Turn active or selected rows into scene headings">Scene</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="true" data-bulk-type="ACTION" title="Turn active or selected rows into action">Action</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="TEXT" title="Turn active or selected rows into plain text">Text</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="CHARACTER" title="Turn active or selected rows into character cues">Character</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="DIALOGUE" title="Turn active or selected rows into dialogue">Dialogue</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="DUAL_DIALOGUE" title="Turn active or selected rows into dual-dialogue character cues (Fountain ^)">Dual</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="PARENTHETICAL" title="Turn active or selected rows into parentheticals">(Paren)</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="TRANSITION" title="Turn active or selected rows into transitions">Transition</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="SHOT" title="Turn active or selected rows into shots">Shot</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="LYRICS" title="Turn active or selected rows into lyrics">Lyrics</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="CENTERED" title="Turn active or selected rows into centered text">Centered</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="SECTION" title="Turn active or selected rows into outline sections (non-printing)">Section</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="SYNOPSIS" title="Turn active or selected rows into synopses (non-printing)">Synopsis</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="NOTE" title="Turn active or selected rows into notes (non-printing)">Note</button>
+                    <button type="button" class="nav-dropdown-item bulk-type-btn" role="menuitemradio" aria-checked="false" data-bulk-type="PAGE_BREAK" title="Turn active or selected rows into page breaks">Page Break</button>
+                </div>
+            </div>
+            <div th:replace="~{fragments/projectBreadcrumbName :: search}"></div>
+            <div th:replace="~{fragments/nav :: helpDropdown('project')}"></div>
+            </div>
+            </div>
+            <div class="project-toolbar-right" th:if="${canEditScript == null or canEditScript}">
+                <div id="project-script-stats"
+                     class="project-script-stats"
+                     role="status"
+                     aria-live="polite"
+                     title="Word count and estimated pages (≈250 words/page)">
+                    <span data-stat="words">0</span> words
+                    <span class="project-script-stats-sep" aria-hidden="true">·</span>
+                    ~<span data-stat="pages">0</span> pages
+                </div>
+            </div>
+        </div>
+        <div class="project-toolbar-row project-bulk-row" th:if="${canEditScript == null or canEditScript}">
+            <div class="project-toolbar-main">
+                <div class="tags-bulk-action tags-bulk-action--compact block-bulk-actions" id="project-bulk-bar" hidden>
+                    <span class="bulk-selection-count" id="project-bulk-count">0 selected</span>
+                    <input type="text" id="project-bulk-tags-input" placeholder="Add tags…" aria-label="Tags to add to selected blocks" />
+                    <button type="button" id="project-bulk-add-tags-btn" title="Add tags to selected blocks">Tag</button>
+                    <button type="button" id="project-bulk-copy-btn" title="Copy selected block text">Copy</button>
+                    <button type="button" id="project-bulk-delete-btn" class="bad" title="Delete selected blocks">Delete</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+    <main role="main">
+        <div class="text-document-insert-banner hide-in-reader-view sidebar menu"
+             th:if="${scriptImportMessage != null}"
+             th:text="${scriptImportMessage}"
+             role="status"></div>
+        <div class="text-document-insert-banner hide-in-reader-view sidebar menu"
+             th:if="${documentInsertMessage != null}"
+             th:text="${documentInsertMessage}"
+             role="status"></div>
+        <article class="entry-content script-content project-script" role="article">
+            <div class="project-script-header">
+                <h1 class="project-header-title entry-title">
+                    <span class="project-header-name-wrap" id="project-header-name-wrap">
+                        <span th:replace="~{fragments/projectHeaderName :: display(${viewModel.id}, ${viewModel.title})}"></span>
+                    </span>
+                </h1>
+            </div>
+            <div th:replace="~{project/showScriptBody :: scriptBody(${viewModel})}"></div>
+        </article>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:src="@{/js/text-size.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/focus-mode.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/outline-mode.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/page-view-mode.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/full-width-toggle.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/toolbar-toggle.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/word-count-toggle.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/import-script.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/block-empty-guard.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/element-type.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/fountain-power.js(v=${assetVersion})}"></script>
+    <script th:inline="javascript">
+    if (window.scriptyCanEditScript !== false) {
+        document.querySelectorAll('.project-script .scene-blocks').forEach(function(sceneBlocks) {
+            if (window.scriptyInitBlockDragDrop) {
+                window.scriptyInitBlockDragDrop(sceneBlocks, { projectId: /*[[${viewModel.id}]]*/ '' });
             }
         });
-
-        document.body.addEventListener('htmx:afterOnLoad', function() {
-            var selectAllCheckbox = document.getElementById('project-select-all-blocks');
-            if (selectAllCheckbox) {
-                var checkboxes = document.querySelectorAll('.block-select-checkbox');
-                var allChecked = checkboxes.length > 0;
-                checkboxes.forEach(function(cb) {
-                    if (!cb.checked) allChecked = false;
-                });
-                selectAllCheckbox.checked = allChecked;
-            }
+    }
+    </script>
+    <script th:inline="javascript">
+    if (window.scriptyInitProjectPageScripts) {
+        window.scriptyInitProjectPageScripts();
+    }
+    </script>
+    <script th:inline="javascript">
+    if (window.scriptyInitProjectLiveSync) {
+        window.scriptyInitProjectLiveSync({
+            projectId: /*[[${viewModel.id}]]*/ 0,
+            revision: /*[[${syncRevision}]]*/ 0
         });
+    }
+    (function ensureBlockEmptyGuard() {
+        if (window.scriptyInstallBlockEmptyGuard) {
+            window.scriptyInstallBlockEmptyGuard();
+        }
+        function onScriptPageReady() {
+            if (!document.querySelector('.project-script')) return;
+            if (window.scriptyInstallBlockEmptyGuard) {
+                window.scriptyInstallBlockEmptyGuard();
+            }
+        }
+        document.body.addEventListener('htmx:afterSettle', onScriptPageReady);
+        document.body.addEventListener('htmx:afterSwap', onScriptPageReady);
     })();
     </script>
 </body>

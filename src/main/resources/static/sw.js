@@ -1,127 +1,219 @@
-const CACHE_NAME = 'scripty-cache-v2';
+const CACHE_NAME = 'scripty-cache-v91';
 const ASSETS_TO_CACHE = [
-  '/',
   '/offline.html',
+  '/offline-project.html',
+  '/css/missing.min.css',
   '/css/scripty.css',
+  '/js/htmx.min.js',
   '/js/_hyperscript.min.js',
+  '/js/shortcuts.js',
+  '/js/help-center.js',
+  '/js/csrf.js',
   '/js/text-size.js',
+  '/js/block-empty-guard.js',
+  '/js/element-type.js',
+  '/js/focus-mode.js',
+  '/js/outline-mode.js',
+  '/js/page-view-mode.js',
+  '/js/full-width-toggle.js',
+  '/js/toolbar-toggle.js',
+  '/js/project-search.js',
+  '/js/project-toolbar-dropdowns.js',
+  '/js/import-script.js',
+  '/js/fountain-power.js',
+  '/js/vendor/typo.js',
+  '/js/spellcheck.js',
+  '/js/offline-store.js',
+  '/js/offline.js',
+  '/js/offline-edit.js',
+  '/js/pwa-install.js',
+  '/js/passkeys.js',
+  '/dictionaries/en_US/en_US.aff',
+  '/dictionaries/en_US/en_US.dic',
   '/favicon.ico',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  '/manifest.json',
-  'https://unpkg.com/missing.css@1.1.3/dist/missing.min.css',
-  'https://unpkg.com/htmx.org@2.0.4'
+  '/icons/apple-touch-icon.png',
+  '/manifest.json'
 ];
 
-// On install, cache all static assets
+function isOnlineProbe(url) {
+  return url.searchParams.has('scripty-online-probe');
+}
+
+function isStaticAsset(url) {
+  return url.pathname.startsWith('/css/') ||
+    url.pathname.startsWith('/js/') ||
+    url.pathname.startsWith('/dictionaries/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname.startsWith('/fonts/') ||
+    url.pathname === '/favicon.ico' ||
+    url.pathname === '/manifest.json' ||
+    url.pathname === '/offline.html' ||
+    url.pathname === '/offline-project.html';
+}
+
+function isProjectShowNavigation(url, request) {
+  return request.mode === 'navigate' && url.pathname === '/project/show';
+}
+
+function bareAssetRequest(url) {
+  return new Request(url.origin + url.pathname, { credentials: 'same-origin' });
+}
+
+async function matchCached(request, options) {
+  const exact = await caches.match(request, options);
+  if (exact) {
+    return exact;
+  }
+  const url = new URL(request.url);
+  if (!url.search) {
+    return undefined;
+  }
+  // Pages request assets as /js/foo.js?v=N; precache stores /js/foo.js.
+  return caches.match(bareAssetRequest(url), options);
+}
+
+async function putInCache(request, response) {
+  if (!response || response.status !== 200) {
+    return;
+  }
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+  // Never put authenticated / private HTML into the Cache API.
+  if (!isStaticAsset(url)) {
+    return;
+  }
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(request, response.clone());
+  // Also store under the bare pathname so ignoreSearch / offline fallbacks work.
+  if (url.search) {
+    await cache.put(bareAssetRequest(url), response.clone());
+  }
+}
+
+async function navigationFallback(request) {
+  const url = new URL(request.url);
+  try {
+    return await fetch(request);
+  } catch (err) {
+    if (isProjectShowNavigation(url, request)) {
+      const projectShell = await caches.match('/offline-project.html');
+      if (projectShell) {
+        return projectShell;
+      }
+    }
+    const offlinePage = await caches.match('/offline.html');
+    if (offlinePage) {
+      return offlinePage;
+    }
+    throw err;
+  }
+}
+
+async function precacheAssets() {
+  const cache = await caches.open(CACHE_NAME);
+  await Promise.all(ASSETS_TO_CACHE.map(async (url) => {
+    try {
+      await cache.add(url);
+    } catch (err) {
+      console.warn('[Service Worker] Failed to pre-cache', url, err);
+    }
+  }));
+}
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+async function notifyClientsToSync() {
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  clients.forEach((client) => {
+    client.postMessage({ type: 'SCRIPTY_SYNC_OUTBOX' });
+  });
+}
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'scripty-sync-outbox') {
+    event.waitUntil(notifyClientsToSync());
+  }
+});
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Pre-caching static assets');
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => {
-      return self.skipWaiting();
-    })
+    precacheAssets().then(() => self.skipWaiting())
   );
 });
 
-// On activate, clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            console.log('[Service Worker] Removing old cache', cache);
-            return caches.delete(cache);
-          }
-        })
-      );
-    }).then(() => {
-      return self.clients.claim();
-    })
+    caches.keys().then((cacheNames) => Promise.all(
+      cacheNames.map((cache) => {
+        if (cache !== CACHE_NAME) {
+          console.log('[Service Worker] Removing old cache', cache);
+          return caches.delete(cache);
+        }
+        return undefined;
+      })
+    )).then(() => self.clients.claim())
   );
 });
 
-// On fetch, handle routing and fallbacks
 self.addEventListener('fetch', (event) => {
-  // Only intercept GET requests
-  if (event.request.method !== 'GET') return;
+  if (event.request.method !== 'GET') {
+    return;
+  }
 
   const url = new URL(event.request.url);
 
-  // Skip caching for H2 console or API endpoints that shouldn't be cached
-  if (url.pathname.startsWith('/h2-console') || url.pathname.startsWith('/api/')) {
+  // Connectivity probes must hit the network; never serve from cache.
+  if (isOnlineProbe(url)) {
+    event.respondWith(
+      fetch(event.request).catch(() => new Response('', { status: 503, statusText: 'Offline' }))
+    );
     return;
   }
 
-  // Strategy for HTML page navigations (pages): Network-First, fall back to offline.html
+  // Navigations: network only; on failure serve public offline shells (never cache HTML).
   if (event.request.mode === 'navigate') {
+    event.respondWith(navigationFallback(event.request));
+    return;
+  }
+
+  if (!isStaticAsset(url)) {
+    return;
+  }
+
+  if (url.pathname.startsWith('/css/') || url.pathname.startsWith('/js/') || url.pathname.startsWith('/dictionaries/')) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // If we got a valid response, clone and cache it for offline reading
-          if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          }
+          putInCache(event.request, response);
           return response;
         })
-        .catch(() => {
-          // If network fetch fails, attempt to get it from cache or return offline.html
-          return caches.match(event.request)
-            .then((cachedResponse) => {
-              return cachedResponse || caches.match('/offline.html');
-            });
-        })
+        .catch(() => matchCached(event.request, { ignoreSearch: true }))
     );
     return;
   }
 
-  // Cache-First only for content that can't go stale: images, fonts, and
-  // version-pinned CDN assets. Everything else (CSS, JS, htmx partials)
-  // must be Network-First or edits never reach the browser.
-  const isImmutable = ['image', 'font'].includes(event.request.destination)
-    || url.origin !== self.location.origin;
-
-  if (isImmutable) {
-    event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          }
-          return networkResponse;
-        }).catch(() => {
-          if (event.request.destination === 'image') {
-            return caches.match('/icons/icon-192.png');
-          }
-        });
-      })
-    );
-    return;
-  }
-
-  // Strategy for CSS, JS, and htmx partial GETs: Network-First, cache as offline fallback
   event.respondWith(
-    fetch(event.request).then((networkResponse) => {
-      if (networkResponse && networkResponse.status === 200) {
-        const responseClone = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
-        });
+    matchCached(event.request, { ignoreSearch: true }).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
       }
-      return networkResponse;
-    }).catch(() => {
-      return caches.match(event.request);
+      return fetch(event.request).then((networkResponse) => {
+        putInCache(event.request, networkResponse);
+        return networkResponse;
+      }).catch(() => {
+        if (event.request.destination === 'image') {
+          return caches.match('/icons/icon-192.png');
+        }
+        return undefined;
+      });
     })
   );
 });

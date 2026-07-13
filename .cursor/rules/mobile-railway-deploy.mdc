@@ -1,0 +1,13 @@
+---
+description: Land Cursor mobile (cursor/*) changes on main so Railway deploys
+alwaysApply: true
+syncSource: agents
+---
+
+# Mobile Cursor → Railway
+
+- Production deploys only from **`main`** (GitHub Actions → Railway + Cloudflare). Cursor Mobile cloud agents work on **`cursor/*`** branches — those are not live until they land on `main`.
+- Push to `cursor/*` with no PR → CI opens PR, verifies, and ships. Existing PR → verify → auto-ship. Deploy uses skip_verify. Skip auto-ship with PR labels `hold` or `no-ship`.
+- If the user asks to deploy mobile changes and auto-ship stalled: `./scripts/ship-mobile-changes.sh` then prefer `--ensure-pr` (CI ships) over `--apply` (local cherry-pick). Use `--prune` for stale remote `cursor/*` branches.
+- Never claim a change is on Railway while it only exists on a `cursor/*` branch or open draft PR.
+- When shipping CSS/JS/static UI fixes, bump asset / service-worker cache versions so clients pick up the new build.

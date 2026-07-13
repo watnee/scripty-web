@@ -1,0 +1,21 @@
+<p xmlns:th="http://www.thymeleaf.org"
+   th:fragment="characterName(block)"
+   th:if="${block != null and not #strings.isEmpty(block.personName) and block.type != 'CHARACTER' and block.type != 'DUAL_DIALOGUE'}"
+   class="script-character-name">
+    <strong class="reader-visible-character-name" th:text="${#strings.toUpperCase(block.personName)}"></strong>
+    <a th:href="@{/character/show(id=${block.personId})}"
+       th:attr="hx-get=@{/block/editCharacterNameInline(id=${block.id})},aria-label=|Edit character name: ${block.personName}|"
+       hx-trigger="click"
+       hx-target="closest .script-character-name"
+       hx-swap="outerHTML"
+       hx-boost="false"
+       class="character-name hide-in-reader-view sidebar menu"
+       title="Edit character name"></a>
+</p>
+<input xmlns:th="http://www.thymeleaf.org"
+       th:if="${updateInlinePersonInput == true}"
+       type="hidden"
+       name="personId"
+       th:id="'block-person-id-' + ${block.id}"
+       th:value="${block.personId}"
+       hx-swap-oob="true" />

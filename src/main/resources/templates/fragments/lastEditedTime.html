@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<span th:fragment="relativeTime(timestamp)"
+      class="last-edited-time"
+      th:attr="data-timestamp=${#temporals.format(timestamp, 'yyyy-MM-dd''T''HH:mm:ss')}"
+      th:text="${#temporals.format(timestamp, 'MMM d, yyyy')}"></span>
+</body>
+</html>

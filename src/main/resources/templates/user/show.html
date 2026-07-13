@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - User Profile</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('users')}"></div>
+    <main class="user-profile-page">
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li><a th:href="@{/user/list}">Users</a></li>
+                <li aria-current="page" th:text="${viewModel.username}"></li>
+            </ol>
+        </nav>
+
+        <div class="user-profile-header">
+            <div class="user-profile-header-main">
+                <div class="user-avatar user-avatar--profile" aria-hidden="true">
+                    <span th:text="${#strings.substring(viewModel.firstName, 0, 1)}"></span>
+                </div>
+                <div class="user-profile-header-text">
+                    <h1 th:text="${viewModel.firstName} + ' ' + ${viewModel.lastName}"></h1>
+                    <p class="user-profile-username muted" th:text="'@' + ${viewModel.username}"></p>
+                </div>
+            </div>
+            <div class="user-profile-actions">
+                <a th:href="@{/user/edit(id=${viewModel.id})}" role="button">Edit</a>
+                <a th:if="${viewModel.username != currentUserId}"
+                   th:href="@{/user/delete(id=${viewModel.id})}"
+                   role="button"
+                   class="bad"
+                   hx-boost="false"
+                   _="on click if not confirm('Are you sure you want to delete this user?') halt">Delete</a>
+            </div>
+        </div>
+
+        <div class="user-profile-grid">
+            <section class="user-profile-card">
+                <h2>Account</h2>
+                <dl class="user-profile-details">
+                    <div>
+                        <dt>Username</dt>
+                        <dd th:text="${viewModel.username}"></dd>
+                    </div>
+                    <div>
+                        <dt>Status</dt>
+                        <dd>
+                            <span class="user-list-status"
+                                  th:classappend="${viewModel.enabled} ? ' user-list-status--enabled' : ' user-list-status--disabled'"
+                                  th:text="${viewModel.enabled} ? 'Enabled' : 'Disabled'"></span>
+                        </dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="user-profile-card">
+                <h2>Profile</h2>
+                <dl class="user-profile-details">
+                    <div>
+                        <dt>First name</dt>
+                        <dd th:text="${viewModel.firstName}"></dd>
+                    </div>
+                    <div>
+                        <dt>Last name</dt>
+                        <dd th:text="${viewModel.lastName}"></dd>
+                    </div>
+                    <div>
+                        <dt>Team</dt>
+                        <dd th:text="${viewModel.team != null and !#strings.isEmpty(viewModel.team) ? viewModel.team : '—'}"></dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="user-profile-card user-profile-card--roles">
+                <h2>Roles</h2>
+                <div class="user-list-roles" th:if="${viewModel.admin or viewModel.director or viewModel.producer or viewModel.writer or viewModel.actor or viewModel.crew or viewModel.directorOfPhotography or viewModel.castingDirector or viewModel.viewCasting or viewModel.developer}">
+                    <span class="user-role-chip" th:if="${viewModel.admin}">Admin</span>
+                    <span class="user-role-chip" th:if="${viewModel.director}">Director</span>
+                    <span class="user-role-chip" th:if="${viewModel.producer}">Producer</span>
+                    <span class="user-role-chip" th:if="${viewModel.writer}">Writer</span>
+                    <span class="user-role-chip" th:if="${viewModel.actor}">Actor</span>
+                    <span class="user-role-chip" th:if="${viewModel.crew}">Crew</span>
+                    <span class="user-role-chip" th:if="${viewModel.directorOfPhotography}">Director of Photography</span>
+                    <span class="user-role-chip" th:if="${viewModel.castingDirector}">Casting Director</span>
+                    <span class="user-role-chip" th:if="${viewModel.viewCasting}">Can view casting</span>
+                    <span class="user-role-chip" th:if="${viewModel.developer}">Developer</span>
+                </div>
+                <p class="muted user-profile-empty"
+                   th:unless="${viewModel.admin or viewModel.director or viewModel.producer or viewModel.writer or viewModel.actor or viewModel.crew or viewModel.directorOfPhotography or viewModel.castingDirector or viewModel.viewCasting or viewModel.developer}">
+                    No roles assigned.
+                </p>
+            </section>
+
+            <section class="user-profile-card user-profile-card--access">
+                <h2>Access</h2>
+                <dl class="user-profile-details">
+                    <div>
+                        <dt>Screenplay</dt>
+                        <dd>
+                            <span class="access-permission-chip"
+                                  th:classappend="${viewModel.canEditScreenplay} ? ' access-permission-chip--edit' : ' access-permission-chip--view'"
+                                  th:text="${viewModel.canEditScreenplay} ? 'Can edit' : 'View only'">View only</span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>Casting</dt>
+                        <dd th:text="${viewModel.canViewCastingPages} ? 'Yes' : 'No'">No</dd>
+                    </div>
+                </dl>
+                <p class="muted user-profile-access-note"
+                   th:if="${viewModel.enabled and viewModel.privilegedProjectAccess}">
+                    Privileged role — all projects
+                </p>
+                <p class="muted user-profile-empty"
+                   th:if="${!viewModel.enabled}">
+                    Account is disabled — no project access.
+                </p>
+                <div th:if="${viewModel.enabled}">
+                    <h3 class="user-profile-access-subtitle">Projects</h3>
+                    <ul class="user-profile-access-list"
+                        th:if="${!#lists.isEmpty(viewModel.projectAccess)}">
+                        <li th:each="project : ${viewModel.projectAccess}" class="user-profile-access-item">
+                            <span class="user-profile-access-item-main">
+                                <a th:href="@{/project/show(id=${project.projectId})}"
+                                   th:text="${project.projectName}"
+                                   hx-boost="false">Project</a>
+                                <span class="muted user-profile-access-reason"
+                                      th:text="${project.accessReason}">Team</span>
+                            </span>
+                            <span class="access-permission-chip"
+                                  th:classappend="${project.canEdit} ? ' access-permission-chip--edit' : ' access-permission-chip--view'"
+                                  th:text="${project.permissionLabel}">View only</span>
+                        </li>
+                    </ul>
+                    <p class="muted user-profile-empty"
+                       th:if="${#lists.isEmpty(viewModel.projectAccess)}">
+                        No projects accessible.
+                    </p>
+                </div>
+            </section>
+        </div>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

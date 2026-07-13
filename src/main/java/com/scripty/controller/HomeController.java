@@ -27,8 +27,12 @@ public class HomeController {
     public String index(Principal principal) {
         if (principal != null) {
             User currentUser = userService.readByUsername(principal.getName());
-            if (currentUser != null && currentUser.getDefaultProjectId() != null) {
-                return "redirect:/project/show?id=" + currentUser.getDefaultProjectId();
+            if (currentUser != null) {
+                if (currentUser.getDefaultProjectId() != null) {
+                    return "redirect:/project/show?id=" + currentUser.getDefaultProjectId();
+                } else {
+                    return "redirect:/project/list";
+                }
             }
         }
         return "index";
@@ -37,6 +41,11 @@ public class HomeController {
     @RequestMapping(value = "/help", method = RequestMethod.GET)
     public String help() {
         return "help";
+    }
+
+    @RequestMapping(value = "/shortcuts", method = RequestMethod.GET)
+    public String shortcuts() {
+        return "shortcuts";
     }
     
 }

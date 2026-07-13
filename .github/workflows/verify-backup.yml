@@ -1,0 +1,76 @@
+# Weekly verification of the newest MySQL dump in Cloudflare R2
+#
+# CI fallback for the Monday backup-verification routine: fails (and emails)
+# even if the routine's host machine is asleep. Needs only the CLOUDFLARE_*
+# secrets — no database credentials.
+#
+# See docs/BACKUP.md ("Verification") and docs/ROUTINES.md.
+
+name: Verify backup
+
+on:
+  schedule:
+    # 09:00 UTC Monday — 2h after that morning's 07:00 UTC backup
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: verify-backup
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify newest R2 dump
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify newest backup
+        id: verify
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          chmod +x scripts/verify-backup.sh
+          ./scripts/verify-backup.sh
+
+      - name: Summarize
+        if: always()
+        env:
+          VERIFY_HEALTHY: ${{ steps.verify.outputs.healthy }}
+          VERIFY_OBJECT: ${{ steps.verify.outputs.object_key }}
+          VERIFY_SIZE: ${{ steps.verify.outputs.size_bytes }}
+          VERIFY_AGE: ${{ steps.verify.outputs.age_hours }}
+        run: |
+          {
+            echo "## Verify backup"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Event | \`${{ github.event_name }}\` |"
+            echo "| Result | ${{ job.status }} |"
+            if [ -n "${VERIFY_OBJECT}" ]; then
+              echo "| Newest object | \`${VERIFY_OBJECT}\` |"
+              echo "| Size | ${VERIFY_SIZE} bytes |"
+              echo "| Age | ${VERIFY_AGE} hours |"
+              echo "| Healthy | ${VERIFY_HEALTHY} |"
+            fi
+            echo ""
+            echo "See [docs/BACKUP.md](../blob/main/docs/BACKUP.md) for what is checked and how to restore."
+          } >> "$GITHUB_STEP_SUMMARY"

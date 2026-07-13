@@ -1,7 +1,11 @@
 package com.scripty.controller;
 
+import com.scripty.dto.ScriptEdition;
+import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ProjectVersionService;
+import com.scripty.service.ScriptEditionService;
 import com.scripty.viewmodel.project.versionhistory.VersionHistoryViewModel;
+import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,32 +20,82 @@ public class ProjectVersionController {
     @Autowired
     ProjectVersionService projectVersionService;
 
+    @Autowired
+    ScriptEditionService scriptEditionService;
+
+    @Autowired
+    ProjectAccessSupport projectAccess;
+
     @RequestMapping(value = "/list")
-    public String list(@RequestParam Integer projectId, Model model) {
-        VersionHistoryViewModel viewModel = projectVersionService.getVersionHistoryViewModel(projectId);
+    public String list(@RequestParam Integer projectId,
+                       @RequestParam(required = false) Integer editionId,
+                       Model model,
+                       Principal principal) {
+        if (!projectAccess.canAccessProject(projectId, principal)) {
+            return "redirect:/project/list";
+        }
+        boolean canEditScript = projectAccess.canEditScript(projectId, principal);
+        Integer resolvedEditionId = editionId;
+        if (!canEditScript) {
+            ScriptEdition published = scriptEditionService.resolveForAccess(projectId, editionId, false);
+            resolvedEditionId = published != null ? published.getId() : null;
+        }
+        VersionHistoryViewModel viewModel = projectVersionService.getVersionHistoryViewModel(projectId, resolvedEditionId);
         model.addAttribute("viewModel", viewModel);
+        model.addAttribute("canEditScript", canEditScript);
         return "project/versionHistory";
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public String create(@RequestParam Integer projectId,
-                         @RequestParam(defaultValue = "") String label) {
+                         @RequestParam(required = false) Integer editionId,
+                         @RequestParam(defaultValue = "") String label,
+                         Principal principal) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return "redirect:/project/list";
+        }
         if (label == null || label.isBlank()) {
             label = "Version";
         }
-        projectVersionService.createVersion(projectId, label);
-        return "redirect:/project/version/list?projectId=" + projectId;
+        projectVersionService.createVersion(projectId, editionId, label);
+        String redirect = "redirect:/project/version/list?projectId=" + projectId;
+        if (editionId != null) {
+            redirect += "&editionId=" + editionId;
+        }
+        return redirect;
     }
 
     @RequestMapping(value = "/restore", method = RequestMethod.POST)
-    public String restore(@RequestParam Integer id, @RequestParam Integer projectId) {
-        projectVersionService.restoreVersion(id);
-        return "redirect:/project/show?id=" + projectId;
+    public String restore(@RequestParam Integer id, @RequestParam Integer projectId,
+                          @RequestParam(required = false) Integer editionId,
+                          Principal principal) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return "redirect:/project/list";
+        }
+        if (!projectVersionService.restoreVersionForProject(id, projectId)) {
+            return "redirect:/project/list";
+        }
+        String redirect = "redirect:/project/show?id=" + projectId;
+        if (editionId != null) {
+            redirect += "&editionId=" + editionId;
+        }
+        return redirect;
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String delete(@RequestParam Integer id, @RequestParam Integer projectId) {
-        projectVersionService.deleteVersion(id);
-        return "redirect:/project/version/list?projectId=" + projectId;
+    public String delete(@RequestParam Integer id, @RequestParam Integer projectId,
+                         @RequestParam(required = false) Integer editionId,
+                         Principal principal) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return "redirect:/project/list";
+        }
+        if (!projectVersionService.deleteVersionForProject(id, projectId)) {
+            return "redirect:/project/list";
+        }
+        String redirect = "redirect:/project/version/list?projectId=" + projectId;
+        if (editionId != null) {
+            redirect += "&editionId=" + editionId;
+        }
+        return redirect;
     }
 }

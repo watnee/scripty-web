@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title th:text="${isNew} ? (${isSong} ? 'Scripty - New Song' : 'Scripty - New Note') : ('Scripty - ' + ${commandModel.title})">Scripty - Document</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main class="text-documents-page text-document-edit-page"
+          th:classappend="${isSong} ? ' text-document-edit-page--song' : ' text-document-edit-page--draft'">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/show(id=${projectId})}" th:text="${projectTitle}">Project</a></li>
+                    <li>
+                        <a th:href="@{${listPath}(projectId=${projectId})}"
+                           th:text="${isSong} ? 'Songs' : 'Notes'">Documents</a>
+                    </li>
+                    <li aria-current="page" class="text-document-breadcrumb-title">
+                        <label class="text-document-breadcrumb-title-label">
+                            <span class="visually-hidden"
+                                  th:text="${isSong} ? 'Song Title' : 'Note Title'">Title</span>
+                            <input type="text"
+                                   id="title"
+                                   name="title"
+                                   form="text-document-form"
+                                   class="text-document-breadcrumb-title-input auto-grow"
+                                   th:value="${commandModel.title}"
+                                   th:placeholder="${isNew} ? (${isSong} ? 'New Song' : 'New Note') : (${isSong} ? 'Song title' : 'Note title')"
+                                   th:attr="aria-label=${isSong} ? 'Song Title' : 'Note Title'"
+                                   autocomplete="off"
+                                   spellcheck="true"
+                                   maxlength="200"
+                                   required />
+                        </label>
+                    </li>
+                </ol>
+            </nav>
+            <div class="text-document-top-bar-actions">
+                <div class="spellcheck-toggle-container" th:if="${isSong}">
+                    <button id="nav-spellcheck-toggle"
+                            type="button"
+                            class="spellcheck-toggle-btn"
+                            role="menuitemcheckbox"
+                            aria-pressed="true"
+                            aria-checked="true"
+                            aria-label="Spellcheck"
+                            title="Spellcheck"
+                            onclick="window.toggleSpellcheck()">
+                        <svg class="spellcheck-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m6 16 6-12 6 12"></path>
+                            <path d="M8 12h8"></path>
+                            <path d="m16 20 2 2 4-4" class="spellcheck-check"></path>
+                            <line x1="3" y1="3" x2="21" y2="21" class="spellcheck-slash" stroke="var(--bad-fg-color, #e11d48)" stroke-width="2"></line>
+                        </svg>
+                    </button>
+                </div>
+                <details class="text-document-about">
+                    <summary class="text-document-about-toggle"
+                             title="How this works"
+                             aria-label="How this works">
+                        <svg class="text-document-about-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </summary>
+                    <p class="muted text-document-about-text"
+                       th:text="${isSong} ? 'Write lyrics freely. Each line becomes a Lyrics block when inserted. Edits auto-save and update places already in the screenplay.' : 'Write freely. Each line becomes a Note block when inserted. Edits auto-save and update places already in the screenplay.'">
+                        Write freely here.
+                    </p>
+                </details>
+            </div>
+        </div>
+
+        <p class="text-document-import-banner"
+           th:if="${documentImportMessage != null}"
+           th:text="${documentImportMessage}"
+           role="status"></p>
+
+        <form th:action="@{/project/documents/save}"
+              method="post"
+              th:object="${commandModel}"
+              class="text-document-form"
+              id="text-document-form"
+              hx-boost="false"
+              onsubmit="return false;">
+            <input type="hidden" th:field="*{id}" />
+            <input type="hidden" th:field="*{projectId}" />
+            <input type="hidden" th:field="*{documentType}" />
+
+            <div class="text-document-editor-shell">
+                <label class="text-document-content-label">
+                    <span class="visually-hidden"
+                          th:text="${isSong} ? 'Lyrics' : 'Content'">Content</span>
+                    <textarea th:field="*{content}"
+                              id="text-document-content"
+                              class="text-document-content"
+                              rows="18"
+                              th:attr="aria-label=${isSong} ? 'Lyrics' : 'Content'"
+                              th:placeholder="${isSong} ? 'Write your song lyrics here…&#10;&#10;Each line will become a Lyrics block when inserted.' : 'Write notes or scratch text here…&#10;&#10;Each line will become a Note block when inserted.'"
+                              autocomplete="off"
+                              spellcheck="true"></textarea>
+                </label>
+            </div>
+
+            <div class="text-document-meta-bar">
+                <span id="text-document-last-edited" class="text-document-last-edited muted" th:style="${updatedAt == null} ? 'display: none;' : ''">
+                    Last edited <span class="last-edited-time"
+                                      th:attr="data-timestamp=${updatedAt != null ? #temporals.format(updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}"
+                                      th:text="${updatedAt != null ? #temporals.format(updatedAt, 'MMM d, yyyy') : ''}"></span>
+                </span>
+                <span id="text-document-save-status"
+                      class="text-document-save-status muted"
+                      role="status"
+                      aria-live="polite"
+                      hidden></span>
+            </div>
+        </form>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:src="@{/js/text-document-edit.js(v=${assetVersion})}"></script>
+</body>
+</html>

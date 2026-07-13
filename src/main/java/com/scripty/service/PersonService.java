@@ -25,5 +25,7 @@ public interface PersonService {
     Person saveCreatePersonCommandModel(CreatePersonCommandModel createPersonCommandModel);
     Person saveEditPersonCommandModel(EditPersonCommandModel editPersonCommandModel);
 
+    Person assignActorToCharacter(Integer characterId, Integer actorId);
+
     Person deletePerson(Integer id);
 }

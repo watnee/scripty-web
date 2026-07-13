@@ -1,0 +1,21 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="createInlineRow (projectId)" class="block-row" data-block-type="ACTION">
+    <span class="block-element-label hide-in-reader-view sidebar menu"
+          data-block-type="ACTION"
+          title="Fountain element type">Action</span>
+    <aside class="block-left-controls hide-in-reader-view sidebar menu">
+        <div class="block-left-controls-inner">
+            <input type="checkbox" class="block-select-checkbox" title="Selection available after saving block" aria-label="Selection available after saving block" />
+            <th:block th:replace="~{fragments/createBelowMenu :: button}"></th:block>
+            <th:block th:replace="~{fragments/blockDragMenu :: handle(false, false, false)}"></th:block>
+        </div>
+    </aside>
+    <div class="block-content script-block block-type-action script-block--action">
+        <form th:attr="hx-post=@{/block/createInline(surface='project')}" hx-target="closest .block-row" hx-swap="outerHTML" hx-trigger="createNext">
+            <input type="hidden" name="projectId" th:value="${projectId}" />
+            <input type="hidden" name="surface" value="project" />
+            <input type="hidden" name="type" value="ACTION" />
+            <textarea spellcheck="true" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();event.stopPropagation();if(window.scriptyCreateBlockFromCreateRow){window.scriptyCreateBlockFromCreateRow(this);}return false;}"></textarea>
+        </form>
+    </div>
+    <aside class="block-actions hide-in-reader-view sidebar menu"></aside>
+</div>

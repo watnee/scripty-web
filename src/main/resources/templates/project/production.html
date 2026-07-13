@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title th:text="'Scripty - Production - ' + ${viewModel.title}">Scripty - Production</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('projects')}"></div>
+    <main class="production-page">
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li><a th:href="@{/project/list}">Projects</a></li>
+                <li><a th:href="@{/project/show(id=${viewModel.id})}" th:text="${viewModel.title}"></a></li>
+                <li aria-current="page">Production</li>
+            </ol>
+        </nav>
+
+        <div class="production-header">
+            <div class="production-header-text">
+                <h1 th:text="${viewModel.title}"></h1>
+                <p class="muted production-subtitle">Production hub for this project.</p>
+                <div class="production-meta">
+                    <span class="project-list-last-edited" th:if="${viewModel.lastEdited != null}">
+                        Last edited <span th:replace="~{fragments/lastEditedTime :: relativeTime(${viewModel.lastEdited})}"></span>
+                    </span>
+                    <span class="production-meta-stat" th:if="${viewModel.scenes != null and !viewModel.scenes.isEmpty() and viewModel.scenes[0].blocks != null}">
+                        <span th:text="${#lists.size(viewModel.scenes[0].blocks)}"></span>
+                        <span th:text="${#lists.size(viewModel.scenes[0].blocks) == 1} ? ' block' : ' blocks'"></span>
+                    </span>
+                </div>
+            </div>
+            <a th:href="@{/project/show(id=${viewModel.id})}" role="button" class="production-open-script-btn">Open Script</a>
+        </div>
+
+        <section class="production-team-section actor-profile-card">
+            <div class="production-team-header">
+                <h2>Teams</h2>
+                <a th:href="@{/team/list}" class="production-team-manage-link">All teams</a>
+            </div>
+            <p class="muted production-team-empty" th:if="${#lists.isEmpty(teams)}">
+                No teams yet. Create a team to share this production with collaborators.
+            </p>
+            <form th:action="@{/project/production/teams}"
+                  method="post"
+                  class="production-team-form"
+                  hx-boost="false"
+                  th:if="${!#lists.isEmpty(teams)}">
+                <input type="hidden" name="id" th:value="${viewModel.id}" />
+                <span class="production-team-label-text">Assigned teams</span>
+                <div class="production-team-options">
+                    <label th:each="team : ${teams}" class="production-team-option">
+                        <input type="checkbox"
+                               name="teamIds"
+                               th:value="${team.id}"
+                               th:checked="${assignedTeamIds.contains(team.id)}" />
+                        <span th:text="${team.name}"></span>
+                    </label>
+                </div>
+                <button type="submit" class="production-team-save">Save teams</button>
+            </form>
+            <div class="production-team-actions">
+                <a th:href="@{/team/create}" role="button" class="production-team-create-btn">Create Team</a>
+            </div>
+            <div th:replace="~{fragments/projectSharePanel :: inviteForm(${viewModel.id}, ${inviteTeams}, ${inviteCommand}, 'production')}"></div>
+            <div th:replace="~{fragments/projectSharePanel :: pendingList(${viewModel.id}, ${pendingInvitations}, 'production')}"></div>
+            <div th:replace="~{fragments/projectSharePanel :: accessList(${shareAccessUsers}, ${viewModel.teams})}"></div>
+            <div class="production-team-productions" th:if="${!#lists.isEmpty(viewModel.teams)}">
+                <span class="production-team-productions-label">Related productions</span>
+                <div class="production-team-production-links" th:if="${!#lists.isEmpty(teamProductions)}">
+                    <a th:each="production : ${teamProductions}"
+                       th:href="@{/project/production(id=${production.id})}"
+                       class="production-team-production-link"
+                       th:text="${production.title}"></a>
+                </div>
+                <p class="muted production-team-productions-empty" th:if="${#lists.isEmpty(teamProductions)}">
+                    No other productions share a team with this project yet.
+                </p>
+            </div>
+        </section>
+
+        <section class="production-activity-section actor-profile-card">
+            <div class="production-activity-header">
+                <h2>Recent activity</h2>
+            </div>
+            <p class="muted production-activity-empty" th:if="${#lists.isEmpty(recentActivity)}">
+                No activity yet.
+            </p>
+            <ul class="production-activity-list" th:if="${!#lists.isEmpty(recentActivity)}">
+                <li class="production-activity-item" th:each="activity : ${recentActivity}">
+                    <div class="production-activity-body">
+                        <span class="production-activity-actor" th:text="${activity.actorDisplayName}">Someone</span>
+                        <span class="production-activity-summary" th:text="${activity.summary}">edited the script</span>
+                    </div>
+                    <span class="production-activity-time muted"
+                          th:if="${activity.createdAt != null}">
+                        <span th:replace="~{fragments/lastEditedTime :: relativeTime(${activity.createdAt})}"></span>
+                    </span>
+                </li>
+            </ul>
+        </section>
+
+        <div class="help-card-grid production-card-grid">
+            <a th:href="@{/project/show(id=${viewModel.id}, editionId=${viewModel.editionId})}" class="help-card production-card-link">
+                <h3>Script</h3>
+                <p th:if="${viewModel.editionName != null}">
+                    Edit <span th:text="${viewModel.editionName}">Main</span>
+                    — scenes and blocks for this production.
+                </p>
+                <p th:unless="${viewModel.editionName != null}">Edit scenes and blocks for this production.</p>
+            </a>
+            <a th:if="${canViewCasting}" th:href="@{/actor/list(projectId=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Casting</h3>
+                <p>Manage characters, actors, and auditions for this project.</p>
+            </a>
+            <a th:href="@{/project/titlePage(id=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Title Page</h3>
+                <p>Set the screenplay title, writers, version, and contact information.</p>
+            </a>
+            <a th:href="@{/project/documents/songs(projectId=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Songs</h3>
+                <p>Write lyrics and musical numbers outside the screenplay, then insert them as Lyrics blocks.</p>
+            </a>
+            <a th:href="@{/project/documents/notes(projectId=${viewModel.id})}" class="help-card production-card-link">
+                <h3>Notes</h3>
+                <p>Keep notes and scratch text outside the screenplay, then insert them when ready.</p>
+            </a>
+            <a th:href="@{/project/version/list(projectId=${viewModel.id}, editionId=${viewModel.editionId})}" class="help-card production-card-link">
+                <h3>Snapshot History</h3>
+                <p>Review saved snapshots and restore earlier drafts of the current screenplay version.</p>
+            </a>
+        </div>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

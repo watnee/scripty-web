@@ -10,6 +10,8 @@ public class VersionViewModel {
     private int sceneCount;
     private int blockCount;
     private int characterCount;
+    private boolean autoSave;
+    private VersionChangeSummary changeSummary;
 
     public int getId() {
         return id;
@@ -57,5 +59,21 @@ public class VersionViewModel {
 
     public void setCharacterCount(int characterCount) {
         this.characterCount = characterCount;
+    }
+
+    public boolean isAutoSave() {
+        return autoSave;
+    }
+
+    public void setAutoSave(boolean autoSave) {
+        this.autoSave = autoSave;
+    }
+
+    public VersionChangeSummary getChangeSummary() {
+        return changeSummary;
+    }
+
+    public void setChangeSummary(VersionChangeSummary changeSummary) {
+        this.changeSummary = changeSummary;
     }
 }

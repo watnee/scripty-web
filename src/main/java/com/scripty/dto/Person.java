@@ -32,6 +32,10 @@ public class Person {
     @JoinColumn(name = "project_id")
     private Project project;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "script_edition_id")
+    private ScriptEdition scriptEdition;
+
     public Integer getId() {
         return id;
     }
@@ -70,5 +74,13 @@ public class Person {
 
     public void setProject(Project project) {
         this.project = project;
+    }
+
+    public ScriptEdition getScriptEdition() {
+        return scriptEdition;
+    }
+
+    public void setScriptEdition(ScriptEdition scriptEdition) {
+        this.scriptEdition = scriptEdition;
     }
 }

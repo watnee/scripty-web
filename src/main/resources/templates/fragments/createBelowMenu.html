@@ -1,0 +1,13 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="button">
+    <!--/* Menu items are cloned on first open from #scripty-create-below-menu-template
+           (fragments/blockMenuTemplates.html) so each block row ships an empty shell. */-->
+    <div class="nav-dropdown create-below-menu-dropdown">
+        <button type="button"
+                class="create-below create-below-menu-toggle nav-dropdown-toggle"
+                aria-haspopup="true"
+                aria-expanded="false"
+                title="Add block below"
+                aria-label="Add block below">+</button>
+        <div class="nav-dropdown-menu create-below-menu" role="menu" aria-label="Choose block type"></div>
+    </div>
+</th:block>

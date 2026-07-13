@@ -1,0 +1,42 @@
+{
+  "name": "scripty",
+  "private": true,
+  "description": "Scripty — Railway IaC + Cloudflare Containers deploy support for the Spring Boot app.",
+  "scripts": {
+    "deploy:doctor": "./scripts/bootstrap-deploy.sh doctor",
+    "deploy:bootstrap": "./scripts/bootstrap-deploy.sh all",
+    "deploy:verify": "./scripts/bootstrap-deploy.sh verify",
+    "cf:deploy": "wrangler deploy --config cloudflare/wrangler.jsonc",
+    "cf:dev": "wrangler dev --config cloudflare/wrangler.jsonc",
+    "cf:sync": "./scripts/sync-railway-cloudflare.sh sync",
+    "cf:sync:status": "./scripts/sync-railway-cloudflare.sh status",
+    "cf:sync:check": "./scripts/sync-railway-cloudflare.sh check",
+    "cf:token": "./scripts/cf-token.sh setup",
+    "cf:token:status": "./scripts/cf-token.sh status",
+    "cf:token:rotate": "./scripts/cf-token.sh rotate",
+    "cf:token:seed": "./scripts/cf-token.sh seed-bootstrap",
+    "obs:doctor": "./scripts/observability.sh doctor",
+    "obs:open": "./scripts/observability.sh open",
+    "obs:up": "./scripts/observability.sh up",
+    "obs:down": "./scripts/observability.sh down",
+    "rules:sync": "node scripts/sync-rules.js",
+    "rules:check": "node scripts/sync-rules.js --check",
+    "rules:setup-hooks": "./scripts/setup-git-hooks.sh",
+    "db:backup": "./scripts/backup-mysql.sh",
+    "db:restore": "./scripts/restore-mysql.sh",
+    "db:verify": "./scripts/verify-backup.sh",
+    "deps:report": "./scripts/dependency-report.sh",
+    "secrets:backup": "./scripts/backup-secrets.sh backup",
+    "secrets:restore": "./scripts/backup-secrets.sh restore",
+    "secrets:list": "./scripts/backup-secrets.sh list"
+  },
+  "dependencies": {
+    "railway": "^3.5.5"
+  },
+  "devDependencies": {
+    "@cloudflare/containers": "^0.3.7",
+    "@cloudflare/workers-types": "^5.20260708.1",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.110.0"
+  }
+}

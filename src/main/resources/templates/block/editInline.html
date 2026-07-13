@@ -1,8 +1,15 @@
-<form xmlns:th="http://www.thymeleaf.org" th:attr="hx-post=@{/block/editInline}" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="input delay:500ms from:find textarea, change from:find select">
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{block/showCharacterNameInline :: characterName(${block})}"></th:block>
+<span class="script-block-text reader-visible-text"><th:block th:if="${#strings.isEmpty(commandModel.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(commandModel.content)}" th:text="${commandModel.content}"></th:block></span>
+<form xmlns:th="http://www.thymeleaf.org" class="hide-in-reader-view sidebar menu block-inline-edit-form" th:attr="hx-post=@{/block/editInline}" hx-target="closest .block-content" hx-swap="innerHTML" hx-trigger="change from:find select, focusout[target.value.trim()!=''] from:find textarea">
     <input type="hidden" name="id" th:value="${commandModel.id}" />
-    <input type="hidden" name="sceneId" th:value="${commandModel.sceneId}" />
-
-    <textarea spellcheck="true" rows="1" style="width: 100%; height: 1.5em; min-height: 1.5em; padding: 0.25em;" name="content" th:text="${commandModel.content}"></textarea>
-    <input type="hidden" name="personId" th:value="${commandModel.personId}" />
+    <input type="hidden" name="personId" th:id="'block-person-id-' + ${commandModel.id}" th:value="${commandModel.personId}" />
     <input type="hidden" name="tags" th:value="${commandModel.tags}" />
+    <textarea spellcheck="true" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="script-block-text block-input-textarea" name="content" th:text="${commandModel.content}" onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();event.stopPropagation();if(window.scriptyCreateBlockFromSavedEdit){window.scriptyCreateBlockFromSavedEdit(this);}return false;}"></textarea>
+    <div th:if="${block != null and not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu">
+        <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
+              th:if="${not #strings.isEmpty(#strings.trim(tag))}"
+              th:attr="title=${'Search: ' + #strings.trim(tag)}"
+              th:text="${#strings.trim(tag)}"
+              class="block-tag clickable"></span>
+    </div>
 </form>

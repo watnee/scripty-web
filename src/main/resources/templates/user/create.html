@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - Create New User</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('users')}"></div>
+    <main class="user-form-page">
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li><a th:href="@{/user/list}">Users</a></li>
+                <li aria-current="page">Create</li>
+            </ol>
+        </nav>
+
+        <header class="user-form-header">
+            <div class="user-form-header-text">
+                <h1>Create User</h1>
+                <p class="muted">Add a new account with profile details and roles.</p>
+            </div>
+        </header>
+
+        <form th:action="@{/user/create}"
+              method="post"
+              th:object="${commandModel}"
+              class="user-form">
+
+            <section class="user-form-card">
+                <h2>Account</h2>
+                <div class="user-form-fields">
+                    <div class="user-form-field">
+                        <label for="user-username">Username</label>
+                        <input id="user-username"
+                               type="text"
+                               th:field="*{username}"
+                               autocomplete="username"
+                               required />
+                        <span class="user-form-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></span>
+                    </div>
+                    <div class="user-form-field">
+                        <label for="user-password">Password</label>
+                        <input id="user-password"
+                               type="password"
+                               th:field="*{password}"
+                               autocomplete="new-password"
+                               required />
+                        <span class="user-form-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="user-form-card">
+                <h2>Profile</h2>
+                <div class="user-form-fields user-form-profile-grid">
+                    <div class="user-form-field">
+                        <label for="user-first-name">First name</label>
+                        <input id="user-first-name"
+                               type="text"
+                               th:field="*{firstName}"
+                               autocomplete="given-name"
+                               required />
+                        <span class="user-form-error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></span>
+                    </div>
+                    <div class="user-form-field">
+                        <label for="user-last-name">Last name</label>
+                        <input id="user-last-name"
+                               type="text"
+                               th:field="*{lastName}"
+                               autocomplete="family-name"
+                               required />
+                        <span class="user-form-error" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></span>
+                    </div>
+                    <div class="user-form-field">
+                        <label for="user-team">Team</label>
+                        <input id="user-team"
+                               type="text"
+                               th:field="*{team}"
+                               placeholder="Optional" />
+                        <span class="user-form-error" th:if="${#fields.hasErrors('team')}" th:errors="*{team}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="user-form-card">
+                <h2>Roles</h2>
+                <fieldset class="user-form-role-fieldset">
+                    <legend class="visually-hidden">Select roles for this user</legend>
+                    <div class="user-form-role-list">
+                        <label class="user-form-role-option">
+                            <input type="checkbox" th:field="*{admin}" />
+                            <span>Admin</span>
+                        </label>
+                        <label class="user-form-role-option">
+                            <input type="checkbox" th:field="*{director}" />
+                            <span>Director</span>
+                        </label>
+                        <label class="user-form-role-option">
+                            <input type="checkbox" th:field="*{producer}" />
+                            <span>Producer</span>
+                        </label>
+                        <label class="user-form-role-option">
+                            <input type="checkbox" th:field="*{writer}" />
+                            <span>Writer</span>
+                        </label>
+                        <label class="user-form-role-option">
+                            <input type="checkbox" th:field="*{actor}" />
+                            <span>Actor</span>
+                        </label>
+                        <label class="user-form-role-option">
+                            <input type="checkbox" th:field="*{crew}" />
+                            <span>Crew</span>
+                        </label>
+                        <label class="user-form-role-option">
+                            <input type="checkbox" th:field="*{directorOfPhotography}" />
+                            <span>Director of Photography</span>
+                        </label>
+                        <label class="user-form-role-option">
+                            <input type="checkbox" th:field="*{castingDirector}" />
+                            <span>Casting Director</span>
+                        </label>
+                        <label class="user-form-role-option">
+                            <input type="checkbox" th:field="*{viewCasting}" />
+                            <span>Can view casting</span>
+                        </label>
+                        <label class="user-form-role-option">
+                            <input type="checkbox" th:field="*{developer}" />
+                            <span>Developer</span>
+                        </label>
+                    </div>
+                </fieldset>
+                <span class="user-form-hint">Roles control what this user can access across projects. “Can view casting” shows the Casting page for actors and auditions.</span>
+            </section>
+
+            <div class="user-form-actions">
+                <a th:href="@{/user/list}" role="button" class="user-form-cancel">Cancel</a>
+                <button type="submit" class="user-form-submit">Create User</button>
+            </div>
+        </form>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

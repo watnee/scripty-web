@@ -1,30 +1,112 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#111111">
-    <link rel="manifest" th:href="@{/manifest.json}">
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
     <meta charset="UTF-8">
     <title>Scripty - Actor Profile</title>
-    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.3/dist/missing.min.css">
-    <link th:href="@{/css/scripty.css}" rel="stylesheet">
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
     <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
 </head>
 <body hx-boost="true">
-    <div th:replace="~{fragments/nav :: nav('')}"></div>
-    <main>
-        <div th:replace="~{fragments/logout :: logout}"></div>
+    <div th:replace="~{fragments/nav :: nav('casting')}"></div>
+    <main class="actor-profile-page">
         <nav aria-label="Breadcrumb">
             <ol>
-                <li><a th:href="@{/actor/list}">Casting</a></li>
+                <li>
+                    <a th:if="${!#lists.isEmpty(viewModel.projects)}"
+                       th:href="@{/actor/list(projectId=${viewModel.projects[0].id})}">Casting</a>
+                    <a th:if="${#lists.isEmpty(viewModel.projects)}" th:href="@{/actor/list}">Casting</a>
+                </li>
                 <li aria-current="page"><span th:text="${viewModel.first} + ' ' + ${viewModel.last}"></span></li>
             </ol>
         </nav>
-        <h1><span th:text="${viewModel.first} + ' ' + ${viewModel.last}"></span> <small><a th:href="@{/actor/edit(id=${viewModel.id})}" role="button">edit</a> <a th:href="@{/actor/delete(id=${viewModel.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this actor?') halt">delete</a></small></h1>
-        <p>Phone: <span th:text="${viewModel.phone}"></span></p>
-        <p>Email: <span th:text="${viewModel.email}"></span></p>
+
+        <div class="actor-profile-header">
+            <div class="actor-profile-header-main">
+                <div class="actor-headshot-preview-wrap actor-headshot-preview-wrap--profile">
+                    <img th:if="${viewModel.hasHeadshot}"
+                         th:src="@{/actor/headshot(id=${viewModel.id})}"
+                         alt=""
+                         class="actor-headshot-preview actor-headshot-preview--profile" />
+                    <div th:if="${!viewModel.hasHeadshot}"
+                         class="actor-headshot-placeholder actor-headshot-placeholder--profile"
+                         aria-hidden="true">
+                        <span th:text="${#strings.substring(viewModel.first, 0, 1)}"></span>
+                    </div>
+                </div>
+                <h1 th:text="${viewModel.first} + ' ' + ${viewModel.last}"></h1>
+            </div>
+            <div class="actor-profile-actions">
+                <a th:href="@{/actor/edit(id=${viewModel.id})}" role="button">Edit</a>
+                <a th:href="@{/actor/delete(id=${viewModel.id})}"
+                   role="button"
+                   class="bad"
+                   _="on click if not confirm('Are you sure you want to delete this actor?') halt">Delete</a>
+            </div>
+        </div>
+
+        <div class="actor-profile-grid">
+            <section class="actor-profile-card" th:if="${viewModel.phone != null or viewModel.email != null}">
+                <h2>Contact</h2>
+                <dl class="actor-profile-details">
+                    <div th:if="${viewModel.phone != null}">
+                        <dt>Phone</dt>
+                        <dd><a th:href="'tel:' + ${viewModel.phone}" th:text="${viewModel.phone}"></a></dd>
+                    </div>
+                    <div th:if="${viewModel.email != null}">
+                        <dt>Email</dt>
+                        <dd><a th:href="'mailto:' + ${viewModel.email}" th:text="${viewModel.email}"></a></dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="actor-profile-card">
+                <h2>Projects</h2>
+                <ul class="actor-profile-projects" th:if="${!#lists.isEmpty(viewModel.projects)}">
+                    <li th:each="project : ${viewModel.projects}">
+                        <a th:href="@{/project/show(id=${project.id})}" th:text="${project.title}"></a>
+                        <a th:href="@{/actor/list(projectId=${project.id})}" class="actor-profile-project-casting">Casting</a>
+                    </li>
+                </ul>
+                <p class="muted actor-profile-empty" th:if="${#lists.isEmpty(viewModel.projects)}">
+                    Not assigned to any projects.
+                </p>
+            </section>
+
+            <section class="actor-profile-card">
+                <h2>Auditions</h2>
+                <ul class="actor-profile-roles" th:if="${!#lists.isEmpty(viewModel.auditionRoles)}">
+                    <li th:each="role : ${viewModel.auditionRoles}">
+                        <a th:href="@{/character/show(id=${role.characterId})}" th:text="${role.characterName}"></a>
+                        <span class="actor-profile-role-project" th:if="${role.projectTitle != null}">
+                            in <a th:href="@{/project/show(id=${role.projectId})}" th:text="${role.projectTitle}"></a>
+                        </span>
+                    </li>
+                </ul>
+                <p class="muted actor-profile-empty" th:if="${#lists.isEmpty(viewModel.auditionRoles)}">
+                    No auditions tracked yet. Select roles from the Casting page.
+                </p>
+            </section>
+
+            <section class="actor-profile-card">
+                <h2>Assigned Roles</h2>
+                <ul class="actor-profile-roles" th:if="${!#lists.isEmpty(viewModel.assignedRoles)}">
+                    <li th:each="role : ${viewModel.assignedRoles}">
+                        <a th:href="@{/character/show(id=${role.characterId})}" th:text="${role.characterName}"></a>
+                        <span class="actor-profile-role-project" th:if="${role.projectTitle != null}">
+                            in <a th:href="@{/project/show(id=${role.projectId})}" th:text="${role.projectTitle}"></a>
+                        </span>
+                    </li>
+                </ul>
+                <p class="muted actor-profile-empty" th:if="${#lists.isEmpty(viewModel.assignedRoles)}">
+                    No characters assigned yet. Assign roles from the Casting page.
+                </p>
+            </section>
+        </div>
     </main>
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
 </body>
 </html>

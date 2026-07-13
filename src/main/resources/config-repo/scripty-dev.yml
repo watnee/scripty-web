@@ -1,0 +1,5 @@
+config:
+  source: "Spring Cloud Config Server (scripty-dev native classpath)"
+  message: "Hello from scripty-dev configuration"
+  feature:
+    custom-flag: true

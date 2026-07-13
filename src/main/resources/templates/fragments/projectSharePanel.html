@@ -1,0 +1,162 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="panel(projectId, shareAccessUsers, teams, inviteTeams, pendingInvitations, inviteCommand, viewInvitations, viewInviteCommand)" class="project-share-panel">
+    <p class="project-share-intro muted">Share this link with people who can view the project, or invite someone by email. Viewers always open the screenplay version you shared with the team (eye icon in the Version menu).</p>
+    <div class="project-share-link-row">
+        <label class="visually-hidden" th:for="'project-share-link-' + ${projectId}">Project link</label>
+        <input type="text"
+               class="project-share-link-input"
+               th:id="'project-share-link-' + ${projectId}"
+               th:attr="data-project-id=${projectId}"
+               readonly />
+        <button type="button"
+                class="project-share-copy-btn"
+                th:attr="data-copy-target=${'project-share-link-' + projectId}"
+                title="Copy link">Copy</button>
+    </div>
+
+    <div th:replace="~{fragments/projectSharePanel :: inviteForm(${projectId}, ${inviteTeams}, ${inviteCommand}, 'show')}"></div>
+    <div th:replace="~{fragments/projectSharePanel :: pendingList(${projectId}, ${pendingInvitations}, 'show')}"></div>
+    <div th:replace="~{fragments/projectSharePanel :: viewInviteForm(${projectId}, ${viewInviteCommand}, 'show')}"></div>
+    <div th:replace="~{fragments/projectSharePanel :: viewInviteList(${projectId}, ${viewInvitations}, 'show')}"></div>
+    <div th:replace="~{fragments/projectSharePanel :: accessList(${shareAccessUsers}, ${teams})}"></div>
+    <a th:href="@{/project/production(id=${projectId})}"
+       class="project-share-manage-link"
+       hx-boost="false">Manage teams</a>
+</div>
+
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="inviteForm(projectId, inviteTeams, inviteCommand, returnTo)" class="project-share-invite">
+    <h3 class="project-share-access-title">Invite by email</h3>
+    <p class="project-share-flash project-share-flash-success"
+       th:if="${inviteSuccess}"
+       th:text="${inviteSuccess}">Invitation sent.</p>
+    <p class="project-share-flash project-share-flash-error"
+       th:if="${inviteError}"
+       th:text="${inviteError}">Could not send invitation.</p>
+    <p class="project-share-access-note muted" th:if="${#lists.isEmpty(inviteTeams)}">
+        Assign a team to this project before sending email invites.
+    </p>
+    <form th:if="${!#lists.isEmpty(inviteTeams)}"
+          th:action="@{/invitation/send}"
+          method="post"
+          class="project-share-invite-form"
+          th:object="${inviteCommand}"
+          hx-boost="false">
+        <input type="hidden" name="projectId" th:value="${projectId}" />
+        <input type="hidden" name="returnTo" th:value="${returnTo}" />
+        <label class="project-share-invite-field">
+            <span class="visually-hidden">Email</span>
+            <input type="email"
+                   name="email"
+                   th:value="*{email}"
+                   placeholder="colleague@example.com"
+                   required
+                   autocomplete="email" />
+        </label>
+        <label class="project-share-invite-field">
+            <span class="visually-hidden">Team</span>
+            <select name="teamId" required>
+                <option value="" disabled
+                        th:selected="${inviteCommand.teamId == null and #lists.size(inviteTeams) != 1}">Choose team</option>
+                <option th:each="team : ${inviteTeams}"
+                        th:value="${team.id}"
+                        th:text="${team.name}"
+                        th:selected="${inviteCommand.teamId != null and inviteCommand.teamId == team.id
+                            or (inviteCommand.teamId == null and #lists.size(inviteTeams) == 1)}"></option>
+            </select>
+        </label>
+        <button type="submit" class="project-share-invite-btn">Send invite</button>
+    </form>
+</div>
+
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="viewInviteForm(projectId, viewInviteCommand, returnTo)" class="project-share-invite project-share-view-invite">
+    <h3 class="project-share-access-title">Invite to view screenplay</h3>
+    <p class="project-share-access-note muted">
+        Sends a view-only reading link by email. No account needed; the link expires after 30 days.
+    </p>
+    <p class="project-share-flash project-share-flash-success"
+       th:if="${viewInviteSuccess}"
+       th:text="${viewInviteSuccess}">Invitation sent.</p>
+    <p class="project-share-flash project-share-flash-error"
+       th:if="${viewInviteError}"
+       th:text="${viewInviteError}">Could not send invitation.</p>
+    <form th:action="@{/invitation/view/send}"
+          method="post"
+          class="project-share-invite-form"
+          th:object="${viewInviteCommand}"
+          hx-boost="false">
+        <input type="hidden" name="projectId" th:value="${projectId}" />
+        <input type="hidden" name="returnTo" th:value="${returnTo}" />
+        <label class="project-share-invite-field">
+            <span class="visually-hidden">Email</span>
+            <input type="email"
+                   name="email"
+                   th:value="*{email}"
+                   placeholder="reader@example.com"
+                   required
+                   autocomplete="email" />
+        </label>
+        <button type="submit" class="project-share-invite-btn">Send view link</button>
+    </form>
+</div>
+
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="viewInviteList(projectId, viewInvitations, returnTo)" class="project-share-pending"
+     th:if="${viewInvitations != null and !#lists.isEmpty(viewInvitations)}">
+    <h3 class="project-share-access-title">View-only readers</h3>
+    <ul class="project-share-user-list">
+        <li th:each="invite : ${viewInvitations}" class="project-share-user">
+            <span>
+                <span class="project-share-user-name" th:text="${invite.email}"></span>
+                <span class="project-share-user-access muted" th:text="${invite.statusLabel}"></span>
+            </span>
+            <form th:action="@{/invitation/view/revoke}" method="post" class="project-share-revoke-form" hx-boost="false">
+                <input type="hidden" name="id" th:value="${invite.id}" />
+                <input type="hidden" name="projectId" th:value="${projectId}" />
+                <input type="hidden" name="returnTo" th:value="${returnTo}" />
+                <button type="submit" class="project-share-revoke-btn" title="Revoke view access">Revoke</button>
+            </form>
+        </li>
+    </ul>
+</div>
+
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="pendingList(projectId, pendingInvitations, returnTo)" class="project-share-pending"
+     th:if="${pendingInvitations != null and !#lists.isEmpty(pendingInvitations)}">
+    <h3 class="project-share-access-title">Pending invites</h3>
+    <ul class="project-share-user-list">
+        <li th:each="invite : ${pendingInvitations}" class="project-share-user">
+            <span>
+                <span class="project-share-user-name" th:text="${invite.email}"></span>
+                <span class="project-share-user-access muted" th:text="${invite.teamName}"></span>
+            </span>
+            <form th:action="@{/invitation/revoke}" method="post" class="project-share-revoke-form" hx-boost="false">
+                <input type="hidden" name="id" th:value="${invite.id}" />
+                <input type="hidden" name="projectId" th:value="${projectId}" />
+                <input type="hidden" name="returnTo" th:value="${returnTo}" />
+                <button type="submit" class="project-share-revoke-btn" title="Revoke invite">Revoke</button>
+            </form>
+        </li>
+    </ul>
+</div>
+
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="accessList(shareAccessUsers, teams)" class="project-share-access">
+    <h3 class="project-share-access-title">People with access</h3>
+    <p class="project-share-access-note muted" th:if="${#lists.isEmpty(teams)}">
+        This project is not restricted to a team, so all users can view it.
+    </p>
+    <p class="project-share-access-note muted" th:if="${!#lists.isEmpty(teams)}">
+        Users on assigned teams plus admins, directors, producers, writers, actors, crew, directors of photography, and casting directors can view this project.
+    </p>
+    <ul class="project-share-user-list" th:if="${!#lists.isEmpty(shareAccessUsers)}">
+        <li th:each="user : ${shareAccessUsers}" class="project-share-user">
+            <span class="project-share-user-main">
+                <span class="project-share-user-name" th:text="${user.displayName}"></span>
+                <span class="project-share-user-access muted" th:text="${user.accessLabel}"></span>
+            </span>
+            <span class="access-permission-chip"
+                  th:classappend="${user.canEdit} ? ' access-permission-chip--edit' : ' access-permission-chip--view'"
+                  th:text="${user.permissionLabel}">View only</span>
+        </li>
+    </ul>
+    <p class="project-share-access-empty muted"
+       th:if="${#lists.isEmpty(shareAccessUsers)}">
+        No users have access yet.
+    </p>
+</div>

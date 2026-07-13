@@ -1,6 +1,20 @@
+server:
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      # Default 30m expired active sessions mid-edit; remember-me re-authenticates
+      # silently after expiry, but a longer window avoids the session/CSRF churn.
+      timeout: 12h
+      cookie:
+        secure: true
+        http-only: true
+        same-site: lax
+
 spring:
   datasource:
-    url: jdbc:mysql://${MYSQLHOST}:${MYSQLPORT}/${MYSQLDATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    # Prefer TLS when the DB supports it. On Railway private networking without TLS,
+    # set MYSQL_SSL_MODE=DISABLED (and keep MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true if needed).
+    url: jdbc:mysql://${MYSQLHOST}:${MYSQLPORT}/${MYSQLDATABASE}?sslMode=${MYSQL_SSL_MODE:PREFERRED}&allowPublicKeyRetrieval=${MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL:true}&serverTimezone=UTC
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${MYSQLUSER}
     password: ${MYSQLPASSWORD}
@@ -10,3 +24,41 @@ spring:
     open-in-view: false
   flyway:
     baseline-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:true}
+
+logging:
+  structured:
+    format:
+      # ECS JSON on stdout: Railway log search gets fields (log.level, request_id
+      # from MDC, …) instead of free text. Set LOG_FORMAT= (empty) to fall back
+      # to plain text.
+      console: ${LOG_FORMAT:ecs}
+
+app:
+  headshot-max-bytes: 5242880
+  base-url: ${APP_BASE_URL:}
+  mail-from: ${MAIL_FROM:Scripty <noreply@localhost>}
+  mail-enabled: ${MAIL_ENABLED:false}
+  # Preferred email transport on Railway (outbound SMTP is restricted there).
+  # When both are set, emails go through the Cloudflare email Worker
+  # (POST /internal/email, Cloudflare Email Sending) and the SMTP settings
+  # above are ignored; MAIL_ENABLED is not required.
+  email-worker-url: ${EMAIL_WORKER_URL:}
+  email-worker-secret: ${EMAIL_WORKER_SECRET:}
+  asset-version: ${APP_ASSET_VERSION:216}
+  # Static assets + public offline shells only; project HTML lives in IndexedDB.
+  service-worker-enabled: true

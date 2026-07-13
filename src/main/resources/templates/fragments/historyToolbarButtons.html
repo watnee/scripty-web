@@ -1,0 +1,34 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="buttons">
+    <div class="nav-dropdown history-dropdown" id="history-dropdown">
+        <button type="button"
+                class="nav-dropdown-toggle history-toolbar-btn"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label="Edit"
+                title="Edit">
+            Edit
+        </button>
+        <div class="nav-dropdown-menu history-menu" role="menu" aria-label="Edit">
+            <th:block th:if="${canEditScript == null or canEditScript}">
+                <button id="nav-undo" type="button" class="nav-dropdown-item history-action-btn" role="menuitem" aria-label="Undo" title="Undo">
+                    <span class="nav-dropdown-item-label">Undo</span>
+                    <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
+                </button>
+                <button id="nav-redo" type="button" class="nav-dropdown-item history-action-btn" role="menuitem" aria-label="Redo" title="Redo">
+                    <span class="nav-dropdown-item-label">Redo</span>
+                    <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
+                </button>
+                <div class="nav-dropdown-divider" role="separator"></div>
+            </th:block>
+            <button id="nav-search"
+                    type="button"
+                    class="nav-dropdown-item"
+                    role="menuitem"
+                    aria-label="Search script"
+                    title="Search script">
+                <span class="nav-dropdown-item-label">Search</span>
+                <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
+            </button>
+        </div>
+    </div>
+</th:block>

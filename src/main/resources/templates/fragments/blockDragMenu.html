@@ -1,0 +1,15 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="handle (saved, bookmarked, pinned)">
+    <!--/* Menu items are cloned on first open from #scripty-block-drag-menu-template
+           (fragments/blockMenuTemplates.html); bookmark/pin state is read from the
+           row's data-bookmarked / data-pinned attributes at hydration time. */-->
+    <div class="nav-dropdown block-drag-menu-dropdown">
+        <button type="button"
+                class="drag-handle block-drag-menu-toggle nav-dropdown-toggle"
+                draggable="true"
+                aria-haspopup="true"
+                aria-expanded="false"
+                title="Drag to reorder; click for options"
+                aria-label="Block options">&#8942;&#8942;</button>
+        <div class="nav-dropdown-menu block-drag-menu" role="menu" aria-label="Block options"></div>
+    </div>
+</th:block>

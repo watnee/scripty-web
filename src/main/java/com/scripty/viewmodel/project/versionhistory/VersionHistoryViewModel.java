@@ -6,6 +6,8 @@ public class VersionHistoryViewModel {
 
     private int projectId;
     private String projectTitle;
+    private Integer editionId;
+    private String editionName;
     private List<VersionViewModel> versions;
 
     public int getProjectId() {
@@ -30,5 +32,21 @@ public class VersionHistoryViewModel {
 
     public void setVersions(List<VersionViewModel> versions) {
         this.versions = versions;
+    }
+
+    public Integer getEditionId() {
+        return editionId;
+    }
+
+    public void setEditionId(Integer editionId) {
+        this.editionId = editionId;
+    }
+
+    public String getEditionName() {
+        return editionName;
+    }
+
+    public void setEditionName(String editionName) {
+        this.editionName = editionName;
     }
 }

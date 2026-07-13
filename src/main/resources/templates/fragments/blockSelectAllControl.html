@@ -1,0 +1,29 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="controls(selectAllId)">
+    <label class="block-select-all-label" th:for="${selectAllId}">
+        <input type="checkbox"
+               th:id="${selectAllId}"
+               class="block-select-checkbox block-select-all-checkbox"
+               aria-label="Select all blocks" />
+    </label>
+    <div class="nav-dropdown block-select-menu-dropdown">
+        <button type="button"
+                class="block-select-menu-toggle nav-dropdown-toggle"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label="Selection options"
+                title="Selection options">
+            <svg class="block-select-menu-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.25" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </button>
+        <div class="nav-dropdown-menu block-select-menu" role="menu" aria-label="Block selection options">
+            <p class="block-select-menu-heading">Selection</p>
+            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-select-action="all">Select all</button>
+            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-select-action="none">Deselect all</button>
+            <hr class="nav-dropdown-divider" />
+            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-select-action="bookmarked">Select bookmarked</button>
+            <button type="button" class="nav-dropdown-item" role="menuitem" data-block-select-action="unbookmark">Deselect bookmarked</button>
+        </div>
+    </div>
+    <span class="block-select-all-slot" aria-hidden="true"></span>
+</th:block>

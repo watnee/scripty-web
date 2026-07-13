@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - Passkeys</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+    <!-- Passkey styles live in scripty.css: boosted swaps replace only <body>. -->
+</head>
+<body class="login-body" hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('account')}"></div>
+    <main class="login-page">
+        <section class="login-card" aria-labelledby="passkeys-heading">
+            <header class="login-header">
+                <h1 id="passkeys-heading" class="login-title">Passkeys</h1>
+                <p class="login-subtitle">Sign in with Face ID, Touch ID, or a security key instead of your password.</p>
+            </header>
+
+            <div id="success" class="login-success passkey-hidden" role="status">
+                <span>Passkeys updated.</span>
+            </div>
+
+            <div id="error" class="login-error passkey-hidden" role="alert"></div>
+
+            <div th:if="${!passkeysEnabled}" class="login-error" role="alert">
+                <span>Passkeys are not available: no application base URL is configured.</span>
+            </div>
+
+            <th:block th:if="${passkeysEnabled}">
+                <table class="passkey-table" th:if="${!passkeys.isEmpty()}">
+                    <thead>
+                        <tr><th>Label</th><th>Created</th><th>Last used</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="passkey : ${passkeys}">
+                            <td th:text="${passkey.label}">My passkey</td>
+                            <td th:text="${passkey.created}">Jan 1, 2026</td>
+                            <td th:text="${passkey.lastUsed}">Jan 1, 2026</td>
+                            <td>
+                                <span class="passkey-row-controls">
+                                    <form class="delete-form" method="post"
+                                          th:action="@{'/webauthn/register/' + ${passkey.credentialId}}"
+                                          hx-boost="false">
+                                        <button type="submit" class="login-submit">Delete</button>
+                                    </form>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p th:if="${passkeys.isEmpty()}">No passkeys registered yet.</p>
+
+                <div class="login-form" hx-boost="false">
+                    <label class="login-field">
+                        <span class="login-label">Passkey label</span>
+                        <span class="login-input-wrap">
+                            <input type="text" id="label" name="label" placeholder="e.g. MacBook Touch ID" required />
+                        </span>
+                    </label>
+                    <button id="register" type="button" class="login-submit">
+                        <span>Register a new passkey</span>
+                    </button>
+                </div>
+            </th:block>
+
+            <footer class="login-footer">
+                <a class="login-footer-link" th:href="@{/account/password}">Change password</a>
+                <a class="login-footer-link" th:href="@{/}">Back to home</a>
+            </footer>
+        </section>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <!-- Registration wiring lives in /js/passkeys.js (loaded via nav fragment). -->
+</body>
+</html>

@@ -300,6 +300,20 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# Cloudflare / Wrangler local secrets
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+cloudflare/.dev.vars
+cloudflare/.dev.vars.*
+!cloudflare/.dev.vars.example
+cloudflare/.deploy-secrets
+# Encrypted secrets snapshots (scripts/backup-secrets.sh) — ciphertext, but keep out of git
+scripty-secrets-*.json.enc
+cloudflare/.worker-url
+.wrangler/
+cloudflare/.wrangler/
+
 # Visual Studio 6 build log
 *.plg
 
@@ -442,5 +456,14 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+uploads/
+
 /target/
 /nbproject/
+/db/
+
+# Local test-server process files
+*.pid
+scripty-server*.pid
+# Local observability scrape token (secret)
+observability/prometheus/token

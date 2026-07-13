@@ -1,13 +1,11 @@
 <tr xmlns:th="http://www.thymeleaf.org" draggable="true" th:attr="data-block-id=${block.id},data-block-order=${block.order},data-tags=${block.tags}">
     <td class="block-left-controls">
         <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" style="margin-right: 8px;" />
-        <a th:attr="hx-get=@{/block/createBelowInline(id=${block.id})}" hx-target="closest tr" hx-swap="afterend" hx-boost="false" class="create-below" role="button">+</a>
-        <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
+        <th:block th:replace="~{fragments/createBelowMenu :: button}"></th:block>
+        <th:block th:replace="~{fragments/blockDragMenu :: handle(true, ${block.bookmarked}, ${block.pinned})}"></th:block>
     </td>
-    <td class="block-content" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="click[!event.target.closest('a')&amp;&amp;!event.target.closest('form')]" hx-swap="innerHTML">
-        <p th:if="${not #strings.isEmpty(block.personName)}" style="margin-bottom: 0; text-align: center">
-            <a th:href="@{/character/show(id=${block.personId})}" class="character-name" style="text-transform: uppercase" th:text="${block.personName}"></a>
-        </p>
+    <td class="block-content" th:classappend="${block.type != null ? 'block-type-' + #strings.toLowerCase(block.type) : ''}" th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="scripty-edit-block" hx-swap="innerHTML">
+        <th:block th:replace="~{block/showCharacterNameInline :: characterName(${block})}"></th:block>
         <span th:text="${block.content}"></span>
         <div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list">
             <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
@@ -21,7 +19,6 @@
             <a th:href="@{/block/toggleBookmark(id=${block.id})}" th:title="${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:attr="aria-label=${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:text="${block.bookmarked} ? '★' : '☆'"></a>
             <a th:href="@{/block/togglePinned(id=${block.id})}" th:title="${block.pinned} ? 'Unpin block' : 'Pin block'" th:attr="aria-label=${block.pinned} ? 'Unpin block' : 'Pin block'" th:style="${block.pinned} ? 'text-decoration: none;' : 'filter: grayscale(100%); opacity: 0.3; text-decoration: none;'">📌</a>
             <a th:href="@{/block/edit(id=${block.id})}" role="button">edit</a>
-            <a th:href="@{/block/delete(id=${block.id})}" role="button" _="on click if not confirm('Are you sure you want to delete this block?') halt">delete</a>
             <a th:href="@{/block/moveDown(id=${block.id})}" class="move-down" role="button">&#8595;</a>
             <a th:href="@{/block/moveUp(id=${block.id})}" class="move-up" role="button">&#8593;</a>
         </span>

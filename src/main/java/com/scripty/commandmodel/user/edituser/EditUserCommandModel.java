@@ -10,7 +10,7 @@ public class EditUserCommandModel {
     @NotBlank(message = "You must supply a value for Username.")
     @Size(max = 20, message = "Username must be no more than 20 characters in length.")
     private String username;
-    @Size(max = 100, message = "Password must be no more than 100 characters in length.")
+    @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters in length.")
     private String password;
     @NotBlank(message = "You must supply a value for First Name.")
     @Size(max = 30, message = "First Name must be no more than 30 characters in length.")
@@ -23,6 +23,13 @@ public class EditUserCommandModel {
     private boolean admin;
     private boolean director;
     private boolean producer;
+    private boolean writer;
+    private boolean actor;
+    private boolean crew;
+    private boolean directorOfPhotography;
+    private boolean castingDirector;
+    private boolean viewCasting;
+    private boolean developer;
 
     public Integer getId() {
         return id;
@@ -45,7 +52,8 @@ public class EditUserCommandModel {
     }
 
     public void setPassword(String password) {
-        this.password = password;
+        // Blank means "leave unchanged" on edit; treat as null so @Size(min=8) does not fire.
+        this.password = (password == null || password.isBlank()) ? null : password;
     }
 
     public String getFirstName() {
@@ -94,5 +102,61 @@ public class EditUserCommandModel {
 
     public void setProducer(boolean producer) {
         this.producer = producer;
+    }
+
+    public boolean isWriter() {
+        return writer;
+    }
+
+    public void setWriter(boolean writer) {
+        this.writer = writer;
+    }
+
+    public boolean isActor() {
+        return actor;
+    }
+
+    public void setActor(boolean actor) {
+        this.actor = actor;
+    }
+
+    public boolean isCrew() {
+        return crew;
+    }
+
+    public void setCrew(boolean crew) {
+        this.crew = crew;
+    }
+
+    public boolean isDirectorOfPhotography() {
+        return directorOfPhotography;
+    }
+
+    public void setDirectorOfPhotography(boolean directorOfPhotography) {
+        this.directorOfPhotography = directorOfPhotography;
+    }
+
+    public boolean isCastingDirector() {
+        return castingDirector;
+    }
+
+    public void setCastingDirector(boolean castingDirector) {
+        this.castingDirector = castingDirector;
+    }
+
+    public boolean isViewCasting() {
+        return viewCasting;
+    }
+
+    public void setViewCasting(boolean viewCasting) {
+        this.viewCasting = viewCasting;
+    }
+
+    public boolean isDeveloper() {
+        return developer;
+    }
+
+    public void setDeveloper(boolean developer) {
+        this.developer = developer;
     }
 }

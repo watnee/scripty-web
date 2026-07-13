@@ -1,0 +1,62 @@
+<div xmlns:th="http://www.thymeleaf.org" th:fragment="blockRow (block, projectId, canMoveUp, canMoveDown, canEditScript)"
+     class="block-row"
+     th:classappend="${(block.type == 'SYNOPSIS' or block.type == 'NOTE') ? ' hide-in-reader-view sidebar menu' : ''}"
+     th:attr="data-block-id=${block.id},data-block-order=${block.order},data-block-type=${block.type},data-tags=${block.tags},data-bookmarked=${block.bookmarked},data-pinned=${block.pinned},aria-hidden=${(block.type == 'SYNOPSIS' or block.type == 'NOTE') ? 'true' : null}">
+    <span class="block-element-label hide-in-reader-view sidebar menu"
+          th:text="${block.typeLabel}"
+          th:attr="data-block-type=${block.type}"
+          title="Fountain element type"
+          aria-hidden="true"></span>
+    <aside class="block-left-controls hide-in-reader-view sidebar menu" th:if="${canEditScript == null or canEditScript}" aria-hidden="true">
+        <div class="block-left-controls-inner">
+            <input type="checkbox" class="block-select-checkbox" th:value="${block.id}" />
+            <th:block th:replace="~{fragments/createBelowMenu :: button}"></th:block>
+            <th:block th:replace="~{fragments/blockDragMenu :: handle(true, ${block.bookmarked}, ${block.pinned})}"></th:block>
+        </div>
+    </aside>
+    <div th:if="${canEditScript == null or canEditScript}"
+         class="block-content script-block"
+         th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (block.textAlign != null ? ' block-text-align-' + #strings.toLowerCase(block.textAlign) : '') + (block.textBold ? ' block-text-bold' : '') + (block.textItalic ? ' block-text-italic' : '') + (block.textUnderline ? ' block-text-underline' : '') + (block.type == 'DIALOGUE' ? ' script-block--dialogue' : ' script-block--action')}"
+         th:attr="hx-get=@{/block/editInline(id=${block.id})}" hx-trigger="scripty-edit-block" hx-swap="innerHTML">
+        <th:block th:replace="~{block/showCharacterNameInline :: characterName(${block})}"></th:block>
+        <h2 th:if="${block.type == 'SCENE'}" class="script-block-text scene-header"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></h2>
+        <h3 th:if="${block.type == 'SECTION'}" class="script-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></h3>
+        <p th:if="${block.type != 'SCENE' and block.type != 'SECTION'}" class="script-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></p>
+        <div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu" aria-hidden="true">
+            <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
+                  th:if="${not #strings.isEmpty(#strings.trim(tag))}"
+                  th:attr="title=${'Search: ' + #strings.trim(tag)}"
+                  th:text="${#strings.trim(tag)}"
+                  class="block-tag clickable"></span>
+        </div>
+    </div>
+    <div th:unless="${canEditScript == null or canEditScript}"
+         class="block-content script-block"
+         th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (block.textAlign != null ? ' block-text-align-' + #strings.toLowerCase(block.textAlign) : '') + (block.textBold ? ' block-text-bold' : '') + (block.textItalic ? ' block-text-italic' : '') + (block.textUnderline ? ' block-text-underline' : '') + (block.type == 'DIALOGUE' ? ' script-block--dialogue' : ' script-block--action')}">
+        <th:block th:replace="~{block/showCharacterNameInline :: characterName(${block})}"></th:block>
+        <h2 th:if="${block.type == 'SCENE'}" class="script-block-text scene-header"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></h2>
+        <h3 th:if="${block.type == 'SECTION'}" class="script-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></h3>
+        <p th:if="${block.type != 'SCENE' and block.type != 'SECTION'}" class="script-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></p>
+        <div th:if="${not #strings.isEmpty(block.tags)}" class="block-tags-list hide-in-reader-view sidebar menu" aria-hidden="true">
+            <span th:each="tag : ${#strings.arraySplit(block.tags, ',')}"
+                  th:if="${not #strings.isEmpty(#strings.trim(tag))}"
+                  th:attr="title=${'Search: ' + #strings.trim(tag)}"
+                  th:text="${#strings.trim(tag)}"
+                  class="block-tag clickable"></span>
+        </div>
+    </div>
+    <aside class="block-actions hide-in-reader-view sidebar menu" th:if="${canEditScript == null or canEditScript}" aria-hidden="true">
+        <span class="block-actions-controls">
+            <a class="block-action-bookmark" th:href="@{/block/toggleBookmark(id=${block.id}, projectId=${projectId})}" hx-boost="false" th:title="${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'" th:attr="aria-label=${block.bookmarked} ? 'Remove bookmark' : 'Bookmark block'">
+                <span th:replace="~{fragments/bookmarkIcon :: blockIcon(${block.bookmarked})}"></span>
+            </a>
+            <a class="block-action-pin" th:href="@{/block/togglePinned(id=${block.id}, projectId=${projectId})}" hx-boost="false" th:classappend="${block.pinned} ? ' is-pinned' : ''" th:title="${block.pinned} ? 'Unpin block' : 'Pin block'" th:attr="aria-label=${block.pinned} ? 'Unpin block' : 'Pin block'">
+                <span th:replace="~{fragments/pinIcon :: blockIcon(${block.pinned})}"></span>
+            </a>
+            <a th:if="${canMoveDown}" href="#" class="move-down block-move-down block-action-move" role="button" title="Move down" aria-label="Move block down">&#8595;</a>
+            <span th:unless="${canMoveDown}" class="block-action-slot" aria-hidden="true"></span>
+            <a th:if="${canMoveUp}" href="#" class="move-up block-move-up block-action-move" role="button" title="Move up" aria-label="Move block up">&#8593;</a>
+            <span th:unless="${canMoveUp}" class="block-action-slot" aria-hidden="true"></span>
+        </span>
+    </aside>
+</div>

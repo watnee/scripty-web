@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - Screenplay Title Page</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main>
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/show(id=${project.id})}" th:text="${project.title}">Project</a></li>
+                    <li aria-current="page">Title Page</li>
+                </ol>
+            </nav>
+        </div>
+        <h1>Title Page</h1>
+        
+        <div class="title-page-editor-container">
+            <!-- Left Form Panel -->
+            <div class="title-page-form-panel">
+                <form th:action="@{/project/titlePage}" method="post" th:object="${commandModel}">
+                    <input type="hidden" th:field="*{id}" />
+                    <label>
+                        Screenplay Title
+                        <input type="text" id="input-screenplay-title" th:field="*{screenplayTitle}" placeholder="e.g. MY SCREENPLAY" autocomplete="off" spellcheck="true" th:readonly="${canEditScript != null and !canEditScript}" />
+                        <span th:if="${#fields.hasErrors('screenplayTitle')}" th:errors="*{screenplayTitle}" class="field-error"></span>
+                    </label>
+                    <label>
+                        Writers
+                        <input type="text" id="input-writers" th:field="*{writers}" placeholder="e.g. Jane Doe" autocomplete="off" spellcheck="true" th:readonly="${canEditScript != null and !canEditScript}" />
+                        <span th:if="${#fields.hasErrors('writers')}" th:errors="*{writers}" class="field-error"></span>
+                    </label>
+                    <label>
+                        Version
+                        <input type="text"
+                               id="input-screenplay-version"
+                               th:field="*{screenplayVersion}"
+                               list="screenplay-version-options"
+                               placeholder="e.g. White Draft, Blue Revision"
+                               autocomplete="off"
+                               spellcheck="true"
+                               th:readonly="${canEditScript != null and !canEditScript}" />
+                        <datalist id="screenplay-version-options">
+                            <option value="White Draft"></option>
+                            <option value="Blue Revision"></option>
+                            <option value="Pink Revision"></option>
+                            <option value="Yellow Revision"></option>
+                            <option value="Green Revision"></option>
+                            <option value="Goldenrod Revision"></option>
+                            <option value="Buff Revision"></option>
+                            <option value="Salmon Revision"></option>
+                            <option value="Cherry Revision"></option>
+                            <option value="Second Blue Revision"></option>
+                            <option value="Second Pink Revision"></option>
+                        </datalist>
+                        <span th:if="${#fields.hasErrors('screenplayVersion')}" th:errors="*{screenplayVersion}" class="field-error"></span>
+                    </label>
+                    <label>
+                        Contact Information
+                        <textarea id="input-contact-info" th:field="*{contactInfo}" placeholder="e.g. Contact info..." rows="5" autocomplete="off" spellcheck="true" th:readonly="${canEditScript != null and !canEditScript}"></textarea>
+                        <span th:if="${#fields.hasErrors('contactInfo')}" th:errors="*{contactInfo}" class="field-error"></span>
+                    </label>
+                    <p class="form-actions">
+                        <a th:href="@{/project/show(id=${project.id})}" role="button" class="bad title-page-cancel" th:text="${(canEditScript == null or canEditScript) ? 'Cancel' : 'Back'}">Cancel</a>
+                        <button type="submit" class="good title-page-submit" th:if="${canEditScript == null or canEditScript}">Save Title Page</button>
+                    </p>
+                </form>
+            </div>
+            
+            <!-- Right Preview Panel -->
+            <div class="title-page-preview-panel">
+                <h3 class="preview-header">Live Screenplay Preview</h3>
+                <div class="screenplay-paper-wrapper">
+                    <div class="screenplay-paper">
+                        <div class="screenplay-title-wrap">
+                            <div class="screenplay-preview-title" id="preview-title">UNTITLED SCREENPLAY</div>
+                            <div class="screenplay-preview-by">written by</div>
+                            <div class="screenplay-preview-writers" id="preview-writers">ANONYMOUS</div>
+                            <div class="screenplay-preview-version" id="preview-version" hidden></div>
+                        </div>
+                        <div class="screenplay-preview-contact" id="preview-contact"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:inline="javascript">
+        (function() {
+            const inputTitle = document.getElementById('input-screenplay-title');
+            const inputWriters = document.getElementById('input-writers');
+            const inputVersion = document.getElementById('input-screenplay-version');
+            const inputContact = document.getElementById('input-contact-info');
+
+            const previewTitle = document.getElementById('preview-title');
+            const previewWriters = document.getElementById('preview-writers');
+            const previewVersion = document.getElementById('preview-version');
+            const previewContact = document.getElementById('preview-contact');
+            const byLabel = document.querySelector('.screenplay-preview-by');
+
+            const projectTitle = /*[[${project.title}]]*/ 'UNTITLED SCREENPLAY';
+
+            function updatePreview() {
+                // Screenplay title
+                const titleVal = inputTitle.value.trim();
+                previewTitle.textContent = titleVal ? titleVal.toUpperCase() : (projectTitle ? projectTitle.toUpperCase() : 'UNTITLED SCREENPLAY');
+
+                // Writers
+                const writersVal = inputWriters.value.trim();
+                if (writersVal) {
+                    previewWriters.textContent = writersVal;
+                    byLabel.style.display = 'block';
+                    previewWriters.style.display = 'block';
+                } else {
+                    previewWriters.textContent = '';
+                    byLabel.style.display = 'none';
+                    previewWriters.style.display = 'none';
+                }
+
+                // Version / draft label
+                const versionVal = inputVersion ? inputVersion.value.trim() : '';
+                if (versionVal) {
+                    previewVersion.textContent = versionVal;
+                    previewVersion.hidden = false;
+                } else {
+                    previewVersion.textContent = '';
+                    previewVersion.hidden = true;
+                }
+
+                // Contact info — textContent + CSS white-space:pre-wrap (never innerHTML)
+                previewContact.textContent = inputContact.value.trim();
+            }
+
+            if (inputTitle) inputTitle.addEventListener('input', updatePreview);
+            if (inputWriters) inputWriters.addEventListener('input', updatePreview);
+            if (inputVersion) inputVersion.addEventListener('input', updatePreview);
+            if (inputContact) inputContact.addEventListener('input', updatePreview);
+
+            // Initial call
+            updatePreview();
+        })();
+    </script>
+</body>
+</html>

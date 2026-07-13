@@ -27,6 +27,7 @@ public class ProjectActivity {
     public static final String ACTION_DOCUMENT_UPDATED = "DOCUMENT_UPDATED";
     public static final String ACTION_DOCUMENT_DELETED = "DOCUMENT_DELETED";
     public static final String ACTION_DOCUMENT_INSERTED = "DOCUMENT_INSERTED";
+    public static final String ACTION_DOCUMENT_SHARED = "DOCUMENT_SHARED";
     public static final String ACTION_INVITATION_SENT = "INVITATION_SENT";
     public static final String ACTION_INVITATION_ACCEPTED = "INVITATION_ACCEPTED";
     public static final String ACTION_INVITATION_REVOKED = "INVITATION_REVOKED";

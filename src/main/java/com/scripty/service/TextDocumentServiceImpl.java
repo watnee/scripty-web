@@ -20,6 +20,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.HtmlUtils;
 
 @Service
 public class TextDocumentServiceImpl implements TextDocumentService {
@@ -32,6 +33,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     private final ScriptImportTextExtractor scriptImportTextExtractor;
     private final ProjectActivityService projectActivityService;
     private final ScriptEditionService scriptEditionService;
+    private final EmailService emailService;
 
     @Autowired
     public TextDocumentServiceImpl(TextDocumentRepository textDocumentRepository,
@@ -41,7 +43,8 @@ public class TextDocumentServiceImpl implements TextDocumentService {
                                     ProjectService projectService,
                                     ScriptImportTextExtractor scriptImportTextExtractor,
                                     ProjectActivityService projectActivityService,
-                                    ScriptEditionService scriptEditionService) {
+                                    ScriptEditionService scriptEditionService,
+                                    EmailService emailService) {
         this.textDocumentRepository = textDocumentRepository;
         this.projectRepository = projectRepository;
         this.blockRepository = blockRepository;
@@ -50,6 +53,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         this.scriptImportTextExtractor = scriptImportTextExtractor;
         this.projectActivityService = projectActivityService;
         this.scriptEditionService = scriptEditionService;
+        this.emailService = emailService;
     }
 
     @Override
@@ -361,6 +365,64 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         }
         List<CreateBlockBelowCommandModel> lines = splitContentIntoBlocks(doc, blockType);
         return blockService.replaceLinkedDocumentBlocks(projectId, doc.getId(), lines);
+    }
+
+    @Override
+    @Transactional
+    public TextDocument shareSongByEmail(Integer id, String email, User currentUser) {
+        String recipient = email == null ? "" : email.trim();
+        if (recipient.isEmpty() || !recipient.contains("@")) {
+            return null;
+        }
+        TextDocument doc = textDocumentRepository.findById(id).orElse(null);
+        if (doc == null || doc.getProject() == null
+                || !TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+            return null;
+        }
+        if (!projectService.canUserAccessProject(doc.getProject().getId(), currentUser)) {
+            return null;
+        }
+
+        sendSongShareEmail(doc, recipient, currentUser);
+        projectActivityService.record(
+                doc.getProject().getId(),
+                currentUser != null ? currentUser.getId() : null,
+                ProjectActivity.ACTION_DOCUMENT_SHARED,
+                "emailed \"" + doc.getTitle() + "\" to " + recipient,
+                ProjectActivity.ENTITY_DOCUMENT,
+                doc.getId());
+        return doc;
+    }
+
+    private void sendSongShareEmail(TextDocument doc, String recipient, User sharedBy) {
+        String senderName = formatSenderName(sharedBy);
+        String title = doc.getTitle() != null && !doc.getTitle().isBlank() ? doc.getTitle() : "Untitled Song";
+        String content = doc.getContent() != null ? doc.getContent() : "";
+        String subject = senderName + " shared a song with you: " + title;
+        String body = """
+                <div style="font-family: Georgia, 'Times New Roman', serif; line-height: 1.5; color: #1f2937;">
+                  <p>Hi,</p>
+                  <p><strong>%s</strong> shared the song <strong>%s</strong> with you from Scripty.</p>
+                  <div style="white-space:pre-wrap;padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">%s</div>
+                </div>
+                """.formatted(
+                HtmlUtils.htmlEscape(senderName),
+                HtmlUtils.htmlEscape(title),
+                HtmlUtils.htmlEscape(content));
+        emailService.send(recipient, subject, body);
+    }
+
+    private String formatSenderName(User sharedBy) {
+        if (sharedBy == null) {
+            return "Someone";
+        }
+        String first = sharedBy.getFirstName() != null ? sharedBy.getFirstName().trim() : "";
+        String last = sharedBy.getLastName() != null ? sharedBy.getLastName().trim() : "";
+        String full = (first + " " + last).trim();
+        if (!full.isEmpty()) {
+            return full;
+        }
+        return sharedBy.getUsername() != null ? sharedBy.getUsername() : "Someone";
     }
 
     @Override

@@ -2,6 +2,9 @@ server:
   forward-headers-strategy: framework
   servlet:
     session:
+      # Default 30m expired active sessions mid-edit; remember-me re-authenticates
+      # silently after expiry, but a longer window avoids the session/CSRF churn.
+      timeout: 12h
       cookie:
         secure: true
         http-only: true

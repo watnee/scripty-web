@@ -504,6 +504,12 @@
             var end = Math.max(start, Math.min(captured.caret.end, len));
             textarea.setSelectionRange(start, end);
         }).catch(function() {
+            // Never navigate while offline — it would swap the editor for the
+            // offline shell. The offline fetch shim normally answers this
+            // request; reaching here means local queueing itself failed.
+            if (window.scriptyIsOffline && window.scriptyIsOffline()) {
+                return;
+            }
             // Fallback: full navigation save
             var form = document.createElement('form');
             form.method = 'POST';
@@ -530,6 +536,13 @@
     }
 
     function applyBulk(type, captured) {
+        // Bulk type change is a full-page form save; queueing it offline is
+        // not supported. Single-block changes still work offline.
+        if (window.scriptyIsOffline && window.scriptyIsOffline()) {
+            finishWait();
+            alert('Bulk type changes need a connection. Single blocks can still be changed offline.');
+            return;
+        }
         beginWait();
         sessionStorage.setItem('activeBlockId', captured.ids[0]);
 

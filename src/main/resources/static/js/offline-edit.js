@@ -42,6 +42,23 @@
         return match ? Number(match[1]) : null;
     }
 
+    function normalizeBlockType(type) {
+        var t = String(type || 'ACTION').toUpperCase();
+        return /^[A-Z_]+$/.test(t) ? t : 'ACTION';
+    }
+
+    function blockTypeLabel(type) {
+        if (window.scriptyBlockTypeLabel) return window.scriptyBlockTypeLabel(type);
+        var t = normalizeBlockType(type);
+        return t.charAt(0) + t.slice(1).toLowerCase().replace(/_/g, ' ');
+    }
+
+    function blockContentTypeClasses(type) {
+        var t = normalizeBlockType(type);
+        return 'block-content script-block block-type-' + t.toLowerCase() +
+            (t === 'DIALOGUE' ? ' script-block--dialogue' : ' script-block--action');
+    }
+
     function renderBlockTextHtml(content, blockType) {
         var text = escText(content || '');
         var body = text || '&#160;';
@@ -181,16 +198,17 @@
     }
 
     function renderOptimisticBlockRow(opts) {
-        var contentHtml = renderBlockTextHtml(opts.content);
+        var blockType = normalizeBlockType(opts.blockType);
+        var contentHtml = renderBlockTextHtml(opts.content, blockType);
         return '<div class="block-row block-offline-pending" data-block-id="' + escAttr(opts.tempBlockId) + '" ' +
-            'data-offline-pending="create" data-block-type="ACTION" data-tags="" data-bookmarked="false" data-pinned="false">' +
-            '<span class="block-element-label hide-in-reader-view sidebar menu" data-block-type="ACTION" title="Fountain element type">Action</span>' +
+            'data-offline-pending="create" data-block-type="' + escAttr(blockType) + '" data-tags="" data-bookmarked="false" data-pinned="false">' +
+            '<span class="block-element-label hide-in-reader-view sidebar menu" data-block-type="' + escAttr(blockType) + '" title="Fountain element type">' + escText(blockTypeLabel(blockType)) + '</span>' +
             '<aside class="block-left-controls hide-in-reader-view sidebar menu">' +
             '<div class="block-left-controls-inner">' +
             '<input type="checkbox" class="block-select-checkbox" value="' + escAttr(opts.tempBlockId) + '" />' +
             renderCreateBelowMenuHtml() +
             '</div></aside>' +
-            '<div class="block-content script-block block-type-action script-block--action" ' +
+            '<div class="' + escAttr(blockContentTypeClasses(blockType)) + '" ' +
             'hx-get="/block/editInline?id=' + escAttr(opts.tempBlockId) + '" ' +
             'hx-trigger="click[!event.target.closest(\'a\')&amp;&amp;!event.target.closest(\'form\')&amp;&amp;!window.scriptySuppressBlockEditClick&amp;&amp;!window.scriptyBlockEditLocked]" hx-swap="innerHTML">' +
             contentHtml +
@@ -541,15 +559,19 @@
         var projectId = getProjectIdFromPage();
         var anchorId = form.querySelector('input[name="id"]').value;
         var tempBlockId = nextTempBlockId();
+        var typeInput = form.querySelector('input[name="type"], select[name="type"]');
+        var blockType = normalizeBlockType(typeInput && typeInput.value);
         var payload = {
             id: anchorId,
             content: textarea.value,
+            type: blockType,
             surface: 'project'
         };
 
         var optimistic = renderOptimisticBlockRow({
             tempBlockId: tempBlockId,
-            content: textarea.value
+            content: textarea.value,
+            blockType: blockType
         });
         var createRow = renderCreateBelowRow(tempBlockId);
         var template = document.createElement('template');
@@ -662,14 +684,64 @@
             };
         }
 
+        if (op.type === 'blockDelete') {
+            var deleteId = resolveAnchorId(op.payload.id, tempIdMap);
+            if (isTempBlockId(deleteId)) {
+                // The related create never reached the server; nothing to delete.
+                return { ok: true };
+            }
+            var deleteResponse = await fetch('/block/deleteInline?id=' + encodeURIComponent(deleteId), {
+                method: 'POST',
+                credentials: 'same-origin'
+            });
+            if (deleteResponse.ok || deleteResponse.status === 404) return { ok: true };
+            return {
+                ok: false,
+                retryable: deleteResponse.status >= 500 || deleteResponse.status === 0 || deleteResponse.status === 429,
+                error: 'HTTP ' + deleteResponse.status
+            };
+        }
+
+        if (op.type === 'blockSetType') {
+            var typeBlockId = resolveAnchorId(op.payload.id, tempIdMap);
+            if (isTempBlockId(typeBlockId)) {
+                return { ok: false, retryable: true, error: 'Waiting for related create to sync' };
+            }
+            var typeParams = new URLSearchParams(op.payload);
+            typeParams.set('id', typeBlockId);
+            var typeResponse = await fetch('/block/setTypeAndContent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                credentials: 'same-origin',
+                body: typeParams.toString()
+            });
+            if (typeResponse.ok) return { ok: true };
+            return {
+                ok: false,
+                retryable: typeResponse.status >= 500 || typeResponse.status === 0 || typeResponse.status === 429,
+                error: 'HTTP ' + typeResponse.status
+            };
+        }
+
         if (op.type === 'blockCreateBelow') {
-            var anchorId = resolveAnchorId(op.anchorBlockId || op.payload.id, tempIdMap);
-            if (isTempBlockId(anchorId)) {
+            var rawAnchor = op.anchorBlockId || op.payload.id;
+            var anchorId = rawAnchor == null ? null : resolveAnchorId(rawAnchor, tempIdMap);
+            if (anchorId != null && isTempBlockId(anchorId)) {
                 return { ok: false, retryable: true, error: 'Waiting for related create to sync' };
             }
             var createParams = new URLSearchParams(op.payload);
-            createParams.set('id', anchorId);
-            var createResponse = await fetch('/block/createBelowInline', {
+            var createUrl = '/block/createBelowInline';
+            if (anchorId == null || anchorId === '' || anchorId === 'null') {
+                // Anchor block was deleted offline with nothing adjacent left;
+                // append to the project instead of failing the whole queue.
+                createUrl = '/block/createInline';
+                createParams.delete('id');
+                createParams.set('projectId', String(op.projectId));
+                createParams.set('surface', 'project');
+            } else {
+                createParams.set('id', anchorId);
+            }
+            var createResponse = await fetch(createUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 credentials: 'same-origin',
@@ -995,6 +1067,191 @@
             /* keep current DOM if local save fails */
         });
     }
+
+    // --- Offline support for raw-fetch block endpoints (delete, type change) ---
+    // The drag-menu delete, Backspace-on-empty-block, and the Elements toolbar
+    // all use plain fetch(), so the htmx interception above never sees them.
+    // While offline, answer those requests locally: queue an outbox operation
+    // and return a synthetic 200 so each call site runs its normal optimistic
+    // success path (remove the row, swap in the edit form, keep the caret).
+
+    function parseRequestUrl(input) {
+        try {
+            var raw = typeof input === 'string' ? input : (input && input.url) || '';
+            return new URL(raw, window.location.href);
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function syntheticOkResponse(html) {
+        return new Response(html || '', {
+            status: 200,
+            headers: { 'Content-Type': 'text/html' }
+        });
+    }
+
+    function offlineUnavailableResponse() {
+        return new Response('', { status: 503, statusText: 'Offline' });
+    }
+
+    function reanchorPendingCreates(oldAnchorId, newAnchorId) {
+        if (!window.scriptyOfflineStore) return Promise.resolve();
+        return window.scriptyOfflineStore.listPendingOperations().then(function (ops) {
+            var updates = ops.filter(function (op) {
+                return op.type === 'blockCreateBelow' &&
+                    String(op.anchorBlockId || (op.payload && op.payload.id)) === String(oldAnchorId);
+            }).map(function (op) {
+                var payload = Object.assign({}, op.payload, { id: newAnchorId });
+                return window.scriptyOfflineStore.updateOperation(op.id, {
+                    anchorBlockId: newAnchorId,
+                    payload: payload
+                });
+            });
+            return Promise.all(updates);
+        });
+    }
+
+    function findReanchorTarget(row) {
+        if (!row) return null;
+        var prev = row.previousElementSibling;
+        while (prev && !prev.hasAttribute('data-block-id')) prev = prev.previousElementSibling;
+        if (prev) return prev.getAttribute('data-block-id');
+        // Deleting the first block: fall back to the next one so queued
+        // creates anchored here still sync (position shifts by one row).
+        var next = row.nextElementSibling;
+        while (next && !next.hasAttribute('data-block-id')) next = next.nextElementSibling;
+        return next ? next.getAttribute('data-block-id') : null;
+    }
+
+    function finishOfflineMutation(projectId, responseHtml) {
+        scheduleSnapshot();
+        flashSavedLocally();
+        return refreshPendingMarkers(projectId).then(function () {
+            updateOfflineBanner();
+            return syntheticOkResponse(responseHtml);
+        });
+    }
+
+    function handleBlockDeleteOffline(url) {
+        var blockId = url.searchParams.get('id');
+        var projectId = getProjectIdFromPage();
+        if (!blockId || !projectId || !window.scriptyOfflineStore) {
+            return Promise.resolve(offlineUnavailableResponse());
+        }
+        var row = document.querySelector('[data-block-id="' + blockId + '"]');
+        var newAnchorId = findReanchorTarget(row);
+        var work;
+        if (isTempBlockId(blockId)) {
+            // Never reached the server: cancel the pending create instead.
+            work = window.scriptyOfflineStore.findPendingCreateByTempId(blockId).then(function (pending) {
+                var anchor = newAnchorId != null ? newAnchorId : (pending ? pending.anchorBlockId : null);
+                return reanchorPendingCreates(blockId, anchor).then(function () {
+                    if (pending) return window.scriptyOfflineStore.removePendingOperation(pending.id);
+                });
+            });
+        } else {
+            work = window.scriptyOfflineStore.clearPendingOperationsForBlock(blockId, ['blockEdit', 'blockSetType'])
+                .then(function () { return reanchorPendingCreates(blockId, newAnchorId); })
+                .then(function () {
+                    return window.scriptyOfflineStore.enqueueOperation({
+                        type: 'blockDelete',
+                        projectId: projectId,
+                        blockId: Number(blockId),
+                        payload: { id: blockId }
+                    });
+                });
+        }
+        return work.then(function () {
+            return finishOfflineMutation(projectId, '');
+        }).catch(function () {
+            return offlineUnavailableResponse();
+        });
+    }
+
+    function handleSetTypeOffline(body) {
+        var params = new URLSearchParams(typeof body === 'string' ? body : '');
+        var blockId = params.get('id');
+        var blockType = normalizeBlockType(params.get('type'));
+        var projectId = getProjectIdFromPage() || Number(params.get('projectId'));
+        if (!blockId || !params.get('type') || !projectId || !window.scriptyOfflineStore) {
+            return Promise.resolve(offlineUnavailableResponse());
+        }
+
+        var row = document.querySelector('[data-block-id="' + blockId + '"]');
+        var blockContent = row ? row.querySelector('.block-content') : null;
+        var ctx = blockContent ? getBlockEditContext(blockContent) : {
+            blockId: blockId, blockType: blockType, content: '', tags: '', personId: '', characterHtml: ''
+        };
+        ctx.blockId = blockId;
+        ctx.blockType = blockType;
+        if (params.has('content')) ctx.content = params.get('content');
+        if (params.has('personId')) ctx.personId = params.get('personId') || '';
+        if (params.has('tags')) ctx.tags = params.get('tags') || '';
+        if (!ctx.personId) ctx.characterHtml = '';
+
+        var work;
+        if (isTempBlockId(blockId)) {
+            work = window.scriptyOfflineStore.findPendingCreateByTempId(blockId).then(function (pending) {
+                if (!pending) return;
+                var payload = Object.assign({}, pending.payload, {
+                    content: ctx.content,
+                    type: blockType
+                });
+                return window.scriptyOfflineStore.updateOperation(pending.id, { payload: payload });
+            });
+        } else {
+            // Only the last queued type change matters; drop earlier ones.
+            work = window.scriptyOfflineStore.clearPendingOperationsForBlock(blockId, ['blockSetType'])
+                .then(function () {
+                    return window.scriptyOfflineStore.enqueueOperation({
+                        type: 'blockSetType',
+                        projectId: projectId,
+                        blockId: Number(blockId),
+                        payload: {
+                            id: blockId,
+                            type: blockType,
+                            content: ctx.content || '',
+                            personId: ctx.personId || '',
+                            tags: ctx.tags || '',
+                            projectId: projectId,
+                            partial: 'project'
+                        }
+                    });
+                });
+        }
+        return work.then(function () {
+            return finishOfflineMutation(projectId, renderEditForm(ctx));
+        }).catch(function () {
+            return offlineUnavailableResponse();
+        });
+    }
+
+    (function installOfflineFetchShim() {
+        if (window._scriptyOfflineFetchShim || typeof window.fetch !== 'function') return;
+        window._scriptyOfflineFetchShim = true;
+        var passthroughFetch = window.fetch.bind(window);
+        window.fetch = function (input, init) {
+            try {
+                var method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+                if (method === 'POST' && !isEffectivelyOnline()) {
+                    var url = parseRequestUrl(input);
+                    if (url && url.origin === window.location.origin) {
+                        if (url.pathname === '/block/deleteInline') {
+                            return handleBlockDeleteOffline(url);
+                        }
+                        if (url.pathname === '/block/setTypeAndContent') {
+                            var body = init && typeof init.body === 'string' ? init.body : '';
+                            return handleSetTypeOffline(body);
+                        }
+                    }
+                }
+            } catch (err) {
+                /* fall through to the network */
+            }
+            return passthroughFetch(input, init);
+        };
+    }());
 
     window.scriptySaveBlockContentInline = saveBlockContentInline;
     window.scriptySaveBlockEditOffline = saveBlockEditOffline;

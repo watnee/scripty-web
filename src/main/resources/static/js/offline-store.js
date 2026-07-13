@@ -314,7 +314,7 @@
         return removePendingOperation(id);
     }
 
-    async function clearPendingEditsForBlock(blockId) {
+    async function clearPendingOperationsForBlock(blockId, types) {
         const db = await openDb();
         return new Promise(function (resolve, reject) {
             const tx = db.transaction(OUTBOX_STORE, 'readwrite');
@@ -322,9 +322,9 @@
             const request = store.getAll();
             request.onsuccess = function () {
                 (request.result || []).forEach(function (entry) {
-                    if (Number(entry.blockId) === Number(blockId)) {
-                        store.delete(entry.id);
-                    }
+                    if (Number(entry.blockId) !== Number(blockId)) return;
+                    if (types && types.indexOf(entry.type) === -1) return;
+                    store.delete(entry.id);
                 });
             };
             tx.oncomplete = function () {
@@ -336,6 +336,11 @@
                 reject(tx.error);
             };
         });
+    }
+
+    async function clearPendingEditsForBlock(blockId) {
+        // Content edits only — a re-save must not wipe queued type changes/deletes.
+        return clearPendingOperationsForBlock(blockId, ['blockEdit']);
     }
 
     global.scriptyOfflineStore = {
@@ -352,6 +357,7 @@
         removePendingEdit: removePendingEdit,
         removePendingOperation: removePendingOperation,
         clearPendingEditsForBlock: clearPendingEditsForBlock,
+        clearPendingOperationsForBlock: clearPendingOperationsForBlock,
         findPendingCreateByTempId: findPendingCreateByTempId,
         updatePendingCreateContent: updatePendingCreateContent
     };

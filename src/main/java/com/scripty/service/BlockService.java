@@ -11,7 +11,13 @@ import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 
 public interface BlockService {
 
+    /** How long soft-deleted blocks stay restorable before the purge job removes them. */
+    int TRASH_RETENTION_DAYS = 30;
+
     Block read(Integer id);
+
+    /** Reads a soft-deleted (trashed) block; returns null if the id is not in the trash. */
+    Block readDeleted(Integer id);
 
     CreateBlockViewModel getCreateBlockViewModel(Integer projectId);
     CreateBlockBelowViewModel getCreateBlockBelowViewModel(Integer id);
@@ -46,4 +52,13 @@ public interface BlockService {
     void setBlockTypes(java.util.List<Integer> ids, String type);
     void setBlockAlignments(java.util.List<Integer> ids, String align);
     void toggleBlockTextStyles(java.util.List<Integer> ids, String style);
+
+    /** Blocks deleted within the retention window, newest deletion first. */
+    java.util.List<Block> listDeletedBlocks(Integer projectId);
+    /** Trash page data for a project; null if the project doesn't exist. */
+    com.scripty.viewmodel.block.trash.TrashViewModel getTrashViewModel(Integer projectId);
+    /** Restores a trashed block near its original position; returns null if not in the trash. */
+    Block restoreBlock(Integer id);
+    /** Hard-deletes blocks trashed more than {@link #TRASH_RETENTION_DAYS} days ago. */
+    int purgeExpiredDeletedBlocks();
 }

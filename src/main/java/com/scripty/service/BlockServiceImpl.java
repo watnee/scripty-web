@@ -55,6 +55,11 @@ public class BlockServiceImpl implements BlockService {
     }
 
     @Override
+    public Block readDeleted(Integer id) {
+        return id != null ? blockRepository.findDeletedById(id).orElse(null) : null;
+    }
+
+    @Override
     public CreateBlockViewModel getCreateBlockViewModel(Integer projectId) {
         CreateBlockViewModel vm = new CreateBlockViewModel();
         Project project = projectRepository.findById(projectId).orElse(null);
@@ -1031,6 +1036,85 @@ public class BlockServiceImpl implements BlockService {
         for (Integer projectId : projectIds) {
             projectRepository.findById(projectId).ifPresent(this::recordScriptEdited);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Block> listDeletedBlocks(Integer projectId) {
+        if (projectId == null) {
+            return List.of();
+        }
+        java.time.Instant cutoff = java.time.Instant.now()
+                .minus(TRASH_RETENTION_DAYS, java.time.temporal.ChronoUnit.DAYS);
+        return blockRepository.findDeletedByProjectIdSince(projectId, cutoff);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.scripty.viewmodel.block.trash.TrashViewModel getTrashViewModel(Integer projectId) {
+        Project project = projectId != null ? projectRepository.findById(projectId).orElse(null) : null;
+        if (project == null) {
+            return null;
+        }
+        com.scripty.viewmodel.block.trash.TrashViewModel vm =
+                new com.scripty.viewmodel.block.trash.TrashViewModel();
+        vm.setProjectId(project.getId());
+        vm.setProjectTitle(project.getTitle());
+        vm.setRetentionDays(TRASH_RETENTION_DAYS);
+        java.time.Instant now = java.time.Instant.now();
+        for (Block block : listDeletedBlocks(projectId)) {
+            com.scripty.viewmodel.block.trash.TrashBlockViewModel row =
+                    new com.scripty.viewmodel.block.trash.TrashBlockViewModel();
+            row.setId(block.getId());
+            row.setTypeLabel(Block.typeLabelFor(block.getType()));
+            String content = block.getContent() != null ? block.getContent().trim() : "";
+            if (content.length() > 160) {
+                content = content.substring(0, 160).trim() + "…";
+            }
+            row.setContentPreview(content);
+            if (block.getPerson() != null) {
+                row.setPersonName(block.getPerson().getName());
+            }
+            java.time.Instant deletedAt = block.getDeletedAt();
+            if (deletedAt != null) {
+                row.setDeletedAt(java.time.LocalDateTime.ofInstant(deletedAt, java.time.ZoneId.systemDefault()));
+                long daysGone = java.time.temporal.ChronoUnit.DAYS.between(deletedAt, now);
+                row.setDaysLeft(Math.max(0, TRASH_RETENTION_DAYS - daysGone));
+            }
+            vm.getBlocks().add(row);
+        }
+        return vm;
+    }
+
+    @Override
+    @Transactional
+    public Block restoreBlock(Integer id) {
+        Block trashed = blockRepository.findDeletedById(id).orElse(null);
+        if (trashed == null) {
+            return null;
+        }
+        Project project = trashed.getProject();
+        ScriptEdition edition = resolveEdition(trashed);
+        int target = trashed.getOrder() != null ? trashed.getOrder() : 1;
+        if (edition != null) {
+            // Clamp to the live range, then open a gap at the target position.
+            // Bulk order shifts don't see soft-deleted rows' restriction, so the
+            // trashed block's own stale order is overwritten explicitly below.
+            int liveCount = blockRepository.countByScriptEditionId(edition.getId());
+            target = Math.max(1, Math.min(target, liveCount + 1));
+            blockRepository.incrementOrdersAbove(target - 1, edition.getId());
+        }
+        blockRepository.restoreDeletedById(id, target);
+        recordScriptEdited(project, edition);
+        return blockRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public int purgeExpiredDeletedBlocks() {
+        java.time.Instant cutoff = java.time.Instant.now()
+                .minus(TRASH_RETENTION_DAYS, java.time.temporal.ChronoUnit.DAYS);
+        return blockRepository.purgeDeletedBefore(cutoff);
     }
 
     private void recordScriptEdited(Project project) {

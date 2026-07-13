@@ -44,4 +44,23 @@ public interface BlockRepository extends JpaRepository<Block, Integer> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :currentOrder AND b.order <= :newOrder AND b.scriptEdition.id = :scriptEditionId")
     void decrementOrdersInRange(Integer currentOrder, Integer newOrder, Integer scriptEditionId);
+
+    // Soft-deleted (trashed) blocks are hidden by the entity's @SQLRestriction,
+    // so the trash flows below use native SQL to reach them.
+
+    @Query(value = "SELECT * FROM `block` WHERE project_id = :projectId AND deleted_at IS NOT NULL AND deleted_at >= :cutoff ORDER BY deleted_at DESC",
+            nativeQuery = true)
+    List<Block> findDeletedByProjectIdSince(Integer projectId, java.time.Instant cutoff);
+
+    @Query(value = "SELECT * FROM `block` WHERE id = :id AND deleted_at IS NOT NULL", nativeQuery = true)
+    Optional<Block> findDeletedById(Integer id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE `block` SET deleted_at = NULL, `order` = :order WHERE id = :id AND deleted_at IS NOT NULL",
+            nativeQuery = true)
+    int restoreDeletedById(Integer id, Integer order);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "DELETE FROM `block` WHERE deleted_at IS NOT NULL AND deleted_at < :cutoff", nativeQuery = true)
+    int purgeDeletedBefore(java.time.Instant cutoff);
 }

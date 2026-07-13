@@ -24,6 +24,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
@@ -78,6 +80,14 @@ public class SecurityConfig {
         return new MetricsTokenAuthorizationManager(metricsToken);
     }
 
+    /** Remember-me tokens stored in the persistent_logins table (V36). */
+    @Bean
+    public PersistentTokenRepository persistentTokenRepository(DataSource dataSource) {
+        JdbcTokenRepositoryImpl repository = new JdbcTokenRepositoryImpl();
+        repository.setDataSource(dataSource);
+        return repository;
+    }
+
     @Bean
     @Profile("!dev")
     public SecurityFilterChain filterChain(HttpSecurity http,
@@ -86,6 +96,8 @@ public class SecurityConfig {
             HtmxLoginUrlAuthenticationEntryPoint authenticationEntryPoint,
             MetricsTokenAuthorizationManager metricsTokenAuthorizationManager,
             UserRepository userRepository,
+            UserDetailsManager userDetailsManager,
+            PersistentTokenRepository persistentTokenRepository,
             PasskeySettings passkeySettings) throws Exception {
         applyWebAuthn(http, passkeySettings);
         http
@@ -164,6 +176,16 @@ public class SecurityConfig {
                 .permitAll()
             )
             .httpBasic(org.springframework.security.config.Customizer.withDefaults())
+            // Keep users signed in across server restarts and session expiry:
+            // a DB-backed remember-me token silently re-authenticates for 30 days
+            // (sliding — each auto-login refreshes the token). alwaysRemember means
+            // no checkbox on the login form; every password login gets the cookie.
+            .rememberMe(remember -> remember
+                .userDetailsService(userDetailsManager)
+                .tokenRepository(persistentTokenRepository)
+                .tokenValiditySeconds(30 * 24 * 60 * 60)
+                .alwaysRemember(true)
+            )
             .logout(logout -> logout
                 // Accept GET too: cached pages / bookmarks still hit GET /logout and
                 // otherwise fall through to a Spring Whitelabel 404.

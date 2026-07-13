@@ -6053,7 +6053,8 @@ body:has(main.text-documents-page) > main.text-documents-page {
     font-size: 0.9rem;
 }
 
-.text-document-edit-dropdown .nav-dropdown-item:disabled {
+.text-document-edit-dropdown .nav-dropdown-item:disabled,
+.text-document-file-dropdown .nav-dropdown-item:disabled {
     opacity: 0.45;
     cursor: default;
     background: none;
@@ -6142,6 +6143,41 @@ body:has(main.text-documents-page) > main.text-documents-page {
     background: var(--accent-bg, rgba(0, 0, 0, 0.05));
     color: var(--accent, inherit);
     font-weight: 700;
+}
+
+.text-document-menu-danger,
+.text-document-menu-danger:hover,
+.text-document-menu-danger:focus-visible {
+    color: var(--bad-fg-color, #e11d48);
+}
+
+/* Print-only mirror of the song/note (the textarea clips when printed). */
+.text-document-print-sheet {
+    display: none;
+}
+
+@media print {
+    body.text-document-printing > *:not(main),
+    body.text-document-printing .text-document-edit-page > *:not(.text-document-print-sheet) {
+        display: none !important;
+    }
+
+    body.text-document-printing .text-document-print-sheet {
+        display: block !important;
+        color: #000;
+    }
+
+    body.text-document-printing .text-document-print-title {
+        margin: 0 0 1rem;
+        font-size: 16pt;
+    }
+
+    body.text-document-printing .text-document-print-body {
+        white-space: pre-wrap;
+        font-family: "Courier Prime", "Courier New", Courier, monospace;
+        font-size: 12pt;
+        line-height: 1.5;
+    }
 }
 
 .text-document-breadcrumb-title-label {

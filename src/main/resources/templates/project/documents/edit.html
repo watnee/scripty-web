@@ -42,6 +42,35 @@
                 </ol>
             </nav>
             <div class="text-document-top-bar-actions">
+                <div class="nav-dropdown text-document-file-dropdown" id="text-doc-file-dropdown">
+                    <button type="button"
+                            class="nav-dropdown-toggle text-doc-file-toggle"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            aria-label="Import, export, and print"
+                            title="Import, export, and print">
+                        File
+                    </button>
+                    <div class="nav-dropdown-menu" role="menu" aria-label="Import, export, and print">
+                        <a id="text-doc-new"
+                           class="nav-dropdown-item"
+                           role="menuitem"
+                           th:href="@{/project/documents/create(projectId=${projectId}, type=${isSong} ? 'SONG' : 'NOTES')}"
+                           th:text="${isSong} ? 'New song' : 'New note'">New</a>
+                        <button id="text-doc-import" type="button" class="nav-dropdown-item" role="menuitem">Import…</button>
+                        <div class="nav-dropdown-divider" role="separator"></div>
+                        <button id="text-doc-insert" type="button" class="nav-dropdown-item" role="menuitem" title="Insert as blocks at the end of the screenplay">Insert into script</button>
+                        <button id="text-doc-download" type="button" class="nav-dropdown-item" role="menuitem">Download (.txt)</button>
+                        <button id="text-doc-print" type="button" class="nav-dropdown-item" role="menuitem">Print</button>
+                        <div class="nav-dropdown-divider" role="separator"></div>
+                        <button id="text-doc-delete"
+                                type="button"
+                                class="nav-dropdown-item text-document-menu-danger"
+                                role="menuitem"
+                                th:text="${isSong} ? 'Delete song' : 'Delete note'"
+                                th:attr="data-confirm=${isSong} ? 'Delete this song? This cannot be undone.' : 'Delete this note? This cannot be undone.'">Delete</button>
+                    </div>
+                </div>
                 <div class="nav-dropdown text-document-edit-dropdown" id="text-doc-edit-dropdown">
                     <button type="button"
                             class="nav-dropdown-toggle text-doc-edit-toggle"
@@ -65,25 +94,11 @@
                             <span class="nav-dropdown-item-label">Find &amp; Replace</span>
                             <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
                         </button>
+                        <th:block th:if="${isSong}">
+                            <div class="nav-dropdown-divider" role="separator"></div>
+                            <button th:replace="~{fragments/spellcheckToggle :: menuItem}"></button>
+                        </th:block>
                     </div>
-                </div>
-                <div class="spellcheck-toggle-container" th:if="${isSong}">
-                    <button id="nav-spellcheck-toggle"
-                            type="button"
-                            class="spellcheck-toggle-btn"
-                            role="menuitemcheckbox"
-                            aria-pressed="true"
-                            aria-checked="true"
-                            aria-label="Spellcheck"
-                            title="Spellcheck"
-                            onclick="window.toggleSpellcheck()">
-                        <svg class="spellcheck-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="m6 16 6-12 6 12"></path>
-                            <path d="M8 12h8"></path>
-                            <path d="m16 20 2 2 4-4" class="spellcheck-check"></path>
-                            <line x1="3" y1="3" x2="21" y2="21" class="spellcheck-slash" stroke="var(--bad-fg-color, #e11d48)" stroke-width="2"></line>
-                        </svg>
-                    </button>
                 </div>
                 <details class="text-document-about">
                     <summary class="text-document-about-toggle"
@@ -107,6 +122,33 @@
            th:if="${documentImportMessage != null}"
            th:text="${documentImportMessage}"
            role="status"></p>
+
+        <form id="text-doc-import-form"
+              th:action="@{/project/documents/import}"
+              method="post"
+              enctype="multipart/form-data"
+              hx-boost="false"
+              hidden>
+            <input type="hidden" name="projectId" th:value="${projectId}" />
+            <input type="hidden" name="type" th:value="${isSong} ? 'SONG' : 'NOTES'" />
+            <input id="text-doc-import-file" type="file" name="file" accept=".txt,.fountain,.docx,.doc,.fdx,.pdf" />
+        </form>
+        <form id="text-doc-insert-form"
+              th:action="@{/project/documents/insert}"
+              method="post"
+              hx-boost="false"
+              hidden>
+            <input type="hidden" name="id" value="" />
+        </form>
+        <form id="text-doc-delete-form"
+              th:action="@{/project/documents/delete}"
+              method="post"
+              hx-boost="false"
+              hidden>
+            <input type="hidden" name="id" value="" />
+            <input type="hidden" name="projectId" th:value="${projectId}" />
+            <input type="hidden" name="type" th:value="${isSong} ? 'SONG' : 'NOTES'" />
+        </form>
 
         <div id="text-doc-find-panel" class="text-document-find-panel" role="search" aria-label="Find and replace" hidden>
             <div class="text-document-find-row">
@@ -181,6 +223,8 @@
                       hidden></span>
             </div>
         </form>
+
+        <div id="text-doc-print-sheet" class="text-document-print-sheet" aria-hidden="true"></div>
     </main>
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>

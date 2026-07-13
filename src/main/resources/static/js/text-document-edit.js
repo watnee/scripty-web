@@ -84,6 +84,21 @@
         var findCloseBtn = document.getElementById('text-doc-find-close');
         var hasEditTools = !!(editDropdown && editToggle && findPanel && findInput && replaceInput);
 
+        var fileDropdown = document.getElementById('text-doc-file-dropdown');
+        var fileToggle = fileDropdown ? fileDropdown.querySelector('.nav-dropdown-toggle') : null;
+        var newLink = document.getElementById('text-doc-new');
+        var importBtn = document.getElementById('text-doc-import');
+        var importForm = document.getElementById('text-doc-import-form');
+        var importFileInput = document.getElementById('text-doc-import-file');
+        var insertBtn = document.getElementById('text-doc-insert');
+        var insertForm = document.getElementById('text-doc-insert-form');
+        var downloadBtn = document.getElementById('text-doc-download');
+        var printBtn = document.getElementById('text-doc-print');
+        var deleteBtn = document.getElementById('text-doc-delete');
+        var deleteForm = document.getElementById('text-doc-delete-form');
+        var printSheet = document.getElementById('text-doc-print-sheet');
+        var hasFileTools = !!(fileDropdown && fileToggle);
+
         var findMatches = [];
         var findIndex = -1;
         var findCaseSensitive = false;
@@ -342,27 +357,48 @@
             }
         }
 
-        function setMenuOpen(open) {
-            if (!editDropdown || !editToggle) return;
-            editDropdown.classList.toggle('open', open);
-            editToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-            if (open) {
+        function syncMenuState(dropdown) {
+            if (dropdown === editDropdown) {
                 if (undoBtn) undoBtn.disabled = !hist.undo.length;
                 if (redoBtn) redoBtn.disabled = !hist.redo.length;
+            } else if (dropdown === fileDropdown) {
+                // Insert/Delete need a saved document id (autosave assigns one
+                // after the first keystroke on a new song/note).
+                var hasId = !!(idInput && idInput.value);
+                if (insertBtn) insertBtn.disabled = !hasId;
+                if (deleteBtn) deleteBtn.disabled = !hasId;
             }
-            clampEditMenu();
         }
 
-        // The menu is right-anchored; on narrow screens the toggle can sit near
+        function setDropdownOpen(dropdown, open) {
+            if (!dropdown) return;
+            var toggleBtn = dropdown.querySelector('.nav-dropdown-toggle');
+            if (!toggleBtn) return;
+            if (open) {
+                // Only one of the editor's menus open at a time.
+                if (dropdown !== editDropdown) setDropdownOpen(editDropdown, false);
+                if (dropdown !== fileDropdown) setDropdownOpen(fileDropdown, false);
+                syncMenuState(dropdown);
+            }
+            dropdown.classList.toggle('open', open);
+            toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            clampMenu(dropdown);
+        }
+
+        function setMenuOpen(open) {
+            setDropdownOpen(editDropdown, open);
+        }
+
+        // Menus are right-anchored; on narrow screens the toggle can sit near
         // the left edge, pushing the menu off-viewport. Shift it back if so.
         // Offsets are layout-based, immune to the dropdownIn scale animation.
-        function clampEditMenu() {
-            var menu = editDropdown ? editDropdown.querySelector('.nav-dropdown-menu') : null;
+        function clampMenu(dropdown) {
+            var menu = dropdown ? dropdown.querySelector('.nav-dropdown-menu') : null;
             if (!menu) return;
             menu.style.marginRight = '';
-            if (!editDropdown.classList.contains('open')) return;
+            if (!dropdown.classList.contains('open')) return;
             var pad = 8;
-            var left = editDropdown.getBoundingClientRect().left + menu.offsetLeft;
+            var left = dropdown.getBoundingClientRect().left + menu.offsetLeft;
             if (left >= pad) return;
             var roomRight = document.documentElement.clientWidth - pad - (left + menu.offsetWidth);
             var shift = Math.min(pad - left, Math.max(0, roomRight));
@@ -435,22 +471,147 @@
             });
         }
 
+        // Runs fn once pending edits are saved, so server-side actions
+        // (insert into script) see the latest content. Falls back after 2s.
+        function flushThen(fn) {
+            if (!isDirty() && !state.hasPending()) {
+                fn();
+                return;
+            }
+            saveNow(false);
+            var started = Date.now();
+            var timer = setInterval(function () {
+                if ((!state.inFlight && !state.pending) || Date.now() - started > 2000) {
+                    clearInterval(timer);
+                    fn();
+                }
+            }, 100);
+        }
+
+        function downloadTxt() {
+            var ta = getTa();
+            var title = (titleInput && titleInput.value.trim()) || 'Untitled';
+            var blob = new Blob([ta ? ta.value : ''], { type: 'text/plain;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = title.replace(/[\\/:*?"<>|]+/g, '-') + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        }
+
+        function wireFileMenu() {
+            if (!hasFileTools) return;
+
+            fileToggle.addEventListener('click', function (e) {
+                e.stopPropagation();
+                setDropdownOpen(fileDropdown, !fileDropdown.classList.contains('open'));
+            });
+
+            if (newLink) {
+                newLink.addEventListener('click', function () {
+                    setDropdownOpen(fileDropdown, false);
+                });
+            }
+
+            if (importBtn && importForm && importFileInput) {
+                importBtn.addEventListener('click', function () {
+                    setDropdownOpen(fileDropdown, false);
+                    importFileInput.click();
+                });
+                importFileInput.addEventListener('change', function () {
+                    if (!importFileInput.files || !importFileInput.files.length) return;
+                    flushThen(function () { importForm.submit(); });
+                });
+            }
+
+            if (insertBtn && insertForm) {
+                insertBtn.addEventListener('click', function () {
+                    setDropdownOpen(fileDropdown, false);
+                    if (!idInput || !idInput.value) return;
+                    insertForm.querySelector('input[name="id"]').value = idInput.value;
+                    flushThen(function () { insertForm.submit(); });
+                });
+            }
+
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function () {
+                    setDropdownOpen(fileDropdown, false);
+                    downloadTxt();
+                });
+            }
+
+            if (printBtn) {
+                printBtn.addEventListener('click', function () {
+                    setDropdownOpen(fileDropdown, false);
+                    window.print();
+                });
+            }
+
+            if (deleteBtn && deleteForm) {
+                deleteBtn.addEventListener('click', function () {
+                    setDropdownOpen(fileDropdown, false);
+                    if (!idInput || !idInput.value) return;
+                    var message = deleteBtn.getAttribute('data-confirm')
+                        || 'Delete this document? This cannot be undone.';
+                    if (!window.confirm(message)) return;
+                    deleteForm.querySelector('input[name="id"]').value = idInput.value;
+                    deleteForm.submit();
+                });
+            }
+        }
+
+        // Print sheet: the textarea clips in print, so mirror title + content
+        // into a print-only element (used by the Print menu item and Cmd+P).
+        state.prepPrint = function () {
+            if (!printSheet) return;
+            printSheet.textContent = '';
+            var heading = document.createElement('h1');
+            heading.className = 'text-document-print-title';
+            heading.textContent = (titleInput && titleInput.value.trim()) || 'Untitled';
+            var body = document.createElement('div');
+            body.className = 'text-document-print-body';
+            var ta = getTa();
+            body.textContent = ta ? ta.value : '';
+            printSheet.appendChild(heading);
+            printSheet.appendChild(body);
+            document.body.classList.add('text-document-printing');
+        };
+
+        state.clearPrint = function () {
+            document.body.classList.remove('text-document-printing');
+        };
+
         state.onGlobalKeydown = function (e) {
+            if (e.key === 'Escape') {
+                if (editDropdown && editDropdown.classList.contains('open')) {
+                    setDropdownOpen(editDropdown, false);
+                    return;
+                }
+                if (fileDropdown && fileDropdown.classList.contains('open')) {
+                    setDropdownOpen(fileDropdown, false);
+                    return;
+                }
+                if (hasEditTools && findPanelOpen() && !findPanel.contains(document.activeElement)) {
+                    closeFindPanel(false);
+                }
+                return;
+            }
             if (!hasEditTools) return;
             if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.key || '').toLowerCase() === 'f') {
                 e.preventDefault();
                 openFindPanel();
-                return;
-            }
-            if (e.key === 'Escape' && findPanelOpen() && !findPanel.contains(document.activeElement)) {
-                closeFindPanel(false);
             }
         };
 
         state.onDocumentClick = function (e) {
-            if (editDropdown && editDropdown.classList.contains('open') && !editDropdown.contains(e.target)) {
-                setMenuOpen(false);
-            }
+            [editDropdown, fileDropdown].forEach(function (dropdown) {
+                if (dropdown && dropdown.classList.contains('open') && !dropdown.contains(e.target)) {
+                    setDropdownOpen(dropdown, false);
+                }
+            });
         };
 
         form.addEventListener('keydown', function (e) {
@@ -749,6 +910,7 @@
         }
 
         wireEditTools();
+        wireFileMenu();
         hist.prev = taSnapshot();
 
         return state;
@@ -764,6 +926,16 @@
     document.addEventListener('click', function (e) {
         if (current && current.onDocumentClick) {
             current.onDocumentClick(e);
+        }
+    });
+    window.addEventListener('beforeprint', function () {
+        if (current && current.prepPrint) {
+            current.prepPrint();
+        }
+    });
+    window.addEventListener('afterprint', function () {
+        if (current && current.clearPrint) {
+            current.clearPrint();
         }
     });
 

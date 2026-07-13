@@ -51,6 +51,12 @@ public interface TextDocumentService {
     boolean syncInsertedBlocks(Integer documentId, User currentUser);
 
     /**
+     * Emails a song's title and lyrics to a recipient. Songs only.
+     * @return the shared song, or null if not found/accessible, not a song, or the address is invalid
+     */
+    TextDocument shareSongByEmail(Integer id, String email, User currentUser);
+
+    /**
      * Import a text/Word file as a new song or draft document.
      * @param type SONG or NOTES (drafts)
      */

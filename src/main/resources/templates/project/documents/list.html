@@ -43,6 +43,11 @@
            th:text="${documentImportMessage}"
            role="status"></p>
 
+        <p class="text-document-import-banner"
+           th:if="${documentShareMessage != null}"
+           th:text="${documentShareMessage}"
+           role="status"></p>
+
         <section class="text-documents-section"
                  th:classappend="${isSongList} ? ' text-documents-section--songs' : ' text-documents-section--drafts'"
                  th:attr="aria-labelledby=${isSongList} ? 'songs-heading' : 'drafts-heading'">
@@ -196,6 +201,18 @@
                                 class="project-list-action-btn project-list-action-btn--secondary text-document-share-btn"
                                 th:attr="data-share-url=@{/project/documents/text(id=${doc.id})},data-share-title=${doc.title}"
                                 title="Share this song">Share</button>
+                        <form th:if="${isSongList}"
+                              th:action="@{/project/documents/share-email}"
+                              method="post"
+                              class="text-document-email-form"
+                              hx-boost="false">
+                            <input type="hidden" name="id" th:value="${doc.id}" />
+                            <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                            <input type="hidden" name="email" th:attr="data-doc-title=${doc.title}" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--secondary"
+                                    title="Email this song to someone">Email</button>
+                        </form>
                         <form th:if="${canEditScript}"
                               th:action="@{/project/documents/insert}"
                               method="post"
@@ -258,6 +275,27 @@
                         return;
                     }
                     titleInput.value = next;
+                });
+            });
+
+            document.querySelectorAll('.text-document-email-form').forEach(function(emailForm) {
+                emailForm.addEventListener('submit', function(e) {
+                    var emailInput = emailForm.querySelector('input[name="email"]');
+                    var title = emailInput ? (emailInput.getAttribute('data-doc-title') || 'this song') : 'this song';
+                    var address = window.prompt('Email "' + title + '" to:', '');
+                    if (address === null) {
+                        e.preventDefault();
+                        return;
+                    }
+                    address = address.trim();
+                    if (!address || address.indexOf('@') === -1) {
+                        e.preventDefault();
+                        if (address) {
+                            window.alert('Please enter a valid email address.');
+                        }
+                        return;
+                    }
+                    emailInput.value = address;
                 });
             });
 

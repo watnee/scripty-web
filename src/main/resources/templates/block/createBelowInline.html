@@ -7,9 +7,9 @@
         </div>
     </td>
     <td class="block-content">
-        <form th:attr="hx-post=@{/block/createBelowInline}" hx-target="closest tr" hx-swap="outerHTML" hx-trigger="keydown[key=='Enter'&amp;&amp;!event.shiftKey] from:find textarea, createNext">
+        <form th:attr="hx-post=@{/block/createBelowInline}" hx-target="closest tr" hx-swap="outerHTML" hx-trigger="createNext">
             <input type="hidden" name="id" th:value="${blockId}" />
-            <textarea spellcheck="true" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="block-input-textarea" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey)event.preventDefault()"></textarea>
+            <textarea spellcheck="true" autocomplete="off" autocorrect="off" autocapitalize="off" rows="1" class="block-input-textarea" name="content" autofocus onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();if(window.htmx)htmx.trigger(this.form,'createNext');}"></textarea>
         </form>
     </td>
     <td></td>

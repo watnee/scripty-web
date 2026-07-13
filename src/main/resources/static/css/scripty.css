@@ -3577,6 +3577,53 @@ tr.default-project-row td:first-child {
     transform: none;
 }
 
+.project-list-trash-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.6rem 0.6rem;
+    border-radius: 8px;
+    color: var(--muted-fg, #64748b);
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.project-list-trash-link:hover,
+.project-list-trash-link:focus-visible {
+    color: inherit;
+    background: var(--accent-bg, rgba(100, 116, 139, 0.1));
+    text-decoration: none;
+}
+
+.project-trash-title {
+    cursor: default;
+}
+
+.project-trash-countdown {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.project-trash-countdown--urgent {
+    color: var(--bad-fg, #d32f2f);
+    font-weight: 600;
+}
+
+.project-trash-purge-btn:hover,
+.project-trash-purge-btn:focus-visible {
+    color: var(--bad-fg, #d32f2f);
+    border-color: var(--bad-fg, #d32f2f);
+}
+
+.project-list-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
 .project-list-create-btn {
     display: inline-flex;
     align-items: center;

@@ -42,7 +42,26 @@ public interface ProjectService {
     TitlePageCommandModel getTitlePageCommandModel(Integer id);
     Project saveTitlePageCommandModel(TitlePageCommandModel titlePageCommandModel);
 
+    /**
+     * Moves the project to trash (soft delete). Trashed projects are hidden everywhere
+     * and permanently purged after {@link ProjectServiceImpl#TRASH_RETENTION_DAYS} days.
+     */
     Project deleteProject(Integer id);
+
+    Project restoreProject(Integer id);
+
+    Project deleteProjectPermanently(Integer id);
+
+    /**
+     * Trashed projects visible to the user, most recently deleted first.
+     */
+    List<com.scripty.viewmodel.project.projectlist.ProjectViewModel> getTrashedProjectViewModels(User user);
+
+    /**
+     * Permanently deletes projects trashed more than the retention period ago.
+     * @return number of projects purged
+     */
+    int purgeExpiredTrash();
 
     void setProjectTeams(Integer projectId, java.util.List<Integer> teamIds);
 

@@ -39,6 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ProjectServiceImpl implements ProjectService {
 
+    /** How long trashed projects are kept before permanent deletion. */
+    public static final int TRASH_RETENTION_DAYS = 30;
+
     private final ProjectRepository projectRepository;
     private final PersonRepository personRepository;
     private final BlockRepository blockRepository;
@@ -351,7 +354,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectProfileViewModel getProjectProfileViewModel(Integer id, Integer editionId, boolean canBrowseEditions) {
         Project project = projectRepository.findWithTeamsById(id).orElse(null);
-        if (project == null) {
+        if (project == null || project.isDeleted()) {
             return null;
         }
 
@@ -532,8 +535,75 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public Project deleteProject(Integer id) {
         Project project = projectRepository.findById(id).orElse(null);
-        projectRepository.delete(project);
+        if (project == null || project.isDeleted()) {
+            return project;
+        }
+        project.setDeletedAt(java.time.LocalDateTime.now());
+        projectRepository.save(project);
+        projectActivityService.recordForCurrentUser(
+                project.getId(),
+                ProjectActivity.ACTION_PROJECT_TRASHED,
+                "moved the project to trash",
+                ProjectActivity.ENTITY_PROJECT,
+                project.getId());
         return project;
+    }
+
+    @Override
+    public Project restoreProject(Integer id) {
+        Project project = projectRepository.findById(id).orElse(null);
+        if (project == null || !project.isDeleted()) {
+            return project;
+        }
+        project.setDeletedAt(null);
+        projectRepository.save(project);
+        projectActivityService.recordForCurrentUser(
+                project.getId(),
+                ProjectActivity.ACTION_PROJECT_RESTORED,
+                "restored the project from trash",
+                ProjectActivity.ENTITY_PROJECT,
+                project.getId());
+        return project;
+    }
+
+    @Override
+    public Project deleteProjectPermanently(Integer id) {
+        Project project = projectRepository.findById(id).orElse(null);
+        if (project != null) {
+            projectRepository.delete(project);
+        }
+        return project;
+    }
+
+    @Override
+    public List<ProjectViewModel> getTrashedProjectViewModels(User user) {
+        List<ProjectViewModel> trashed = new ArrayList<>();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        for (Project project : projectRepository.findByDeletedAtIsNotNullOrderByDeletedAtDesc()) {
+            if (!canUserAccessProject(project, user)) {
+                continue;
+            }
+            ProjectViewModel vm = new ProjectViewModel();
+            vm.setId(project.getId());
+            vm.setTitle(project.getTitle());
+            vm.setTeams(mapProjectTeams(project.getTeams()));
+            vm.setLastEdited(project.getLastEdited());
+            vm.setDeletedAt(project.getDeletedAt());
+            long elapsed = java.time.temporal.ChronoUnit.DAYS.between(project.getDeletedAt(), now);
+            vm.setDaysUntilPurge(Math.max(0, TRASH_RETENTION_DAYS - elapsed));
+            trashed.add(vm);
+        }
+        return trashed;
+    }
+
+    @Override
+    public int purgeExpiredTrash() {
+        java.time.LocalDateTime cutoff = java.time.LocalDateTime.now().minusDays(TRASH_RETENTION_DAYS);
+        List<Project> expired = projectRepository.findByDeletedAtBefore(cutoff);
+        for (Project project : expired) {
+            projectRepository.delete(project);
+        }
+        return expired.size();
     }
 
     @Override

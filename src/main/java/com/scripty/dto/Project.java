@@ -41,6 +41,9 @@ public class Project {
     @Column(name = "last_edited")
     private LocalDateTime lastEdited;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "project_team",
@@ -70,6 +73,18 @@ public class Project {
 
     public void setLastEdited(LocalDateTime lastEdited) {
         this.lastEdited = lastEdited;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
     }
 
     public String getScreenplayTitle() {

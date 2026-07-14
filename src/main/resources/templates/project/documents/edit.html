@@ -71,7 +71,7 @@
                         </svg>
                     </summary>
                     <p class="muted text-document-about-text"
-                       th:text="${isSong} ? 'Write lyrics freely. Each line becomes a Lyrics block when inserted. Edits auto-save and update places already in the screenplay.' : 'Write freely. Each line becomes a Note block when inserted. Edits auto-save and update places already in the screenplay.'">
+                       th:text="${isSong} ? 'Each line is a block, like the screenplay: Enter adds one, Backspace merges, Alt+arrows or the ⋮⋮ handle reorder. Lines become Lyrics blocks when inserted. Edits auto-save and update places already in the screenplay.' : 'Write freely. Each line becomes a Note block when inserted. Edits auto-save and update places already in the screenplay.'">
                         Write freely here.
                     </p>
                 </details>
@@ -127,5 +127,6 @@
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:src="@{/js/text-document-edit.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/song-block-editor.js(v=${assetVersion})}"></script>
 </body>
 </html>

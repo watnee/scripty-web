@@ -61,7 +61,7 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
         for (BlockViewModel block : blocks) {
             resources.add(toModel(block, projectId));
         }
-        return CollectionModel.of(resources)
+        return ApiCollections.of(resources, BlockResource.class)
                 .add(linkTo(methodOn(BlockRestController.class).list(projectId, null, null)).withSelfRel())
                 .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
     }

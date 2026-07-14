@@ -175,7 +175,7 @@ public class BlockController {
         return redirectToProject(block);
     }
 
-    @RequestMapping(value = "/toggleBookmarkInline", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/toggleBookmarkInline", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     @org.springframework.web.bind.annotation.ResponseBody
     public ResponseEntity<EntityModel<Map<String, Boolean>>> toggleBookmarkInline(@RequestParam Integer id, Principal principal) {
         if (denyEditBlock(id, principal)) {
@@ -194,7 +194,7 @@ public class BlockController {
         return redirectToProject(block);
     }
 
-    @RequestMapping(value = "/togglePinnedInline", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/togglePinnedInline", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     @org.springframework.web.bind.annotation.ResponseBody
     public ResponseEntity<EntityModel<Map<String, Boolean>>> togglePinnedInline(@RequestParam Integer id, Principal principal) {
         if (denyEditBlock(id, principal)) {

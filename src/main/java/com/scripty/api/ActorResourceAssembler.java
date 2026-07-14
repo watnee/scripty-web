@@ -77,7 +77,7 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
         for (ActorViewModel actor : actors) {
             resources.add(toModel(actor, projectId));
         }
-        CollectionModel<EntityModel<ActorResource>> collection = CollectionModel.of(resources)
+        CollectionModel<EntityModel<ActorResource>> collection = ApiCollections.of(resources, ActorResource.class)
                 .add(linkTo(methodOn(ActorRestController.class).list(projectId, null)).withSelfRel());
         if (projectId != null) {
             collection.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
@@ -90,7 +90,7 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
         for (Actor actor : actors) {
             resources.add(toModel(actor));
         }
-        return CollectionModel.of(resources)
+        return ApiCollections.of(resources, ActorResource.class)
                 .add(linkTo(methodOn(ActorRestController.class).list(null, null)).withSelfRel());
     }
 

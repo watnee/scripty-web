@@ -90,7 +90,7 @@ public class PersonResourceAssembler implements RepresentationModelAssembler<Cha
         for (CharacterViewModel character : characters) {
             resources.add(toModel(character, projectId));
         }
-        return CollectionModel.of(resources)
+        return ApiCollections.of(resources, PersonResource.class)
                 .add(linkTo(methodOn(PersonRestController.class).list(projectId, null)).withSelfRel())
                 .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
     }

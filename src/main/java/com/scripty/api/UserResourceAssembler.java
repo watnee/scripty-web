@@ -76,7 +76,7 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
         for (UserViewModel user : users) {
             resources.add(toModel(user));
         }
-        return CollectionModel.of(resources)
+        return ApiCollections.of(resources, UserResource.class)
                 .add(linkTo(methodOn(UserRestController.class).list()).withSelfRel());
     }
 

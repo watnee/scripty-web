@@ -4532,6 +4532,17 @@ html.scripty-hide-block-select tr.block-controls-revealed .block-drag-menu-dropd
     pointer-events: auto;
 }
 
+/* An explicitly opened drag menu must never be hidden by the focus-based
+   control reveal: blur-save refocus or create-row restore can move focus to
+   another row while the menu is open, which made the menu and its handle
+   vanish mid-click. */
+html.scripty-hide-block-select .block-drag-menu-dropdown.open,
+html.scripty-hide-block-select .block-drag-menu-dropdown.open .drag-handle,
+html.scripty-hide-block-select .block-drag-menu-dropdown.open .block-drag-menu {
+    visibility: visible;
+    pointer-events: auto;
+}
+
 html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) aside.block-left-controls,
 html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover td.block-left-controls,
 html.scripty-hide-block-select .block-row:focus-within:not(.project-script-select-row) aside.block-left-controls,

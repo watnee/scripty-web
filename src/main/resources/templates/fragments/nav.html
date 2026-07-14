@@ -5604,7 +5604,11 @@
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                         body: params.toString()
                     }).then(function(response) {
-                        if (response.ok || response.redirected) {
+                        // An expired session redirects to /login with a 200 —
+                        // that is a lost move, not a success: without this check
+                        // the block silently snaps back on the next re-render.
+                        var loginBounce = response.url && response.url.indexOf('/login') !== -1;
+                        if (!loginBounce && (response.ok || response.redirected)) {
                             window.scriptyUpdateUndoRedoButtons(projectId);
                             return;
                         }

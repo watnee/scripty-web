@@ -374,6 +374,16 @@
             form.appendChild(typeInput);
         }
         typeInput.value = type;
+
+        // Create rows keep focus through a type change, so no focusin fires —
+        // offer the cast list here when the row just became a character cue.
+        if ((type === 'CHARACTER' || type === 'DUAL_DIALOGUE')
+            && typeof window.scriptyMaybeShowCharacterAutocomplete === 'function') {
+            var textarea = form.querySelector('textarea[name="content"]');
+            if (textarea && document.activeElement === textarea) {
+                window.scriptyMaybeShowCharacterAutocomplete(textarea);
+            }
+        }
     }
 
     function captureTarget(preferredId) {

@@ -3461,6 +3461,12 @@
                     !activeEl.closest('.block-content')) {
                     return;
                 }
+                // The character-name field is its own editor inside .block-content —
+                // typing there must not reopen the block content editor.
+                if (activeEl && activeEl.classList &&
+                    activeEl.classList.contains('character-name-input')) {
+                    return;
+                }
 
                 e.preventDefault();
                 e.stopPropagation();

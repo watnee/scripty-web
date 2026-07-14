@@ -4,7 +4,8 @@
  * - Smart next-element type on Enter
  * - Live Fountain syntax detection (force markers + heuristics)
  * - Parse multi-line Fountain/plain text into typed blocks (external paste)
- * - Character cue autocomplete from project cast
+ * - Character cue autocomplete from project cast (opens on focus too)
+ * - Dialogue character-name field autocomplete
  * - Scene heading autocomplete from prior scenes
  * - Scene location autocomplete (reuse places from prior headings)
  * - Scene time-of-day autocomplete (DAY, NIGHT, …)
@@ -112,6 +113,11 @@
 
     function isBlockContentTextarea(el) {
         return !!el && el.tagName === 'TEXTAREA' && el.name === 'content' && !!el.closest('.block-content');
+    }
+
+    /** The small character-name field shown above dialogue blocks. */
+    function isCharacterNameInput(el) {
+        return !!el && el.tagName === 'INPUT' && el.classList.contains('character-name-input');
     }
 
     function findAnyBlockRow(el) {
@@ -709,6 +715,10 @@
         autocompleteEl.className = 'fountain-char-autocomplete hide-in-reader-view';
         autocompleteEl.setAttribute('role', 'listbox');
         autocompleteEl.hidden = true;
+        // Keep focus (and pending blur-saves) in the field while picking with the mouse
+        autocompleteEl.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+        });
         document.body.appendChild(autocompleteEl);
         return autocompleteEl;
     }
@@ -802,6 +812,34 @@
             showAutocomplete(textarea, matches, 'character');
         });
         return true;
+    }
+
+    window.scriptyMaybeShowCharacterAutocomplete = maybeShowCharacterAutocomplete;
+
+    function maybeShowCharacterNameAutocomplete(input) {
+        var query = (input.value || '').trim();
+        loadCharacters(false).then(function(entries) {
+            if (document.activeElement !== input) return;
+            var matches = filterCharacters(query, entries);
+            if (matches.length === 1 && matches[0].name.toUpperCase() === query.toUpperCase()) {
+                hideAutocomplete();
+                return;
+            }
+            autocompleteIndex = matches.length ? 0 : -1;
+            showAutocomplete(input, matches, 'character-name');
+        });
+    }
+
+    function acceptCharacterNameAutocomplete(input, name) {
+        if (!name) return;
+        hideAutocomplete();
+        input.value = name;
+        try {
+            input.focus({ preventScroll: true });
+            input.setSelectionRange(name.length, name.length);
+        } catch (err) { /* ignore */ }
+        // change saves the picked name immediately (form swaps to the display view)
+        input.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
     function maybeShowAutocomplete(textarea) {
@@ -1833,7 +1871,8 @@
     document.addEventListener('keydown', function(e) {
         if (!document.querySelector('.project-script')) return;
         var textarea = e.target;
-        if (!isBlockContentTextarea(textarea)) return;
+        var nameInput = isCharacterNameInput(textarea);
+        if (!isBlockContentTextarea(textarea) && !nameInput) return;
 
         // Autocomplete navigation
         if (autocompleteEl && !autocompleteEl.hidden) {
@@ -1860,11 +1899,12 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 var chosen = options[autocompleteIndex];
-                acceptAutocomplete(
-                    textarea,
-                    chosen.getAttribute('data-name') || chosen.textContent,
-                    chosen.getAttribute('data-person-id')
-                );
+                var chosenName = chosen.getAttribute('data-name') || chosen.textContent;
+                if (autocompleteKind === 'character-name') {
+                    acceptCharacterNameAutocomplete(textarea, chosenName);
+                } else {
+                    acceptAutocomplete(textarea, chosenName, chosen.getAttribute('data-person-id'));
+                }
                 return;
             }
             if (e.key === 'Escape') {
@@ -1874,6 +1914,9 @@
                 return;
             }
         }
+
+        // Tab cycle / Fountain detection only apply to block content textareas
+        if (nameInput) return;
 
         // Tab / Shift+Tab: next / previous logical screenplay element type
         if (e.key === 'Tab' && !e.altKey && !e.metaKey && !e.ctrlKey) {
@@ -1903,6 +1946,10 @@
     document.addEventListener('input', function(e) {
         if (!document.querySelector('.project-script')) return;
         var textarea = e.target;
+        if (isCharacterNameInput(textarea)) {
+            maybeShowCharacterNameAutocomplete(textarea);
+            return;
+        }
         if (!isBlockContentTextarea(textarea)) return;
 
         var value = textarea.value;
@@ -1916,11 +1963,34 @@
         scheduleScriptStatsRefresh();
     });
 
+    // Offer the cast as soon as a character cue or name field gains focus
+    document.addEventListener('focusin', function(e) {
+        if (!document.querySelector('.project-script')) return;
+        var target = e.target;
+        if (isCharacterNameInput(target)) {
+            // Kill any pending caret preview so typing stays in the name field
+            if (typeof window.scriptyClearBlockCaretPreview === 'function') {
+                window.scriptyClearBlockCaretPreview();
+            }
+            maybeShowCharacterNameAutocomplete(target);
+            return;
+        }
+        if (!isBlockContentTextarea(target)) return;
+        var row = findAnyBlockRow(target);
+        var type = rowType(row);
+        if (type === 'CHARACTER' || type === 'DUAL_DIALOGUE') {
+            maybeShowCharacterAutocomplete(target);
+        }
+    });
+
     document.addEventListener('focusout', function(e) {
-        if (!isBlockContentTextarea(e.target)) return;
+        if (!isBlockContentTextarea(e.target) && !isCharacterNameInput(e.target)) return;
         // Delay so autocomplete click can fire
+        var blurred = e.target;
         setTimeout(function() {
             if (autocompleteEl && autocompleteEl.contains(document.activeElement)) return;
+            // The dropdown may already belong to a newly focused field
+            if (autocompleteTextarea && autocompleteTextarea !== blurred) return;
             hideAutocomplete();
         }, 150);
     });
@@ -1930,6 +2000,16 @@
         var li = e.target.closest('#fountain-char-autocomplete li');
         if (li) {
             e.preventDefault();
+            if (autocompleteKind === 'character-name') {
+                var nameInput = autocompleteTextarea;
+                if (isCharacterNameInput(nameInput)) {
+                    acceptCharacterNameAutocomplete(
+                        nameInput,
+                        li.getAttribute('data-name') || li.textContent
+                    );
+                }
+                return;
+            }
             var textarea = autocompleteTextarea || document.activeElement;
             if (!isBlockContentTextarea(textarea)) {
                 textarea = document.querySelector('.block-content textarea[name="content"]:focus')

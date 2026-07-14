@@ -1,7 +1,7 @@
 package com.scripty.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.hateoas.RepresentationModel;
 
@@ -14,7 +14,7 @@ public class ProjectResource extends RepresentationModel<ProjectResource> {
     private String writers;
     private String contactInfo;
     private String screenplayVersion;
-    private LocalDateTime lastEdited;
+    private OffsetDateTime lastEdited;
     private List<String> teams;
 
     public Integer getId() {
@@ -65,11 +65,11 @@ public class ProjectResource extends RepresentationModel<ProjectResource> {
         this.screenplayVersion = screenplayVersion;
     }
 
-    public LocalDateTime getLastEdited() {
+    public OffsetDateTime getLastEdited() {
         return lastEdited;
     }
 
-    public void setLastEdited(LocalDateTime lastEdited) {
+    public void setLastEdited(OffsetDateTime lastEdited) {
         this.lastEdited = lastEdited;
     }
 

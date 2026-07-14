@@ -36,7 +36,7 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         resource.setWriters(profile.getWriters());
         resource.setContactInfo(profile.getContactInfo());
         resource.setScreenplayVersion(profile.getScreenplayVersion());
-        resource.setLastEdited(profile.getLastEdited());
+        resource.setLastEdited(ApiDates.toOffset(profile.getLastEdited()));
         resource.setTeams(profile.getTeams());
         return EntityModel.of(resource).add(projectLinks(profile.getId()));
     }
@@ -49,7 +49,7 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         resource.setWriters(project.getWriters());
         resource.setContactInfo(project.getContactInfo());
         resource.setScreenplayVersion(project.getScreenplayVersion());
-        resource.setLastEdited(project.getLastEdited());
+        resource.setLastEdited(ApiDates.toOffset(project.getLastEdited()));
         resource.setTeams(project.getTeamNames());
         return EntityModel.of(resource).add(projectLinks(project.getId()));
     }
@@ -75,7 +75,7 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         ProjectResource resource = new ProjectResource();
         resource.setId(project.getId());
         resource.setTitle(project.getTitle());
-        resource.setLastEdited(project.getLastEdited());
+        resource.setLastEdited(ApiDates.toOffset(project.getLastEdited()));
         if (project.getTeams() != null) {
             resource.setTeams(project.getTeams().stream()
                     .map(ProjectTeamViewModel::getName)

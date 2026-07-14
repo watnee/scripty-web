@@ -12,6 +12,7 @@ import com.scripty.security.MetricsTokenAuthorizationManager;
 import com.scripty.security.PasswordDiscardingUserCredentialRepository;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -30,6 +31,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.util.matcher.AndRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredentialUserEntityRepository;
 import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository;
@@ -178,6 +180,13 @@ public class SecurityConfig {
                 .permitAll()
             )
             .httpBasic(org.springframework.security.config.Customizer.withDefaults())
+            // Native API clients (e.g. the SwiftUI app) authenticate each request
+            // with an Authorization header, which browsers cannot attach cross-site,
+            // so CSRF tokens add nothing for them. Cookie-authenticated /api calls
+            // (HTMX) keep full CSRF protection.
+            .csrf(csrf -> csrf.ignoringRequestMatchers(new AndRequestMatcher(
+                    new AntPathRequestMatcher("/api/**"),
+                    request -> request.getHeader(HttpHeaders.AUTHORIZATION) != null)))
             // Keep users signed in across server restarts and session expiry:
             // a DB-backed remember-me token silently re-authenticates for 30 days
             // (sliding — each auto-login refreshes the token). alwaysRemember means

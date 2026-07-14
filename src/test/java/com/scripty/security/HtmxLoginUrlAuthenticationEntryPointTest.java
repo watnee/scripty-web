@@ -35,6 +35,24 @@ class HtmxLoginUrlAuthenticationEntryPointTest {
     }
 
     @Test
+    void apiRequestGetsJsonUnauthorizedWithBasicChallenge() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/project");
+        request.setRequestURI("/api/project");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        entryPoint.commence(
+                request,
+                response,
+                new AuthenticationCredentialsNotFoundException("unauthenticated"));
+
+        assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
+        assertEquals("Basic realm=\"Scripty API\"", response.getHeader("WWW-Authenticate"));
+        assertTrue(response.getContentType().startsWith("application/json"));
+        assertNull(response.getRedirectedUrl());
+        assertNull(response.getHeader("HX-Redirect"));
+    }
+
+    @Test
     void browserRequestRedirectsToLogin() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/project/show");
         request.setScheme("https");

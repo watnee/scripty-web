@@ -4071,6 +4071,9 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
     padding: 0.35rem;
     transform-origin: top left;
     z-index: 1300;
+    /* missing.css sets [role="menu"] { overflow: clip }, which would clip
+       the nested Lists flyout that must escape this menu's box. */
+    overflow: visible;
 }
 
 .project-tools-group .view-dropdown.open .nav-dropdown-menu.view-menu,

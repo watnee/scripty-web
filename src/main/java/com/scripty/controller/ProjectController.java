@@ -223,7 +223,7 @@ public class ProjectController {
         return "project/show";
     }
 
-    @RequestMapping(value = "/syncStatus", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/syncStatus", produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     @ResponseBody
     public ResponseEntity<EntityModel<Map<String, Object>>> syncStatus(@RequestParam Integer id,
                                                                        @RequestParam(required = false) Long since,
@@ -306,7 +306,7 @@ public class ProjectController {
         return "project/stats";
     }
 
-    @RequestMapping(value = "/undo", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/undo", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     @ResponseBody
     public ResponseEntity<EntityModel<Map<String, Object>>> undo(@RequestParam Integer projectId,
                                                                  @RequestParam(required = false) Integer editionId,
@@ -318,7 +318,7 @@ public class ProjectController {
         return ResponseEntity.ok(HypermediaSupport.projectUndoRedo(buildUndoRedoResponse(result, projectId, editionId), projectId, true));
     }
 
-    @RequestMapping(value = "/redo", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/redo", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     @ResponseBody
     public ResponseEntity<EntityModel<Map<String, Object>>> redo(@RequestParam Integer projectId,
                                                                  @RequestParam(required = false) Integer editionId,
@@ -330,7 +330,7 @@ public class ProjectController {
         return ResponseEntity.ok(HypermediaSupport.projectUndoRedo(buildUndoRedoResponse(result, projectId, editionId), projectId, false));
     }
 
-    @RequestMapping(value = "/undoRedoStatus", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/undoRedoStatus", produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     @ResponseBody
     public ResponseEntity<EntityModel<Map<String, Object>>> undoRedoStatus(@RequestParam Integer projectId,
                                                                            @RequestParam(required = false) Integer editionId,

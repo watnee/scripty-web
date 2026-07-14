@@ -33,7 +33,7 @@ public class TeamResourceAssembler implements RepresentationModelAssembler<Team,
         for (Team team : teams) {
             resources.add(toModel(team));
         }
-        return CollectionModel.of(resources)
+        return ApiCollections.of(resources, TeamResource.class)
                 .add(linkTo(methodOn(TeamRestController.class).list()).withSelfRel());
     }
 

@@ -25,11 +25,12 @@ public class HtmxLoginUrlAuthenticationEntryPoint extends LoginUrlAuthentication
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException, ServletException {
-        if (isApiRequest(request)) {
+        if (ApiRequests.isApiRequest(request)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setHeader("WWW-Authenticate", "Basic realm=\"Scripty API\"");
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"unauthorized\"}");
+            response.getWriter().write(
+                    "{\"error\":\"unauthorized\",\"message\":\"Authentication required.\"}");
             return;
         }
         if (isHtmxRequest(request)) {
@@ -39,11 +40,6 @@ public class HtmxLoginUrlAuthenticationEntryPoint extends LoginUrlAuthentication
             return;
         }
         super.commence(request, response, authException);
-    }
-
-    private static boolean isApiRequest(HttpServletRequest request) {
-        String path = request.getRequestURI().substring(request.getContextPath().length());
-        return path.equals("/api") || path.startsWith("/api/");
     }
 
     private static boolean isHtmxRequest(HttpServletRequest request) {

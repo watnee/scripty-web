@@ -10,11 +10,11 @@ public final class RestErrors {
     private RestErrors() {
     }
 
-    public static Map<String, String> from(BindingResult bindingResult) {
+    public static ApiError from(BindingResult bindingResult) {
         Map<String, String> errors = new HashMap<>();
         for (FieldError error : bindingResult.getFieldErrors()) {
             errors.put(error.getField(), error.getDefaultMessage());
         }
-        return errors;
+        return ApiError.validation(errors);
     }
 }

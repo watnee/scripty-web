@@ -12,6 +12,10 @@ public final class ApiRel {
     public static final String DELETE = "delete";
     public static final String PROJECT = "project";
     public static final String ACTOR = "actor";
+    public static final String BLOCK = "block";
+    public static final String CHARACTER = "character";
+    public static final String TEAM = "team";
+    public static final String USER = "user";
     public static final String UNDO = "undo";
     public static final String REDO = "redo";
     public static final String UNDO_REDO_STATUS = "undoRedoStatus";

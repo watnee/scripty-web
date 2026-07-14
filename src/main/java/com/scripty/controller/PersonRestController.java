@@ -2,6 +2,7 @@ package com.scripty.controller;
 
 import com.scripty.api.PersonResource;
 import com.scripty.api.PersonResourceAssembler;
+import com.scripty.api.ApiError;
 import com.scripty.api.RestErrors;
 import com.scripty.commandmodel.person.createperson.CreatePersonCommandModel;
 import com.scripty.commandmodel.person.editperson.EditPersonCommandModel;
@@ -13,7 +14,6 @@ import com.scripty.viewmodel.person.personprofile.PersonProfileViewModel;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.MediaTypes;
@@ -41,17 +41,17 @@ public class PersonRestController {
     ProjectAccessSupport projectAccess;
 
     @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
-    public ResponseEntity<CollectionModel<EntityModel<PersonResource>>> list(
+    public ResponseEntity<?> list(
             @RequestParam Integer projectId, Principal principal) {
         if (!projectAccess.canAccessProject(projectId, principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         PersonListViewModel viewModel = personService.getPersonListViewModel(projectId);
         return ResponseEntity.ok(
                 personResourceAssembler.toCharacterCollection(viewModel.getCharacters(), projectId));
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     public ResponseEntity<?> create(
             @Valid @RequestBody CreatePersonCommandModel commandModel,
             BindingResult bindingResult,
@@ -60,7 +60,7 @@ public class PersonRestController {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
         }
         if (!projectAccess.canAccessProject(commandModel.getProjectId(), principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         Person person = personService.saveCreatePersonCommandModel(commandModel);
         EntityModel<PersonResource> resource = personResourceAssembler.toModel(person);
@@ -69,19 +69,19 @@ public class PersonRestController {
                 .body(resource);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<PersonResource>> show(@PathVariable Integer id, Principal principal) {
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
+    public ResponseEntity<?> show(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessPerson(id, principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         PersonProfileViewModel viewModel = personService.getPersonProfileViewModel(id);
         if (viewModel == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiError.notFound());
         }
         return ResponseEntity.ok(personResourceAssembler.toModel(viewModel));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody EditPersonCommandModel commandModel,
@@ -91,17 +91,17 @@ public class PersonRestController {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
         }
         if (!projectAccess.canAccessPerson(id, principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         commandModel.setId(id);
         Person person = personService.saveEditPersonCommandModel(commandModel);
         return ResponseEntity.ok(personResourceAssembler.toModel(person));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<PersonResource>> delete(@PathVariable Integer id, Principal principal) {
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
+    public ResponseEntity<?> delete(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessPerson(id, principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         Person person = personService.deletePerson(id);
         return ResponseEntity.ok(personResourceAssembler.toDeleteModel(person));

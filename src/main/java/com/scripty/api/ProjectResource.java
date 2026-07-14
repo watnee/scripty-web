@@ -4,7 +4,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
+// Stable _embedded key matching the "projects" link rel; the default
+// ("projectResourceList") leaks the Java class name into the wire format.
+@Relation(collectionRelation = ApiRel.PROJECTS, itemRelation = ApiRel.PROJECT)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProjectResource extends RepresentationModel<ProjectResource> {
 

@@ -17,7 +17,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RequestMapping("/api")
 public class ApiRootController {
 
-    @GetMapping(produces = MediaTypes.HAL_JSON_VALUE)
+    @GetMapping(produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     public RepresentationModel<?> root() {
         RepresentationModel<?> root = new RepresentationModel<>();
         root.add(

@@ -2,6 +2,7 @@ package com.scripty.controller;
 
 import com.scripty.api.ProjectResource;
 import com.scripty.api.ProjectResourceAssembler;
+import com.scripty.api.ApiError;
 import com.scripty.api.RestErrors;
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
@@ -14,7 +15,6 @@ import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.MediaTypes;
@@ -40,8 +40,8 @@ public class ProjectRestController {
     @Autowired
     ProjectAccessSupport projectAccess;
 
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> list(Principal principal) {
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
+    public ResponseEntity<?> list(Principal principal) {
         User user = projectAccess.currentUser(principal);
         ProjectListViewModel viewModel;
         if (user != null
@@ -55,7 +55,7 @@ public class ProjectRestController {
         return ResponseEntity.ok(projectResourceAssembler.toProjectCollection(viewModel.getProjects()));
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     public ResponseEntity<?> create(
             @Valid @RequestBody CreateProjectCommandModel commandModel, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -68,19 +68,19 @@ public class ProjectRestController {
                 .body(resource);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<ProjectResource>> show(@PathVariable Integer id, Principal principal) {
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
+    public ResponseEntity<?> show(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessProject(id, principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
         if (viewModel == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiError.notFound());
         }
         return ResponseEntity.ok(projectResourceAssembler.toModel(viewModel));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody EditProjectCommandModel commandModel,
@@ -90,17 +90,17 @@ public class ProjectRestController {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
         }
         if (!projectAccess.canAccessProject(id, principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         commandModel.setId(id);
         Project project = projectService.saveEditProjectCommandModel(commandModel);
         return ResponseEntity.ok(projectResourceAssembler.toModel(project));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<ProjectResource>> delete(@PathVariable Integer id, Principal principal) {
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
+    public ResponseEntity<?> delete(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessProject(id, principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         Project project = projectService.deleteProject(id);
         return ResponseEntity.ok(projectResourceAssembler.toDeleteModel(project));

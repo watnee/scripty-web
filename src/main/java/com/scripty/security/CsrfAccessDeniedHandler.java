@@ -28,6 +28,19 @@ public class CsrfAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
             AccessDeniedException accessDeniedException) throws IOException, ServletException {
+        // API responses are always JSON: a native client that is denied needs a
+        // decodable body telling it what to fix, not an empty 403, an error page,
+        // or a login redirect.
+        if (ApiRequests.isApiRequest(request)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write(isCsrfFailure(accessDeniedException)
+                    ? "{\"error\":\"csrf_required\",\"message\":\"Send an Authorization header"
+                            + " (native clients) or a CSRF token (browser sessions).\"}"
+                    : "{\"error\":\"forbidden\",\"message\":\"You do not have access"
+                            + " to this resource.\"}");
+            return;
+        }
         if (isCsrfFailure(accessDeniedException) && acceptsHtml(request)) {
             String loginUrl = request.getContextPath() + LOGIN_CSRF_ERROR;
             if (isHtmxRequest(request)) {

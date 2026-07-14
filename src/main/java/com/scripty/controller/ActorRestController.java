@@ -2,6 +2,7 @@ package com.scripty.controller;
 
 import com.scripty.api.ActorResource;
 import com.scripty.api.ActorResourceAssembler;
+import com.scripty.api.ApiError;
 import com.scripty.api.RestErrors;
 import com.scripty.commandmodel.actor.createactor.CreateActorCommandModel;
 import com.scripty.commandmodel.actor.editactor.EditActorCommandModel;
@@ -14,7 +15,6 @@ import com.scripty.viewmodel.actor.actorprofile.ActorProfileViewModel;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.MediaTypes;
@@ -44,11 +44,11 @@ public class ActorRestController {
     @Autowired
     ProjectAccessSupport projectAccess;
 
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<CollectionModel<EntityModel<ActorResource>>> list(
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
+    public ResponseEntity<?> list(
             @RequestParam(required = false) Integer projectId, Principal principal) {
         if (!projectAccess.canViewCasting(principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         if (projectId != null) {
             ActorListViewModel viewModel = actorService.getActorListViewModel(projectId);
@@ -59,13 +59,13 @@ public class ActorRestController {
                 actorResourceAssembler.toActorCollectionFromEntities(actorRepository.findAllByOrderByFirstNameAsc()));
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     public ResponseEntity<?> create(
             @Valid @RequestBody CreateActorCommandModel commandModel,
             BindingResult bindingResult,
             Principal principal) {
         if (!projectAccess.canViewCasting(principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
@@ -77,23 +77,23 @@ public class ActorRestController {
                 .body(resource);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<ActorResource>> show(@PathVariable Integer id, Principal principal) {
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
+    public ResponseEntity<?> show(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canViewCasting(principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         ActorProfileViewModel viewModel = actorService.getActorProfileViewModel(id);
         return ResponseEntity.ok(actorResourceAssembler.toModel(viewModel));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody EditActorCommandModel commandModel,
             BindingResult bindingResult,
             Principal principal) {
         if (!projectAccess.canViewCasting(principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
@@ -103,10 +103,10 @@ public class ActorRestController {
         return ResponseEntity.ok(actorResourceAssembler.toModel(actor));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<EntityModel<ActorResource>> delete(@PathVariable Integer id, Principal principal) {
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
+    public ResponseEntity<?> delete(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canViewCasting(principal)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiError.forbidden());
         }
         Actor actor = actorService.deleteActor(id);
         return ResponseEntity.ok(actorResourceAssembler.toDeleteModel(actor));

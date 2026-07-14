@@ -218,6 +218,29 @@ public class BlockRestController {
     }
 
     /**
+     * Creates the single empty element an untouched script needs before there is
+     * anything to type into, or to insert below. Returns 409 if the script
+     * already has blocks — those callers want createBelow.
+     */
+    @RequestMapping(value = "/initial", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<?> createInitial(@RequestParam Integer projectId, Principal principal) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        projectUndoRedoService.recordCheckpoint(projectId);
+        Block block = blockService.createInitialBlock(projectId);
+        if (block == null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        projectVersionService.autoSaveVersionForBlock(block.getId());
+
+        EntityModel<BlockResource> resource = blockResourceAssembler.toModel(block);
+        return ResponseEntity
+                .created(resource.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .body(resource);
+    }
+
+    /**
      * Retypes a block (Scene, Action, Character, …), the REST counterpart of the
      * web editor's element-type bar. Omitting content or tags keeps the stored
      * values.

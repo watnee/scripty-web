@@ -1,0 +1,1 @@
+<span xmlns:th="http://www.thymeleaf.org" th:fragment="content(block)" class="song-block-text"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></span>

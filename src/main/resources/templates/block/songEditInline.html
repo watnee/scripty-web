@@ -1,0 +1,18 @@
+<form xmlns:th="http://www.thymeleaf.org"
+      th:fragment="form(block)"
+      class="song-block-inline-edit-form"
+      th:attr="hx-post=@{/project/documents/block/editInline}"
+      hx-target="closest .song-block-content"
+      hx-swap="innerHTML"
+      hx-trigger="focusout from:find textarea">
+    <input type="hidden" name="id" th:value="${block.id}" />
+    <textarea spellcheck="true"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              rows="1"
+              class="song-block-input"
+              name="content"
+              th:text="${block.content}"
+              onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();event.stopPropagation();if(window.songBlockEnter){window.songBlockEnter(this);}return false;}"></textarea>
+</form>

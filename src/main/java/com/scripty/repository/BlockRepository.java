@@ -44,4 +44,28 @@ public interface BlockRepository extends JpaRepository<Block, Integer> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :currentOrder AND b.order <= :newOrder AND b.scriptEdition.id = :scriptEditionId")
     void decrementOrdersInRange(Integer currentOrder, Integer newOrder, Integer scriptEditionId);
+
+    // --- Song/text-document-owned blocks: ordering scoped to the text document ---
+
+    List<Block> findByTextDocumentIdOrderByOrderAsc(Integer textDocumentId);
+
+    int countByTextDocumentId(Integer textDocumentId);
+
+    Optional<Block> findByTextDocumentIdAndOrder(Integer textDocumentId, Integer order);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Block b SET b.order = b.order + 1 WHERE b.order > :order AND b.textDocument.id = :textDocumentId")
+    void incrementOrdersAboveDoc(Integer order, Integer textDocumentId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :order AND b.textDocument.id = :textDocumentId")
+    void decrementOrdersAboveDoc(Integer order, Integer textDocumentId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Block b SET b.order = b.order + 1 WHERE b.order >= :newOrder AND b.order < :currentOrder AND b.textDocument.id = :textDocumentId")
+    void incrementOrdersInRangeDoc(Integer newOrder, Integer currentOrder, Integer textDocumentId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Block b SET b.order = b.order - 1 WHERE b.order > :currentOrder AND b.order <= :newOrder AND b.textDocument.id = :textDocumentId")
+    void decrementOrdersInRangeDoc(Integer currentOrder, Integer newOrder, Integer textDocumentId);
 }

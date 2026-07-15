@@ -44,6 +44,9 @@ public class TextDocumentController {
     TextDocumentService textDocumentService;
 
     @Autowired
+    com.scripty.service.SongBlockService songBlockService;
+
+    @Autowired
     ProjectVersionService projectVersionService;
 
     @Autowired
@@ -132,6 +135,11 @@ public class TextDocumentController {
         model.addAttribute("isSong", isSong);
         model.addAttribute("listPath", listPath(isSong));
         model.addAttribute("canEditScript", projectAccess.canEditScript(viewModel.getProjectId(), user));
+        if (isSong) {
+            // Songs edit as reorderable blocks; seed them from existing content on first open.
+            model.addAttribute("blocks", songBlockService.ensureBlocks(id));
+            model.addAttribute("documentId", id);
+        }
         return "project/documents/edit";
     }
 

@@ -1,0 +1,50 @@
+<div xmlns:th="http://www.thymeleaf.org"
+     th:fragment="row(block, focusBlockId)"
+     class="block-row song-block-row"
+     draggable="true"
+     th:attr="data-block-id=${block.id},data-block-order=${block.order},data-focus-new=${focusBlockId != null and focusBlockId == block.id} ? 'true' : null">
+    <button type="button"
+            class="drag-handle song-block-drag"
+            draggable="true"
+            title="Drag to reorder"
+            aria-label="Drag to reorder">&#8942;&#8942;</button>
+    <div class="song-block-content"
+         th:attr="hx-get=@{/project/documents/block/editInline(id=${block.id})}"
+         hx-trigger="scripty-edit-block"
+         hx-target="this"
+         hx-swap="innerHTML">
+        <th:block th:replace="${focusBlockId != null and focusBlockId == block.id}
+                              ? ~{block/songEditInline :: form(${block})}
+                              : ~{block/songShowInline :: content(${block})}"></th:block>
+    </div>
+    <div class="song-block-actions controls-wrapper">
+        <button type="button"
+                class="song-block-btn song-block-add"
+                th:attr="hx-post=@{/project/documents/block/createBelow(id=${block.id})}"
+                hx-target="#song-block-list"
+                hx-swap="outerHTML"
+                title="Add line below"
+                aria-label="Add line below">&#43;</button>
+        <button type="button"
+                class="song-block-btn block-move-up"
+                th:attr="hx-post=@{/project/documents/block/moveUp(id=${block.id})}"
+                hx-target="#song-block-list"
+                hx-swap="outerHTML"
+                title="Move up"
+                aria-label="Move up">&#8593;</button>
+        <button type="button"
+                class="song-block-btn block-move-down"
+                th:attr="hx-post=@{/project/documents/block/moveDown(id=${block.id})}"
+                hx-target="#song-block-list"
+                hx-swap="outerHTML"
+                title="Move down"
+                aria-label="Move down">&#8595;</button>
+        <button type="button"
+                class="song-block-btn song-block-delete"
+                th:attr="hx-post=@{/project/documents/block/delete(id=${block.id})}"
+                hx-target="#song-block-list"
+                hx-swap="outerHTML"
+                title="Delete line"
+                aria-label="Delete line">&#215;</button>
+    </div>
+</div>

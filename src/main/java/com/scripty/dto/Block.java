@@ -158,6 +158,11 @@ public class Block {
     @JoinColumn(name = "script_edition_id")
     private ScriptEdition scriptEdition;
 
+    /** When set, this block belongs to a song/text document's own block editor (not the screenplay). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "text_document_id")
+    private TextDocument textDocument;
+
     /** When set, this block was inserted from a song/draft and stays linked for sync. */
     @Column(name = "source_document_id")
     private Integer sourceDocumentId;
@@ -269,6 +274,14 @@ public class Block {
 
     public void setScriptEdition(ScriptEdition scriptEdition) {
         this.scriptEdition = scriptEdition;
+    }
+
+    public TextDocument getTextDocument() {
+        return textDocument;
+    }
+
+    public void setTextDocument(TextDocument textDocument) {
+        this.textDocument = textDocument;
     }
 
     public boolean isBookmarked() {

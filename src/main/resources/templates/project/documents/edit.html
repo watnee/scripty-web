@@ -71,7 +71,7 @@
                         </svg>
                     </summary>
                     <p class="muted text-document-about-text"
-                       th:text="${isSong} ? 'Write lyrics freely. Each line becomes a Lyrics block when inserted. Edits auto-save and update places already in the screenplay.' : 'Write freely. Each line becomes a Note block when inserted. Edits auto-save and update places already in the screenplay.'">
+                       th:text="${isSong} ? 'Each line is a block — click to edit, drag the handle to reorder, and use + / × to add or remove lines. Edits auto-save and update places already in the screenplay.' : 'Write freely. Each line becomes a Note block when inserted. Edits auto-save and update places already in the screenplay.'">
                         Write freely here.
                     </p>
                 </details>
@@ -83,7 +83,41 @@
            th:text="${documentImportMessage}"
            role="status"></p>
 
-        <form th:action="@{/project/documents/save}"
+        <!--/* Songs edit as reorderable blocks; notes/drafts keep the plain textarea. */-->
+        <div th:if="${isSong}"
+             class="song-editor"
+             th:classappend="${canEditScript} ? '' : ' song-editor--readonly'"
+             th:attr="data-document-id=${documentId},data-project-id=${projectId},data-can-edit=${canEditScript} ? 'true' : 'false'">
+            <input type="hidden" id="song-document-id" th:value="${documentId}" />
+            <input type="hidden" id="song-project-id" th:value="${projectId}" />
+
+            <th:block th:replace="~{block/songBlockList :: list}"></th:block>
+
+            <div class="song-editor-footer" th:if="${canEditScript}">
+                <button type="button"
+                        id="song-add-line"
+                        class="song-add-line-btn"
+                        th:attr="hx-post=@{/project/documents/block/create(documentId=${documentId})}"
+                        hx-target="#song-block-list"
+                        hx-swap="outerHTML">+ Add line</button>
+            </div>
+
+            <div class="text-document-meta-bar">
+                <span id="text-document-last-edited" class="text-document-last-edited muted" th:style="${updatedAt == null} ? 'display: none;' : ''">
+                    Last edited <span class="last-edited-time"
+                                      th:attr="data-timestamp=${updatedAt != null ? #temporals.format(updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}"
+                                      th:text="${updatedAt != null ? #temporals.format(updatedAt, 'MMM d, yyyy') : ''}"></span>
+                </span>
+                <span id="text-document-save-status"
+                      class="text-document-save-status muted"
+                      role="status"
+                      aria-live="polite"
+                      hidden></span>
+            </div>
+        </div>
+
+        <form th:unless="${isSong}"
+              th:action="@{/project/documents/save}"
               method="post"
               th:object="${commandModel}"
               class="text-document-form"
@@ -96,14 +130,13 @@
 
             <div class="text-document-editor-shell">
                 <label class="text-document-content-label">
-                    <span class="visually-hidden"
-                          th:text="${isSong} ? 'Lyrics' : 'Content'">Content</span>
+                    <span class="visually-hidden">Content</span>
                     <textarea th:field="*{content}"
                               id="text-document-content"
                               class="text-document-content"
                               rows="18"
-                              th:attr="aria-label=${isSong} ? 'Lyrics' : 'Content'"
-                              th:placeholder="${isSong} ? 'Write your song lyrics here…&#10;&#10;Each line will become a Lyrics block when inserted.' : 'Write notes or scratch text here…&#10;&#10;Each line will become a Note block when inserted.'"
+                              aria-label="Content"
+                              placeholder="Write notes or scratch text here…&#10;&#10;Each line will become a Note block when inserted."
                               autocomplete="off"
                               spellcheck="true"></textarea>
                 </label>
@@ -126,6 +159,7 @@
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
-    <script th:src="@{/js/text-document-edit.js(v=${assetVersion})}"></script>
+    <script th:unless="${isSong}" th:src="@{/js/text-document-edit.js(v=${assetVersion})}"></script>
+    <script th:if="${isSong}" th:src="@{/js/song-blocks-edit.js(v=${assetVersion})}"></script>
 </body>
 </html>

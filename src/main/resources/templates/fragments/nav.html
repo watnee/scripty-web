@@ -5512,6 +5512,7 @@
             container.dataset.dragInit = 'true';
             options = options || {};
             const projectId = options.projectId || resolveProjectId();
+            const moveUrl = options.moveUrl || '/block/moveTo';
             let dragRow = null;
 
             updateMoveButtonStates(container);
@@ -5597,7 +5598,7 @@
                     params.append('id', blockId);
                     params.append('position', String(newOrder));
                     if (projectId) params.append('projectId', projectId);
-                    fetch('/block/moveTo', {
+                    fetch(moveUrl, {
                         method: 'POST',
                         credentials: 'same-origin',
                         cache: 'no-store',

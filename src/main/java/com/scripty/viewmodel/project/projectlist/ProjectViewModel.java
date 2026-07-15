@@ -18,6 +18,8 @@ public class ProjectViewModel {
     private String title;
     private List<ProjectTeamViewModel> teams;
     private LocalDateTime lastEdited;
+    private LocalDateTime deletedAt;
+    private long daysUntilPurge;
 
     public int getId() {
         return id;
@@ -49,5 +51,21 @@ public class ProjectViewModel {
 
     public void setLastEdited(LocalDateTime lastEdited) {
         this.lastEdited = lastEdited;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public long getDaysUntilPurge() {
+        return daysUntilPurge;
+    }
+
+    public void setDaysUntilPurge(long daysUntilPurge) {
+        this.daysUntilPurge = daysUntilPurge;
     }
 }

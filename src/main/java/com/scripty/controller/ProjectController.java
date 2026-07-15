@@ -401,6 +401,30 @@ public class ProjectController {
         return "redirect:/project/list";
     }
 
+    @RequestMapping(value = "/trash")
+    public String trash(Model model, Principal principal) {
+        User currentUser = principal != null ? userService.readByUsername(principal.getName()) : null;
+        model.addAttribute("trashedProjects", projectService.getTrashedProjectViewModels(currentUser));
+        model.addAttribute("retentionDays", com.scripty.service.ProjectServiceImpl.TRASH_RETENTION_DAYS);
+        return "project/trash";
+    }
+
+    @RequestMapping(value = "/restore", method = RequestMethod.POST)
+    public String restore(@RequestParam Integer id, Principal principal) {
+        if (!denyProjectAccess(id, principal)) {
+            projectService.restoreProject(id);
+        }
+        return "redirect:/project/trash";
+    }
+
+    @RequestMapping(value = "/purge", method = RequestMethod.POST)
+    public String purge(@RequestParam Integer id, Principal principal) {
+        if (!denyProjectAccess(id, principal)) {
+            projectService.deleteProjectPermanently(id);
+        }
+        return "redirect:/project/trash";
+    }
+
     @RequestMapping(value = "/edit")
     public String edit(@RequestParam Integer id, Model model, Principal principal) {
         if (denyProjectAccess(id, principal)) {

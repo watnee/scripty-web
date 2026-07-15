@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - Trash</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('projects')}"></div>
+    <main class="project-list-page">
+
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li><a th:href="@{/project/list}">Projects</a></li>
+                <li aria-current="page">Trash</li>
+            </ol>
+        </nav>
+
+        <div class="project-list-header">
+            <div class="project-list-header-text">
+                <h1>Trash</h1>
+                <p class="muted" th:text="|Deleted projects are kept for ${retentionDays} days, then permanently deleted.|"></p>
+            </div>
+        </div>
+
+        <div class="project-list-panel" th:if="${!#lists.isEmpty(trashedProjects)}">
+            <table class="project-list-table">
+                <tbody>
+                    <tr th:each="project : ${trashedProjects}" class="project-list-row">
+                        <td class="project-list-main-cell">
+                            <div class="project-title-container">
+                                <div class="project-list-title-wrap">
+                                    <div class="project-list-title-row">
+                                        <span class="project-list-title project-trash-title" th:text="${project.title}"></span>
+                                    </div>
+                                    <div class="project-list-meta">
+                                        <span class="project-list-last-edited" th:if="${project.deletedAt != null}" th:title="${#temporals.format(project.deletedAt, 'MMM d, yyyy, h:mm a')}">
+                                            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            </svg>
+                                            <span th:text="|Deleted ${#temporals.format(project.deletedAt, 'MMM d, yyyy')}|"></span>
+                                        </span>
+                                        <span class="project-list-meta-sep" aria-hidden="true"></span>
+                                        <span class="project-trash-countdown"
+                                              th:classappend="${project.daysUntilPurge <= 5} ? 'project-trash-countdown--urgent' : ''">
+                                            <th:block th:if="${project.daysUntilPurge > 1}" th:text="|${project.daysUntilPurge} days left|"></th:block>
+                                            <th:block th:if="${project.daysUntilPurge == 1}">1 day left</th:block>
+                                            <th:block th:if="${project.daysUntilPurge <= 0}">Deleting soon</th:block>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="project-list-actions">
+                                    <form th:action="@{/project/restore}" method="post" hx-boost="false">
+                                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                        <input type="hidden" name="id" th:value="${project.id}" />
+                                        <button type="submit"
+                                                class="project-list-action-btn project-list-action-btn--primary"
+                                                title="Restore project">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <polyline points="1 4 1 10 7 10"></polyline>
+                                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                                            </svg>
+                                            <span class="project-list-action-label">Restore</span>
+                                        </button>
+                                    </form>
+                                    <form th:action="@{/project/purge}" method="post" hx-boost="false"
+                                          th:attr="data-project-title=${project.title}"
+                                          onsubmit="return confirm('Permanently delete “' + this.getAttribute('data-project-title') + '”? This cannot be undone.');">
+                                        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                        <input type="hidden" name="id" th:value="${project.id}" />
+                                        <button type="submit"
+                                                class="project-list-action-btn project-list-action-btn--icon project-trash-purge-btn"
+                                                aria-label="Delete forever"
+                                                title="Delete forever">
+                                            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="project-list-empty" th:if="${#lists.isEmpty(trashedProjects)}">
+            <div class="project-list-empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </div>
+            <p class="project-list-empty-title">Trash is empty</p>
+            <p class="muted">Deleted projects appear here and can be restored for <span th:text="${retentionDays}">30</span> days.</p>
+            <a th:href="@{/project/list}" role="button" class="project-list-create-btn">Back to Projects</a>
+        </div>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

@@ -32,7 +32,7 @@ public class TeamController {
     @RequestMapping(value = "/list")
     public String list(Model model) {
         List<Team> teams = teamService.list();
-        List<Project> allProjects = projectRepository.findAllByOrderByTitleAsc();
+        List<Project> allProjects = projectRepository.findAllByDeletedAtIsNullOrderByTitleAsc();
         Map<Integer, List<Project>> productionsByTeamId = new HashMap<>();
 
         for (Team team : teams) {
@@ -98,7 +98,7 @@ public class TeamController {
 
         model.addAttribute("commandModel", commandModel);
         
-        List<Project> allProjects = projectRepository.findAllByOrderByTitleAsc();
+        List<Project> allProjects = projectRepository.findAllByDeletedAtIsNullOrderByTitleAsc();
         model.addAttribute("team", team);
         model.addAttribute("allProjects", allProjects);
 
@@ -111,7 +111,7 @@ public class TeamController {
                            @RequestParam(value = "projectIds", required = false) List<Integer> projectIds, 
                            Model model) {
         if (bindingResult.hasErrors()) {
-            List<Project> allProjects = projectRepository.findAllByOrderByTitleAsc();
+            List<Project> allProjects = projectRepository.findAllByDeletedAtIsNullOrderByTitleAsc();
             model.addAttribute("team", teamService.read(commandModel.getId()));
             model.addAttribute("allProjects", allProjects);
             return "team/edit";
@@ -123,7 +123,7 @@ public class TeamController {
             teamService.update(commandModel.getId(), commandModel.getName(), projectIds);
         } catch (IllegalArgumentException e) {
             bindingResult.rejectValue("name", "error.team", e.getMessage());
-            List<Project> allProjects = projectRepository.findAllByOrderByTitleAsc();
+            List<Project> allProjects = projectRepository.findAllByDeletedAtIsNullOrderByTitleAsc();
             model.addAttribute("team", teamService.read(commandModel.getId()));
             model.addAttribute("allProjects", allProjects);
             return "team/edit";

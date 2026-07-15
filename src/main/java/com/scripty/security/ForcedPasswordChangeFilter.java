@@ -28,8 +28,13 @@ public class ForcedPasswordChangeFilter extends OncePerRequestFilter {
     // /webauthn/ is exempt: registering a passkey is the other way to resolve a
     // bootstrap credential — PasswordDiscardingUserCredentialRepository replaces
     // the temporary password and clears the flag when the passkey is saved.
+    // The forced-change lock is a browser-session concept: it redirects HTML
+    // navigations to the change-password page. Native API clients authenticate
+    // per request with Basic auth and drive their own change-password flow
+    // (PUT /api/account/password), so a 302 to an HTML page only corrupts their
+    // JSON responses — exempt /api/ and let SecurityConfig's role rules govern.
     private static final String[] EXEMPT_PREFIXES = {
-            "/css/", "/js/", "/icons/", "/fonts/", "/dictionaries/", "/actuator/", "/webauthn/"
+            "/css/", "/js/", "/icons/", "/fonts/", "/dictionaries/", "/actuator/", "/webauthn/", "/api/"
     };
 
     private static final String[] EXEMPT_PATHS = {

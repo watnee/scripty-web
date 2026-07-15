@@ -146,7 +146,10 @@ public class SecurityConfig {
                         "/forgot-password",
                         "/forgot-password/**")
                     .permitAll()
-                .requestMatchers("/account/password")
+                // Self-service account endpoints: the web change-password page and
+                // the native "me" resource + password change. Any signed-in user,
+                // not just admins — must precede the admin-gated /account/** below.
+                .requestMatchers("/account/password", "/api/account", "/api/account/**")
                     .hasRole("USER")
                 .requestMatchers(
                         "/config/**",
@@ -154,7 +157,6 @@ public class SecurityConfig {
                         "/api/user/**",
                         "/team/**",
                         "/api/team/**",
-                        "/api/account/**",
                         "/account/**")
                     .hasRole("ADMIN")
                 .requestMatchers(

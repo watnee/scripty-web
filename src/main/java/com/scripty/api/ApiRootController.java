@@ -22,6 +22,7 @@ public class ApiRootController {
         RepresentationModel<?> root = new RepresentationModel<>();
         root.add(
                 linkTo(methodOn(ApiRootController.class).root()).withSelfRel(),
+                linkTo(methodOn(AccountRestController.class).account(null)).withRel(ApiRel.ACCOUNT),
                 linkTo(methodOn(UserRestController.class).list()).withRel(ApiRel.USERS),
                 linkTo(methodOn(ProjectRestController.class).list(null)).withRel(ApiRel.PROJECTS),
                 linkTo(methodOn(ActorRestController.class).list(null, null)).withRel(ApiRel.ACTORS),

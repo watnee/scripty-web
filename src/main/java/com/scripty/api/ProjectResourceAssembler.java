@@ -64,9 +64,19 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
     }
 
     public CollectionModel<EntityModel<ProjectResource>> toProjectCollection(Iterable<ProjectViewModel> projects) {
+        return toProjectCollection(projects, null);
+    }
+
+    public CollectionModel<EntityModel<ProjectResource>> toProjectCollection(
+            Iterable<ProjectViewModel> projects, Integer defaultProjectId) {
         List<EntityModel<ProjectResource>> resources = new ArrayList<>();
         for (ProjectViewModel project : projects) {
-            resources.add(toModel(project));
+            EntityModel<ProjectResource> model = toModel(project);
+            if (defaultProjectId != null && defaultProjectId.equals(project.getId())
+                    && model.getContent() != null) {
+                model.getContent().setDefault(true);
+            }
+            resources.add(model);
         }
         return CollectionModel.of(resources)
                 .add(linkTo(methodOn(ProjectRestController.class).list(null)).withSelfRel());
@@ -91,6 +101,7 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(ProjectRestController.class).list(null)).withRel(ApiRel.PROJECTS),
                 linkTo(methodOn(ProjectRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE),
                 linkTo(methodOn(ProjectRestController.class).delete(id, null)).withRel(ApiRel.DELETE),
+                linkTo(methodOn(ProjectRestController.class).toggleDefault(id, null)).withRel(ApiRel.TOGGLE_DEFAULT),
                 linkTo(methodOn(BlockRestController.class).list(id, null, null)).withRel(ApiRel.BLOCKS),
                 linkTo(methodOn(PersonRestController.class).list(id, null)).withRel(ApiRel.CHARACTERS),
                 linkTo(methodOn(ActorRestController.class).list(id, null)).withRel(ApiRel.ACTORS),

@@ -9,6 +9,7 @@ import com.scripty.dto.Project;
 import com.scripty.dto.User;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ProjectService;
+import com.scripty.service.UserService;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import jakarta.validation.Valid;
@@ -40,6 +41,9 @@ public class ProjectRestController {
     @Autowired
     ProjectAccessSupport projectAccess;
 
+    @Autowired
+    UserService userService;
+
     @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> list(Principal principal) {
         User user = projectAccess.currentUser(principal);
@@ -52,7 +56,32 @@ public class ProjectRestController {
         } else {
             viewModel = projectService.getProjectListViewModel();
         }
-        return ResponseEntity.ok(projectResourceAssembler.toProjectCollection(viewModel.getProjects()));
+        Integer defaultProjectId = user != null ? user.getDefaultProjectId() : null;
+        return ResponseEntity.ok(
+                projectResourceAssembler.toProjectCollection(viewModel.getProjects(), defaultProjectId));
+    }
+
+    /**
+     * Toggles this project as the current user's default (mirrors the web
+     * list's star). Returns the refreshed project collection so the caller
+     * sees the updated default flags.
+     */
+    @RequestMapping(value = "/{id}/toggleDefault", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> toggleDefault(
+            @PathVariable Integer id, Principal principal) {
+        User user = projectAccess.currentUser(principal);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (id.equals(user.getDefaultProjectId())) {
+            user.setDefaultProjectId(null);
+        } else if (projectAccess.canAccessProject(id, user)) {
+            user.setDefaultProjectId(id);
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        userService.update(user);
+        return list(principal);
     }
 
     @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)

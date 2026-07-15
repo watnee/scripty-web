@@ -1,6 +1,11 @@
 package com.scripty.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scripty.repository.UserRepository;
+import com.scripty.security.ApiTokenAuthenticationFilter;
+import com.scripty.security.TokenIssuingWebAuthnSuccessHandler;
+import com.scripty.service.ApiTokenService;
+import jakarta.servlet.Filter;
 import com.scripty.security.CsrfAccessDeniedHandler;
 import com.scripty.security.CsrfTokenEagerLoadingFilter;
 import com.scripty.security.EmailResolvingUserDetailsManager;
@@ -25,6 +30,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -33,6 +40,8 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.AndRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.webauthn.authentication.WebAuthnAuthenticationFilter;
 import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredentialUserEntityRepository;
 import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
@@ -100,10 +109,18 @@ public class SecurityConfig {
             UserRepository userRepository,
             UserDetailsManager userDetailsManager,
             PersistentTokenRepository persistentTokenRepository,
-            PasskeySettings passkeySettings) throws Exception {
+            PasskeySettings passkeySettings,
+            ApiTokenService apiTokenService,
+            ObjectMapper objectMapper) throws Exception {
         applyWebAuthn(http, passkeySettings);
         http
             .requestCache(cache -> cache.requestCache(requestCache))
+            // Bearer tokens minted at passkey sign-in authenticate native clients
+            // before HTTP Basic runs; requests without a Bearer header fall through
+            // untouched, so password auth is unaffected.
+            .addFilterBefore(
+                    new ApiTokenAuthenticationFilter(apiTokenService, userDetailsManager),
+                    BasicAuthenticationFilter.class)
             // Accounts still on seeded/generated deploy credentials are locked to
             // the change-password page until they choose a real password.
             .addFilterAfter(new ForcedPasswordChangeFilter(userRepository),
@@ -133,6 +150,9 @@ public class SecurityConfig {
                         "/login/webauthn.js",
                         "/login/webauthn",
                         "/webauthn/authenticate/options",
+                        // Apple App Site Association: fetched anonymously by iOS to
+                        // authorize passkey sharing with the native client.
+                        "/.well-known/apple-app-site-association",
                         "/manifest.json",
                         "/sw.js",
                         "/offline.html",
@@ -182,11 +202,19 @@ public class SecurityConfig {
             .httpBasic(org.springframework.security.config.Customizer.withDefaults())
             // Native API clients (e.g. the SwiftUI app) authenticate each request
             // with an Authorization header, which browsers cannot attach cross-site,
-            // so CSRF tokens add nothing for them. Cookie-authenticated /api calls
-            // (HTMX) keep full CSRF protection.
-            .csrf(csrf -> csrf.ignoringRequestMatchers(new AndRequestMatcher(
-                    new AntPathRequestMatcher("/api/**"),
-                    request -> request.getHeader(HttpHeaders.AUTHORIZATION) != null)))
+            // so CSRF tokens add nothing for them. Cookie-authenticated /api and
+            // passkey-registration calls (HTMX) keep full CSRF protection.
+            .csrf(csrf -> csrf.ignoringRequestMatchers(
+                    new AndRequestMatcher(
+                            new OrRequestMatcher(
+                                    new AntPathRequestMatcher("/api/**"),
+                                    new AntPathRequestMatcher("/webauthn/register"),
+                                    new AntPathRequestMatcher("/webauthn/register/**")),
+                            request -> request.getHeader(HttpHeaders.AUTHORIZATION) != null),
+                    // Cold passkey sign-in runs before any CSRF token exists; the
+                    // assertion is challenge- and origin-bound, so CSRF adds nothing.
+                    new AntPathRequestMatcher("/login/webauthn"),
+                    new AntPathRequestMatcher("/webauthn/authenticate/options")))
             // Keep users signed in across server restarts and session expiry:
             // a DB-backed remember-me token silently re-authenticates for 30 days
             // (sliding — each auto-login refreshes the token). alwaysRemember means
@@ -219,7 +247,10 @@ public class SecurityConfig {
                 .permissionsPolicyHeader(permissions -> permissions.policy(PERMISSIONS_POLICY))
             );
 
-        return http.build();
+        SecurityFilterChain chain = http.build();
+        issueTokensOnPasskeyLogin(chain,
+                new TokenIssuingWebAuthnSuccessHandler(apiTokenService, objectMapper, requestCache));
+        return chain;
     }
 
     @Bean
@@ -227,10 +258,16 @@ public class SecurityConfig {
     public SecurityFilterChain devFilterChain(HttpSecurity http,
             RequestCache requestCache,
             LoginSuccessHandler loginSuccessHandler,
-            PasskeySettings passkeySettings) throws Exception {
+            PasskeySettings passkeySettings,
+            ApiTokenService apiTokenService,
+            UserDetailsManager userDetailsManager,
+            ObjectMapper objectMapper) throws Exception {
         applyWebAuthn(http, passkeySettings);
         http
             .requestCache(cache -> cache.requestCache(requestCache))
+            .addFilterBefore(
+                    new ApiTokenAuthenticationFilter(apiTokenService, userDetailsManager),
+                    BasicAuthenticationFilter.class)
             .addFilterBefore(new DevAutoLoginFilter(), UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login").permitAll()
@@ -257,7 +294,24 @@ public class SecurityConfig {
             // Dev keeps CSRF off: DevTools restarts and auto-login make token sync brittle locally.
             .csrf(csrf -> csrf.disable());
 
-        return http.build();
+        SecurityFilterChain chain = http.build();
+        issueTokensOnPasskeyLogin(chain,
+                new TokenIssuingWebAuthnSuccessHandler(apiTokenService, objectMapper, requestCache));
+        return chain;
+    }
+
+    /**
+     * Swaps in a success handler that returns an API token in the
+     * {@code /login/webauthn} response for native clients. The WebAuthn DSL does
+     * not expose the handler, so reach into the built filter chain and set it.
+     */
+    private static void issueTokensOnPasskeyLogin(SecurityFilterChain chain,
+            AuthenticationSuccessHandler successHandler) {
+        for (Filter filter : chain.getFilters()) {
+            if (filter instanceof WebAuthnAuthenticationFilter webAuthnFilter) {
+                webAuthnFilter.setAuthenticationSuccessHandler(successHandler);
+            }
+        }
     }
 
     /**

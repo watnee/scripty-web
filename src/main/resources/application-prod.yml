@@ -51,6 +51,10 @@ logging:
 app:
   headshot-max-bytes: 5242880
   base-url: ${APP_BASE_URL:}
+  # Apple App Site Association: <TeamID>.<bundleId> for the native iOS client.
+  # Served at /.well-known/apple-app-site-association so passkeys created on the
+  # web can be used by the app (and vice versa). Empty disables the AASA file.
+  apple-app-id: ${APPLE_APP_ID:WA6FZ2S8R3.scripty.scripty}
   mail-from: ${MAIL_FROM:Scripty <noreply@localhost>}
   mail-enabled: ${MAIL_ENABLED:false}
   # Preferred email transport on Railway (outbound SMTP is restricted there).

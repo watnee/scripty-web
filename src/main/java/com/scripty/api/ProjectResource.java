@@ -16,6 +16,7 @@ public class ProjectResource extends RepresentationModel<ProjectResource> {
     private String screenplayVersion;
     private OffsetDateTime lastEdited;
     private List<String> teams;
+    private boolean isDefault;
 
     public Integer getId() {
         return id;
@@ -79,5 +80,14 @@ public class ProjectResource extends RepresentationModel<ProjectResource> {
 
     public void setTeams(List<String> teams) {
         this.teams = teams;
+    }
+
+    /** Serialized as "default": whether this is the current user's default project. */
+    public boolean isDefault() {
+        return isDefault;
+    }
+
+    public void setDefault(boolean isDefault) {
+        this.isDefault = isDefault;
     }
 }

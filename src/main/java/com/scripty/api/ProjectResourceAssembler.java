@@ -5,6 +5,7 @@ import com.scripty.controller.BlockRestController;
 import com.scripty.controller.PersonRestController;
 import com.scripty.controller.ProjectController;
 import com.scripty.controller.ProjectRestController;
+import com.scripty.controller.TextDocumentRestController;
 import com.scripty.dto.Project;
 import com.scripty.viewmodel.project.projectlist.ProjectTeamViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
@@ -63,12 +64,23 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
     }
 
     public CollectionModel<EntityModel<ProjectResource>> toProjectCollection(Iterable<ProjectViewModel> projects) {
+        return toProjectCollection(projects, null);
+    }
+
+    public CollectionModel<EntityModel<ProjectResource>> toProjectCollection(
+            Iterable<ProjectViewModel> projects, Integer defaultProjectId) {
         List<EntityModel<ProjectResource>> resources = new ArrayList<>();
         for (ProjectViewModel project : projects) {
-            resources.add(toModel(project));
+            EntityModel<ProjectResource> model = toModel(project);
+            if (defaultProjectId != null && defaultProjectId.equals(project.getId())
+                    && model.getContent() != null) {
+                model.getContent().setDefault(true);
+            }
+            resources.add(model);
         }
         return CollectionModel.of(resources)
-                .add(linkTo(methodOn(ProjectRestController.class).list(null)).withSelfRel());
+                .add(linkTo(methodOn(ProjectRestController.class).list(null)).withSelfRel())
+                .add(linkTo(methodOn(ProjectRestController.class).importProject(null)).withRel(ApiRel.IMPORT_PROJECT));
     }
 
     private ProjectResource toResource(ProjectViewModel project) {
@@ -90,9 +102,11 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(ProjectRestController.class).list(null)).withRel(ApiRel.PROJECTS),
                 linkTo(methodOn(ProjectRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE),
                 linkTo(methodOn(ProjectRestController.class).delete(id, null)).withRel(ApiRel.DELETE),
+                linkTo(methodOn(ProjectRestController.class).toggleDefault(id, null)).withRel(ApiRel.TOGGLE_DEFAULT),
                 linkTo(methodOn(BlockRestController.class).list(id, null, null)).withRel(ApiRel.BLOCKS),
                 linkTo(methodOn(PersonRestController.class).list(id, null)).withRel(ApiRel.CHARACTERS),
                 linkTo(methodOn(ActorRestController.class).list(id, null)).withRel(ApiRel.ACTORS),
+                linkTo(methodOn(TextDocumentRestController.class).list(id, null, null)).withRel(ApiRel.DOCUMENTS),
                 linkTo(methodOn(ProjectController.class).syncStatus(id, null, null, null)).withRel(ApiRel.SYNC_STATUS),
                 linkTo(methodOn(ProjectController.class).undoRedoStatus(id, null, null)).withRel(ApiRel.UNDO_REDO_STATUS),
                 linkTo(methodOn(ProjectController.class).exportScript(id, "fountain", null, null)).withRel(ApiRel.EXPORT),

@@ -61,9 +61,15 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
         for (BlockViewModel block : blocks) {
             resources.add(toModel(block, projectId));
         }
-        return CollectionModel.of(resources)
+        CollectionModel<EntityModel<BlockResource>> collection = CollectionModel.of(resources)
                 .add(linkTo(methodOn(BlockRestController.class).list(projectId, null, null)).withSelfRel())
                 .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
+        if (resources.isEmpty() && canEditProject(projectId)) {
+            // Only an empty script can take a first block; see createInitial.
+            collection.add(linkTo(methodOn(BlockRestController.class).createInitial(projectId, null))
+                    .withRel(ApiRel.CREATE_INITIAL));
+        }
+        return collection;
     }
 
     private BlockResource toResource(BlockViewModel block) {
@@ -121,12 +127,23 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
             links.add(linkTo(methodOn(BlockRestController.class).delete(id, null)).withRel(ApiRel.DELETE));
             links.add(linkTo(methodOn(BlockRestController.class).toggleBookmark(id, null)).withRel(ApiRel.TOGGLE_BOOKMARK));
             links.add(linkTo(methodOn(BlockRestController.class).togglePinned(id, null)).withRel(ApiRel.TOGGLE_PINNED));
+            links.add(linkTo(methodOn(BlockRestController.class).createBelow(id, null, null)).withRel(ApiRel.CREATE_BELOW));
+            links.add(linkTo(methodOn(BlockRestController.class).setType(id, null, null)).withRel(ApiRel.SET_TYPE));
+            links.add(linkTo(methodOn(BlockRestController.class).move(id, null, null)).withRel(ApiRel.MOVE));
         }
         if (projectId != null) {
             links.add(linkTo(methodOn(BlockRestController.class).list(projectId, null, null)).withRel(ApiRel.BLOCKS));
             links.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
         return links.toArray(org.springframework.hateoas.Link[]::new);
+    }
+
+    private boolean canEditProject(Integer projectId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (projectId == null || authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        return projectAccess.canEditScript(projectId, projectAccess.currentUser(authentication));
     }
 
     private boolean canEdit(Integer projectId, int blockId) {

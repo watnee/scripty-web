@@ -8,7 +8,10 @@ import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.dto.Project;
 import com.scripty.dto.User;
 import com.scripty.security.ProjectAccessSupport;
+import com.scripty.service.ProjectArchiveService;
+import com.scripty.service.ScriptImportException;
 import com.scripty.service.ProjectService;
+import com.scripty.service.UserService;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import jakarta.validation.Valid;
@@ -25,7 +28,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping(value = "/api/project")
@@ -40,6 +45,12 @@ public class ProjectRestController {
     @Autowired
     ProjectAccessSupport projectAccess;
 
+    @Autowired
+    UserService userService;
+
+    @Autowired
+    ProjectArchiveService projectArchiveService;
+
     @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> list(Principal principal) {
         User user = projectAccess.currentUser(principal);
@@ -52,7 +63,32 @@ public class ProjectRestController {
         } else {
             viewModel = projectService.getProjectListViewModel();
         }
-        return ResponseEntity.ok(projectResourceAssembler.toProjectCollection(viewModel.getProjects()));
+        Integer defaultProjectId = user != null ? user.getDefaultProjectId() : null;
+        return ResponseEntity.ok(
+                projectResourceAssembler.toProjectCollection(viewModel.getProjects(), defaultProjectId));
+    }
+
+    /**
+     * Toggles this project as the current user's default (mirrors the web
+     * list's star). Returns the refreshed project collection so the caller
+     * sees the updated default flags.
+     */
+    @RequestMapping(value = "/{id}/toggleDefault", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> toggleDefault(
+            @PathVariable Integer id, Principal principal) {
+        User user = projectAccess.currentUser(principal);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (id.equals(user.getDefaultProjectId())) {
+            user.setDefaultProjectId(null);
+        } else if (projectAccess.canAccessProject(id, user)) {
+            user.setDefaultProjectId(id);
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        userService.update(user);
+        return list(principal);
     }
 
     @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
@@ -66,6 +102,23 @@ public class ProjectRestController {
         return ResponseEntity
                 .created(resource.getRequiredLink(IanaLinkRelations.SELF).toUri())
                 .body(resource);
+    }
+
+    /**
+     * Imports a project from a .scripty.json archive (mirrors the web list's
+     * Import button). The uploaded file is the "file" multipart part.
+     */
+    @RequestMapping(value = "/import", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<?> importProject(@RequestPart("file") MultipartFile file) {
+        try {
+            Project project = projectArchiveService.importProject(file);
+            EntityModel<ProjectResource> resource = projectResourceAssembler.toModel(project);
+            return ResponseEntity
+                    .created(resource.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                    .body(resource);
+        } catch (ScriptImportException e) {
+            return new ResponseEntity<>(java.util.Map.of("file", e.getUserMessage()), HttpStatus.BAD_REQUEST);
+        }
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)

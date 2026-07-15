@@ -18,11 +18,22 @@ public final class ApiRel {
     public static final String SYNC_STATUS = "syncStatus";
     public static final String TOGGLE_BOOKMARK = "toggleBookmark";
     public static final String TOGGLE_PINNED = "togglePinned";
+    public static final String CREATE_BELOW = "createBelow";
+    public static final String CREATE_INITIAL = "createInitial";
+    public static final String SET_TYPE = "setType";
+    public static final String MOVE = "move";
     public static final String EXPORT = "export";
     public static final String EXPORT_PDF = "exportPdf";
     public static final String EXPORT_DOCX = "exportDocx";
     public static final String EXPORT_FDX = "exportFdx";
     public static final String HEADSHOT = "headshot";
+    public static final String DOCUMENTS = "documents";
+    public static final String DOCUMENT = "document";
+    public static final String INSERT = "insert";
+    public static final String SHARE_EMAIL = "shareEmail";
+    public static final String IMPORT_DOCUMENT = "importDocument";
+    public static final String TOGGLE_DEFAULT = "toggleDefault";
+    public static final String IMPORT_PROJECT = "importProject";
 
     private ApiRel() {
     }

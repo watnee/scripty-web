@@ -4,6 +4,7 @@ import com.scripty.controller.BlockRestController;
 import com.scripty.controller.ProjectRestController;
 import com.scripty.dto.Block;
 import com.scripty.dto.User;
+import com.scripty.repository.BlockRepository;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.viewmodel.block.BlockViewModel;
 import java.util.ArrayList;
@@ -11,6 +12,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,10 +28,34 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
     @Autowired
     ProjectAccessSupport projectAccess;
 
+    @Autowired
+    BlockRepository blockRepository;
+
     @Override
     public EntityModel<BlockResource> toModel(BlockViewModel block) {
         BlockResource resource = toResource(block);
         return EntityModel.of(resource).add(blockLinks(block.getId(), resource.getProjectId()));
+    }
+
+    /**
+     * Single-block variant that also advertises IANA {@code prev}/{@code next}
+     * links to the adjacent blocks, so a client can walk the script one element
+     * at a time from {@code GET /api/block/{id}}. Kept off the collection path,
+     * which derives neighbours from its ordered list for free (see
+     * {@link #toBlockCollection}) rather than issuing a query per row.
+     */
+    public EntityModel<BlockResource> toModelWithNeighbors(BlockViewModel block, Integer projectId, Block entity) {
+        EntityModel<BlockResource> model = toModel(block, projectId);
+        if (entity != null && entity.getScriptEdition() != null && entity.getOrder() != null) {
+            Integer editionId = entity.getScriptEdition().getId();
+            blockRepository
+                    .findFirstByScriptEditionIdAndOrderLessThanOrderByOrderDesc(editionId, entity.getOrder())
+                    .ifPresent(prev -> model.add(neighborLink(prev.getId(), IanaLinkRelations.PREV)));
+            blockRepository
+                    .findFirstByScriptEditionIdAndOrderGreaterThanOrderByOrderAsc(editionId, entity.getOrder())
+                    .ifPresent(next -> model.add(neighborLink(next.getId(), IanaLinkRelations.NEXT)));
+        }
+        return model;
     }
 
     public EntityModel<BlockResource> toModel(BlockViewModel block, Integer projectId) {
@@ -57,9 +84,20 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
     }
 
     public CollectionModel<EntityModel<BlockResource>> toBlockCollection(Iterable<BlockViewModel> blocks, Integer projectId) {
+        List<BlockViewModel> ordered = new ArrayList<>();
+        blocks.forEach(ordered::add);
         List<EntityModel<BlockResource>> resources = new ArrayList<>();
-        for (BlockViewModel block : blocks) {
-            resources.add(toModel(block, projectId));
+        for (int i = 0; i < ordered.size(); i++) {
+            EntityModel<BlockResource> model = toModel(ordered.get(i), projectId);
+            // The list is already order-sorted, so neighbours are the adjacent
+            // rows — no per-row query needed.
+            if (i > 0) {
+                model.add(neighborLink(ordered.get(i - 1).getId(), IanaLinkRelations.PREV));
+            }
+            if (i < ordered.size() - 1) {
+                model.add(neighborLink(ordered.get(i + 1).getId(), IanaLinkRelations.NEXT));
+            }
+            resources.add(model);
         }
         CollectionModel<EntityModel<BlockResource>> collection = CollectionModel.of(resources)
                 .add(linkTo(methodOn(BlockRestController.class).list(projectId, null, null)).withSelfRel())
@@ -136,6 +174,10 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
             links.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
         return links.toArray(org.springframework.hateoas.Link[]::new);
+    }
+
+    private Link neighborLink(int blockId, org.springframework.hateoas.LinkRelation rel) {
+        return linkTo(methodOn(BlockRestController.class).show(blockId, null)).withRel(rel);
     }
 
     private boolean canEditProject(Integer projectId) {

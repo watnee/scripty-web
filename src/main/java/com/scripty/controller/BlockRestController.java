@@ -133,7 +133,7 @@ public class BlockRestController {
         }
         BlockViewModel viewModel = blockService.getBlockViewModel(id);
         Integer projectId = block.getProject() != null ? block.getProject().getId() : null;
-        return ResponseEntity.ok(blockResourceAssembler.toModel(viewModel, projectId));
+        return ResponseEntity.ok(blockResourceAssembler.toModelWithNeighbors(viewModel, projectId, block));
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)

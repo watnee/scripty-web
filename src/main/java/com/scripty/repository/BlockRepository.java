@@ -21,6 +21,13 @@ public interface BlockRepository extends JpaRepository<Block, Integer> {
 
     Optional<Block> findByScriptEditionIdAndOrder(Integer scriptEditionId, Integer order);
 
+    // Adjacent blocks within an edition, used to expose prev/next navigation on a
+    // single block resource. Ordering is edition-scoped (see the reorder queries
+    // below), so neighbours must be found within the same scriptEdition.
+    Optional<Block> findFirstByScriptEditionIdAndOrderLessThanOrderByOrderDesc(Integer scriptEditionId, Integer order);
+
+    Optional<Block> findFirstByScriptEditionIdAndOrderGreaterThanOrderByOrderAsc(Integer scriptEditionId, Integer order);
+
     List<Block> findBySourceDocumentIdOrderByOrderAsc(Integer sourceDocumentId);
 
     List<Block> findBySourceDocumentIdAndScriptEditionIdOrderByOrderAsc(Integer sourceDocumentId, Integer scriptEditionId);

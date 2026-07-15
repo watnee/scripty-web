@@ -82,7 +82,8 @@ public class BlockRestController {
         }
     }
 
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.GET,
+            produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<BlockResource>>> list(
             @RequestParam Integer projectId,
             @RequestParam(required = false) Integer editionId,
@@ -122,7 +123,8 @@ public class BlockRestController {
                 .body(resource);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET,
+            produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<BlockResource>> show(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

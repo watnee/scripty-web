@@ -51,7 +51,8 @@ public class ProjectRestController {
     @Autowired
     ProjectArchiveService projectArchiveService;
 
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.GET,
+            produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> list(Principal principal) {
         User user = projectAccess.currentUser(principal);
         ProjectListViewModel viewModel;
@@ -121,7 +122,8 @@ public class ProjectRestController {
         }
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET,
+            produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<ProjectResource>> show(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessProject(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

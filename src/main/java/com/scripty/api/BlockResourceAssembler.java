@@ -19,6 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -159,15 +160,26 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
 
     private org.springframework.hateoas.Link[] blockLinks(int id, Integer projectId) {
         List<org.springframework.hateoas.Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(BlockRestController.class).show(id, null)).withSelfRel());
         if (canEdit(projectId, id)) {
+            // update/delete share the self URI, so their affordances ride the
+            // self link; createBelow/setType/move have distinct URIs and each
+            // carries its own affordance. HAL-FORMS clients therefore see the
+            // verb and request-body schema for every editing action.
+            links.add(linkTo(methodOn(BlockRestController.class).show(id, null)).withSelfRel()
+                    .andAffordance(afford(methodOn(BlockRestController.class).update(id, null, null, null)))
+                    .andAffordance(afford(methodOn(BlockRestController.class).delete(id, null))));
             links.add(linkTo(methodOn(BlockRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE));
             links.add(linkTo(methodOn(BlockRestController.class).delete(id, null)).withRel(ApiRel.DELETE));
             links.add(linkTo(methodOn(BlockRestController.class).toggleBookmark(id, null)).withRel(ApiRel.TOGGLE_BOOKMARK));
             links.add(linkTo(methodOn(BlockRestController.class).togglePinned(id, null)).withRel(ApiRel.TOGGLE_PINNED));
-            links.add(linkTo(methodOn(BlockRestController.class).createBelow(id, null, null)).withRel(ApiRel.CREATE_BELOW));
-            links.add(linkTo(methodOn(BlockRestController.class).setType(id, null, null)).withRel(ApiRel.SET_TYPE));
-            links.add(linkTo(methodOn(BlockRestController.class).move(id, null, null)).withRel(ApiRel.MOVE));
+            links.add(linkTo(methodOn(BlockRestController.class).createBelow(id, null, null)).withRel(ApiRel.CREATE_BELOW)
+                    .andAffordance(afford(methodOn(BlockRestController.class).createBelow(id, null, null))));
+            links.add(linkTo(methodOn(BlockRestController.class).setType(id, null, null)).withRel(ApiRel.SET_TYPE)
+                    .andAffordance(afford(methodOn(BlockRestController.class).setType(id, null, null))));
+            links.add(linkTo(methodOn(BlockRestController.class).move(id, null, null)).withRel(ApiRel.MOVE)
+                    .andAffordance(afford(methodOn(BlockRestController.class).move(id, null, null))));
+        } else {
+            links.add(linkTo(methodOn(BlockRestController.class).show(id, null)).withSelfRel());
         }
         if (projectId != null) {
             links.add(linkTo(methodOn(BlockRestController.class).list(projectId, null, null)).withRel(ApiRel.BLOCKS));

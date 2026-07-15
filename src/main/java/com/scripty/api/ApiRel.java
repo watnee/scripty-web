@@ -33,6 +33,7 @@ public final class ApiRel {
     public static final String SHARE_EMAIL = "shareEmail";
     public static final String IMPORT_DOCUMENT = "importDocument";
     public static final String TOGGLE_DEFAULT = "toggleDefault";
+    public static final String IMPORT_PROJECT = "importProject";
 
     private ApiRel() {
     }

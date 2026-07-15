@@ -79,7 +79,8 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
             resources.add(model);
         }
         return CollectionModel.of(resources)
-                .add(linkTo(methodOn(ProjectRestController.class).list(null)).withSelfRel());
+                .add(linkTo(methodOn(ProjectRestController.class).list(null)).withSelfRel())
+                .add(linkTo(methodOn(ProjectRestController.class).importProject(null)).withRel(ApiRel.IMPORT_PROJECT));
     }
 
     private ProjectResource toResource(ProjectViewModel project) {

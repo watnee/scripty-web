@@ -8,6 +8,8 @@ import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.dto.Project;
 import com.scripty.dto.User;
 import com.scripty.security.ProjectAccessSupport;
+import com.scripty.service.ProjectArchiveService;
+import com.scripty.service.ScriptImportException;
 import com.scripty.service.ProjectService;
 import com.scripty.service.UserService;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
@@ -26,7 +28,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping(value = "/api/project")
@@ -43,6 +47,9 @@ public class ProjectRestController {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    ProjectArchiveService projectArchiveService;
 
     @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> list(Principal principal) {
@@ -95,6 +102,23 @@ public class ProjectRestController {
         return ResponseEntity
                 .created(resource.getRequiredLink(IanaLinkRelations.SELF).toUri())
                 .body(resource);
+    }
+
+    /**
+     * Imports a project from a .scripty.json archive (mirrors the web list's
+     * Import button). The uploaded file is the "file" multipart part.
+     */
+    @RequestMapping(value = "/import", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<?> importProject(@RequestPart("file") MultipartFile file) {
+        try {
+            Project project = projectArchiveService.importProject(file);
+            EntityModel<ProjectResource> resource = projectResourceAssembler.toModel(project);
+            return ResponseEntity
+                    .created(resource.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                    .body(resource);
+        } catch (ScriptImportException e) {
+            return new ResponseEntity<>(java.util.Map.of("file", e.getUserMessage()), HttpStatus.BAD_REQUEST);
+        }
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)

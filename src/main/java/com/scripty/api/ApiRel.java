@@ -27,6 +27,11 @@ public final class ApiRel {
     public static final String EXPORT_DOCX = "exportDocx";
     public static final String EXPORT_FDX = "exportFdx";
     public static final String HEADSHOT = "headshot";
+    public static final String DOCUMENTS = "documents";
+    public static final String DOCUMENT = "document";
+    public static final String INSERT = "insert";
+    public static final String SHARE_EMAIL = "shareEmail";
+    public static final String IMPORT_DOCUMENT = "importDocument";
 
     private ApiRel() {
     }

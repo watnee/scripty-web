@@ -58,6 +58,8 @@ public class TextDocumentResourceAssembler {
         if (canEdit(projectId)) {
             collection.add(linkTo(methodOn(TextDocumentRestController.class)
                     .importFile(null, null, null, null)).withRel(ApiRel.IMPORT_DOCUMENT));
+            collection.add(linkTo(methodOn(TextDocumentRestController.class)
+                    .reorder(projectId, null, null)).withRel(ApiRel.REORDER));
         }
         return collection;
     }
@@ -103,6 +105,10 @@ public class TextDocumentResourceAssembler {
                     .withRel(ApiRel.DELETE));
             links.add(linkTo(methodOn(TextDocumentRestController.class).insert(id, null, null))
                     .withRel(ApiRel.INSERT));
+            links.add(linkTo(methodOn(TextDocumentRestController.class).duplicate(id, projectId, null))
+                    .withRel(ApiRel.DUPLICATE));
+            links.add(linkTo(methodOn(TextDocumentRestController.class).changeType(id, null, projectId, null))
+                    .withRel(ApiRel.CHANGE_TYPE));
             if (TextDocument.TYPE_SONG.equalsIgnoreCase(type)) {
                 links.add(linkTo(methodOn(TextDocumentRestController.class).shareEmail(id, null, null))
                         .withRel(ApiRel.SHARE_EMAIL));

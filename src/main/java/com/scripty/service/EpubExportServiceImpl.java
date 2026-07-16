@@ -5,18 +5,10 @@ import com.scripty.dto.Project;
 import com.scripty.dto.ScriptEdition;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.ProjectRepository;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
-import java.util.zip.CRC32;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,9 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class EpubExportServiceImpl implements EpubExportService {
-
-    private static final String MIMETYPE = "application/epub+zip";
-    private static final String OEBPS = "OEBPS/";
 
     @Autowired
     private BlockRepository blockRepository;
@@ -71,26 +60,23 @@ public class EpubExportServiceImpl implements EpubExportService {
     /** Package-visible for unit tests. */
     static byte[] toEpub(Project project, List<Block> blocks, Integer projectId) throws IOException {
         String title = bookTitle(project);
-        String author = bookAuthor(project);
-        boolean hasTitlePage = hasTitlePage(project);
         List<Chapter> chapters = splitIntoChapters(blocks);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (ZipOutputStream zip = new ZipOutputStream(out)) {
-            // The mimetype entry must come first and be stored uncompressed (EPUB OCF spec).
-            writeStored(zip, "mimetype", MIMETYPE.getBytes(StandardCharsets.US_ASCII));
-            write(zip, "META-INF/container.xml", containerXml());
-            write(zip, OEBPS + "style.css", styleCss());
-            if (hasTitlePage) {
-                write(zip, OEBPS + "title.xhtml", titlePageXhtml(project, title));
-            }
-            for (Chapter chapter : chapters) {
-                write(zip, OEBPS + chapter.href(), chapterXhtml(chapter));
-            }
-            write(zip, OEBPS + "nav.xhtml", navXhtml(title, hasTitlePage, chapters));
-            write(zip, OEBPS + "content.opf", contentOpf(title, author, projectId, hasTitlePage, chapters));
+        List<EpubPackage.Document> documents = new ArrayList<>();
+        if (hasTitlePage(project)) {
+            documents.add(new EpubPackage.Document(
+                    "title", "title.xhtml", "Title page", titlePageBody(project, title)));
         }
-        return out.toByteArray();
+        for (int i = 0; i < chapters.size(); i++) {
+            Chapter chapter = chapters.get(i);
+            documents.add(new EpubPackage.Document(
+                    "chapter-" + (i + 1), chapter.href(), chapter.title(), chapterBody(chapter)));
+        }
+
+        return EpubPackage.zip(
+                new EpubPackage.Metadata(title, bookAuthor(project), "scripty-project-" + projectId),
+                styleCss(),
+                documents);
     }
 
     private static List<Chapter> splitIntoChapters(List<Block> blocks) {
@@ -125,7 +111,7 @@ public class EpubExportServiceImpl implements EpubExportService {
         return new Chapter(label, "chapter-" + (index + 1) + ".xhtml", List.copyOf(blocks));
     }
 
-    private static String chapterXhtml(Chapter chapter) {
+    private static String chapterBody(Chapter chapter) {
         StringBuilder body = new StringBuilder();
         for (Block block : chapter.blocks()) {
             appendBlock(body, block);
@@ -133,9 +119,7 @@ public class EpubExportServiceImpl implements EpubExportService {
         if (body.isEmpty()) {
             body.append("    <p class=\"action\"></p>\n");
         }
-        return xhtmlDocument(chapter.title(), "    <section epub:type=\"chapter\">\n"
-                + body
-                + "    </section>\n");
+        return "    <section epub:type=\"chapter\">\n" + body + "    </section>\n";
     }
 
     private static void appendBlock(StringBuilder body, Block block) {
@@ -166,7 +150,7 @@ public class EpubExportServiceImpl implements EpubExportService {
         }
 
         body.append("      <p class=\"").append(cssClass).append("\">")
-                .append(inlineText(content))
+                .append(EpubPackage.inlineText(content))
                 .append("</p>\n");
     }
 
@@ -184,19 +168,6 @@ public class EpubExportServiceImpl implements EpubExportService {
         return classes;
     }
 
-    /** Escapes text and preserves hard line breaks inside a block. */
-    private static String inlineText(String content) {
-        String[] lines = content.split("\n", -1);
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < lines.length; i++) {
-            if (i > 0) {
-                sb.append("<br/>");
-            }
-            sb.append(escape(lines[i]));
-        }
-        return sb.toString();
-    }
-
     private static boolean hasTitlePage(Project project) {
         return project != null && (notBlank(project.getScreenplayTitle())
                 || notBlank(project.getTitle())
@@ -205,7 +176,7 @@ public class EpubExportServiceImpl implements EpubExportService {
                 || notBlank(project.getScreenplayVersion()));
     }
 
-    private static String titlePageXhtml(Project project, String title) {
+    private static String titlePageBody(Project project, String title) {
         StringBuilder body = new StringBuilder();
         body.append("    <section epub:type=\"titlepage\" class=\"title-page\">\n");
         body.append("      <h1 class=\"screenplay-title\">").append(escape(title)).append("</h1>\n");
@@ -228,94 +199,7 @@ public class EpubExportServiceImpl implements EpubExportService {
             }
         }
         body.append("    </section>\n");
-        return xhtmlDocument(title, body.toString());
-    }
-
-    private static String navXhtml(String title, boolean hasTitlePage, List<Chapter> chapters) {
-        StringBuilder body = new StringBuilder();
-        body.append("    <nav epub:type=\"toc\" id=\"toc\">\n");
-        body.append("      <h1>Contents</h1>\n");
-        body.append("      <ol>\n");
-        if (hasTitlePage) {
-            body.append("        <li><a href=\"title.xhtml\">Title page</a></li>\n");
-        }
-        for (Chapter chapter : chapters) {
-            body.append("        <li><a href=\"").append(chapter.href()).append("\">")
-                    .append(escape(chapter.title())).append("</a></li>\n");
-        }
-        body.append("      </ol>\n");
-        body.append("    </nav>\n");
-        return xhtmlDocument(title, body.toString());
-    }
-
-    private static String contentOpf(String title, String author, Integer projectId,
-                                     boolean hasTitlePage, List<Chapter> chapters) {
-        String modified = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString();
-        String identifier = "urn:uuid:" + UUID.nameUUIDFromBytes(
-                ("scripty-project-" + projectId).getBytes(StandardCharsets.UTF_8));
-
-        StringBuilder opf = new StringBuilder();
-        opf.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        opf.append("<package xmlns=\"http://www.idpf.org/2007/opf\" version=\"3.0\" ")
-                .append("unique-identifier=\"book-id\" xml:lang=\"en\">\n");
-        opf.append("  <metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\n");
-        opf.append("    <dc:identifier id=\"book-id\">").append(identifier).append("</dc:identifier>\n");
-        opf.append("    <dc:title>").append(escape(title)).append("</dc:title>\n");
-        opf.append("    <dc:language>en</dc:language>\n");
-        if (notBlank(author)) {
-            opf.append("    <dc:creator>").append(escape(author)).append("</dc:creator>\n");
-        }
-        opf.append("    <meta property=\"dcterms:modified\">").append(modified).append("</meta>\n");
-        opf.append("  </metadata>\n");
-
-        opf.append("  <manifest>\n");
-        opf.append("    <item id=\"nav\" href=\"nav.xhtml\" media-type=\"application/xhtml+xml\" ")
-                .append("properties=\"nav\"/>\n");
-        opf.append("    <item id=\"style\" href=\"style.css\" media-type=\"text/css\"/>\n");
-        if (hasTitlePage) {
-            opf.append("    <item id=\"title\" href=\"title.xhtml\" media-type=\"application/xhtml+xml\"/>\n");
-        }
-        for (int i = 0; i < chapters.size(); i++) {
-            opf.append("    <item id=\"chapter-").append(i + 1).append("\" href=\"")
-                    .append(chapters.get(i).href()).append("\" media-type=\"application/xhtml+xml\"/>\n");
-        }
-        opf.append("  </manifest>\n");
-
-        opf.append("  <spine>\n");
-        if (hasTitlePage) {
-            opf.append("    <itemref idref=\"title\"/>\n");
-        }
-        for (int i = 0; i < chapters.size(); i++) {
-            opf.append("    <itemref idref=\"chapter-").append(i + 1).append("\"/>\n");
-        }
-        opf.append("  </spine>\n");
-        opf.append("</package>\n");
-        return opf.toString();
-    }
-
-    private static String xhtmlDocument(String title, String body) {
-        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-                + "<html xmlns=\"http://www.w3.org/1999/xhtml\" "
-                + "xmlns:epub=\"http://www.idpf.org/2007/ops\" xml:lang=\"en\" lang=\"en\">\n"
-                + "  <head>\n"
-                + "    <title>" + escape(title) + "</title>\n"
-                + "    <link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\"/>\n"
-                + "  </head>\n"
-                + "  <body>\n"
-                + body
-                + "  </body>\n"
-                + "</html>\n";
-    }
-
-    private static String containerXml() {
-        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-                + "<container version=\"1.0\" "
-                + "xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n"
-                + "  <rootfiles>\n"
-                + "    <rootfile full-path=\"OEBPS/content.opf\" "
-                + "media-type=\"application/oebps-package+xml\"/>\n"
-                + "  </rootfiles>\n"
-                + "</container>\n";
+        return body.toString();
     }
 
     private static String styleCss() {
@@ -354,19 +238,7 @@ public class EpubExportServiceImpl implements EpubExportService {
     }
 
     private static String bookAuthor(Project project) {
-        if (project == null || !notBlank(project.getWriters())) {
-            return null;
-        }
-        // The writers field may lead with a credit line ("Written by"); the author is the rest.
-        String[] lines = project.getWriters().trim().split("\n", -1);
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (!trimmed.isEmpty() && !trimmed.toLowerCase(Locale.ROOT).matches(
-                    "^(?:written(?: and directed)? by|story by|screenplay by|by)\\.?$")) {
-                return trimmed;
-            }
-        }
-        return lines[0].trim();
+        return project == null ? null : EpubPackage.authorFromWriters(project.getWriters());
     }
 
     private static String text(Block block) {
@@ -381,37 +253,10 @@ public class EpubExportServiceImpl implements EpubExportService {
     }
 
     private static boolean notBlank(String value) {
-        return value != null && !value.isBlank();
+        return EpubPackage.notBlank(value);
     }
 
     private static String escape(String text) {
-        if (text == null) {
-            return "";
-        }
-        return text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;");
-    }
-
-    private static void write(ZipOutputStream zip, String name, String content) throws IOException {
-        zip.putNextEntry(new ZipEntry(name));
-        zip.write(content.getBytes(StandardCharsets.UTF_8));
-        zip.closeEntry();
-    }
-
-    private static void writeStored(ZipOutputStream zip, String name, byte[] content) throws IOException {
-        ZipEntry entry = new ZipEntry(name);
-        entry.setMethod(ZipEntry.STORED);
-        entry.setSize(content.length);
-        entry.setCompressedSize(content.length);
-        CRC32 crc = new CRC32();
-        crc.update(content);
-        entry.setCrc(crc.getValue());
-        zip.putNextEntry(entry);
-        zip.write(content);
-        zip.closeEntry();
-        // Subsequent entries return to the default deflate method.
-        zip.setMethod(ZipOutputStream.DEFLATED);
+        return EpubPackage.escape(text);
     }
 }

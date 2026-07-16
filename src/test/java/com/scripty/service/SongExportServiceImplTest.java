@@ -15,9 +15,15 @@ import com.scripty.dto.TextDocument;
 import com.scripty.dto.User;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.TextDocumentRepository;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -257,10 +263,104 @@ class SongExportServiceImplTest {
     }
 
     @Test
+    void exportsASongAsAnEpubBook() throws Exception {
+        Project project = project("My Musical");
+        project.setWriters("Written by\nJane Doe");
+        TextDocument doc = song(1, "Hold The Line", "First verse\n\nSecond verse");
+        doc.setProject(project);
+        when(textDocumentRepository.findById(1)).thenReturn(Optional.of(doc));
+
+        SongExportService.SongExport export =
+                service.exportSong(1, SongExportService.Format.EPUB, user);
+
+        assertNotNull(export);
+        assertEquals("Hold-The-Line.epub", export.filename());
+        assertEquals("application/epub+zip", export.contentType());
+
+        Map<String, String> entries = unzip(export.content());
+        assertEquals("application/epub+zip", entries.get("mimetype"));
+        assertTrue(entries.containsKey("META-INF/container.xml"));
+        assertTrue(entries.containsKey("OEBPS/content.opf"));
+        assertTrue(entries.containsKey("OEBPS/nav.xhtml"));
+
+        String opf = entries.get("OEBPS/content.opf");
+        assertTrue(opf.contains("<dc:title>Hold The Line</dc:title>"));
+        // The "Written by" credit line is not the author; the name below it is.
+        assertTrue(opf.contains("<dc:creator>Jane Doe</dc:creator>"));
+
+        String song = entries.get("OEBPS/song-1.xhtml");
+        assertTrue(song.contains("<h1 class=\"song-title\">Hold The Line</h1>"));
+        // Each verse is its own paragraph rather than a blank line inside one.
+        assertTrue(song.contains("<p class=\"stanza\">First verse</p>"));
+        assertTrue(song.contains("<p class=\"stanza\">Second verse</p>"));
+    }
+
+    @Test
+    void epubGivesEachSongItsOwnChapterAndTocEntry() throws Exception {
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("My Musical")));
+        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+                .thenReturn(List.of(song(1, "Opener", "one"), song(3, "Closer", "two")));
+
+        SongExportService.SongExport export =
+                service.exportAllSongs(PROJECT_ID, SongExportService.Format.EPUB, user);
+
+        assertNotNull(export);
+        assertEquals("My-Musical-Songs.epub", export.filename());
+
+        Map<String, String> entries = unzip(export.content());
+        assertTrue(entries.get("OEBPS/song-1.xhtml").contains("one"));
+        assertTrue(entries.get("OEBPS/song-2.xhtml").contains("two"));
+
+        String nav = entries.get("OEBPS/nav.xhtml");
+        assertTrue(nav.contains("<a href=\"song-1.xhtml\">Opener</a>"));
+        assertTrue(nav.contains("<a href=\"song-2.xhtml\">Closer</a>"));
+        assertTrue(nav.indexOf("Opener") < nav.indexOf("Closer"));
+    }
+
+    /** Lyrics exported to EPUB and imported back must keep their lines and verse breaks. */
+    @Test
+    void epubRoundTripsLyricsThroughImport() throws Exception {
+        TextDocument doc = song(1, "Hold The Line", "First line\nSecond line\n\nSecond verse");
+        when(textDocumentRepository.findById(1)).thenReturn(Optional.of(doc));
+
+        SongExportService.SongExport export =
+                service.exportSong(1, SongExportService.Format.EPUB, user);
+
+        String plain = EpubToFountainConverter.convertPlain(new ByteArrayInputStream(export.content()));
+
+        assertEquals("Hold The Line\n\nFirst line\nSecond line\n\nSecond verse", plain);
+    }
+
+    @Test
+    void epubEscapesXmlSpecialCharacters() throws Exception {
+        TextDocument doc = song(1, "Tom & Jerry", "They <say> \"hi\"");
+        when(textDocumentRepository.findById(1)).thenReturn(Optional.of(doc));
+
+        SongExportService.SongExport export =
+                service.exportSong(1, SongExportService.Format.EPUB, user);
+
+        String song = unzip(export.content()).get("OEBPS/song-1.xhtml");
+        assertTrue(song.contains("Tom &amp; Jerry"));
+        assertTrue(song.contains("They &lt;say&gt; &quot;hi&quot;"));
+    }
+
+    private static Map<String, String> unzip(byte[] archive) throws IOException {
+        Map<String, String> entries = new HashMap<>();
+        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(archive))) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                entries.put(entry.getName(), new String(zip.readAllBytes(), StandardCharsets.UTF_8));
+            }
+        }
+        return entries;
+    }
+
+    @Test
     void parseFormatFallsBackToText() {
         assertEquals(SongExportService.Format.PDF, SongExportService.parseFormat("pdf"));
         assertEquals(SongExportService.Format.PDF, SongExportService.parseFormat("  PDF "));
         assertEquals(SongExportService.Format.DOCX, SongExportService.parseFormat("word"));
+        assertEquals(SongExportService.Format.EPUB, SongExportService.parseFormat("epub"));
         assertEquals(SongExportService.Format.TXT, SongExportService.parseFormat("txt"));
         assertEquals(SongExportService.Format.TXT, SongExportService.parseFormat("nonsense"));
         assertEquals(SongExportService.Format.TXT, SongExportService.parseFormat(null));

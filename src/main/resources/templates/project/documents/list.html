@@ -107,6 +107,10 @@
                                role="menuitem"
                                th:href="@{/project/documents/export-songs(projectId=${viewModel.projectId}, format=docx)}"
                                hx-boost="false">Word (.docx)</a>
+                            <a class="nav-dropdown-item song-export-link"
+                               role="menuitem"
+                               th:href="@{/project/documents/export-songs(projectId=${viewModel.projectId}, format=epub)}"
+                               hx-boost="false">EPUB (.epub)</a>
                         </div>
                     </div>
                     <button type="button"

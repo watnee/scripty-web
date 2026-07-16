@@ -53,7 +53,7 @@ class SongVersionServiceImplTest {
     @Test
     void buildSnapshotJsonCapturesTitleAndLines() {
         stubDocument("Hallelujah");
-        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of("first line", "second line"));
+        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of(line("first line"), line("second line")));
 
         String json = service.buildSnapshotJson(DOC_ID);
 
@@ -74,7 +74,7 @@ class SongVersionServiceImplTest {
     @Test
     void autoSaveSkipsWhenSnapshotUnchanged() {
         stubDocument("Song");
-        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of("same"));
+        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of(line("same")));
         SongVersion latest = version(1, "Auto-save Jul 1, 12:00 PM", LocalDateTime.now());
         latest.setSnapshotJson(service.buildSnapshotJson(DOC_ID));
         when(songVersionRepository.findFirstByTextDocumentIdOrderByCreatedAtDesc(DOC_ID)).thenReturn(latest);
@@ -87,7 +87,7 @@ class SongVersionServiceImplTest {
     @Test
     void autoSaveCoalescesIntoRecentAutoSave() {
         stubDocument("Song");
-        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of("changed"));
+        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of(line("changed")));
         SongVersion latest = version(1, "Auto-save Jul 1, 12:00 PM", LocalDateTime.now().minusMinutes(2));
         latest.setSnapshotJson("{\"title\":\"Song\",\"lines\":[\"old\"]}");
         when(songVersionRepository.findFirstByTextDocumentIdOrderByCreatedAtDesc(DOC_ID)).thenReturn(latest);
@@ -104,7 +104,7 @@ class SongVersionServiceImplTest {
     @Test
     void autoSaveCreatesNewVersionWhenLatestAutoSaveIsStale() {
         stubDocument("Song");
-        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of("changed"));
+        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of(line("changed")));
         SongVersion latest = version(1, "Auto-save Jul 1, 12:00 PM", LocalDateTime.now().minusMinutes(30));
         latest.setSnapshotJson("{\"title\":\"Song\",\"lines\":[\"old\"]}");
         when(songVersionRepository.findFirstByTextDocumentIdOrderByCreatedAtDesc(DOC_ID)).thenReturn(latest);
@@ -119,7 +119,7 @@ class SongVersionServiceImplTest {
     @Test
     void autoSaveDoesNotCoalesceIntoManualVersion() {
         stubDocument("Song");
-        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of("changed"));
+        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of(line("changed")));
         SongVersion latest = version(1, "Draft 2", LocalDateTime.now().minusMinutes(1));
         latest.setSnapshotJson("{\"title\":\"Song\",\"lines\":[\"old\"]}");
         when(songVersionRepository.findFirstByTextDocumentIdOrderByCreatedAtDesc(DOC_ID)).thenReturn(latest);
@@ -175,14 +175,14 @@ class SongVersionServiceImplTest {
     @Test
     void restoreReplacesLinesAndTitleAndSnapshotsFirst() {
         stubDocument("Current title");
-        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of("current"));
+        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of(line("current")));
         SongVersion version = version(9, "Draft 1", LocalDateTime.now().minusDays(1));
         version.setSnapshotJson("{\"title\":\"Old title\",\"lines\":[\"old one\",\"old two\"]}");
         when(songVersionRepository.findById(9)).thenReturn(Optional.of(version));
 
         assertTrue(service.restoreVersionForDocument(9, DOC_ID));
 
-        verify(songBlockService).replaceLines(DOC_ID, List.of("old one", "old two"));
+        verify(songBlockService).replaceLines(DOC_ID, List.of(line("old one"), line("old two")));
         ArgumentCaptor<SongVersion> saved = ArgumentCaptor.forClass(SongVersion.class);
         verify(songVersionRepository).save(saved.capture());
         assertTrue(saved.getValue().getLabel().startsWith("Before restore"));
@@ -219,6 +219,54 @@ class SongVersionServiceImplTest {
         assertTrue(service.deleteVersionForDocument(9, DOC_ID));
 
         verify(songVersionRepository).deleteById(9);
+    }
+
+    // --- highlights -------------------------------------------------------
+
+    @Test
+    void snapshotRoundTripsHighlights() {
+        stubDocument("Song");
+        when(songBlockService.snapshotLines(DOC_ID))
+                .thenReturn(List.of(new SongBlockService.LineSnapshot("tinted", "YELLOW")));
+        SongVersion version = version(9, "Draft 1", LocalDateTime.now().minusDays(1));
+        version.setSnapshotJson(service.buildSnapshotJson(DOC_ID));
+        when(songVersionRepository.findById(9)).thenReturn(Optional.of(version));
+
+        assertTrue(service.restoreVersionForDocument(9, DOC_ID));
+
+        // Restoring must not drop the tint the snapshot captured.
+        verify(songBlockService).replaceLines(
+                DOC_ID, List.of(new SongBlockService.LineSnapshot("tinted", "YELLOW")));
+    }
+
+    @Test
+    void changeSummaryReportsHighlightOnlyChange() {
+        stubDocument("Song");
+        SongVersion newer = version(2, "Draft 2", LocalDateTime.now());
+        newer.setSnapshotJson("{\"title\":\"Song\",\"lines\":[{\"content\":\"same\",\"highlight\":\"YELLOW\"}]}");
+        SongVersion older = version(1, "Draft 1", LocalDateTime.now().minusDays(1));
+        older.setSnapshotJson("{\"title\":\"Song\",\"lines\":[{\"content\":\"same\",\"highlight\":null}]}");
+        when(songVersionRepository.findByTextDocumentIdOrderByCreatedAtDesc(DOC_ID))
+                .thenReturn(List.of(newer, older));
+
+        SongVersionViewModel newest = service.getVersionHistoryViewModel(DOC_ID).getVersions().get(0);
+
+        assertEquals(1, newest.getChangeSummary().getLinesEdited());
+        assertTrue(newest.getChangeSummary().getDetails().get(0).contains("highlight changed"));
+    }
+
+    @Test
+    void readsLegacyStringOnlyLines() {
+        stubDocument("Song");
+        when(songBlockService.snapshotLines(DOC_ID)).thenReturn(List.of(line("current")));
+        SongVersion version = version(9, "Draft 1", LocalDateTime.now().minusDays(1));
+        // Written before songs grew highlights.
+        version.setSnapshotJson("{\"title\":\"Song\",\"lines\":[\"plain\"]}");
+        when(songVersionRepository.findById(9)).thenReturn(Optional.of(version));
+
+        assertTrue(service.restoreVersionForDocument(9, DOC_ID));
+
+        verify(songBlockService).replaceLines(DOC_ID, List.of(line("plain")));
     }
 
     // --- history view model / change summary ------------------------------
@@ -272,6 +320,10 @@ class SongVersionServiceImplTest {
     }
 
     // --- helpers ----------------------------------------------------------
+
+    private static SongBlockService.LineSnapshot line(String content) {
+        return new SongBlockService.LineSnapshot(content, null);
+    }
 
     private void stubDocument(String title) {
         when(textDocumentRepository.findById(DOC_ID)).thenReturn(Optional.of(document(title)));

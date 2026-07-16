@@ -117,6 +117,7 @@ public class SongBlockController {
         }
         songUndoRedoService.recordCheckpointForBlock(id);
         songBlockService.setHighlight(id, highlight);
+        songVersionService.autoSaveVersionForBlock(id);
         return renderList(songBlockService.documentIdForBlock(id), id, model);
     }
 

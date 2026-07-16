@@ -126,7 +126,7 @@ public class SongVersionServiceImpl implements SongVersionService {
         if (doc == null) {
             return null;
         }
-        List<String> lines = songBlockService.snapshotLines(documentId);
+        List<SongBlockService.LineSnapshot> lines = songBlockService.snapshotLines(documentId);
         Map<String, Object> snapshot = new HashMap<>();
         snapshot.put("title", doc.getTitle());
         snapshot.put("lines", lines != null ? lines : List.of());
@@ -256,15 +256,27 @@ public class SongVersionServiceImpl implements SongVersionService {
         return title != null ? title.toString() : null;
     }
 
-    @SuppressWarnings("unchecked")
-    private static List<String> linesOf(Map<String, Object> snapshot) {
+    /**
+     * Lines from a snapshot. Entries are {@code {content, highlight}} objects;
+     * bare strings are also accepted, since snapshots written before songs grew
+     * highlights stored the content alone.
+     */
+    private static List<SongBlockService.LineSnapshot> linesOf(Map<String, Object> snapshot) {
         Object lines = snapshot.get("lines");
         if (!(lines instanceof List<?> list)) {
             return List.of();
         }
-        List<String> result = new ArrayList<>();
+        List<SongBlockService.LineSnapshot> result = new ArrayList<>();
         for (Object line : list) {
-            result.add(line != null ? line.toString() : "");
+            if (line instanceof Map<?, ?> map) {
+                Object content = map.get("content");
+                Object highlight = map.get("highlight");
+                result.add(new SongBlockService.LineSnapshot(
+                        content != null ? content.toString() : "",
+                        highlight != null ? highlight.toString() : null));
+            } else {
+                result.add(new SongBlockService.LineSnapshot(line != null ? line.toString() : "", null));
+            }
         }
         return result;
     }
@@ -290,22 +302,27 @@ public class SongVersionServiceImpl implements SongVersionService {
             summary.addDetail("Title changed: " + titleLabel(titleOf(older)) + " → " + titleLabel(titleOf(newer)));
         }
 
-        List<String> newerLines = linesOf(newer);
-        List<String> olderLines = linesOf(older);
+        List<SongBlockService.LineSnapshot> newerLines = linesOf(newer);
+        List<SongBlockService.LineSnapshot> olderLines = linesOf(older);
         int shared = Math.min(newerLines.size(), olderLines.size());
         for (int i = 0; i < shared; i++) {
-            if (!Objects.equals(newerLines.get(i), olderLines.get(i))) {
+            SongBlockService.LineSnapshot newerLine = newerLines.get(i);
+            SongBlockService.LineSnapshot olderLine = olderLines.get(i);
+            if (!Objects.equals(newerLine.content(), olderLine.content())) {
                 summary.setLinesEdited(summary.getLinesEdited() + 1);
-                summary.addDetail("Line " + (i + 1) + " edited: " + linePreview(newerLines.get(i)));
+                summary.addDetail("Line " + (i + 1) + " edited: " + linePreview(newerLine.content()));
+            } else if (!Objects.equals(newerLine.highlight(), olderLine.highlight())) {
+                summary.setLinesEdited(summary.getLinesEdited() + 1);
+                summary.addDetail("Line " + (i + 1) + " highlight changed: " + linePreview(newerLine.content()));
             }
         }
         for (int i = shared; i < newerLines.size(); i++) {
             summary.setLinesAdded(summary.getLinesAdded() + 1);
-            summary.addDetail("Line added: " + linePreview(newerLines.get(i)));
+            summary.addDetail("Line added: " + linePreview(newerLines.get(i).content()));
         }
         for (int i = shared; i < olderLines.size(); i++) {
             summary.setLinesRemoved(summary.getLinesRemoved() + 1);
-            summary.addDetail("Line removed: " + linePreview(olderLines.get(i)));
+            summary.addDetail("Line removed: " + linePreview(olderLines.get(i).content()));
         }
         return summary;
     }

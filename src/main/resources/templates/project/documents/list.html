@@ -82,6 +82,33 @@
                             class="project-list-action-btn project-list-action-btn--secondary"
                             id="import-doc-btn"
                             th:title="${isSongList} ? 'Import a song from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file' : 'Import a note from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file'">Import</button>
+                    <div class="nav-dropdown song-export-dropdown"
+                         id="songs-export-dropdown"
+                         th:if="${isSongList and !#lists.isEmpty(documents)}">
+                        <button type="button"
+                                id="songs-export-toggle"
+                                class="nav-dropdown-toggle project-list-action-btn project-list-action-btn--secondary"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                title="Export songs">Export</button>
+                        <div class="nav-dropdown-menu song-export-menu"
+                             role="menu"
+                             aria-label="Export songs">
+                            <div class="song-export-scope" id="songs-export-scope" aria-hidden="true">All songs</div>
+                            <a class="nav-dropdown-item song-export-link"
+                               role="menuitem"
+                               th:href="@{/project/documents/export-songs(projectId=${viewModel.projectId}, format=txt)}"
+                               hx-boost="false">Text (.txt)</a>
+                            <a class="nav-dropdown-item song-export-link"
+                               role="menuitem"
+                               th:href="@{/project/documents/export-songs(projectId=${viewModel.projectId}, format=pdf)}"
+                               hx-boost="false">PDF</a>
+                            <a class="nav-dropdown-item song-export-link"
+                               role="menuitem"
+                               th:href="@{/project/documents/export-songs(projectId=${viewModel.projectId}, format=docx)}"
+                               hx-boost="false">Word (.docx)</a>
+                        </div>
+                    </div>
                     <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
                        class="project-list-action-btn project-list-action-btn--primary"
                        th:text="${isSongList} ? 'New Song' : 'New Note'">New</a>
@@ -126,6 +153,10 @@
                             hidden>&times;</button>
                 </div>
                 <div class="project-list-toolbar-actions">
+                    <label class="text-documents-select-all" th:if="${isSongList}">
+                        <input type="checkbox" id="text-documents-select-all" />
+                        <span>Select all</span>
+                    </label>
                     <label class="project-list-sort-label" for="text-documents-sort">
                         <span class="visually-hidden" th:text="${isSongList} ? 'Sort songs' : 'Sort notes'">Sort</span>
                         <select id="text-documents-sort"
@@ -162,6 +193,12 @@
                     th:classappend="${isSongList} ? ' text-document-card--song' : ' text-document-card--draft'"
                     th:style="'--card-i:' + ${iter.index}"
                     th:attr="data-doc-title=${#strings.toLowerCase(doc.title)}, data-sort-edited=${doc.updatedAt != null ? #temporals.format(doc.updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}">
+                    <span class="text-document-select" th:if="${isSongList}">
+                        <input type="checkbox"
+                               class="text-document-select-checkbox"
+                               th:value="${doc.id}"
+                               th:attr="aria-label='Select ' + ${doc.title}" />
+                    </span>
                     <div class="text-document-card-main">
                         <a class="text-document-card-title"
                            th:href="@{/project/documents/edit(id=${doc.id})}"
@@ -247,6 +284,7 @@
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:src="@{/js/song-export-select.js(v=${assetVersion})}"></script>
     <script>
         (function() {
             var btn = document.getElementById('import-doc-btn');

@@ -1,5 +1,5 @@
 /**
- * Header nav dropdowns (user, help, settings).
+ * Header nav dropdowns (user, help, settings) and the song export menus.
  *
  * History dropdown stays with undo/redo. Loaded from nav.html so handlers
  * survive HTMX-boosted navigation.
@@ -10,7 +10,7 @@
     if (window._scriptyNavDropdownsInit) return;
     window._scriptyNavDropdownsInit = true;
 
-    var DROPDOWN_IDS = ['user-dropdown', 'help-dropdown'];
+    var DROPDOWN_IDS = ['user-dropdown', 'help-dropdown', 'songs-export-dropdown', 'song-export-dropdown'];
 
     function closeAllNavDropdowns() {
         document.querySelectorAll('.nav-dropdown').forEach(function (d) {

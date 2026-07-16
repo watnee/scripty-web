@@ -42,6 +42,32 @@
                 </ol>
             </nav>
             <div class="text-document-top-bar-actions">
+                <div class="nav-dropdown song-export-dropdown"
+                     id="song-export-dropdown"
+                     th:if="${isSong and !isNew}">
+                    <button type="button"
+                            class="nav-dropdown-toggle project-list-action-btn project-list-action-btn--secondary"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            aria-label="Export this song"
+                            title="Export this song">Export</button>
+                    <div class="nav-dropdown-menu song-export-menu"
+                         role="menu"
+                         aria-label="Export this song">
+                        <a class="nav-dropdown-item"
+                           role="menuitem"
+                           th:href="@{/project/documents/export(id=${commandModel.id}, format=txt)}"
+                           hx-boost="false">Text (.txt)</a>
+                        <a class="nav-dropdown-item"
+                           role="menuitem"
+                           th:href="@{/project/documents/export(id=${commandModel.id}, format=pdf)}"
+                           hx-boost="false">PDF</a>
+                        <a class="nav-dropdown-item"
+                           role="menuitem"
+                           th:href="@{/project/documents/export(id=${commandModel.id}, format=docx)}"
+                           hx-boost="false">Word (.docx)</a>
+                    </div>
+                </div>
                 <div class="spellcheck-toggle-container" th:if="${isSong}">
                     <button id="nav-spellcheck-toggle"
                             type="button"

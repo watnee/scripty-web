@@ -38,14 +38,21 @@ public class SongBlockController {
     @Autowired
     SongVersionService songVersionService;
 
-    // Song editing follows the same rule as the song editor itself: any project
-    // member may edit (project access), unlike screenplay blocks which need write.
+    // Song editing follows the same rule as the screenplay: writer (or admin)
+    // permission on a project the user can access. ProjectAccessSupport's own
+    // canEditBlock resolves screenplay blocks, so song block ids are mapped to a
+    // project here before the check.
     private boolean canEditBlock(Integer blockId, Principal principal) {
         Integer projectId = songBlockService.projectIdForBlock(blockId);
-        return projectId != null && projectAccess.canAccessProject(projectId, principal);
+        return projectId != null && projectAccess.canEditScript(projectId, principal);
     }
 
     private boolean canEditDocument(Integer documentId, Principal principal) {
+        Integer projectId = songBlockService.projectIdForDocument(documentId);
+        return projectId != null && projectAccess.canEditScript(projectId, principal);
+    }
+
+    private boolean canAccessDocument(Integer documentId, Principal principal) {
         Integer projectId = songBlockService.projectIdForDocument(documentId);
         return projectId != null && projectAccess.canAccessProject(projectId, principal);
     }
@@ -185,7 +192,7 @@ public class SongBlockController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> undoRedoStatus(@RequestParam Integer documentId,
                                                               Principal principal) {
-        if (!canEditDocument(documentId, principal)) {
+        if (!canAccessDocument(documentId, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Map<String, Object> status = new HashMap<>();

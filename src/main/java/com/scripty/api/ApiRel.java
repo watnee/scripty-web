@@ -43,6 +43,9 @@ public final class ApiRel {
     public static final String VERSION = "version";
     public static final String RESTORE = "restore";
     public static final String CREATE = "create";
+    public static final String SONG_BLOCKS = "songBlocks";
+    public static final String APPEND = "append";
+    public static final String SET_HIGHLIGHT = "setHighlight";
 
     private ApiRel() {
     }

@@ -1,6 +1,7 @@
 package com.scripty.api;
 
 import com.scripty.controller.ProjectRestController;
+import com.scripty.controller.SongBlockRestController;
 import com.scripty.controller.TextDocumentRestController;
 import com.scripty.dto.TextDocument;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
@@ -92,6 +93,12 @@ public class TextDocumentResourceAssembler {
     private org.springframework.hateoas.Link[] documentLinks(int id, Integer projectId, String type) {
         List<org.springframework.hateoas.Link> links = new ArrayList<>();
         links.add(linkTo(methodOn(TextDocumentRestController.class).show(id, null)).withSelfRel());
+        // Songs are edited as ordered lyric lines; notes stay free-text, so only
+        // songs expose the block editor's API.
+        if (TextDocument.TYPE_SONG.equalsIgnoreCase(type)) {
+            links.add(linkTo(methodOn(SongBlockRestController.class).list(id, null))
+                    .withRel(ApiRel.SONG_BLOCKS));
+        }
         if (projectId != null) {
             links.add(linkTo(methodOn(TextDocumentRestController.class).list(projectId, null, null))
                     .withRel(ApiRel.DOCUMENTS));

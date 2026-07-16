@@ -27,6 +27,13 @@ public interface TextDocumentService {
     TextDocument save(TextDocumentCommandModel commandModel, User currentUser);
 
     /**
+     * Creates a new empty song and returns it, so the block editor always has a
+     * persisted document to attach lyric blocks to.
+     * @return the created song, or null if the project isn't accessible
+     */
+    TextDocument createEmptySong(Integer projectId, User currentUser);
+
+    /**
      * Renames a document without touching its content. Blank titles are ignored.
      * @return the renamed document, or null if not found/accessible or the title was blank
      */

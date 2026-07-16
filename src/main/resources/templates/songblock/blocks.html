@@ -1,0 +1,59 @@
+<th:block xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="blocks"
+     id="song-blocks"
+     class="song-blocks"
+     th:attr="data-focus-id=${focusBlockId}">
+    <th:block th:each="block : ${blocks}">
+        <div th:replace="~{songblock/blocks :: row(${block}, ${focusBlockId})}"></div>
+    </th:block>
+</div>
+
+<div th:fragment="row(block, focusBlockId)"
+     class="song-block-row"
+     th:id="'song-block-' + ${block.id}"
+     th:attr="data-block-id=${block.id}">
+    <div class="song-block-controls" role="group" aria-label="Line actions">
+        <button type="button" class="song-block-btn" data-action="up"
+                title="Move line up" aria-label="Move line up">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+        </button>
+        <button type="button" class="song-block-btn" data-action="down"
+                title="Move line down" aria-label="Move line down">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </button>
+        <button type="button" class="song-block-btn song-block-delete" data-action="delete"
+                title="Delete line" aria-label="Delete line">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+    </div>
+    <textarea class="song-block-textarea"
+              rows="1"
+              spellcheck="true"
+              autocomplete="off"
+              aria-label="Lyrics line"
+              th:attr="data-block-id=${block.id},data-autofocus=${focusBlockId != null and focusBlockId == block.id ? 'true' : null}"
+              th:text="${block.content}"></textarea>
+    <button type="button" class="song-block-add" data-action="add-below"
+            title="Add line below" aria-label="Add line below">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    </button>
+</div>
+
+<th:block th:fragment="forbidden"></th:block>
+
+</th:block>

@@ -6339,6 +6339,9 @@
          navigation into /project/documents/edit (allowScriptTags is false, so
          edit.html script tags are not executed after a boost). -->
     <script th:src="@{/js/text-document-edit.js(v=${assetVersion})}"></script>
+    <!-- Song block editor (add/edit/delete/reorder lyric lines): loaded from nav
+         so it survives HTMX-boosted navigation into the song editor. -->
+    <script th:src="@{/js/song-blocks.js(v=${assetVersion})}"></script>
     <!-- Custom spellcheck (Typo.js + suggestions popup): loaded from nav so it
          works on both the script editor and the song/note editor, and survives
          HTMX-boosted navigation. -->

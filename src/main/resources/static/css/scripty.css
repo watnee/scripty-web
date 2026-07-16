@@ -6553,6 +6553,135 @@ body:has(main.text-documents-page) > main.text-documents-page {
     margin: 0;
 }
 
+/* --- Song block editor (add/edit/delete/reorder lyric lines) ------------- */
+.song-blocks-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    width: 100%;
+}
+
+.song-blocks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.song-block-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    border-radius: 6px;
+    padding: 0.1rem 0.25rem;
+}
+
+.song-block-row:hover,
+.song-block-row:focus-within {
+    background: color-mix(in srgb, var(--td-line, #e2e8f0) 30%, transparent);
+}
+
+.song-block-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+    padding-top: 0.2rem;
+    opacity: 0;
+    transition: opacity 0.12s ease-in-out;
+    flex: 0 0 auto;
+}
+
+.song-block-row:hover .song-block-controls,
+.song-block-row:focus-within .song-block-controls {
+    opacity: 1;
+}
+
+.song-block-btn,
+.song-block-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--muted-fg, #64748b);
+    cursor: pointer;
+    line-height: 1;
+}
+
+.song-block-btn:hover,
+.song-block-add:hover {
+    background: color-mix(in srgb, var(--td-line, #e2e8f0) 60%, transparent);
+    color: var(--fg, #0f172a);
+}
+
+.song-block-delete:hover {
+    color: var(--bad-fg-color, #e11d48);
+}
+
+.song-block-add {
+    flex: 0 0 auto;
+    opacity: 0;
+    margin-top: 0.15rem;
+    transition: opacity 0.12s ease-in-out;
+}
+
+.song-block-row:hover .song-block-add,
+.song-block-row:focus-within .song-block-add {
+    opacity: 1;
+}
+
+.song-block-textarea {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 1.6em;
+    font-family: "Courier Prime", "Courier New", Courier, monospace;
+    font-size: 1rem;
+    line-height: 1.6;
+    padding: 0.15rem 0.35rem;
+    margin: 0;
+    resize: none;
+    overflow: hidden;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border: none !important;
+    border-radius: 4px;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent;
+}
+
+.song-block-textarea:focus,
+.song-block-textarea:focus-visible {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: color-mix(in srgb, var(--accent, #2563eb) 8%, transparent);
+}
+
+.song-block-append {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    align-self: flex-start;
+    margin-top: 0.5rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px dashed var(--td-line, #cbd5e1);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted-fg, #64748b);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.song-block-append:hover {
+    color: var(--fg, #0f172a);
+    border-color: var(--accent, #2563eb);
+    background: color-mix(in srgb, var(--accent, #2563eb) 6%, transparent);
+}
+
 .text-document-insert-panel {
     display: flex;
     justify-content: space-between;

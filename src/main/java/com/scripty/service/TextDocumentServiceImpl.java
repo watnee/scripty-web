@@ -172,8 +172,14 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         }
         doc.setTitle(title);
         doc.setDocumentType(normalizeDocumentType(commandModel.getDocumentType()));
-        doc.setContent(PlainTextSanitizer.sanitize(
-                commandModel.getContent() != null ? commandModel.getContent() : ""));
+        // Existing songs are edited as lyric blocks; their content is a synced
+        // projection of those blocks, so a title-only save must not clobber it.
+        boolean songContentIsBlockDerived = !isNew
+                && TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType());
+        if (!songContentIsBlockDerived) {
+            doc.setContent(PlainTextSanitizer.sanitize(
+                    commandModel.getContent() != null ? commandModel.getContent() : ""));
+        }
         doc.setUpdatedAt(now);
 
         project.setLastEdited(now);
@@ -199,6 +205,15 @@ public class TextDocumentServiceImpl implements TextDocumentService {
                     saved.getId());
         }
         return saved;
+    }
+
+    @Override
+    @Transactional
+    public TextDocument createEmptySong(Integer projectId, User currentUser) {
+        TextDocumentCommandModel cmd = getNewCommandModel(projectId, TextDocument.TYPE_SONG);
+        cmd.setTitle("Untitled");
+        cmd.setContent("");
+        return save(cmd, currentUser);
     }
 
     @Override

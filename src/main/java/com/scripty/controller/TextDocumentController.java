@@ -7,6 +7,7 @@ import com.scripty.dto.User;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.ScriptImportException;
+import com.scripty.service.SongBlockService;
 import com.scripty.service.TextDocumentService;
 import com.scripty.service.UserService;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
@@ -42,6 +43,9 @@ public class TextDocumentController {
 
     @Autowired
     TextDocumentService textDocumentService;
+
+    @Autowired
+    SongBlockService songBlockService;
 
     @Autowired
     ProjectVersionService projectVersionService;
@@ -99,12 +103,22 @@ public class TextDocumentController {
                          @RequestParam(required = false, defaultValue = "SONG") String type,
                          Model model,
                          Principal principal) {
-        TextDocumentListViewModel listVm = textDocumentService.getListViewModel(projectId, currentUser(principal));
+        User user = currentUser(principal);
+        TextDocumentListViewModel listVm = textDocumentService.getListViewModel(projectId, user);
         if (listVm == null) {
             return "redirect:/project/list";
         }
         TextDocumentCommandModel commandModel = textDocumentService.getNewCommandModel(projectId, type);
         boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(commandModel.getDocumentType());
+        // Songs are composed of lyric blocks, which need a persisted document to
+        // attach to — create an empty song up front and open its block editor.
+        if (isSong) {
+            TextDocument created = textDocumentService.createEmptySong(projectId, user);
+            if (created == null) {
+                return "redirect:/project/list";
+            }
+            return "redirect:/project/documents/edit?id=" + created.getId();
+        }
         model.addAttribute("projectId", projectId);
         model.addAttribute("projectTitle", listVm.getProjectTitle());
         model.addAttribute("commandModel", commandModel);
@@ -130,6 +144,10 @@ public class TextDocumentController {
         model.addAttribute("updatedAt", viewModel.getUpdatedAt());
         model.addAttribute("isNew", false);
         model.addAttribute("isSong", isSong);
+        if (isSong) {
+            model.addAttribute("blocks", songBlockService.getBlocks(id));
+            model.addAttribute("focusBlockId", null);
+        }
         model.addAttribute("listPath", listPath(isSong));
         model.addAttribute("canEditScript", projectAccess.canEditScript(viewModel.getProjectId(), user));
         return "project/documents/edit";

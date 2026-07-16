@@ -95,18 +95,31 @@
             <input type="hidden" th:field="*{documentType}" />
 
             <div class="text-document-editor-shell">
-                <label class="text-document-content-label">
-                    <span class="visually-hidden"
-                          th:text="${isSong} ? 'Lyrics' : 'Content'">Content</span>
+                <label th:unless="${isSong}" class="text-document-content-label">
+                    <span class="visually-hidden">Content</span>
                     <textarea th:field="*{content}"
                               id="text-document-content"
                               class="text-document-content"
                               rows="18"
-                              th:attr="aria-label=${isSong} ? 'Lyrics' : 'Content'"
-                              th:placeholder="${isSong} ? 'Write your song lyrics here…&#10;&#10;Each line will become a Lyrics block when inserted.' : 'Write notes or scratch text here…&#10;&#10;Each line will become a Note block when inserted.'"
+                              aria-label="Content"
+                              th:placeholder="'Write notes or scratch text here…&#10;&#10;Each line will become a Note block when inserted.'"
                               autocomplete="off"
                               spellcheck="true"></textarea>
                 </label>
+                <div th:if="${isSong}"
+                     class="song-blocks-editor"
+                     th:attr="data-document-id=${commandModel.id}"
+                     data-can-edit="true">
+                    <div th:replace="~{songblock/blocks :: blocks}"></div>
+                    <button type="button" class="song-block-append" data-action="append">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>Add line</span>
+                    </button>
+                </div>
             </div>
 
             <div class="text-document-meta-bar">

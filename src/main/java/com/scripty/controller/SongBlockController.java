@@ -1,0 +1,109 @@
+package com.scripty.controller;
+
+import com.scripty.dto.SongBlock;
+import com.scripty.security.ProjectAccessSupport;
+import com.scripty.service.SongBlockService;
+import java.security.Principal;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+/**
+ * HTMX endpoints backing the song block editor. Structural changes return the
+ * refreshed block list fragment; content edits persist silently (204).
+ */
+@Controller
+@RequestMapping(value = "/song/block")
+public class SongBlockController {
+
+    @Autowired
+    SongBlockService songBlockService;
+
+    @Autowired
+    ProjectAccessSupport projectAccess;
+
+    // Song editing follows the same rule as the song editor itself: any project
+    // member may edit (project access), unlike screenplay blocks which need write.
+    private boolean canEditBlock(Integer blockId, Principal principal) {
+        Integer projectId = songBlockService.projectIdForBlock(blockId);
+        return projectId != null && projectAccess.canAccessProject(projectId, principal);
+    }
+
+    private boolean canEditDocument(Integer documentId, Principal principal) {
+        Integer projectId = songBlockService.projectIdForDocument(documentId);
+        return projectId != null && projectAccess.canAccessProject(projectId, principal);
+    }
+
+    private String renderList(Integer documentId, Integer focusBlockId, Model model) {
+        model.addAttribute("blocks", songBlockService.getBlocks(documentId));
+        model.addAttribute("focusBlockId", focusBlockId);
+        return "songblock/blocks :: blocks";
+    }
+
+    @RequestMapping(value = "/edit", method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseEntity<Void> edit(@RequestParam Integer id,
+                                     @RequestParam(defaultValue = "") String content,
+                                     Principal principal) {
+        if (!canEditBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        songBlockService.editContent(id, content);
+        return ResponseEntity.noContent().build();
+    }
+
+    @RequestMapping(value = "/createBelow", method = RequestMethod.POST)
+    public String createBelow(@RequestParam Integer id,
+                              @RequestParam(required = false) String content,
+                              Model model,
+                              Principal principal) {
+        if (!canEditBlock(id, principal)) {
+            return "songblock/blocks :: forbidden";
+        }
+        SongBlock created = songBlockService.createBelow(id, content);
+        Integer documentId = songBlockService.documentIdForBlock(id);
+        return renderList(documentId, created != null ? created.getId() : null, model);
+    }
+
+    @RequestMapping(value = "/append", method = RequestMethod.POST)
+    public String append(@RequestParam Integer documentId, Model model, Principal principal) {
+        if (!canEditDocument(documentId, principal)) {
+            return "songblock/blocks :: forbidden";
+        }
+        SongBlock created = songBlockService.appendBlock(documentId);
+        return renderList(documentId, created != null ? created.getId() : null, model);
+    }
+
+    @RequestMapping(value = "/delete", method = RequestMethod.POST)
+    public String delete(@RequestParam Integer id, Model model, Principal principal) {
+        if (!canEditBlock(id, principal)) {
+            return "songblock/blocks :: forbidden";
+        }
+        Integer documentId = songBlockService.deleteBlock(id);
+        return renderList(documentId, null, model);
+    }
+
+    @RequestMapping(value = "/moveUp", method = RequestMethod.POST)
+    public String moveUp(@RequestParam Integer id, Model model, Principal principal) {
+        if (!canEditBlock(id, principal)) {
+            return "songblock/blocks :: forbidden";
+        }
+        songBlockService.moveUp(id);
+        return renderList(songBlockService.documentIdForBlock(id), id, model);
+    }
+
+    @RequestMapping(value = "/moveDown", method = RequestMethod.POST)
+    public String moveDown(@RequestParam Integer id, Model model, Principal principal) {
+        if (!canEditBlock(id, principal)) {
+            return "songblock/blocks :: forbidden";
+        }
+        songBlockService.moveDown(id);
+        return renderList(songBlockService.documentIdForBlock(id), id, model);
+    }
+}

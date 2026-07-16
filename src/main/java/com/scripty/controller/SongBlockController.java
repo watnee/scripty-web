@@ -4,6 +4,7 @@ import com.scripty.dto.SongBlock;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.SongBlockService;
 import com.scripty.service.SongUndoRedoService;
+import com.scripty.service.SongVersionService;
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +35,9 @@ public class SongBlockController {
     @Autowired
     SongUndoRedoService songUndoRedoService;
 
+    @Autowired
+    SongVersionService songVersionService;
+
     // Song editing follows the same rule as the song editor itself: any project
     // member may edit (project access), unlike screenplay blocks which need write.
     private boolean canEditBlock(Integer blockId, Principal principal) {
@@ -62,6 +66,7 @@ public class SongBlockController {
         }
         songUndoRedoService.recordCheckpointForBlock(id);
         songBlockService.editContent(id, content);
+        songVersionService.autoSaveVersionForBlock(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -76,6 +81,7 @@ public class SongBlockController {
         songUndoRedoService.recordCheckpointForBlock(id);
         SongBlock created = songBlockService.createBelow(id, content);
         Integer documentId = songBlockService.documentIdForBlock(id);
+        songVersionService.autoSaveVersion(documentId);
         return renderList(documentId, created != null ? created.getId() : null, model);
     }
 
@@ -86,6 +92,7 @@ public class SongBlockController {
         }
         songUndoRedoService.recordCheckpoint(documentId);
         SongBlock created = songBlockService.appendBlock(documentId);
+        songVersionService.autoSaveVersion(documentId);
         return renderList(documentId, created != null ? created.getId() : null, model);
     }
 
@@ -96,6 +103,7 @@ public class SongBlockController {
         }
         songUndoRedoService.recordCheckpointForBlock(id);
         Integer documentId = songBlockService.deleteBlock(id);
+        songVersionService.autoSaveVersion(documentId);
         return renderList(documentId, null, model);
     }
 
@@ -106,6 +114,7 @@ public class SongBlockController {
         }
         songUndoRedoService.recordCheckpointForBlock(id);
         songBlockService.moveUp(id);
+        songVersionService.autoSaveVersionForBlock(id);
         return renderList(songBlockService.documentIdForBlock(id), id, model);
     }
 
@@ -116,6 +125,7 @@ public class SongBlockController {
         }
         songUndoRedoService.recordCheckpointForBlock(id);
         songBlockService.moveDown(id);
+        songVersionService.autoSaveVersionForBlock(id);
         return renderList(songBlockService.documentIdForBlock(id), id, model);
     }
 
@@ -129,6 +139,7 @@ public class SongBlockController {
         }
         songUndoRedoService.recordCheckpointForBlock(id);
         songBlockService.moveTo(id, position != null ? position : 0);
+        songVersionService.autoSaveVersionForBlock(id);
         return renderList(songBlockService.documentIdForBlock(id), id, model);
     }
 

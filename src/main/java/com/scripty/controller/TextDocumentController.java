@@ -9,6 +9,7 @@ import com.scripty.service.ProjectVersionService;
 import com.scripty.service.ScriptImportException;
 import com.scripty.service.SongBlockService;
 import com.scripty.service.SongExportService;
+import com.scripty.service.SongVersionService;
 import com.scripty.service.TextDocumentService;
 import com.scripty.service.UserService;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
@@ -54,6 +55,9 @@ public class TextDocumentController {
 
     @Autowired
     ProjectVersionService projectVersionService;
+
+    @Autowired
+    SongVersionService songVersionService;
 
     @Autowired
     UserService userService;
@@ -248,6 +252,11 @@ public class TextDocumentController {
         if (commandModel.getId() != null
                 && textDocumentService.syncInsertedBlocks(saved.getId(), user)) {
             projectVersionService.autoSaveVersion(commandModel.getProjectId());
+        }
+        // The song snapshot carries the title, so a rename from the editor is a
+        // change worth capturing; block edits auto-save via SongBlockController.
+        if (isSong && commandModel.getId() != null) {
+            songVersionService.autoSaveVersion(saved.getId());
         }
 
         if (wantsJson) {

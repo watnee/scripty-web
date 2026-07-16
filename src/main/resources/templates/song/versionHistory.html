@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - Song History</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main>
+        <nav aria-label="Breadcrumb">
+            <ol>
+                <li><a th:href="@{/project/list}">Projects</a></li>
+                <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}">Project</a></li>
+                <li><a th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}">Songs</a></li>
+                <li><a th:href="@{/project/documents/edit(id=${viewModel.documentId})}" th:text="${viewModel.songTitle}">Song</a></li>
+                <li aria-current="page">Snapshot History</li>
+            </ol>
+        </nav>
+        <h1>Snapshot History</h1>
+        <p class="version-history-intro">
+            Snapshots of <strong th:text="${viewModel.songTitle}">this song</strong>.
+            Auto-saves update in place about every 10 minutes when the lyrics change. Restoring creates a “Before restore” snapshot first.
+        </p>
+        <form th:action="@{/song/version/create}" method="POST" hx-boost="false" class="version-save-form">
+            <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
+            <label>
+                Label
+                <input type="text" name="label" placeholder="e.g. Draft 2, Before rewrite..." style="min-width: 300px">
+            </label>
+            <button type="submit">Save Current Snapshot</button>
+        </form>
+        <p th:if="${#lists.isEmpty(viewModel.versions)}">No versions saved yet. Save a version to create a snapshot you can restore later.</p>
+        <table th:if="${not #lists.isEmpty(viewModel.versions)}" class="version-history-table">
+            <thead>
+                <tr>
+                    <th>Label</th>
+                    <th>Saved</th>
+                    <th>Changes</th>
+                    <th>Title</th>
+                    <th>Lines</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="version : ${viewModel.versions}" th:classappend="${version.autoSave} ? 'version-row-autosave'">
+                    <td>
+                        <span th:text="${version.label}"></span>
+                        <span th:if="${version.autoSave}" class="version-badge">auto</span>
+                    </td>
+                    <td class="nowrap" th:text="${#temporals.format(version.createdAt, 'MMM d, yyyy h:mm a')}"></td>
+                    <td class="version-changes">
+                        <span class="version-change-summary"
+                              th:text="${version.changeSummary != null ? version.changeSummary.compactSummary : 'No changes'}"></span>
+                        <ul class="version-change-details"
+                            th:if="${version.changeSummary != null and not #lists.isEmpty(version.changeSummary.visibleDetails)}">
+                            <li th:each="detail : ${version.changeSummary.visibleDetails}" th:text="${detail}"></li>
+                        </ul>
+                    </td>
+                    <td th:text="${version.title}"></td>
+                    <td th:text="${version.lineCount}"></td>
+                    <td class="nowrap">
+                        <form th:action="@{/song/version/restore}" method="POST" hx-boost="false" style="display: inline">
+                            <input type="hidden" name="id" th:value="${version.id}" />
+                            <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
+                            <button type="submit" role="button" _="on click if not confirm('Restore this snapshot? The current lyrics will be replaced. A “Before restore” snapshot will be saved first.') halt">Restore</button>
+                        </form>
+                        <form th:action="@{/song/version/delete}" method="POST" hx-boost="false" style="display: inline">
+                            <input type="hidden" name="id" th:value="${version.id}" />
+                            <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
+                            <button type="submit" role="button" _="on click if not confirm('Delete this snapshot?') halt">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

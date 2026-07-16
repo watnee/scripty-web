@@ -250,6 +250,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             b.put("tags", block.getTags());
             b.put("textAlign", block.getTextAlign());
             b.put("font", block.getFont());
+            b.put("highlight", block.getHighlight());
             b.put("textBold", block.isTextBold());
             b.put("textItalic", block.isTextItalic());
             b.put("textUnderline", block.isTextUnderline());
@@ -350,6 +351,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
                         (String) bs.get("type"), toInteger(bs.get("personOriginalId")), originalIdToNewPerson,
                         (Boolean) bs.get("bookmarked"), (Boolean) bs.get("pinned"), (String) bs.get("tags"),
                         (Boolean) bs.get("sceneDelimiter"), (String) bs.get("textAlign"), (String) bs.get("font"),
+                        (String) bs.get("highlight"),
                         (Boolean) bs.get("textBold"), (Boolean) bs.get("textItalic"), (Boolean) bs.get("textUnderline"));
             }
         } else {
@@ -357,14 +359,14 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             if (sceneSnapshots != null) {
                 int order = 1;
                 for (Map<String, Object> ss : sceneSnapshots) {
-                    restoreBlock(project, edition, order++, (String) ss.get("name"), Block.TYPE_SCENE, null, originalIdToNewPerson, false, false, null, false, null, null, false, false, false);
+                    restoreBlock(project, edition, order++, (String) ss.get("name"), Block.TYPE_SCENE, null, originalIdToNewPerson, false, false, null, false, null, null, null, false, false, false);
                     List<Map<String, Object>> sceneBlocks = (List<Map<String, Object>>) ss.get("blocks");
                     if (sceneBlocks != null) {
                         for (Map<String, Object> bs : sceneBlocks) {
                             restoreBlock(project, edition, order++, (String) bs.get("content"), Block.TYPE_ACTION,
                                     toInteger(bs.get("personOriginalId")), originalIdToNewPerson,
                                     (Boolean) bs.get("bookmarked"), (Boolean) bs.get("pinned"), (String) bs.get("tags"),
-                                    false, null, null, false, false, false);
+                                    false, null, null, null, false, false, false);
                         }
                     }
                 }
@@ -492,7 +494,8 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
     private void restoreBlock(Project project, ScriptEdition edition, Integer order, String content, String type,
                               Integer personOriginalId, Map<Integer, Person> originalIdToNewPerson,
                               Boolean bookmarked, Boolean pinned, String tags, Boolean sceneDelimiter,
-                              String textAlign, String font, Boolean textBold, Boolean textItalic, Boolean textUnderline) {
+                              String textAlign, String font, String highlight,
+                              Boolean textBold, Boolean textItalic, Boolean textUnderline) {
         Block block = new Block();
         block.setOrder(order);
         block.setContent(PlainTextSanitizer.sanitize(content != null ? content : ""));
@@ -512,6 +515,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         if (font != null && Block.FONTS.contains(font.toUpperCase())) {
             block.setFont(font.toUpperCase());
         }
+        block.setHighlight(Block.normalizeHighlight(highlight));
         block.setTextBold(Boolean.TRUE.equals(textBold));
         block.setTextItalic(Boolean.TRUE.equals(textItalic));
         block.setTextUnderline(Boolean.TRUE.equals(textUnderline));
@@ -754,6 +758,7 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
                 || !Objects.equals(newer.get("tags"), older.get("tags"))
                 || !Objects.equals(newer.get("textAlign"), older.get("textAlign"))
                 || !Objects.equals(newer.get("font"), older.get("font"))
+                || !Objects.equals(newer.get("highlight"), older.get("highlight"))
                 || toBoolean(newer.get("bookmarked")) != toBoolean(older.get("bookmarked"))
                 || toBoolean(newer.get("pinned")) != toBoolean(older.get("pinned"))
                 || toBoolean(newer.get("textBold")) != toBoolean(older.get("textBold"))

@@ -354,6 +354,11 @@
             structural('/song/block/moveUp', { id: id });
         } else if (action === 'down') {
             structural('/song/block/moveDown', { id: id });
+        } else if (action === 'highlight') {
+            structural('/song/block/setHighlight', {
+                id: id,
+                highlight: btn.getAttribute('data-highlight') || ''
+            });
         }
     });
 

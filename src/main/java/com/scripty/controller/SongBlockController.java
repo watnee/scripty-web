@@ -107,6 +107,19 @@ public class SongBlockController {
         return renderList(documentId, null, model);
     }
 
+    @RequestMapping(value = "/setHighlight", method = RequestMethod.POST)
+    public String setHighlight(@RequestParam Integer id,
+                               @RequestParam(required = false) String highlight,
+                               Model model,
+                               Principal principal) {
+        if (!canEditBlock(id, principal)) {
+            return "songblock/blocks :: forbidden";
+        }
+        songUndoRedoService.recordCheckpointForBlock(id);
+        songBlockService.setHighlight(id, highlight);
+        return renderList(songBlockService.documentIdForBlock(id), id, model);
+    }
+
     @RequestMapping(value = "/moveUp", method = RequestMethod.POST)
     public String moveUp(@RequestParam Integer id, Model model, Principal principal) {
         if (!canEditBlock(id, principal)) {

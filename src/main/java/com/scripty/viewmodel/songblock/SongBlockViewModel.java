@@ -6,15 +6,17 @@ public class SongBlockViewModel {
     private Integer documentId;
     private Integer order;
     private String content;
+    private String highlight;
 
     public SongBlockViewModel() {
     }
 
-    public SongBlockViewModel(Integer id, Integer documentId, Integer order, String content) {
+    public SongBlockViewModel(Integer id, Integer documentId, Integer order, String content, String highlight) {
         this.id = id;
         this.documentId = documentId;
         this.order = order;
         this.content = content;
+        this.highlight = highlight;
     }
 
     public Integer getId() {
@@ -47,5 +49,13 @@ public class SongBlockViewModel {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getHighlight() {
+        return highlight;
+    }
+
+    public void setHighlight(String highlight) {
+        this.highlight = highlight;
     }
 }

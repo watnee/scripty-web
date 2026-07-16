@@ -6,12 +6,25 @@
     --muted: var(--muted-fg);
     /* Screenplay text zoom (A−/A+); 1 = 12pt industry default */
     --scripty-text-scale: 1;
+    /* Tint for selected blocks; see the block-selection rules at the end. */
+    --block-selection-tint: color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
+    /* Block highlight tints; kept light enough for body text to stay readable. */
+    --block-highlight-yellow: #fdf3d3;
+    --block-highlight-green: #dff2e3;
+    --block-highlight-blue: #dbe9f8;
+    --block-highlight-red: #fbe0dd;
+    --block-highlight-gray: #e9ecef;
     color-scheme: light;
 }
 
 :root.-dark-theme {
     --border: #475569;
     --accent-bg: rgba(255, 255, 255, 0.08);
+    --block-highlight-yellow: #4b3c14;
+    --block-highlight-green: #1f4029;
+    --block-highlight-blue: #1c3a55;
+    --block-highlight-red: #4d2724;
+    --block-highlight-gray: #3a4250;
     color-scheme: dark;
 }
 
@@ -51,6 +64,11 @@ nav[aria-label="Breadcrumb"] ol > li:last-child {
     :root:not(.-no-dark-theme) {
         --border: #475569;
         --accent-bg: rgba(255, 255, 255, 0.08);
+        --block-highlight-yellow: #4b3c14;
+        --block-highlight-green: #1f4029;
+        --block-highlight-blue: #1c3a55;
+        --block-highlight-red: #4d2724;
+        --block-highlight-gray: #3a4250;
         color-scheme: dark;
     }
 }
@@ -11515,6 +11533,101 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     font-family: "Times New Roman", Times, serif !important;
 }
 
+/* Notion-style block highlights: a tinted panel behind a block's text. The tint
+   sits on the block/row container rather than the text, so it stays put while
+   the block is being edited (the textarea is swapped in inside it).
+   !important because the "no tint while editing" rules above clear
+   .block-content's background on hover, :focus-within, and in page-view mode —
+   a chosen highlight should outlast all three, the way align/font overrides do. */
+.block-content.block-highlight-yellow,
+.block-content.block-highlight-green,
+.block-content.block-highlight-blue,
+.block-content.block-highlight-red,
+.block-content.block-highlight-gray,
+.song-block-row.song-block-highlight-yellow,
+.song-block-row.song-block-highlight-green,
+.song-block-row.song-block-highlight-blue,
+.song-block-row.song-block-highlight-red,
+.song-block-row.song-block-highlight-gray {
+    background-color: var(--block-highlight-tint) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 0 0 2px var(--block-highlight-tint) !important;
+}
+
+.block-content.block-highlight-yellow,
+.song-block-row.song-block-highlight-yellow {
+    --block-highlight-tint: var(--block-highlight-yellow);
+}
+
+.block-content.block-highlight-green,
+.song-block-row.song-block-highlight-green {
+    --block-highlight-tint: var(--block-highlight-green);
+}
+
+.block-content.block-highlight-blue,
+.song-block-row.song-block-highlight-blue {
+    --block-highlight-tint: var(--block-highlight-blue);
+}
+
+.block-content.block-highlight-red,
+.song-block-row.song-block-highlight-red {
+    --block-highlight-tint: var(--block-highlight-red);
+}
+
+.block-content.block-highlight-gray,
+.song-block-row.song-block-highlight-gray {
+    --block-highlight-tint: var(--block-highlight-gray);
+}
+
+/* Let the tint show through the editing textarea, which is otherwise opaque. */
+.block-content[class*="block-highlight-"] .block-input-textarea,
+.block-content[class*="block-highlight-"] textarea,
+.song-block-row[class*="song-block-highlight-"] .song-block-textarea {
+    background-color: transparent;
+}
+
+/* Color chips in the Format menu / line menu. */
+.block-highlight-swatch {
+    display: inline-block;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background-color: var(--block-highlight-tint, transparent);
+    flex: none;
+}
+
+.block-highlight-swatch.block-highlight-yellow {
+    --block-highlight-tint: var(--block-highlight-yellow);
+}
+
+.block-highlight-swatch.block-highlight-green {
+    --block-highlight-tint: var(--block-highlight-green);
+}
+
+.block-highlight-swatch.block-highlight-blue {
+    --block-highlight-tint: var(--block-highlight-blue);
+}
+
+.block-highlight-swatch.block-highlight-red {
+    --block-highlight-tint: var(--block-highlight-red);
+}
+
+.block-highlight-swatch.block-highlight-gray {
+    --block-highlight-tint: var(--block-highlight-gray);
+}
+
+/* "None" reads as an empty chip with a strike through it. */
+.block-highlight-swatch--none {
+    background-image: linear-gradient(
+        to top right,
+        transparent calc(50% - 1px),
+        var(--muted-fg, currentColor) calc(50% - 1px),
+        var(--muted-fg, currentColor) calc(50% + 1px),
+        transparent calc(50% + 1px)
+    );
+}
+
 .scripty-offline-banner {
     --scripty-offline-banner-height: 2.75rem;
     position: fixed;
@@ -12855,13 +12968,27 @@ body.focus-mode #project-lists-dropdown {
    textarea focus backgrounds. */
 .block-row.block-selected,
 .song-block-row.block-selected {
-    background: color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
+    background: var(--block-selection-tint);
     border-radius: 6px;
 }
 
 .song-block-row.block-selected .song-block-textarea,
 .song-block-row.block-selected .song-block-textarea:focus {
     background: transparent;
+}
+
+/* A selected block shows the selection, not its own highlight. The highlight is
+   !important (it has to outlast the "no tint while editing" rules), so without
+   this it would paint over the selection on screenplay rows and, on song rows —
+   where both tints land on the same element — hide it outright. */
+.song-block-row.block-selected[class*="song-block-highlight-"] {
+    background: var(--block-selection-tint) !important;
+    box-shadow: none !important;
+}
+
+.block-row.block-selected > .block-content[class*="block-highlight-"] {
+    background-color: transparent !important;
+    box-shadow: none !important;
 }
 
 /* While blocks are selected the block highlight is the selection, so the

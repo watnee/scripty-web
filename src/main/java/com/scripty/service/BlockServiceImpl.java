@@ -137,6 +137,7 @@ public class BlockServiceImpl implements BlockService {
         vm.setTags(block.getTags());
         vm.setTextAlign(block.getTextAlign());
         vm.setFont(block.getFont());
+        vm.setHighlight(block.getHighlight());
         vm.setTextBold(block.isTextBold());
         vm.setTextItalic(block.isTextItalic());
         vm.setTextUnderline(block.isTextUnderline());
@@ -983,6 +984,29 @@ public class BlockServiceImpl implements BlockService {
             Block block = blockRepository.findById(id).orElse(null);
             if (block != null && !java.util.Objects.equals(normalized, block.getFont())) {
                 block.setFont(normalized);
+                blockRepository.save(block);
+                if (block.getProject() != null) {
+                    touchedProjectIds.add(block.getProject().getId());
+                }
+            }
+        }
+        for (Integer projectId : touchedProjectIds) {
+            projectRepository.findById(projectId).ifPresent(this::recordScriptEdited);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void setBlockHighlights(List<Integer> ids, String highlight) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        String normalized = Block.normalizeHighlight(highlight);
+        java.util.Set<Integer> touchedProjectIds = new java.util.HashSet<>();
+        for (Integer id : ids) {
+            Block block = blockRepository.findById(id).orElse(null);
+            if (block != null && !java.util.Objects.equals(normalized, block.getHighlight())) {
+                block.setHighlight(normalized);
                 blockRepository.save(block);
                 if (block.getProject() != null) {
                     touchedProjectIds.add(block.getProject().getId());

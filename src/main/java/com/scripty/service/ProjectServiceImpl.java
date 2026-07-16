@@ -397,6 +397,7 @@ public class ProjectServiceImpl implements ProjectService {
             bvm.setTags(block.getTags());
             bvm.setTextAlign(block.getTextAlign());
             bvm.setFont(block.getFont());
+            bvm.setHighlight(block.getHighlight());
             bvm.setTextBold(block.isTextBold());
             bvm.setTextItalic(block.isTextItalic());
             bvm.setTextUnderline(block.isTextUnderline());

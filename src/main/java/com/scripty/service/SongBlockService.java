@@ -11,6 +11,13 @@ import java.util.List;
  */
 public interface SongBlockService {
 
+    /**
+     * One line in an undo/redo snapshot. Carries the highlight as well as the
+     * text, so restoring a snapshot does not drop the song's tints.
+     */
+    record LineSnapshot(String content, String highlight) {
+    }
+
     SongBlock read(Integer id);
 
     /** Project id owning the block's document, or null if not found. */
@@ -40,6 +47,9 @@ public interface SongBlockService {
     /** Persists new content on a block. */
     SongBlock editContent(Integer blockId, String content);
 
+    /** Sets the background tint on a block; an unknown or blank color clears it. */
+    SongBlock setHighlight(Integer blockId, String highlight);
+
     /** Deletes a block; keeps at least one (empty) block in the song. */
     Integer deleteBlock(Integer blockId);
 
@@ -57,11 +67,11 @@ public interface SongBlockService {
      * The song's lines in order, as an undo/redo snapshot. Null when the
      * document does not exist.
      */
-    List<String> snapshotLines(Integer documentId);
+    List<LineSnapshot> snapshotLines(Integer documentId);
 
     /**
      * Replaces the song's blocks with {@code lines}, restoring a snapshot taken
      * by {@link #snapshotLines}. Keeps at least one (empty) block.
      */
-    void replaceLines(Integer documentId, List<String> lines);
+    void replaceLines(Integer documentId, List<LineSnapshot> lines);
 }

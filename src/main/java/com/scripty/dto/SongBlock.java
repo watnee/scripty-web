@@ -35,6 +35,10 @@ public class SongBlock {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content = "";
 
+    /** Background tint; see {@link Block#HIGHLIGHTS}. Null means no highlight. */
+    @Column(name = "highlight")
+    private String highlight;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -71,6 +75,14 @@ public class SongBlock {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getHighlight() {
+        return highlight;
+    }
+
+    public void setHighlight(String highlight) {
+        this.highlight = highlight;
     }
 
     public LocalDateTime getCreatedAt() {

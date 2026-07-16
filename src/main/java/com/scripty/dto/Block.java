@@ -53,6 +53,25 @@ public class Block {
     public static final java.util.Set<String> FONTS = java.util.Set.of(
             FONT_COURIER_PRIME, FONT_ARIAL, FONT_TIMES_NEW_ROMAN);
 
+    public static final String HIGHLIGHT_YELLOW = "YELLOW";
+    public static final String HIGHLIGHT_GREEN = "GREEN";
+    public static final String HIGHLIGHT_BLUE = "BLUE";
+    public static final String HIGHLIGHT_RED = "RED";
+    public static final String HIGHLIGHT_GRAY = "GRAY";
+
+    /** Block background tints; null means no highlight. */
+    public static final java.util.Set<String> HIGHLIGHTS = java.util.Set.of(
+            HIGHLIGHT_YELLOW, HIGHLIGHT_GREEN, HIGHLIGHT_BLUE, HIGHLIGHT_RED, HIGHLIGHT_GRAY);
+
+    /** Uppercases {@code highlight} when it names a supported tint, else null (clears it). */
+    public static String normalizeHighlight(String highlight) {
+        if (highlight == null || highlight.isBlank()) {
+            return null;
+        }
+        String key = highlight.trim().toUpperCase();
+        return HIGHLIGHTS.contains(key) ? key : null;
+    }
+
     /** Character cue types whose content is the speaker name (including dual-dialogue cues). */
     public static final java.util.Set<String> CHARACTER_CUE_TYPES = java.util.Set.of(
             TYPE_CHARACTER, TYPE_DUAL_DIALOGUE);
@@ -136,6 +155,9 @@ public class Block {
 
     @Column(name = "font")
     private String font;
+
+    @Column(name = "highlight")
+    private String highlight;
 
     @Column(name = "text_bold", nullable = false)
     private boolean textBold = false;
@@ -221,6 +243,14 @@ public class Block {
 
     public void setFont(String font) {
         this.font = font;
+    }
+
+    public String getHighlight() {
+        return highlight;
+    }
+
+    public void setHighlight(String highlight) {
+        this.highlight = highlight;
     }
 
     public boolean isTextBold() {

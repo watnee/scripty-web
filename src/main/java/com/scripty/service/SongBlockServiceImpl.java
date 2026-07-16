@@ -1,5 +1,6 @@
 package com.scripty.service;
 
+import com.scripty.dto.Block;
 import com.scripty.dto.Project;
 import com.scripty.dto.SongBlock;
 import com.scripty.dto.TextDocument;
@@ -136,6 +137,20 @@ public class SongBlockServiceImpl implements SongBlockService {
 
     @Override
     @Transactional
+    public SongBlock setHighlight(Integer blockId, String highlight) {
+        SongBlock block = read(blockId);
+        if (block == null || block.getTextDocument() == null) {
+            return null;
+        }
+        // The tint is not part of the lyrics, so the parent document's text is left alone.
+        block.setHighlight(Block.normalizeHighlight(highlight));
+        block.setUpdatedAt(LocalDateTime.now());
+        songBlockRepository.save(block);
+        return block;
+    }
+
+    @Override
+    @Transactional
     public Integer deleteBlock(Integer blockId) {
         SongBlock block = read(blockId);
         if (block == null || block.getTextDocument() == null) {
@@ -187,19 +202,19 @@ public class SongBlockServiceImpl implements SongBlockService {
 
     @Override
     @Transactional
-    public List<String> snapshotLines(Integer documentId) {
+    public List<LineSnapshot> snapshotLines(Integer documentId) {
         TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
         if (doc == null) {
             return null;
         }
         return ensureSeeded(doc).stream()
-                .map(b -> b.getContent() != null ? b.getContent() : "")
+                .map(b -> new LineSnapshot(b.getContent() != null ? b.getContent() : "", b.getHighlight()))
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public void replaceLines(Integer documentId, List<String> lines) {
+    public void replaceLines(Integer documentId, List<LineSnapshot> lines) {
         TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
         if (doc == null || lines == null) {
             return;
@@ -209,8 +224,10 @@ public class SongBlockServiceImpl implements SongBlockService {
         // out first so a later read of this document does not see the old rows.
         songBlockRepository.flush();
         List<SongBlock> blocks = new ArrayList<>();
-        for (String line : lines) {
-            blocks.add(newBlock(doc, line));
+        for (LineSnapshot line : lines) {
+            SongBlock block = newBlock(doc, line.content());
+            block.setHighlight(Block.normalizeHighlight(line.highlight()));
+            blocks.add(block);
         }
         if (blocks.isEmpty()) {
             blocks.add(newBlock(doc, ""));
@@ -332,7 +349,7 @@ public class SongBlockServiceImpl implements SongBlockService {
         List<SongBlockViewModel> vms = new ArrayList<>();
         for (SongBlock b : blocks) {
             Integer docId = b.getTextDocument() != null ? b.getTextDocument().getId() : null;
-            vms.add(new SongBlockViewModel(b.getId(), docId, b.getOrder(), b.getContent()));
+            vms.add(new SongBlockViewModel(b.getId(), docId, b.getOrder(), b.getContent(), b.getHighlight()));
         }
         return vms;
     }

@@ -11,8 +11,9 @@
 
 <div th:fragment="row(block, focusBlockId)"
      class="song-block-row"
+     th:classappend="${block.highlight != null ? 'song-block-highlight-' + #strings.toLowerCase(block.highlight) : ''}"
      th:id="'song-block-' + ${block.id}"
-     th:attr="data-block-id=${block.id},data-block-order=${block.order}">
+     th:attr="data-block-id=${block.id},data-block-order=${block.order},data-highlight=${block.highlight}">
     <!--/* Not aria-hidden (unlike the screenplay's duplicated block controls):
            this menu is the only way to move or delete a lyric line. */-->
     <aside class="song-block-controls" role="group" aria-label="Line actions">
@@ -32,6 +33,43 @@
                      role="menu" aria-label="Line options">
                     <button type="button" class="nav-dropdown-item" role="menuitem" data-action="up">Move line up</button>
                     <button type="button" class="nav-dropdown-item" role="menuitem" data-action="down">Move line down</button>
+                    <hr class="nav-dropdown-divider" />
+                    <button type="button" class="nav-dropdown-item song-block-highlight-btn" role="menuitemradio"
+                            data-action="highlight" data-highlight=""
+                            th:attr="aria-checked=${block.highlight == null ? 'true' : 'false'}">
+                        <span class="block-highlight-swatch block-highlight-swatch--none" aria-hidden="true"></span>
+                        <span>No highlight</span>
+                    </button>
+                    <button type="button" class="nav-dropdown-item song-block-highlight-btn" role="menuitemradio"
+                            data-action="highlight" data-highlight="YELLOW"
+                            th:attr="aria-checked=${block.highlight == 'YELLOW' ? 'true' : 'false'}">
+                        <span class="block-highlight-swatch block-highlight-yellow" aria-hidden="true"></span>
+                        <span>Yellow</span>
+                    </button>
+                    <button type="button" class="nav-dropdown-item song-block-highlight-btn" role="menuitemradio"
+                            data-action="highlight" data-highlight="GREEN"
+                            th:attr="aria-checked=${block.highlight == 'GREEN' ? 'true' : 'false'}">
+                        <span class="block-highlight-swatch block-highlight-green" aria-hidden="true"></span>
+                        <span>Green</span>
+                    </button>
+                    <button type="button" class="nav-dropdown-item song-block-highlight-btn" role="menuitemradio"
+                            data-action="highlight" data-highlight="BLUE"
+                            th:attr="aria-checked=${block.highlight == 'BLUE' ? 'true' : 'false'}">
+                        <span class="block-highlight-swatch block-highlight-blue" aria-hidden="true"></span>
+                        <span>Blue</span>
+                    </button>
+                    <button type="button" class="nav-dropdown-item song-block-highlight-btn" role="menuitemradio"
+                            data-action="highlight" data-highlight="RED"
+                            th:attr="aria-checked=${block.highlight == 'RED' ? 'true' : 'false'}">
+                        <span class="block-highlight-swatch block-highlight-red" aria-hidden="true"></span>
+                        <span>Red</span>
+                    </button>
+                    <button type="button" class="nav-dropdown-item song-block-highlight-btn" role="menuitemradio"
+                            data-action="highlight" data-highlight="GRAY"
+                            th:attr="aria-checked=${block.highlight == 'GRAY' ? 'true' : 'false'}">
+                        <span class="block-highlight-swatch block-highlight-gray" aria-hidden="true"></span>
+                        <span>Gray</span>
+                    </button>
                     <hr class="nav-dropdown-divider" />
                     <button type="button" class="nav-dropdown-item block-drag-menu-delete" role="menuitem" data-action="delete">Delete line</button>
                 </div>

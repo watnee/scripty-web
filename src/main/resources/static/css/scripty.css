@@ -6751,11 +6751,6 @@ body:has(main.text-documents-page) > main.text-documents-page {
     bottom: -2px;
 }
 
-.song-block-row:hover,
-.song-block-row:focus-within {
-    background: color-mix(in srgb, var(--td-line, #e2e8f0) 30%, transparent);
-}
-
 /* Song line controls mirror the screenplay block controls: a round "+" to add a
    line below and a "⋮⋮" menu (move up/down, delete). Reuses the screenplay
    .create-below / .block-drag-menu button styling for a consistent look. */
@@ -6833,12 +6828,14 @@ button.song-block-menu-toggle.block-drag-menu-toggle.nav-dropdown-toggle:active 
     background: transparent;
 }
 
+/* No focus tint: a block is highlighted only when it is selected (see the block
+   selection rules at the end of this file), never while it is being typed in. */
 .song-block-textarea:focus,
 .song-block-textarea:focus-visible {
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
-    background: color-mix(in srgb, var(--accent, #2563eb) 8%, transparent);
+    background: transparent;
 }
 
 .text-document-insert-panel {
@@ -12889,17 +12886,12 @@ body.focus-mode #project-lists-dropdown {
 
 /* --- Block selection (Notion-style) -------------------------------------
    Whole-block highlight for dragging across blocks, Cmd/Ctrl+A, and Escape.
-   See block-selection.js. Last in the file so it wins over the row hover and
-   textarea focus backgrounds. */
+   See block-selection.js. A block is tinted only while selected — hovering or
+   typing in one leaves it untinted, so this tint always means "selected". */
 .block-row.block-selected,
 .song-block-row.block-selected {
     background: var(--block-selection-tint);
     border-radius: 6px;
-}
-
-.song-block-row.block-selected .song-block-textarea,
-.song-block-row.block-selected .song-block-textarea:focus {
-    background: transparent;
 }
 
 /* A selected block shows the selection, not its own highlight. The highlight is

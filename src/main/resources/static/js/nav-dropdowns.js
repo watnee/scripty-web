@@ -10,7 +10,7 @@
     if (window._scriptyNavDropdownsInit) return;
     window._scriptyNavDropdownsInit = true;
 
-    var DROPDOWN_IDS = ['user-dropdown', 'help-dropdown', 'songs-export-dropdown', 'song-export-dropdown'];
+    var DROPDOWN_IDS = ['user-dropdown', 'help-dropdown', 'songs-export-dropdown', 'song-file-dropdown'];
 
     function closeAllNavDropdowns() {
         document.querySelectorAll('.nav-dropdown').forEach(function (d) {

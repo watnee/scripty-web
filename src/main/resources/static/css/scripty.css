@@ -3851,6 +3851,14 @@ input.project-list-search:focus-visible {
     user-select: none;
 }
 
+/* The song editor's File menu is not inside .project-tools-group, so the
+   screenplay's open rule below does not reach it; `.nav-dropdown.open
+   .nav-dropdown-menu` ties on specificity with the .file-menu hide rule above
+   and loses on order. Right-aligned to the top bar, like the menu it replaced. */
+.song-file-dropdown.open .nav-dropdown-menu.file-menu {
+    display: block;
+}
+
 .project-tools-group .file-dropdown,
 .project-tools-group .lists-dropdown,
 .text-size-control .lists-dropdown,

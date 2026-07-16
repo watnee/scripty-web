@@ -1,0 +1,57 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="menu(documentId, projectId)">
+    <!--/* The song editor's File menu, mirroring the screenplay's File dropdown
+           in project/show.html. Import creates a new song rather than replacing
+           this one, so it is labelled accordingly; the screenplay has no
+           equivalent single-document import. */-->
+    <div class="nav-dropdown file-dropdown song-file-dropdown" id="song-file-dropdown">
+        <button id="song-nav-file"
+                type="button"
+                class="nav-dropdown-toggle file-toolbar-btn"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label="Import, export, and print"
+                title="Import, export, and print">
+            File
+        </button>
+        <div class="nav-dropdown-menu file-menu" role="menu" aria-label="Import, export, and print">
+            <button id="song-nav-import"
+                    type="button"
+                    class="nav-dropdown-item"
+                    role="menuitem"
+                    title="Import a song from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file into this project">Import song</button>
+            <div class="nav-dropdown-divider" role="separator"></div>
+            <div class="file-menu-label" aria-hidden="true">Export</div>
+            <a class="nav-dropdown-item"
+               role="menuitem"
+               th:href="@{/project/documents/export(id=${documentId}, format=txt)}"
+               hx-boost="false">Text (.txt)</a>
+            <a class="nav-dropdown-item"
+               role="menuitem"
+               th:href="@{/project/documents/export(id=${documentId}, format=pdf)}"
+               hx-boost="false">PDF</a>
+            <a class="nav-dropdown-item"
+               role="menuitem"
+               th:href="@{/project/documents/export(id=${documentId}, format=docx)}"
+               hx-boost="false">Word (.docx)</a>
+            <div class="nav-dropdown-divider" role="separator"></div>
+            <button id="song-nav-print"
+                    type="button"
+                    class="nav-dropdown-item"
+                    role="menuitem"
+                    onclick="window.print()">Print</button>
+        </div>
+    </div>
+    <form id="song-import-form"
+          th:action="@{/project/documents/import(projectId=${projectId}, type='SONG')}"
+          method="post"
+          enctype="multipart/form-data"
+          hx-boost="false"
+          hidden>
+        <input type="file"
+               id="song-import-file"
+               name="file"
+               accept=".txt,.fountain,.docx,.doc,.fdx,.pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml,application/pdf"
+               aria-hidden="true"
+               tabindex="-1" />
+    </form>
+</th:block>

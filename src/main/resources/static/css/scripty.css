@@ -6,6 +6,8 @@
     --muted: var(--muted-fg);
     /* Screenplay text zoom (A−/A+); 1 = 12pt industry default */
     --scripty-text-scale: 1;
+    /* Tint for selected blocks; see the block-selection rules at the end. */
+    --block-selection-tint: color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
     /* Block highlight tints; kept light enough for body text to stay readable. */
     --block-highlight-yellow: #fdf3d3;
     --block-highlight-green: #dff2e3;
@@ -12966,13 +12968,27 @@ body.focus-mode #project-lists-dropdown {
    textarea focus backgrounds. */
 .block-row.block-selected,
 .song-block-row.block-selected {
-    background: color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
+    background: var(--block-selection-tint);
     border-radius: 6px;
 }
 
 .song-block-row.block-selected .song-block-textarea,
 .song-block-row.block-selected .song-block-textarea:focus {
     background: transparent;
+}
+
+/* A selected block shows the selection, not its own highlight. The highlight is
+   !important (it has to outlast the "no tint while editing" rules), so without
+   this it would paint over the selection on screenplay rows and, on song rows —
+   where both tints land on the same element — hide it outright. */
+.song-block-row.block-selected[class*="song-block-highlight-"] {
+    background: var(--block-selection-tint) !important;
+    box-shadow: none !important;
+}
+
+.block-row.block-selected > .block-content[class*="block-highlight-"] {
+    background-color: transparent !important;
+    box-shadow: none !important;
 }
 
 /* While blocks are selected the block highlight is the selection, so the

@@ -42,13 +42,14 @@
           hx-boost="false">
         <input type="hidden" name="projectId" th:value="${projectId}" />
         <input type="hidden" name="returnTo" th:value="${returnTo}" />
-        <label class="project-share-invite-field">
-            <span class="visually-hidden">Email</span>
+        <label class="project-share-invite-field contact-suggest-field">
+            <span class="visually-hidden">Email or name</span>
             <input type="email"
                    name="email"
                    th:value="*{email}"
-                   placeholder="colleague@example.com"
+                   placeholder="Name or colleague@example.com"
                    required
+                   th:attr="data-contact-suggest=${projectId}"
                    autocomplete="email" />
         </label>
         <label class="project-share-invite-field">
@@ -85,13 +86,14 @@
           hx-boost="false">
         <input type="hidden" name="projectId" th:value="${projectId}" />
         <input type="hidden" name="returnTo" th:value="${returnTo}" />
-        <label class="project-share-invite-field">
-            <span class="visually-hidden">Email</span>
+        <label class="project-share-invite-field contact-suggest-field">
+            <span class="visually-hidden">Email or name</span>
             <input type="email"
                    name="email"
                    th:value="*{email}"
-                   placeholder="reader@example.com"
+                   placeholder="Name or reader@example.com"
                    required
+                   th:attr="data-contact-suggest=${projectId}"
                    autocomplete="email" />
         </label>
         <button type="submit" class="project-share-invite-btn">Send view link</button>

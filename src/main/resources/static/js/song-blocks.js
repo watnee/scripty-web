@@ -338,13 +338,6 @@
             return;
         }
         var action = btn.getAttribute('data-action');
-        if (action === 'append') {
-            var docId = documentId();
-            if (docId) {
-                structural('/song/block/append', { documentId: docId });
-            }
-            return;
-        }
         var ta = rowTextarea(btn);
         var id = ta ? ta.getAttribute('data-block-id') : null;
         if (!id) {

@@ -5998,6 +5998,17 @@ body:has(main.text-documents-page) > main.text-documents-page {
     flex: 0 0 auto;
 }
 
+/* The song editor's menu row, sitting under the breadcrumb. Left-aligned, so it
+   does not inherit the right-shove the breadcrumb's flex: 1 gives the actions
+   while they share the bar above. */
+.text-documents-page .text-document-toolbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 0.35rem;
+    min-height: 2.25rem;
+}
+
 .text-documents-heading-row {
     display: inline-flex;
     align-items: center;
@@ -6702,10 +6713,13 @@ body:has(main.text-documents-page) > main.text-documents-page {
     flex: 0 0 auto;
     display: flex;
     align-items: flex-start;
-    /* missing.css gives <aside> a block margin; zero it so the controls line up
-       with the first line of lyric text instead of being pushed down. */
+    /* missing.css styles <aside> with a block margin, block padding, and a
+       border-block rule that draws a line above and below the controls. Zero
+       all three so the controls line up with the first line of lyric text and
+       carry no rules of their own. */
     margin: 0;
-    padding-top: 0.2rem;
+    border-block: 0;
+    padding-block: 0.2rem 0;
     opacity: 0;
     transition: opacity 0.12s ease-in-out;
 }
@@ -6775,27 +6789,6 @@ button.song-block-menu-toggle.block-drag-menu-toggle.nav-dropdown-toggle:active 
     outline: none !important;
     box-shadow: none !important;
     background: color-mix(in srgb, var(--accent, #2563eb) 8%, transparent);
-}
-
-.song-block-append {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    align-self: flex-start;
-    margin-top: 0.5rem;
-    padding: 0.35rem 0.7rem;
-    border: 1px dashed var(--td-line, #cbd5e1);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--muted-fg, #64748b);
-    font-size: 0.9rem;
-    cursor: pointer;
-}
-
-.song-block-append:hover {
-    color: var(--fg, #0f172a);
-    border-color: var(--accent, #2563eb);
-    background: color-mix(in srgb, var(--accent, #2563eb) 6%, transparent);
 }
 
 .text-document-insert-panel {

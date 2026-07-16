@@ -41,26 +41,21 @@
                     </li>
                 </ol>
             </nav>
+            <div class="text-document-top-bar-actions" th:unless="${isSong}">
+                <th:block th:replace="~{fragments/textDocumentAbout :: about(${isSong})}"></th:block>
+            </div>
+        </div>
+
+        <!--/* The song editor puts its menus on their own row under the breadcrumb,
+               like the screenplay's toolbar row. Notes have only the info popover,
+               so they keep it inline in the bar above. */-->
+        <div class="text-document-toolbar-row" th:if="${isSong}">
             <div class="text-document-top-bar-actions">
-                <th:block th:if="${isSong and !isNew}">
+                <th:block th:if="${!isNew}">
                     <th:block th:replace="~{fragments/songFileMenu :: menu(${commandModel.id}, ${projectId})}"></th:block>
                     <th:block th:replace="~{fragments/songEditMenu :: menu(${commandModel.id})}"></th:block>
                 </th:block>
-                <details class="text-document-about">
-                    <summary class="text-document-about-toggle"
-                             title="How this works"
-                             aria-label="How this works">
-                        <svg class="text-document-about-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="16" x2="12" y2="12"></line>
-                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                        </svg>
-                    </summary>
-                    <p class="muted text-document-about-text"
-                       th:text="${isSong} ? 'Write lyrics freely. Each line becomes a Lyrics block when inserted. Edits auto-save and update places already in the screenplay.' : 'Write freely. Each line becomes a Note block when inserted. Edits auto-save and update places already in the screenplay.'">
-                        Write freely here.
-                    </p>
-                </details>
+                <th:block th:replace="~{fragments/textDocumentAbout :: about(${isSong})}"></th:block>
             </div>
         </div>
 
@@ -97,14 +92,6 @@
                      th:attr="data-document-id=${commandModel.id}"
                      data-can-edit="true">
                     <div th:replace="~{songblock/blocks :: blocks}"></div>
-                    <button type="button" class="song-block-append" data-action="append">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        <span>Add line</span>
-                    </button>
                 </div>
             </div>
 

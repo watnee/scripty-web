@@ -186,6 +186,10 @@
                        hx-boost="false">Final Draft (.fdx)</a>
                     <a class="nav-dropdown-item"
                        role="menuitem"
+                       th:href="@{/project/export(id=${viewModel.id}, format=epub, editionId=${viewModel.editionId})}"
+                       hx-boost="false">EPUB (.epub)</a>
+                    <a class="nav-dropdown-item"
+                       role="menuitem"
                        th:href="@{/project/export(id=${viewModel.id}, format=fountain, editionId=${viewModel.editionId})}"
                        hx-boost="false">Fountain</a>
                     <a class="nav-dropdown-item"
@@ -215,7 +219,7 @@
                 <input type="file"
                        id="project-import-file"
                        name="file"
-                       accept=".fountain,.txt,.doc,.docx,.fdx,.pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml,application/pdf"
+                       accept=".fountain,.txt,.doc,.docx,.fdx,.epub,.pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml,application/epub+zip,application/pdf"
                        aria-hidden="true"
                        tabindex="-1" />
             </form>

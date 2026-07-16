@@ -16,6 +16,7 @@ import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.viewmodel.project.stats.ScriptStatsViewModel;
 import com.scripty.service.DocxExportService;
+import com.scripty.service.EpubExportService;
 import com.scripty.service.FdxExportService;
 import com.scripty.service.FountainExportService;
 import com.scripty.service.FountainImportService;
@@ -128,6 +129,9 @@ public class ProjectController {
 
     @Autowired
     FdxExportService fdxExportService;
+
+    @Autowired
+    EpubExportService epubExportService;
 
     @Autowired
     ProjectArchiveService projectArchiveService;
@@ -664,7 +668,7 @@ public class ProjectController {
         } catch (IOException e) {
             redirectAttributes.addFlashAttribute(
                     "scriptImportMessage",
-                    "Could not import that file. Check access and try a .fountain, .txt, .docx, .doc, .fdx, or .pdf file.");
+                    "Could not import that file. Check access and try a .fountain, .txt, .docx, .doc, .fdx, .epub, or .pdf file.");
         }
         String redirect = "redirect:/project/show?id=" + id;
         if (resolvedEditionId != null) {
@@ -719,6 +723,14 @@ public class ProjectController {
                             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                     .body(docx);
+        }
+        if ("epub".equals(normalized) || "ebook".equals(normalized)) {
+            byte[] epub = epubExportService.exportProject(id, resolvedEditionId);
+            String filename = exportFilename(project, "epub");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/epub+zip"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(epub);
         }
         if ("fdx".equals(normalized) || "finaldraft".equals(normalized) || "final-draft".equals(normalized)) {
             byte[] fdx = fdxExportService.exportProject(id, resolvedEditionId);

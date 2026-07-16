@@ -91,7 +91,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             throws IOException {
         if (file == null || file.isEmpty()) {
             return ImportOutcome.fail(
-                    "No file selected. Choose a .fountain, .txt, .docx, .doc, .fdx, or .pdf file.");
+                    "No file selected. Choose a .fountain, .txt, .docx, .doc, .fdx, .epub, or .pdf file.");
         }
         try {
             ScriptImportTextExtractor.Extraction extraction =
@@ -102,7 +102,7 @@ public class FountainImportServiceImpl implements FountainImportService {
                             "No text found in that PDF. Scanned or image-only PDFs aren’t supported — use a text-based PDF, Fountain, or Final Draft file.");
                 }
                 return ImportOutcome.fail(
-                        "That file was empty. Try a .fountain, .txt, .docx, .doc, .fdx, or .pdf file.");
+                        "That file was empty. Try a .fountain, .txt, .docx, .doc, .fdx, .epub, or .pdf file.");
             }
             importIntoProject(projectId, editionId, extraction.text());
             if (extraction.wasPdf() && !extraction.pdfUsedScreenplayLayout()) {
@@ -114,7 +114,7 @@ public class FountainImportServiceImpl implements FountainImportService {
             return ImportOutcome.fail(e.getUserMessage());
         } catch (IOException e) {
             return ImportOutcome.fail(
-                    "Could not import that file. Check access and try a .fountain, .txt, .docx, .doc, .fdx, or .pdf file.");
+                    "Could not import that file. Check access and try a .fountain, .txt, .docx, .doc, .fdx, .epub, or .pdf file.");
         }
     }
 

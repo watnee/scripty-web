@@ -39,6 +39,9 @@ public class ScriptImportTextExtractor {
         if (isFdx(lowerName, contentType)) {
             return new Extraction(FdxToFountainConverter.convert(file.getInputStream()), false, false);
         }
+        if (isEpub(lowerName, contentType)) {
+            return new Extraction(EpubToFountainConverter.convert(file.getInputStream()), false, false);
+        }
         if (isPdf(lowerName, contentType)) {
             PdfConversionResult result = PdfToFountainConverter.convertDetailed(file.getInputStream());
             return new Extraction(result.text(), true, result.usedScreenplayLayout());
@@ -68,6 +71,9 @@ public class ScriptImportTextExtractor {
         if (isFdx(lowerName, contentType)) {
             return FdxToFountainConverter.convertPlain(file.getInputStream());
         }
+        if (isEpub(lowerName, contentType)) {
+            return EpubToFountainConverter.convertPlain(file.getInputStream());
+        }
         if (isPdf(lowerName, contentType)) {
             return PdfToFountainConverter.convertPlain(file.getInputStream());
         }
@@ -89,6 +95,10 @@ public class ScriptImportTextExtractor {
 
     private static boolean isPdf(String lowerName, String contentType) {
         return PdfToFountainConverter.looksLikePdf(lowerName, contentType);
+    }
+
+    private static boolean isEpub(String lowerName, String contentType) {
+        return EpubToFountainConverter.looksLikeEpub(lowerName, contentType);
     }
 
     private static boolean isDocx(String lowerName, String contentType) {

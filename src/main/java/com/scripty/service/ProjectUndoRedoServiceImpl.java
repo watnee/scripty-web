@@ -1,24 +1,48 @@
 package com.scripty.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scripty.dto.Block;
 import com.scripty.dto.Project;
 import com.scripty.dto.ProjectActivity;
+import com.scripty.dto.ProjectUndoState;
+import com.scripty.dto.ScriptEdition;
+import com.scripty.dto.User;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.ProjectRepository;
+import com.scripty.repository.ProjectUndoStateRepository;
+import com.scripty.repository.ScriptEditionRepository;
+import com.scripty.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+/**
+ * Undo/redo for the screenplay block editor.
+ *
+ * <p>Stacks are persisted per (project, edition, user) so they outlive the HTTP
+ * session: API clients authenticate on each request and keep no session, so a
+ * session-backed stack was always empty by the time they asked to undo. Keying
+ * by user means a member's undo rewinds their own edits, not a collaborator's.
+ *
+ * <p>When no user resolves — an unauthenticated context, or a dev auto-login
+ * principal with no row in {@code user} — the stacks fall back to the session,
+ * preserving the old behaviour for that request instead of losing undo entirely.
+ */
 @Service
 public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
 
@@ -36,6 +60,9 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     private final ProjectRepository projectRepository;
     private final ObjectMapper objectMapper;
     private final ProjectActivityService projectActivityService;
+    private final ProjectUndoStateRepository projectUndoStateRepository;
+    private final ScriptEditionRepository scriptEditionRepository;
+    private final UserRepository userRepository;
 
     private final ThreadLocal<Boolean> suppressRecording = ThreadLocal.withInitial(() -> false);
 
@@ -45,17 +72,23 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
                                         BlockRepository blockRepository,
                                         ProjectRepository projectRepository,
                                         ObjectMapper objectMapper,
-                                        ProjectActivityService projectActivityService) {
+                                        ProjectActivityService projectActivityService,
+                                        ProjectUndoStateRepository projectUndoStateRepository,
+                                        ScriptEditionRepository scriptEditionRepository,
+                                        UserRepository userRepository) {
         this.projectVersionService = projectVersionService;
         this.blockService = blockService;
         this.blockRepository = blockRepository;
         this.projectRepository = projectRepository;
         this.objectMapper = objectMapper;
         this.projectActivityService = projectActivityService;
+        this.projectUndoStateRepository = projectUndoStateRepository;
+        this.scriptEditionRepository = scriptEditionRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public void recordCheckpoint(Integer projectId) {
         recordCheckpoint(projectId, null);
     }
@@ -73,7 +106,7 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public void recordCheckpointForBlock(Integer blockId) {
         if (blockId == null) {
             return;
@@ -87,7 +120,7 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public void recordCheckpointForScene(Integer sceneBlockId) {
         if (sceneBlockId == null) {
             return;
@@ -101,6 +134,7 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     }
 
     @Override
+    @Transactional
     public void recordMoveCheckpoint(Integer blockId, int fromOrder, int toOrder) {
         if (blockId == null || fromOrder == toOrder || suppressRecording.get()) {
             return;
@@ -238,21 +272,25 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean canUndo(Integer projectId) {
         return canUndo(projectId, null);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean canUndo(Integer projectId, Integer editionId) {
         return projectId != null && !getState(projectId, editionId).undoStack.isEmpty();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean canRedo(Integer projectId) {
         return canRedo(projectId, null);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean canRedo(Integer projectId, Integer editionId) {
         return projectId != null && !getState(projectId, editionId).redoStack.isEmpty();
     }
@@ -312,6 +350,104 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
         }
     }
 
+    // --- stack storage ----------------------------------------------------
+
+    private UndoRedoState getState(Integer projectId, Integer editionId) {
+        Integer userId = currentUserId();
+        return userId != null
+                ? getPersistentState(projectId, editionId, userId)
+                : getSessionState(projectId, editionId);
+    }
+
+    private void saveState(Integer projectId, Integer editionId, UndoRedoState state) {
+        Integer userId = currentUserId();
+        if (userId != null) {
+            savePersistentState(projectId, editionId, userId, state);
+        } else {
+            saveSessionState(projectId, editionId, state);
+        }
+    }
+
+    /**
+     * The stored stand-in for {@code editionId}. A null edition means "the
+     * default edition", which API clients record against; it needs a concrete
+     * value because SQL treats NULLs as distinct and would not dedupe those rows.
+     */
+    private static Integer editionKey(Integer editionId) {
+        return editionId != null ? editionId : ProjectUndoState.NO_EDITION;
+    }
+
+    private UndoRedoState getPersistentState(Integer projectId, Integer editionId, Integer userId) {
+        return projectUndoStateRepository
+                .findByProjectIdAndEditionKeyAndUserId(projectId, editionKey(editionId), userId)
+                .map(row -> {
+                    UndoRedoState state = new UndoRedoState();
+                    fill(state.undoStack, row.getUndoJson());
+                    fill(state.redoStack, row.getRedoJson());
+                    return state;
+                })
+                .orElseGet(UndoRedoState::new);
+    }
+
+    private void savePersistentState(Integer projectId, Integer editionId, Integer userId, UndoRedoState state) {
+        Project project = projectRepository.findById(projectId).orElse(null);
+        User user = userRepository.findById(userId).orElse(null);
+        if (project == null || user == null) {
+            return;
+        }
+        ScriptEdition edition = editionId != null
+                ? scriptEditionRepository.findById(editionId).orElse(null)
+                : null;
+        ProjectUndoState row = projectUndoStateRepository
+                .findByProjectIdAndEditionKeyAndUserId(projectId, editionKey(editionId), userId)
+                .orElseGet(ProjectUndoState::new);
+        row.setProject(project);
+        row.setEdition(edition);
+        row.setEditionKey(editionKey(editionId));
+        row.setUser(user);
+        row.setUndoJson(encodeStack(state.undoStack));
+        row.setRedoJson(encodeStack(state.redoStack));
+        row.setUpdatedAt(LocalDateTime.now());
+        projectUndoStateRepository.save(row);
+    }
+
+    /**
+     * Serialises a stack head-first, so refilling with {@code addLast} rebuilds
+     * the same order — the head stays the next entry to pop.
+     */
+    private String encodeStack(Deque<String> stack) {
+        try {
+            return objectMapper.writeValueAsString(new ArrayList<>(stack));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to encode project undo stack", e);
+        }
+    }
+
+    private void fill(Deque<String> stack, String json) {
+        stack.clear();
+        if (json == null || json.isBlank()) {
+            return;
+        }
+        try {
+            for (String entry : objectMapper.readValue(json, new TypeReference<List<String>>() { })) {
+                stack.addLast(entry);
+            }
+        } catch (JsonProcessingException e) {
+            // A corrupt stack costs the writer their history, not their script.
+            stack.clear();
+        }
+    }
+
+    private Integer currentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        return userRepository.findByUsername(authentication.getName())
+                .map(User::getId)
+                .orElse(null);
+    }
+
     private HttpSession getSession() {
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attrs == null) {
@@ -320,11 +456,7 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
         return attrs.getRequest().getSession(true);
     }
 
-    private UndoRedoState getState(Integer projectId) {
-        return getState(projectId, null);
-    }
-
-    private UndoRedoState getState(Integer projectId, Integer editionId) {
+    private UndoRedoState getSessionState(Integer projectId, Integer editionId) {
         HttpSession session = getSession();
         if (session == null) {
             return new UndoRedoState();
@@ -338,11 +470,7 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
         return state;
     }
 
-    private void saveState(Integer projectId, UndoRedoState state) {
-        saveState(projectId, null, state);
-    }
-
-    private void saveState(Integer projectId, Integer editionId, UndoRedoState state) {
+    private void saveSessionState(Integer projectId, Integer editionId, UndoRedoState state) {
         HttpSession session = getSession();
         if (session != null) {
             session.setAttribute(sessionKey(projectId, editionId), state);

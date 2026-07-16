@@ -2686,22 +2686,27 @@ h1:hover > small .project-delete-btn,
     gap: 0.35rem;
 }
 
+/* Plain text labels rather than bordered pills, matching the song editor's
+   toolbar (fragments/songFileMenu, songEditMenu), which takes the base
+   .nav-dropdown-toggle look. Only the layout bits below are group-specific. */
 .project-tools-group .nav-dropdown-toggle,
 .project-tools-group a.nav-dropdown-toggle {
-    background: var(--interactive-bg);
-    border: 1px solid var(--muted-fg);
-    border-radius: var(--border-radius);
+    background: none;
+    border: none;
+    border-radius: 4px;
     display: inline-flex;
     align-items: center;
     justify-content: flex-start;
     gap: 0.25rem;
-    padding: 0.2em 0.55em;
-    font-size: 0.85rem;
-    font-weight: 600;
+    /* The song editor has two menus and can afford its 1rem side padding; nine
+       menus have to fit the 6in toolbar column, so only the padding is tightened. */
+    padding: 0.5rem 0.3rem;
+    font-size: 1rem;
+    font-weight: 500;
     line-height: 1.2;
     white-space: nowrap;
     text-decoration: none;
-    color: var(--fg);
+    color: inherit;
     min-width: 0;
     min-height: 0;
     height: auto;
@@ -2712,15 +2717,15 @@ h1:hover > small .project-delete-btn,
 .project-tools-group .nav-dropdown-toggle:focus,
 .project-tools-group a.nav-dropdown-toggle:hover,
 .project-tools-group a.nav-dropdown-toggle:focus {
-    filter: brightness(1.1);
-    background-color: var(--interactive-bg);
+    filter: none;
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
     box-shadow: none;
 }
 
 .project-tools-group .nav-dropdown-toggle[aria-expanded="true"] {
-    box-shadow: 0 2px 4px -1px var(--fg) inset;
-    background: var(--pressed-interactive-bg);
-    color: var(--accent);
+    box-shadow: none;
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    color: var(--accent, inherit);
 }
 
 .project-tools-group .nav-dropdown-toggle svg,
@@ -3932,6 +3937,10 @@ input.project-list-search:focus-visible {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    /* The standalone toggle sets its own smaller, bolder label; on the toolbar it
+       has to read as a plain menu label like File and Edit beside it. */
+    font-size: inherit;
+    font-weight: inherit;
 }
 
 html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .script-edition-toggle-lock,
@@ -11183,6 +11192,8 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     z-index: 1300;
 }
 
+/* Format reads as a plain menu label like its neighbours; only the .text-size-control
+   copy (inside the top bar, not the toolbar) keeps the bordered control look. */
 .project-tools-group .text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle,
 .text-size-control .text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle {
     display: inline-flex;
@@ -11190,25 +11201,28 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     justify-content: flex-start;
     gap: 0.25rem;
     margin: 0;
-    padding: 0.2em 0.55em;
     min-width: 0;
     min-height: 0;
     height: auto;
-    font-size: 0.85rem;
-    font-weight: 600;
     line-height: 1.2;
     color: inherit;
-    background: var(--interactive-bg, transparent);
-    border: 1px solid var(--muted-fg);
-    border-radius: var(--border-radius);
     box-shadow: none;
 }
 
-.text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle:hover,
-.text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle:focus-visible,
-.text-format-dropdown.open .text-format-toolbar-btn.nav-dropdown-toggle,
-.text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle.is-active,
-.text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle[aria-pressed="true"] {
+.text-size-control .text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle {
+    padding: 0.2em 0.55em;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: var(--interactive-bg, transparent);
+    border: 1px solid var(--muted-fg);
+    border-radius: var(--border-radius);
+}
+
+.text-size-control .text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle:hover,
+.text-size-control .text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle:focus-visible,
+.text-size-control .text-format-dropdown.open .text-format-toolbar-btn.nav-dropdown-toggle,
+.text-size-control .text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle.is-active,
+.text-size-control .text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle[aria-pressed="true"] {
     background: var(--accent-bg, rgba(0, 0, 0, 0.05));
     border-color: var(--accent, #475569);
     outline: none;
@@ -11217,8 +11231,6 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
 .text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle.is-active,
 .text-format-dropdown .text-format-toolbar-btn.nav-dropdown-toggle[aria-pressed="true"] {
     color: var(--accent, #475569);
-    font-weight: 700;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
 
 .text-format-dropdown .text-align-toolbar-icon {
@@ -12719,104 +12731,6 @@ body.focus-mode #project-lists-dropdown {
 }
 .script-stats-footnote { margin-top: 1.5rem; font-size: 0.85rem; }
 .script-stats-empty { margin-top: 2rem; }
-
-/* View button blue styling on project page */
-.project-tools-group #nav-view {
-    background: linear-gradient(to bottom, #3b82f6, #2563eb) !important;
-    border-color: #1d4ed8 !important;
-    color: #ffffff !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
-}
-
-.project-tools-group #nav-view:hover,
-.project-tools-group #nav-view:focus {
-    background: linear-gradient(to bottom, #4f46e5, #3b82f6) !important;
-    border-color: #2563eb !important;
-    color: #ffffff !important;
-    filter: brightness(1.05) !important;
-}
-
-/* When the view dropdown is open */
-.project-tools-group .view-dropdown.open > #nav-view,
-.project-tools-group #nav-view[aria-expanded="true"] {
-    background: #1d4ed8 !important;
-    border-color: #1e40af !important;
-    color: #ffffff !important;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15) !important;
-}
-
-/* Keep blue styling in active state */
-.project-tools-group #nav-view.is-active {
-    background: linear-gradient(to bottom, #3b82f6, #2563eb) !important;
-    border-color: #1d4ed8 !important;
-    color: #ffffff !important;
-}
-.project-tools-group #nav-view.is-active:hover {
-    background: linear-gradient(to bottom, #4f46e5, #3b82f6) !important;
-    border-color: #2563eb !important;
-}
-
-/* Dark theme overrides */
-:root.-dark-theme .project-tools-group #nav-view,
-:root[data-theme-setting="dark"] .project-tools-group #nav-view {
-    background: linear-gradient(to bottom, #2563eb, #1d4ed8) !important;
-    border-color: #3b82f6 !important;
-    color: #ffffff !important;
-}
-
-:root.-dark-theme .project-tools-group #nav-view:hover,
-:root.-dark-theme .project-tools-group #nav-view:focus,
-:root[data-theme-setting="dark"] .project-tools-group #nav-view:hover,
-:root[data-theme-setting="dark"] .project-tools-group #nav-view:focus {
-    background: linear-gradient(to bottom, #3b82f6, #2563eb) !important;
-    border-color: #60a5fa !important;
-    color: #ffffff !important;
-}
-
-:root.-dark-theme .project-tools-group .view-dropdown.open > #nav-view,
-:root.-dark-theme .project-tools-group #nav-view[aria-expanded="true"],
-:root[data-theme-setting="dark"] .project-tools-group .view-dropdown.open > #nav-view,
-:root[data-theme-setting="dark"] .project-tools-group #nav-view[aria-expanded="true"] {
-    background: #1e40af !important;
-    border-color: #2563eb !important;
-    color: #ffffff !important;
-}
-
-:root.-dark-theme .project-tools-group #nav-view.is-active,
-:root[data-theme-setting="dark"] .project-tools-group #nav-view.is-active {
-    background: linear-gradient(to bottom, #2563eb, #1d4ed8) !important;
-    border-color: #3b82f6 !important;
-    color: #ffffff !important;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root:not(.-no-dark-theme) .project-tools-group #nav-view {
-        background: linear-gradient(to bottom, #2563eb, #1d4ed8) !important;
-        border-color: #3b82f6 !important;
-        color: #ffffff !important;
-    }
-    
-    :root:not(.-no-dark-theme) .project-tools-group #nav-view:hover,
-    :root:not(.-no-dark-theme) .project-tools-group #nav-view:focus {
-        background: linear-gradient(to bottom, #3b82f6, #2563eb) !important;
-        border-color: #60a5fa !important;
-        color: #ffffff !important;
-    }
-    
-    :root:not(.-no-dark-theme) .project-tools-group .view-dropdown.open > #nav-view,
-    :root:not(.-no-dark-theme) .project-tools-group #nav-view[aria-expanded="true"] {
-        background: #1e40af !important;
-        border-color: #2563eb !important;
-        color: #ffffff !important;
-    }
-    
-    :root:not(.-no-dark-theme) .project-tools-group #nav-view.is-active {
-        background: linear-gradient(to bottom, #2563eb, #1d4ed8) !important;
-        border-color: #3b82f6 !important;
-        color: #ffffff !important;
-    }
-}
 
 /* ---- Mobile overrides: keep these last so they win the cascade ---- */
 

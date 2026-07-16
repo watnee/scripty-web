@@ -183,9 +183,10 @@ public class TextDocumentController {
     @RequestMapping(value = "/export-songs", method = RequestMethod.GET)
     public ResponseEntity<byte[]> exportSongs(@RequestParam Integer projectId,
                                               @RequestParam(required = false) String format,
+                                              @RequestParam(required = false) List<Integer> ids,
                                               Principal principal) {
-        SongExportService.SongExport export = songExportService.exportAllSongs(
-                projectId, SongExportService.parseFormat(format), currentUser(principal));
+        SongExportService.SongExport export = songExportService.exportSongs(
+                projectId, ids, SongExportService.parseFormat(format), currentUser(principal));
         return serve(export);
     }
 

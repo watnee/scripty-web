@@ -1,6 +1,7 @@
 package com.scripty.service;
 
 import com.scripty.dto.User;
+import java.util.List;
 
 /**
  * Downloads of song lyrics, either one song or every song in a project.
@@ -56,5 +57,18 @@ public interface SongExportService {
      * Every song in the project, in list order, as one document.
      * @return the rendered songs, or null if the project isn't found or accessible
      */
-    SongExport exportAllSongs(Integer projectId, Format format, User currentUser);
+    default SongExport exportAllSongs(Integer projectId, Format format, User currentUser) {
+        return exportSongs(projectId, null, format, currentUser);
+    }
+
+    /**
+     * The project's songs as one document, in list order.
+     *
+     * @param songIds the songs to include; null or empty means every song. Ids
+     *                outside this project are ignored rather than trusted, so a
+     *                tampered link cannot pull in another project's lyrics.
+     * @return the rendered songs, or null if the project isn't found or
+     *         accessible, or if songIds was given but matched no song here
+     */
+    SongExport exportSongs(Integer projectId, List<Integer> songIds, Format format, User currentUser);
 }

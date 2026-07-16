@@ -141,6 +141,81 @@ class SongExportServiceImplTest {
     }
 
     @Test
+    void exportSongsIncludesOnlyTheSelectedSongs() {
+        TextDocument first = song(1, "Opener", "one");
+        TextDocument second = song(3, "Closer", "two");
+
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("My Musical")));
+        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+                .thenReturn(List.of(first, second));
+
+        SongExportService.SongExport export =
+                service.exportSongs(PROJECT_ID, List.of(3), SongExportService.Format.TXT, user);
+
+        assertNotNull(export);
+        String body = new String(export.content(), StandardCharsets.UTF_8);
+        assertTrue(body.contains("Closer"));
+        assertFalse(body.contains("Opener"));
+        // One selected song names the file after itself.
+        assertEquals("Closer.txt", export.filename());
+    }
+
+    @Test
+    void selectingSeveralSongsKeepsListOrderAndProjectFilename() {
+        TextDocument first = song(1, "Opener", "one");
+        TextDocument middle = song(2, "Middle", "skipped");
+        TextDocument last = song(3, "Closer", "two");
+
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("My Musical")));
+        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+                .thenReturn(List.of(first, middle, last));
+
+        // Ids are passed newest-first; list order should still win.
+        SongExportService.SongExport export =
+                service.exportSongs(PROJECT_ID, List.of(3, 1), SongExportService.Format.TXT, user);
+
+        assertNotNull(export);
+        assertEquals("My-Musical-Songs.txt", export.filename());
+        String body = new String(export.content(), StandardCharsets.UTF_8);
+        assertTrue(body.indexOf("Opener") < body.indexOf("Closer"));
+        assertFalse(body.contains("skipped"));
+    }
+
+    @Test
+    void songIdsFromOtherProjectsAreIgnoredNotExported() {
+        TextDocument mine = song(1, "Mine", "my lyrics");
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("Demo")));
+        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+                .thenReturn(List.of(mine));
+
+        // 404 rather than an empty document: the ids matched nothing here.
+        assertNull(service.exportSongs(PROJECT_ID, List.of(999), SongExportService.Format.TXT, user));
+
+        // A foreign id alongside a real one must not smuggle anything in.
+        SongExportService.SongExport export =
+                service.exportSongs(PROJECT_ID, List.of(1, 999), SongExportService.Format.TXT, user);
+        assertNotNull(export);
+        assertTrue(new String(export.content(), StandardCharsets.UTF_8).contains("my lyrics"));
+    }
+
+    @Test
+    void emptyIdListMeansEverySong() {
+        TextDocument first = song(1, "Opener", "one");
+        TextDocument second = song(3, "Closer", "two");
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("Demo")));
+        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+                .thenReturn(List.of(first, second));
+
+        SongExportService.SongExport export =
+                service.exportSongs(PROJECT_ID, List.of(), SongExportService.Format.TXT, user);
+
+        assertNotNull(export);
+        String body = new String(export.content(), StandardCharsets.UTF_8);
+        assertTrue(body.contains("Opener"));
+        assertTrue(body.contains("Closer"));
+    }
+
+    @Test
     void exportAllSongsRejectsUnknownOrInaccessibleProject() {
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.empty());
         assertNull(service.exportAllSongs(PROJECT_ID, SongExportService.Format.TXT, user));

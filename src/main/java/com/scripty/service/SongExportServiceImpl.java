@@ -15,7 +15,9 @@ import com.scripty.repository.TextDocumentRepository;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.poi.xwpf.usermodel.BreakType;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -72,22 +74,42 @@ public class SongExportServiceImpl implements SongExportService {
 
     @Override
     @Transactional(readOnly = true)
-    public SongExport exportAllSongs(Integer projectId, Format format, User currentUser) {
+    public SongExport exportSongs(Integer projectId, List<Integer> songIds, Format format, User currentUser) {
         Project project = projectRepository.findById(projectId).orElse(null);
         if (project == null || !projectService.canUserAccessProject(projectId, currentUser)) {
             return null;
         }
+        boolean filtered = songIds != null && !songIds.isEmpty();
+        Set<Integer> wanted = filtered ? new HashSet<>(songIds) : null;
+
+        // Always start from this project's own documents, so ids the caller
+        // supplied can only ever narrow the result, never widen it.
         List<TextDocument> songs = new ArrayList<>();
         for (TextDocument doc : textDocumentRepository
                 .findByProjectIdOrderBySortOrderAscUpdatedAtDesc(projectId)) {
-            if (TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+            if (!TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+                continue;
+            }
+            if (wanted == null || wanted.contains(doc.getId())) {
                 songs.add(doc);
             }
         }
-        String base = project.getTitle() != null && !project.getTitle().isBlank()
+        // Asking for specific songs and matching none is a bad request, not an
+        // empty songbook.
+        if (filtered && songs.isEmpty()) {
+            return null;
+        }
+        return render(songs, baseName(project, songs, filtered), format);
+    }
+
+    /** A single selected song names the file after itself, matching a one-song export. */
+    private static String baseName(Project project, List<TextDocument> songs, boolean filtered) {
+        if (filtered && songs.size() == 1) {
+            return title(songs.get(0));
+        }
+        return project.getTitle() != null && !project.getTitle().isBlank()
                 ? project.getTitle() + " - Songs"
                 : "Songs";
-        return render(songs, base, format);
     }
 
     private SongExport render(List<TextDocument> songs, String baseName, Format format) {

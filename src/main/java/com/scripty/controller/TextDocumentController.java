@@ -8,6 +8,7 @@ import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.ScriptImportException;
 import com.scripty.service.SongBlockService;
+import com.scripty.service.SongExportService;
 import com.scripty.service.TextDocumentService;
 import com.scripty.service.UserService;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +48,9 @@ public class TextDocumentController {
 
     @Autowired
     SongBlockService songBlockService;
+
+    @Autowired
+    SongExportService songExportService;
 
     @Autowired
     ProjectVersionService projectVersionService;
@@ -164,6 +169,35 @@ public class TextDocumentController {
         return ResponseEntity.ok()
                 .contentType(new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
                 .body(body);
+    }
+
+    @RequestMapping(value = "/export", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> exportSong(@RequestParam Integer id,
+                                             @RequestParam(required = false) String format,
+                                             Principal principal) {
+        SongExportService.SongExport export = songExportService.exportSong(
+                id, SongExportService.parseFormat(format), currentUser(principal));
+        return serve(export);
+    }
+
+    @RequestMapping(value = "/export-songs", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> exportSongs(@RequestParam Integer projectId,
+                                              @RequestParam(required = false) String format,
+                                              Principal principal) {
+        SongExportService.SongExport export = songExportService.exportAllSongs(
+                projectId, SongExportService.parseFormat(format), currentUser(principal));
+        return serve(export);
+    }
+
+    private ResponseEntity<byte[]> serve(SongExportService.SongExport export) {
+        if (export == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(export.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + export.filename() + "\"")
+                .body(export.content());
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)

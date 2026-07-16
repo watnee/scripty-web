@@ -82,6 +82,31 @@
                             class="project-list-action-btn project-list-action-btn--secondary"
                             id="import-doc-btn"
                             th:title="${isSongList} ? 'Import a song from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file' : 'Import a note from a .txt, .fountain, .docx, .doc, .fdx, or .pdf file'">Import</button>
+                    <div class="nav-dropdown song-export-dropdown"
+                         id="songs-export-dropdown"
+                         th:if="${isSongList and !#lists.isEmpty(documents)}">
+                        <button type="button"
+                                class="nav-dropdown-toggle project-list-action-btn project-list-action-btn--secondary"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                title="Export every song in this project">Export</button>
+                        <div class="nav-dropdown-menu song-export-menu"
+                             role="menu"
+                             aria-label="Export songs">
+                            <a class="nav-dropdown-item"
+                               role="menuitem"
+                               th:href="@{/project/documents/export-songs(projectId=${viewModel.projectId}, format=txt)}"
+                               hx-boost="false">Text (.txt)</a>
+                            <a class="nav-dropdown-item"
+                               role="menuitem"
+                               th:href="@{/project/documents/export-songs(projectId=${viewModel.projectId}, format=pdf)}"
+                               hx-boost="false">PDF</a>
+                            <a class="nav-dropdown-item"
+                               role="menuitem"
+                               th:href="@{/project/documents/export-songs(projectId=${viewModel.projectId}, format=docx)}"
+                               hx-boost="false">Word (.docx)</a>
+                        </div>
+                    </div>
                     <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
                        class="project-list-action-btn project-list-action-btn--primary"
                        th:text="${isSongList} ? 'New Song' : 'New Note'">New</a>

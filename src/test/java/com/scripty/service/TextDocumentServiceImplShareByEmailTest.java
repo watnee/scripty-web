@@ -1,13 +1,14 @@
 package com.scripty.service;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -18,6 +19,8 @@ import com.scripty.dto.User;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.TextDocumentRepository;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +37,7 @@ class TextDocumentServiceImplShareByEmailTest {
     private Project project;
     private User user;
     private TextDocument song;
+    private TextDocument otherSong;
 
     @BeforeEach
     void setUp() {
@@ -68,16 +72,23 @@ class TextDocumentServiceImplShareByEmailTest {
         song.setDocumentType(TextDocument.TYPE_SONG);
         song.setTitle("Opening Number");
         song.setContent("Verse one\nChorus <>&");
+
+        otherSong = new TextDocument();
+        otherSong.setId(43);
+        otherSong.setProject(project);
+        otherSong.setDocumentType(TextDocument.TYPE_SONG);
+        otherSong.setTitle("Act Two Finale");
+        otherSong.setContent("Finale lines");
     }
 
     @Test
-    void shareSongByEmailSendsLyricsAndRecordsActivity() {
+    void shareSongsByEmailSendsLyricsAndRecordsActivity() {
         when(textDocumentRepository.findById(42)).thenReturn(Optional.of(song));
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
-        TextDocument shared = service.shareSongByEmail(42, " friend@example.com ", user);
+        List<TextDocument> shared = service.shareSongsByEmail(List.of(42), " friend@example.com ", user);
 
-        assertNotNull(shared);
+        assertEquals(List.of(song), shared);
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
         verify(emailService).send(
                 eq("friend@example.com"),
@@ -92,28 +103,77 @@ class TextDocumentServiceImplShareByEmailTest {
     }
 
     @Test
-    void shareSongByEmailRejectsInvalidAddress() {
-        assertNull(service.shareSongByEmail(42, "not-an-email", user));
-        assertNull(service.shareSongByEmail(42, "   ", user));
-        assertNull(service.shareSongByEmail(42, null, user));
+    void shareSongsByEmailSendsSelectedSongsAsOneMessage() {
+        when(textDocumentRepository.findById(42)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findById(43)).thenReturn(Optional.of(otherSong));
+        when(projectService.canUserAccessProject(7, user)).thenReturn(true);
+
+        List<TextDocument> shared = service.shareSongsByEmail(List.of(42, 43), "friend@example.com", user);
+
+        assertEquals(List.of(song, otherSong), shared);
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        verify(emailService).send(
+                eq("friend@example.com"),
+                eq("Wanda Writer shared 2 songs with you"),
+                body.capture());
+        assertTrue(body.getValue().contains("Opening Number"));
+        assertTrue(body.getValue().contains("Verse one\nChorus &lt;&gt;&amp;"));
+        assertTrue(body.getValue().contains("Act Two Finale"));
+        assertTrue(body.getValue().contains("Finale lines"));
+        verify(projectActivityService, times(2)).record(
+                eq(7), eq(3),
+                eq(ProjectActivity.ACTION_DOCUMENT_SHARED),
+                contains("friend@example.com"),
+                eq(ProjectActivity.ENTITY_DOCUMENT), anyInt());
+    }
+
+    @Test
+    void shareSongsByEmailSkipsUnshareableIdsButSendsTheRest() {
+        otherSong.setDocumentType(TextDocument.TYPE_NOTES);
+        when(textDocumentRepository.findById(42)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findById(43)).thenReturn(Optional.of(otherSong));
+        when(textDocumentRepository.findById(99)).thenReturn(Optional.empty());
+        when(projectService.canUserAccessProject(7, user)).thenReturn(true);
+
+        List<TextDocument> shared = service.shareSongsByEmail(Arrays.asList(42, 43, 99, null), "friend@example.com", user);
+
+        assertEquals(List.of(song), shared);
+        verify(emailService).send(
+                eq("friend@example.com"),
+                eq("Wanda Writer shared a song with you: Opening Number"),
+                anyString());
+    }
+
+    @Test
+    void shareSongsByEmailRejectsInvalidAddress() {
+        assertTrue(service.shareSongsByEmail(List.of(42), "not-an-email", user).isEmpty());
+        assertTrue(service.shareSongsByEmail(List.of(42), "   ", user).isEmpty());
+        assertTrue(service.shareSongsByEmail(List.of(42), null, user).isEmpty());
         verify(emailService, never()).send(anyString(), anyString(), anyString());
     }
 
     @Test
-    void shareSongByEmailRejectsNonSongDocuments() {
+    void shareSongsByEmailRejectsEmptySelection() {
+        assertTrue(service.shareSongsByEmail(List.of(), "friend@example.com", user).isEmpty());
+        assertTrue(service.shareSongsByEmail(null, "friend@example.com", user).isEmpty());
+        verify(emailService, never()).send(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void shareSongsByEmailRejectsNonSongDocuments() {
         song.setDocumentType(TextDocument.TYPE_NOTES);
         when(textDocumentRepository.findById(42)).thenReturn(Optional.of(song));
 
-        assertNull(service.shareSongByEmail(42, "friend@example.com", user));
+        assertTrue(service.shareSongsByEmail(List.of(42), "friend@example.com", user).isEmpty());
         verify(emailService, never()).send(anyString(), anyString(), anyString());
     }
 
     @Test
-    void shareSongByEmailRequiresProjectAccess() {
+    void shareSongsByEmailRequiresProjectAccess() {
         when(textDocumentRepository.findById(42)).thenReturn(Optional.of(song));
         when(projectService.canUserAccessProject(7, user)).thenReturn(false);
 
-        assertNull(service.shareSongByEmail(42, "friend@example.com", user));
+        assertTrue(service.shareSongsByEmail(List.of(42), "friend@example.com", user).isEmpty());
         verify(emailService, never()).send(anyString(), anyString(), anyString());
     }
 }

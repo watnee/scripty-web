@@ -79,10 +79,11 @@ public interface TextDocumentService {
     boolean syncInsertedBlocks(Integer documentId, User currentUser);
 
     /**
-     * Emails a song's title and lyrics to a recipient. Songs only.
-     * @return the shared song, or null if not found/accessible, not a song, or the address is invalid
+     * Emails the titles and lyrics of one or more songs to a recipient as a single message. Songs only.
+     * Ids that are missing, inaccessible, or not songs are skipped; nothing is sent if none are left.
+     * @return the shared songs, in the order given; empty if the address is invalid or no id was shareable
      */
-    TextDocument shareSongByEmail(Integer id, String email, User currentUser);
+    List<TextDocument> shareSongsByEmail(List<Integer> ids, String email, User currentUser);
 
     /**
      * Import a text/Word file as a new song or draft document.

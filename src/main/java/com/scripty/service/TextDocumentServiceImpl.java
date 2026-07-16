@@ -510,47 +510,81 @@ public class TextDocumentServiceImpl implements TextDocumentService {
 
     @Override
     @Transactional
-    public TextDocument shareSongByEmail(Integer id, String email, User currentUser) {
+    public List<TextDocument> shareSongsByEmail(List<Integer> ids, String email, User currentUser) {
         String recipient = email == null ? "" : email.trim();
-        if (recipient.isEmpty() || !recipient.contains("@")) {
-            return null;
-        }
-        TextDocument doc = textDocumentRepository.findById(id).orElse(null);
-        if (doc == null || doc.getProject() == null
-                || !TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
-            return null;
-        }
-        if (!projectService.canUserAccessProject(doc.getProject().getId(), currentUser)) {
-            return null;
+        if (recipient.isEmpty() || !recipient.contains("@") || ids == null || ids.isEmpty()) {
+            return List.of();
         }
 
-        sendSongShareEmail(doc, recipient, currentUser);
-        projectActivityService.record(
-                doc.getProject().getId(),
-                currentUser != null ? currentUser.getId() : null,
-                ProjectActivity.ACTION_DOCUMENT_SHARED,
-                "emailed \"" + doc.getTitle() + "\" to " + recipient,
-                ProjectActivity.ENTITY_DOCUMENT,
-                doc.getId());
-        return doc;
+        List<TextDocument> songs = new ArrayList<>();
+        for (Integer id : ids) {
+            if (id == null) {
+                continue;
+            }
+            TextDocument doc = textDocumentRepository.findById(id).orElse(null);
+            if (doc == null || doc.getProject() == null
+                    || !TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+                continue;
+            }
+            if (!projectService.canUserAccessProject(doc.getProject().getId(), currentUser)) {
+                continue;
+            }
+            if (songs.stream().noneMatch(s -> s.getId().equals(doc.getId()))) {
+                songs.add(doc);
+            }
+        }
+        if (songs.isEmpty()) {
+            return List.of();
+        }
+
+        sendSongShareEmail(songs, recipient, currentUser);
+        for (TextDocument doc : songs) {
+            projectActivityService.record(
+                    doc.getProject().getId(),
+                    currentUser != null ? currentUser.getId() : null,
+                    ProjectActivity.ACTION_DOCUMENT_SHARED,
+                    "emailed \"" + doc.getTitle() + "\" to " + recipient,
+                    ProjectActivity.ENTITY_DOCUMENT,
+                    doc.getId());
+        }
+        return songs;
     }
 
-    private void sendSongShareEmail(TextDocument doc, String recipient, User sharedBy) {
+    private void sendSongShareEmail(List<TextDocument> songs, String recipient, User sharedBy) {
         String senderName = formatSenderName(sharedBy);
-        String title = doc.getTitle() != null && !doc.getTitle().isBlank() ? doc.getTitle() : "Untitled Song";
-        String content = doc.getContent() != null ? doc.getContent() : "";
-        String subject = senderName + " shared a song with you: " + title;
+        String subject = songs.size() == 1
+                ? senderName + " shared a song with you: " + songTitle(songs.get(0))
+                : senderName + " shared " + songs.size() + " songs with you";
+        String intro = songs.size() == 1
+                ? "<p><strong>%s</strong> shared the song <strong>%s</strong> with you from Scripty.</p>".formatted(
+                        HtmlUtils.htmlEscape(senderName),
+                        HtmlUtils.htmlEscape(songTitle(songs.get(0))))
+                : "<p><strong>%s</strong> shared %d songs with you from Scripty.</p>".formatted(
+                        HtmlUtils.htmlEscape(senderName), songs.size());
+
+        StringBuilder sections = new StringBuilder();
+        for (TextDocument doc : songs) {
+            if (songs.size() > 1) {
+                sections.append("<h2 style=\"font-size:18px;margin:24px 0 8px;\">%s</h2>".formatted(
+                        HtmlUtils.htmlEscape(songTitle(doc))));
+            }
+            sections.append(
+                    "<div style=\"white-space:pre-wrap;padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;\">%s</div>"
+                            .formatted(HtmlUtils.htmlEscape(doc.getContent() != null ? doc.getContent() : "")));
+        }
+
         String body = """
                 <div style="font-family: Georgia, 'Times New Roman', serif; line-height: 1.5; color: #1f2937;">
                   <p>Hi,</p>
-                  <p><strong>%s</strong> shared the song <strong>%s</strong> with you from Scripty.</p>
-                  <div style="white-space:pre-wrap;padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">%s</div>
+                  %s
+                  %s
                 </div>
-                """.formatted(
-                HtmlUtils.htmlEscape(senderName),
-                HtmlUtils.htmlEscape(title),
-                HtmlUtils.htmlEscape(content));
+                """.formatted(intro, sections.toString());
         emailService.send(recipient, subject, body);
+    }
+
+    private String songTitle(TextDocument doc) {
+        return doc.getTitle() != null && !doc.getTitle().isBlank() ? doc.getTitle() : "Untitled Song";
     }
 
     private String formatSenderName(User sharedBy) {

@@ -109,11 +109,26 @@
                                hx-boost="false">Word (.docx)</a>
                         </div>
                     </div>
+                    <button type="button"
+                            id="songs-email-selected"
+                            class="project-list-action-btn project-list-action-btn--secondary"
+                            th:if="${isSongList and !#lists.isEmpty(documents)}"
+                            title="Email every song in this project">Email</button>
                     <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
                        class="project-list-action-btn project-list-action-btn--primary"
                        th:text="${isSongList} ? 'New Song' : 'New Note'">New</a>
                 </div>
             </div>
+
+            <form id="songs-email-form"
+                  th:if="${isSongList and !#lists.isEmpty(documents)}"
+                  th:action="@{/project/documents/share-email}"
+                  method="post"
+                  hx-boost="false"
+                  hidden>
+                <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                <input type="hidden" name="email" />
+            </form>
 
             <form id="import-doc-form"
                   th:action="@{/project/documents/import(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"

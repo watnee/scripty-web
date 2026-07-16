@@ -278,15 +278,16 @@ public class TextDocumentRestController {
             return new ResponseEntity<>(Map.of("email", "You must supply a recipient address."),
                     HttpStatus.BAD_REQUEST);
         }
-        TextDocument shared = textDocumentService.shareSongByEmail(id, request.email(), currentUser(principal));
-        if (shared == null) {
+        List<TextDocument> shared = textDocumentService.shareSongsByEmail(
+                List.of(id), request.email(), currentUser(principal));
+        if (shared.isEmpty()) {
             return new ResponseEntity<>(
                     Map.of("email", "Could not email that song. Check the address and try again."),
                     HttpStatus.BAD_REQUEST);
         }
         return ResponseEntity.ok(Map.of(
                 "shared", true,
-                "title", shared.getTitle(),
+                "title", shared.get(0).getTitle(),
                 "email", request.email().trim()));
     }
 

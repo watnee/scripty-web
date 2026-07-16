@@ -1,9 +1,9 @@
 /**
- * Song selection for the Export menu on the songs list.
+ * Song selection for the Export menu and the Email button on the songs list.
  *
- * Selecting nothing exports every song, so Export still works for anyone who
- * never touches the checkboxes. Selection follows the search filter: a hidden
- * card is not part of "all", and cannot be exported by "Select all".
+ * Selecting nothing acts on every song, so both still work for anyone who never
+ * touches the checkboxes. Selection follows the search filter: a hidden card is
+ * not part of "all", and cannot be picked by "Select all".
  */
 (function () {
     'use strict';
@@ -19,6 +19,8 @@
         var scopeEl = document.getElementById('songs-export-scope');
         var toggleBtn = document.getElementById('songs-export-toggle');
         var searchInput = document.getElementById('text-documents-search');
+        var emailBtn = document.getElementById('songs-email-selected');
+        var emailForm = document.getElementById('songs-email-form');
 
         function visibleCheckboxes() {
             return Array.prototype.slice
@@ -39,6 +41,13 @@
             return n + ' ' + word + (n === 1 ? '' : 's');
         }
 
+        function titleOf(id) {
+            var cb = listEl.querySelector('.text-document-select-checkbox[value="' + id + '"]');
+            var card = cb && cb.closest('.text-document-card');
+            var link = card && card.querySelector('.text-document-card-title');
+            return link ? link.textContent.trim() : 'this song';
+        }
+
         function refresh() {
             var visible = visibleCheckboxes();
             var chosen = visible.filter(function (cb) { return cb.checked; });
@@ -53,6 +62,14 @@
                 toggleBtn.title = chosen.length
                     ? 'Export ' + plural(chosen.length, 'selected song')
                     : 'Export every song in this project';
+            }
+            if (emailBtn) {
+                emailBtn.textContent = chosen.length ? 'Email (' + chosen.length + ')' : 'Email';
+                emailBtn.title = chosen.length
+                    ? 'Email ' + plural(chosen.length, 'selected song') + ' in one message'
+                    : 'Email every song in this project';
+                // Nothing visible means "all songs" resolves to nothing to send.
+                emailBtn.disabled = visible.length === 0;
             }
             if (selectAll) {
                 selectAll.checked = visible.length > 0 && chosen.length === visible.length;
@@ -76,6 +93,40 @@
         // songs the export will not include.
         if (searchInput) {
             searchInput.addEventListener('input', function () { window.setTimeout(refresh, 0); });
+        }
+
+        if (emailBtn && emailForm) {
+            emailBtn.addEventListener('click', function () {
+                // Selecting nothing emails every visible song, matching Export.
+                var ids = selectedIds();
+                var sending = ids.length
+                    ? ids
+                    : visibleCheckboxes().map(function (cb) { return cb.value; });
+                if (!sending.length) return;
+
+                var label = sending.length === 1
+                    ? '"' + titleOf(sending[0]) + '"'
+                    : plural(sending.length, 'song');
+                var address = window.prompt('Email ' + label + ' to:', '');
+                if (address === null) return;
+                address = address.trim();
+                if (!address || address.indexOf('@') === -1) {
+                    if (address) window.alert('Please enter a valid email address.');
+                    return;
+                }
+
+                emailForm.querySelector('input[name="email"]').value = address;
+                Array.prototype.slice.call(emailForm.querySelectorAll('input[name="id"]'))
+                    .forEach(function (old) { old.remove(); });
+                sending.forEach(function (id) {
+                    var field = document.createElement('input');
+                    field.type = 'hidden';
+                    field.name = 'id';
+                    field.value = id;
+                    emailForm.appendChild(field);
+                });
+                emailForm.submit();
+            });
         }
 
         dropdown.addEventListener('click', function (e) {

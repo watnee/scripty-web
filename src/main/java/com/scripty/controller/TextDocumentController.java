@@ -286,20 +286,24 @@ public class TextDocumentController {
     }
 
     @RequestMapping(value = "/share-email", method = RequestMethod.POST)
-    public String shareEmail(@RequestParam Integer id,
+    public String shareEmail(@RequestParam(name = "id", required = false) List<Integer> ids,
                              @RequestParam Integer projectId,
                              @RequestParam String email,
                              Principal principal,
                              RedirectAttributes redirectAttributes) {
-        TextDocument shared = textDocumentService.shareSongByEmail(id, email, currentUser(principal));
-        if (shared != null) {
+        List<TextDocument> shared = textDocumentService.shareSongsByEmail(ids, email, currentUser(principal));
+        if (shared.size() == 1) {
             redirectAttributes.addFlashAttribute(
                     "documentShareMessage",
-                    "Emailed \"" + shared.getTitle() + "\" to " + email.trim() + ".");
+                    "Emailed \"" + shared.get(0).getTitle() + "\" to " + email.trim() + ".");
+        } else if (!shared.isEmpty()) {
+            redirectAttributes.addFlashAttribute(
+                    "documentShareMessage",
+                    "Emailed " + shared.size() + " songs to " + email.trim() + ".");
         } else {
             redirectAttributes.addFlashAttribute(
                     "documentShareMessage",
-                    "Could not email that song. Check the address and try again.");
+                    "Could not email those songs. Check the address and try again.");
         }
         return "redirect:" + listUrl(projectId, true);
     }

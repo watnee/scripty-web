@@ -1,0 +1,16 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="meta(updatedAt)">
+    <!--/* "Last edited" and the autosave status. A fragment because the song
+           editor shows them on its toolbar row while notes keep them under the
+           editor. text-document-edit.js finds both by id, not through the form,
+           so they work outside it. */-->
+    <span id="text-document-last-edited" class="text-document-last-edited muted" th:style="${updatedAt == null} ? 'display: none;' : ''">
+        Last edited <span class="last-edited-time"
+                          th:attr="data-timestamp=${updatedAt != null ? #temporals.format(updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}"
+                          th:text="${updatedAt != null ? #temporals.format(updatedAt, 'MMM d, yyyy') : ''}"></span>
+    </span>
+    <span id="text-document-save-status"
+          class="text-document-save-status muted"
+          role="status"
+          aria-live="polite"
+          hidden></span>
+</th:block>

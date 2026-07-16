@@ -6005,8 +6005,20 @@ body:has(main.text-documents-page) > main.text-documents-page {
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    gap: 0.75rem;
     margin-bottom: 0.35rem;
     min-height: 2.25rem;
+}
+
+/* "Last edited" / save status riding the toolbar row rather than sitting under
+   the editor: pushed to the far end, and without the block margin and
+   space-between the standalone bar uses. */
+.text-documents-page .text-document-meta-bar--toolbar {
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 0;
+    margin-left: auto;
+    min-width: 0;
 }
 
 .text-documents-heading-row {

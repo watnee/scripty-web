@@ -57,6 +57,9 @@
                 </th:block>
                 <th:block th:replace="~{fragments/textDocumentAbout :: about(${isSong})}"></th:block>
             </div>
+            <div class="text-document-meta-bar text-document-meta-bar--toolbar">
+                <th:block th:replace="~{fragments/textDocumentMeta :: meta(${updatedAt})}"></th:block>
+            </div>
         </div>
 
         <p class="text-document-import-banner"
@@ -95,17 +98,9 @@
                 </div>
             </div>
 
-            <div class="text-document-meta-bar">
-                <span id="text-document-last-edited" class="text-document-last-edited muted" th:style="${updatedAt == null} ? 'display: none;' : ''">
-                    Last edited <span class="last-edited-time"
-                                      th:attr="data-timestamp=${updatedAt != null ? #temporals.format(updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}"
-                                      th:text="${updatedAt != null ? #temporals.format(updatedAt, 'MMM d, yyyy') : ''}"></span>
-                </span>
-                <span id="text-document-save-status"
-                      class="text-document-save-status muted"
-                      role="status"
-                      aria-live="polite"
-                      hidden></span>
+            <!--/* Songs render these on the toolbar row above instead. */-->
+            <div class="text-document-meta-bar" th:unless="${isSong}">
+                <th:block th:replace="~{fragments/textDocumentMeta :: meta(${updatedAt})}"></th:block>
             </div>
         </form>
     </main>

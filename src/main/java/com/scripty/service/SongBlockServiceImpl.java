@@ -165,6 +165,26 @@ public class SongBlockServiceImpl implements SongBlockService {
         return move(blockId, 1);
     }
 
+    @Override
+    @Transactional
+    public SongBlock moveTo(Integer blockId, int position) {
+        SongBlock block = read(blockId);
+        if (block == null || block.getTextDocument() == null) {
+            return null;
+        }
+        TextDocument doc = block.getTextDocument();
+        List<SongBlock> blocks = new ArrayList<>(songBlockRepository.findByTextDocumentIdOrderByOrderAsc(doc.getId()));
+        int idx = indexOf(blocks, blockId);
+        if (idx < 0) {
+            return block;
+        }
+        int target = Math.max(0, Math.min(position, blocks.size() - 1));
+        if (target == idx) {
+            return block;
+        }
+        return reorder(doc, blocks, idx, target);
+    }
+
     private SongBlock move(Integer blockId, int delta) {
         SongBlock block = read(blockId);
         if (block == null || block.getTextDocument() == null) {
@@ -177,8 +197,12 @@ public class SongBlockServiceImpl implements SongBlockService {
         if (idx < 0 || target < 0 || target >= blocks.size()) {
             return block;
         }
-        SongBlock moved = blocks.remove(idx);
-        blocks.add(target, moved);
+        return reorder(doc, blocks, idx, target);
+    }
+
+    private SongBlock reorder(TextDocument doc, List<SongBlock> blocks, int fromIndex, int toIndex) {
+        SongBlock moved = blocks.remove(fromIndex);
+        blocks.add(toIndex, moved);
         renumberAndSave(blocks);
         rebuildDocumentContent(doc, blocks);
         return moved;

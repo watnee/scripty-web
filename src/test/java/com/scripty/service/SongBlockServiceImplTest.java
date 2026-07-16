@@ -177,6 +177,47 @@ class SongBlockServiceImplTest {
     }
 
     @Test
+    void moveToDropsBlockAtRequestedIndex() {
+        doc.setContent("a\nb\nc\nd");
+        Integer first = service.getBlocks(7).get(0).getId();
+
+        service.moveTo(first, 2);
+
+        assertEquals(List.of("b", "c", "a", "d"), contents());
+        assertEquals("b\nc\na\nd", doc.getContent());
+    }
+
+    @Test
+    void moveToDragsBlockUpwards() {
+        doc.setContent("a\nb\nc");
+        Integer last = service.getBlocks(7).get(2).getId();
+
+        service.moveTo(last, 0);
+
+        assertEquals(List.of("c", "a", "b"), contents());
+    }
+
+    @Test
+    void moveToClampsOutOfRangePosition() {
+        doc.setContent("a\nb\nc");
+        Integer first = service.getBlocks(7).get(0).getId();
+
+        service.moveTo(first, 99);
+
+        assertEquals(List.of("b", "c", "a"), contents());
+    }
+
+    @Test
+    void moveToSamePositionIsNoOp() {
+        doc.setContent("a\nb\nc");
+        Integer middle = service.getBlocks(7).get(1).getId();
+
+        service.moveTo(middle, 1);
+
+        assertEquals(List.of("a", "b", "c"), contents());
+    }
+
+    @Test
     void editContentUpdatesDocumentJoin() {
         doc.setContent("a\nb");
         Integer second = service.getBlocks(7).get(1).getId();

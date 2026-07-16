@@ -154,6 +154,152 @@
         }
     });
 
+    // --- drag to reorder -------------------------------------------------
+    //
+    // Mirrors the screenplay block drag: grab the "⋮⋮" handle, a line marks the
+    // drop point, and the release posts the new index. Handlers are delegated on
+    // document because #song-blocks is replaced wholesale after every change.
+
+    var dragRow = null;
+    // A drag ends with a click on the handle in some browsers; swallow it so the
+    // menu does not pop open right after a drop.
+    var dragJustEnded = false;
+
+    function blockList() {
+        return document.getElementById('song-blocks');
+    }
+
+    function songRow(node) {
+        var row = node && node.closest ? node.closest('.song-block-row[data-block-id]') : null;
+        var list = blockList();
+        return row && list && list.contains(row) ? row : null;
+    }
+
+    function clearDropMarkers() {
+        var list = blockList();
+        if (!list) {
+            return;
+        }
+        list.querySelectorAll('.drop-before, .drop-after').forEach(function (el) {
+            el.classList.remove('drop-before', 'drop-after');
+        });
+    }
+
+    function findDropTarget(clientY) {
+        var list = blockList();
+        if (!list) {
+            return null;
+        }
+        var rows = Array.prototype.filter.call(
+            list.querySelectorAll('.song-block-row[data-block-id]'),
+            function (row) { return row !== dragRow; }
+        );
+        if (!rows.length) {
+            return null;
+        }
+        for (var i = 0; i < rows.length; i++) {
+            var rect = rows[i].getBoundingClientRect();
+            var effectiveHeight = Math.max(rect.height, 24);
+            if (clientY < rect.top + effectiveHeight / 2) {
+                return { row: rows[i], insertBefore: true };
+            }
+        }
+        return { row: rows[rows.length - 1], insertBefore: false };
+    }
+
+    function applyDropMarker(clientY) {
+        clearDropMarkers();
+        var target = findDropTarget(clientY);
+        if (target) {
+            target.row.classList.add(target.insertBefore ? 'drop-before' : 'drop-after');
+        }
+        return target;
+    }
+
+    // The index the dragged row lands on once it is pulled out of the list and
+    // reinserted next to the target — the zero-based order /song/block/moveTo wants.
+    function dropIndex(target) {
+        var list = blockList();
+        var ids = Array.prototype.map.call(
+            list.querySelectorAll('.song-block-row[data-block-id]'),
+            function (row) { return row.getAttribute('data-block-id'); }
+        );
+        var dragId = dragRow.getAttribute('data-block-id');
+        var targetId = target.row.getAttribute('data-block-id');
+        ids.splice(ids.indexOf(dragId), 1);
+        var at = ids.indexOf(targetId) + (target.insertBefore ? 0 : 1);
+        ids.splice(at, 0, dragId);
+        return ids.indexOf(dragId);
+    }
+
+    document.addEventListener('dragstart', function (e) {
+        var handle = e.target.closest ? e.target.closest('.song-block-menu-toggle') : null;
+        var row = handle ? songRow(handle) : null;
+        if (!row) {
+            return;
+        }
+        dragRow = row;
+        closeMenus(null);
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        if (e.dataTransfer.setData) {
+            e.dataTransfer.setData('text/plain', row.getAttribute('data-block-id') || 'song-block');
+        }
+        if (e.dataTransfer.setDragImage) {
+            var rect = row.getBoundingClientRect();
+            e.dataTransfer.setDragImage(row, 24, Math.min(16, rect.height / 2));
+        }
+    });
+
+    document.addEventListener('dragend', function () {
+        if (dragRow) {
+            dragRow.classList.remove('dragging');
+        }
+        clearDropMarkers();
+        dragRow = null;
+        dragJustEnded = true;
+        setTimeout(function () { dragJustEnded = false; }, 0);
+    });
+
+    document.addEventListener('dragover', function (e) {
+        if (!dragRow || !blockList() || !blockList().contains(e.target)) {
+            return;
+        }
+        e.preventDefault();
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = 'move';
+        }
+        applyDropMarker(e.clientY);
+    });
+
+    document.addEventListener('drop', function (e) {
+        if (!dragRow || !blockList() || !blockList().contains(e.target)) {
+            return;
+        }
+        e.preventDefault();
+        var target = applyDropMarker(e.clientY);
+        clearDropMarkers();
+        if (!target || target.row === dragRow) {
+            return;
+        }
+        var id = dragRow.getAttribute('data-block-id');
+        var position = dropIndex(target);
+        var currentIndex = Array.prototype.indexOf.call(
+            blockList().querySelectorAll('.song-block-row[data-block-id]'), dragRow
+        );
+        if (!id || position === currentIndex) {
+            return;
+        }
+        // Move the row now so the drop reads as instant; the refreshed list that
+        // comes back from the server replaces it either way.
+        if (target.insertBefore) {
+            target.row.parentNode.insertBefore(dragRow, target.row);
+        } else {
+            target.row.parentNode.insertBefore(dragRow, target.row.nextSibling);
+        }
+        structural('/song/block/moveTo', { id: id, position: position });
+    });
+
     function closeMenus(except) {
         document.querySelectorAll('.song-block-menu-dropdown.open').forEach(function (d) {
             if (d === except) {
@@ -172,6 +318,9 @@
         var toggle = e.target.closest('.song-block-menu-toggle');
         if (toggle && editorEl(toggle)) {
             e.preventDefault();
+            if (dragJustEnded) {
+                return;
+            }
             var dropdown = toggle.closest('.song-block-menu-dropdown');
             var willOpen = dropdown && !dropdown.classList.contains('open');
             closeMenus(willOpen ? dropdown : null);

@@ -6618,11 +6618,39 @@ body:has(main.text-documents-page) > main.text-documents-page {
 }
 
 .song-block-row {
+    position: relative;
     display: flex;
     align-items: flex-start;
     gap: 0.4rem;
     border-radius: 6px;
     padding: 0.1rem 0.25rem;
+}
+
+/* Drag-to-reorder feedback, matching the screenplay block rows. */
+.song-block-row.dragging {
+    opacity: 0.4;
+}
+
+.song-block-row.drop-before::before,
+.song-block-row.drop-after::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent, #475569);
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px var(--box-bg, #ffffff), 0 0 0 3px color-mix(in srgb, var(--accent, #475569) 25%, transparent);
+    pointer-events: none;
+    z-index: 3;
+}
+
+.song-block-row.drop-before::before {
+    top: -2px;
+}
+
+.song-block-row.drop-after::after {
+    bottom: -2px;
 }
 
 .song-block-row:hover,
@@ -6658,16 +6686,20 @@ body:has(main.text-documents-page) > main.text-documents-page {
     vertical-align: middle;
 }
 
-/* The song "+" adds a line directly (no type menu), so drop the toggle's
-   default grab cursor on the menu handle and keep pointer affordances. */
+/* The song "+" adds a line directly (no type menu). */
 .song-block-add.create-below.create-below-menu-toggle {
     font-size: 1.05rem;
     font-weight: 600;
 }
 
+/* The "⋮⋮" handle both drags to reorder and clicks open the line menu. */
 button.song-block-menu-toggle.block-drag-menu-toggle.nav-dropdown-toggle {
-    cursor: pointer;
+    cursor: grab;
     min-width: 1.5rem;
+}
+
+button.song-block-menu-toggle.block-drag-menu-toggle.nav-dropdown-toggle:active {
+    cursor: grabbing;
 }
 
 .song-block-row:hover button.song-block-menu-toggle.block-drag-menu-toggle.nav-dropdown-toggle,

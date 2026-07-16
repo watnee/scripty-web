@@ -29,9 +29,14 @@ public final class ApiRel {
     public static final String HEADSHOT = "headshot";
     public static final String DOCUMENTS = "documents";
     public static final String DOCUMENT = "document";
+    public static final String SONGS = "songs";
+    public static final String NOTES = "notes";
     public static final String INSERT = "insert";
     public static final String SHARE_EMAIL = "shareEmail";
     public static final String IMPORT_DOCUMENT = "importDocument";
+    public static final String REORDER = "reorder";
+    public static final String DUPLICATE = "duplicate";
+    public static final String CHANGE_TYPE = "changeType";
     public static final String TOGGLE_DEFAULT = "toggleDefault";
     public static final String IMPORT_PROJECT = "importProject";
 

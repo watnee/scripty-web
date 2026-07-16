@@ -286,6 +286,132 @@ public class TextDocumentServiceImpl implements TextDocumentService {
 
     @Override
     @Transactional
+    public List<TextDocument> reorder(Integer projectId, List<Integer> orderedIds, User currentUser) {
+        if (projectId == null || orderedIds == null || orderedIds.isEmpty() || currentUser == null) {
+            return null;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return null;
+        }
+        List<TextDocument> ordered = new ArrayList<>();
+        for (Integer id : orderedIds) {
+            if (id == null) {
+                return null;
+            }
+            TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+            if (doc == null) {
+                // Reject the whole request if any id is unknown or from another project.
+                return null;
+            }
+            ordered.add(doc);
+        }
+        for (int i = 0; i < ordered.size(); i++) {
+            TextDocument doc = ordered.get(i);
+            doc.setSortOrder(i);
+            textDocumentRepository.save(doc);
+        }
+        Project project = projectRepository.findById(projectId).orElse(null);
+        if (project != null) {
+            project.setLastEdited(LocalDateTime.now());
+            projectRepository.save(project);
+        }
+        projectActivityService.record(
+                projectId,
+                currentUser.getId(),
+                ProjectActivity.ACTION_DOCUMENT_UPDATED,
+                "reordered documents",
+                ProjectActivity.ENTITY_DOCUMENT,
+                null);
+        return ordered;
+    }
+
+    @Override
+    @Transactional
+    public TextDocument duplicate(Integer id, Integer projectId, User currentUser) {
+        if (id == null || projectId == null || currentUser == null) {
+            return null;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return null;
+        }
+        TextDocument source = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+        if (source == null) {
+            return null;
+        }
+        Project project = source.getProject();
+        LocalDateTime now = LocalDateTime.now();
+        TextDocument copy = new TextDocument();
+        copy.setProject(project);
+        copy.setTitle(copyTitle(source.getTitle()));
+        copy.setDocumentType(source.getDocumentType());
+        copy.setContent(source.getContent());
+        copy.setSortOrder(textDocumentRepository.countByProjectId(projectId));
+        copy.setCreatedAt(now);
+        copy.setUpdatedAt(now);
+        TextDocument saved = textDocumentRepository.save(copy);
+        if (project != null) {
+            project.setLastEdited(now);
+            projectRepository.save(project);
+        }
+        projectActivityService.record(
+                projectId,
+                currentUser.getId(),
+                ProjectActivity.ACTION_DOCUMENT_CREATED,
+                "duplicated \"" + source.getTitle() + "\"",
+                ProjectActivity.ENTITY_DOCUMENT,
+                saved.getId());
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public TextDocument changeType(Integer id, Integer projectId, String newType, User currentUser) {
+        if (id == null || projectId == null || currentUser == null) {
+            return null;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return null;
+        }
+        TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+        if (doc == null) {
+            return null;
+        }
+        String normalized = normalizeDocumentType(newType);
+        if (normalized.equalsIgnoreCase(doc.getDocumentType())) {
+            return doc;
+        }
+        String oldLabel = TextDocument.typeLabelFor(doc.getDocumentType());
+        LocalDateTime now = LocalDateTime.now();
+        doc.setDocumentType(normalized);
+        doc.setUpdatedAt(now);
+        Project project = doc.getProject();
+        if (project != null) {
+            project.setLastEdited(now);
+            projectRepository.save(project);
+        }
+        TextDocument saved = textDocumentRepository.save(doc);
+        projectActivityService.record(
+                projectId,
+                currentUser.getId(),
+                ProjectActivity.ACTION_DOCUMENT_UPDATED,
+                "changed \"" + saved.getTitle() + "\" from " + oldLabel
+                        + " to " + TextDocument.typeLabelFor(normalized),
+                ProjectActivity.ENTITY_DOCUMENT,
+                saved.getId());
+        return saved;
+    }
+
+    private String copyTitle(String title) {
+        String base = title != null && !title.isBlank() ? title.trim() : "Untitled";
+        String suffix = " (copy)";
+        if (base.length() + suffix.length() > 200) {
+            base = base.substring(0, 200 - suffix.length()).trim();
+        }
+        return base + suffix;
+    }
+
+    @Override
+    @Transactional
     public List<Block> insertIntoScript(Integer documentId, Integer afterBlockId, String asType, User currentUser) {
         TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
         if (doc == null || doc.getProject() == null) {

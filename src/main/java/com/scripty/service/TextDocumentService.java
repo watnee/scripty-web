@@ -42,6 +42,27 @@ public interface TextDocumentService {
     void delete(Integer id, Integer projectId, User currentUser);
 
     /**
+     * Reassigns the sort order of a project's documents to match {@code orderedIds}.
+     * Every id must belong to the project; the client typically sends one type's
+     * list (songs or notes), which is enough because the list view splits by type.
+     * @return the documents in their new order, or null if not accessible or any id is unknown
+     */
+    List<TextDocument> reorder(Integer projectId, List<Integer> orderedIds, User currentUser);
+
+    /**
+     * Creates a copy of a document (same type and content, titled "… (copy)").
+     * @return the new document, or null if the source is not found/accessible
+     */
+    TextDocument duplicate(Integer id, Integer projectId, User currentUser);
+
+    /**
+     * Switches a document between song and note. Content is untouched.
+     * @param newType SONG or NOTES
+     * @return the updated document, or null if not found/accessible
+     */
+    TextDocument changeType(Integer id, Integer projectId, String newType, User currentUser);
+
+    /**
      * Inserts document content into the screenplay as typed blocks (default LYRICS for songs).
      * Created blocks are linked to the document so later song/draft edits can sync.
      * @param documentId document to insert

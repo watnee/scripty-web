@@ -45,6 +45,14 @@ public class SongExportServiceImpl implements SongExportService {
     private static final Font PDF_TITLE_FONT = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16f);
     private static final Font PDF_BODY_FONT = FontFactory.getFont(FontFactory.HELVETICA, 12f);
 
+    // Lyrics are read, not performed from a page: let the reader pick the font, and lean on
+    // stanza spacing rather than the fixed metrics the screenplay EPUB needs.
+    private static final String EPUB_CSS = """
+            body { margin: 1em; }
+            .song-title { font-size: 1.3em; margin: 0 0 1em 0; }
+            .stanza { margin: 0 0 1.5em 0; }
+            """;
+
     private static final String DOCX_FONT = "Calibri";
     private static final int DOCX_TITLE_HALF_POINTS = 32; // 16pt
     private static final int DOCX_BODY_HALF_POINTS = 24;  // 12pt
@@ -69,7 +77,7 @@ public class SongExportServiceImpl implements SongExportService {
         if (!projectService.canUserAccessProject(doc.getProject().getId(), currentUser)) {
             return null;
         }
-        return render(List.of(doc), title(doc), format);
+        return render(List.of(doc), title(doc), doc.getProject(), "scripty-song-" + doc.getId(), format);
     }
 
     @Override
@@ -99,7 +107,8 @@ public class SongExportServiceImpl implements SongExportService {
         if (filtered && songs.isEmpty()) {
             return null;
         }
-        return render(songs, baseName(project, songs, filtered), format);
+        return render(songs, baseName(project, songs, filtered), project,
+                "scripty-project-" + projectId + "-songs", format);
     }
 
     /** A single selected song names the file after itself, matching a one-song export. */
@@ -112,10 +121,12 @@ public class SongExportServiceImpl implements SongExportService {
                 : "Songs";
     }
 
-    private SongExport render(List<TextDocument> songs, String baseName, Format format) {
+    private SongExport render(List<TextDocument> songs, String baseName, Project project,
+                              String identifierSeed, Format format) {
         byte[] content = switch (format) {
             case PDF -> renderPdf(songs);
             case DOCX -> renderDocx(songs);
+            case EPUB -> renderEpub(songs, baseName, project, identifierSeed);
             case TXT -> renderTxt(songs).getBytes(java.nio.charset.StandardCharsets.UTF_8);
         };
         if (content == null) {
@@ -223,6 +234,71 @@ public class SongExportServiceImpl implements SongExportService {
         } catch (IOException e) {
             return null;
         }
+    }
+
+    /**
+     * A reflowable EPUB 3 songbook: one spine document per song, so readers offer a table of
+     * contents and each song opens on its own screen. Stanzas become paragraphs, keeping the verse
+     * breaks the writer typed as structure rather than as blank lines the reader might collapse.
+     */
+    private byte[] renderEpub(List<TextDocument> songs, String bookTitle, Project project,
+                              String identifierSeed) {
+        List<EpubPackage.Document> documents = new ArrayList<>();
+        for (int i = 0; i < songs.size(); i++) {
+            TextDocument song = songs.get(i);
+            documents.add(new EpubPackage.Document(
+                    "song-" + (i + 1), "song-" + (i + 1) + ".xhtml", title(song), songBody(song)));
+        }
+        if (documents.isEmpty()) {
+            documents.add(new EpubPackage.Document("songs", "songs.xhtml", bookTitle,
+                    "    <section epub:type=\"chapter\" class=\"song\">\n"
+                            + "      <p class=\"stanza\">" + EpubPackage.escape(EMPTY_PLACEHOLDER) + "</p>\n"
+                            + "    </section>\n"));
+        }
+        try {
+            return EpubPackage.zip(
+                    new EpubPackage.Metadata(bookTitle,
+                            project != null ? EpubPackage.authorFromWriters(project.getWriters()) : null,
+                            identifierSeed),
+                    EPUB_CSS,
+                    documents);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private static String songBody(TextDocument song) {
+        StringBuilder body = new StringBuilder();
+        body.append("    <section epub:type=\"chapter\" class=\"song\">\n");
+        body.append("      <h1 class=\"song-title\">").append(EpubPackage.escape(title(song))).append("</h1>\n");
+        for (String stanza : stanzas(lyrics(song))) {
+            body.append("      <p class=\"stanza\">").append(EpubPackage.inlineText(stanza)).append("</p>\n");
+        }
+        body.append("    </section>\n");
+        return body.toString();
+    }
+
+    /** Splits lyrics on blank lines, the way writers separate verses from choruses. */
+    private static List<String> stanzas(String lyrics) {
+        List<String> stanzas = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        for (String line : lyrics.split("\n", -1)) {
+            if (line.isBlank()) {
+                if (current.length() > 0) {
+                    stanzas.add(current.toString());
+                    current.setLength(0);
+                }
+                continue;
+            }
+            if (current.length() > 0) {
+                current.append('\n');
+            }
+            current.append(line.stripTrailing());
+        }
+        if (current.length() > 0) {
+            stanzas.add(current.toString());
+        }
+        return stanzas;
     }
 
     private static String title(TextDocument song) {

@@ -193,7 +193,7 @@ class EpubExportServiceImplTest {
 
         String plain = EpubToFountainConverter.convertPlain(new ByteArrayInputStream(epub));
 
-        assertEquals("Jane enters.\nLa la la", plain);
+        assertEquals("Jane enters.\n\nLa la la", plain);
     }
 
     @Test

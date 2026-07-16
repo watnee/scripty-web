@@ -6362,6 +6362,10 @@
     <!-- Song block editor (add/edit/delete/reorder lyric lines): loaded from nav
          so it survives HTMX-boosted navigation into the song editor. -->
     <script th:src="@{/js/song-blocks.js(v=${assetVersion})}"></script>
+    <!-- Notion-style whole-block selection (drag across blocks, Cmd/Ctrl+A,
+         Escape): loaded from nav so it covers both the script and song editors
+         and survives HTMX-boosted navigation. -->
+    <script th:src="@{/js/block-selection.js(v=${assetVersion})}"></script>
     <!-- Song editor Edit menu (undo/redo/search): loaded from nav for the same
          reason as song-blocks.js above. -->
     <script th:src="@{/js/song-edit-menu.js(v=${assetVersion})}"></script>

@@ -108,8 +108,11 @@ final class EpubToFountainConverter {
                 if (text.isEmpty()) {
                     continue;
                 }
+                // Paragraphs are separated by a blank line, not just a newline: that is how a
+                // stanza break in an exported songbook — or a paragraph break in any book —
+                // comes back as something the writer recognizes.
                 if (out.length() > 0) {
-                    out.append('\n');
+                    out.append("\n\n");
                 }
                 out.append(text);
             }

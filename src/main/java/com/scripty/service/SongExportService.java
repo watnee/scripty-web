@@ -13,7 +13,8 @@ public interface SongExportService {
     enum Format {
         TXT("txt", "text/plain; charset=UTF-8"),
         PDF("pdf", "application/pdf"),
-        DOCX("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        DOCX("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+        EPUB("epub", EpubPackage.CONTENT_TYPE);
 
         private final String extension;
         private final String contentType;
@@ -40,6 +41,7 @@ public interface SongExportService {
         return switch (raw.trim().toLowerCase()) {
             case "pdf" -> Format.PDF;
             case "docx", "word" -> Format.DOCX;
+            case "epub" -> Format.EPUB;
             default -> Format.TXT;
         };
     }

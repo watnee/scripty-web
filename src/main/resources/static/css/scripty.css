@@ -3847,9 +3847,20 @@ input.project-list-search:focus-visible {
 /* The song editor's File menu is not inside .project-tools-group, so the
    screenplay's open rule below does not reach it; `.nav-dropdown.open
    .nav-dropdown-menu` ties on specificity with the .file-menu hide rule above
-   and loses on order. Right-aligned to the top bar, like the menu it replaced. */
+   and loses on order. */
 .song-file-dropdown.open .nav-dropdown-menu.file-menu {
     display: block;
+}
+
+/* Both song toolbar toggles sit at the left end of their row, so the panel's
+   default right-edge alignment hangs it off the left of the screen — badly
+   enough on a phone to read as the menu not opening at all. The screenplay's
+   toolbar menus get this from .project-tools-group; these are outside it. */
+.song-file-dropdown .nav-dropdown-menu.file-menu,
+.song-history-dropdown .nav-dropdown-menu.history-menu {
+    left: 0;
+    right: auto;
+    transform-origin: top left;
 }
 
 .project-tools-group .file-dropdown,

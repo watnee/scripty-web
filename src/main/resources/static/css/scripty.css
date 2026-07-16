@@ -170,11 +170,6 @@ html[data-theme-setting="system"] .user-dropdown-container .theme-option[data-th
     font-weight: 700;
 }
 
-/* Spellcheck Toggle Button Styles */
-.spellcheck-toggle-container {
-    z-index: 1001;
-}
-
 /* Help, settings, and user icon dropdowns */
 .help-dropdown,
 .settings-dropdown,
@@ -306,31 +301,6 @@ html[data-theme-setting="system"] .user-dropdown-container .theme-option[data-th
     height: 20px;
 }
 
-
-.spellcheck-toggle-container .spellcheck-toggle-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.5rem;
-    color: var(--fg);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease, opacity 0.2s ease;
-    width: 36px;
-    height: 36px;
-}
-
-.spellcheck-toggle-container .spellcheck-toggle-btn:hover {
-    background-color: var(--accent-bg);
-    transform: scale(1.1);
-    color: var(--accent);
-}
-
-.spellcheck-toggle-container .spellcheck-toggle-btn:active {
-    transform: scale(0.9);
-}
 
 /* Spellcheck Icon States */
 html[data-spellcheck="false"] .spellcheck-toggle-btn .spellcheck-slash {

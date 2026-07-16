@@ -135,6 +135,10 @@
     });
 
     document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.querySelector('.song-block-menu-dropdown.open')) {
+            closeMenus(null);
+            return;
+        }
         var t = e.target;
         if (!t || !t.classList || !t.classList.contains('song-block-textarea') || !editorEl(t)) {
             return;
@@ -150,7 +154,36 @@
         }
     });
 
+    function closeMenus(except) {
+        document.querySelectorAll('.song-block-menu-dropdown.open').forEach(function (d) {
+            if (d === except) {
+                return;
+            }
+            d.classList.remove('open');
+            var t = d.querySelector('.song-block-menu-toggle');
+            if (t) {
+                t.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
     document.addEventListener('click', function (e) {
+        // Toggle the per-line options ("⋮⋮") menu, mirroring the screenplay drag menu.
+        var toggle = e.target.closest('.song-block-menu-toggle');
+        if (toggle && editorEl(toggle)) {
+            e.preventDefault();
+            var dropdown = toggle.closest('.song-block-menu-dropdown');
+            var willOpen = dropdown && !dropdown.classList.contains('open');
+            closeMenus(willOpen ? dropdown : null);
+            if (dropdown) {
+                dropdown.classList.toggle('open', willOpen);
+                toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            }
+            return;
+        }
+        // A click anywhere else dismisses any open menu before handling actions.
+        closeMenus(null);
+
         var btn = e.target.closest('[data-action]');
         if (!btn || !editorEl(btn)) {
             return;

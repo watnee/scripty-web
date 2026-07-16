@@ -6580,57 +6580,54 @@ body:has(main.text-documents-page) > main.text-documents-page {
     background: color-mix(in srgb, var(--td-line, #e2e8f0) 30%, transparent);
 }
 
+/* Song line controls mirror the screenplay block controls: a round "+" to add a
+   line below and a "⋮⋮" menu (move up/down, delete). Reuses the screenplay
+   .create-below / .block-drag-menu button styling for a consistent look. */
 .song-block-controls {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.1rem;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: flex-start;
+    /* missing.css gives <aside> a block margin; zero it so the controls line up
+       with the first line of lyric text instead of being pushed down. */
+    margin: 0;
     padding-top: 0.2rem;
     opacity: 0;
     transition: opacity 0.12s ease-in-out;
-    flex: 0 0 auto;
 }
 
 .song-block-row:hover .song-block-controls,
-.song-block-row:focus-within .song-block-controls {
+.song-block-row:focus-within .song-block-controls,
+.song-block-row:has(.song-block-menu-dropdown.open) .song-block-controls {
     opacity: 1;
 }
 
-.song-block-btn,
-.song-block-add {
+.song-block-controls-inner {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 1.5rem;
-    height: 1.5rem;
-    padding: 0;
-    border: none;
-    border-radius: 5px;
-    background: transparent;
-    color: var(--muted-fg, #64748b);
+    gap: 0.4rem;
+    vertical-align: middle;
+}
+
+/* The song "+" adds a line directly (no type menu), so drop the toggle's
+   default grab cursor on the menu handle and keep pointer affordances. */
+.song-block-add.create-below.create-below-menu-toggle {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+button.song-block-menu-toggle.block-drag-menu-toggle.nav-dropdown-toggle {
     cursor: pointer;
-    line-height: 1;
+    min-width: 1.5rem;
 }
 
-.song-block-btn:hover,
-.song-block-add:hover {
-    background: color-mix(in srgb, var(--td-line, #e2e8f0) 60%, transparent);
-    color: var(--fg, #0f172a);
+.song-block-row:hover button.song-block-menu-toggle.block-drag-menu-toggle.nav-dropdown-toggle,
+.song-block-menu-dropdown.open button.song-block-menu-toggle.block-drag-menu-toggle.nav-dropdown-toggle {
+    color: var(--accent, #475569);
+    background-color: var(--accent-bg, rgba(0, 0, 0, 0.05));
 }
 
-.song-block-delete:hover {
-    color: var(--bad-fg-color, #e11d48);
-}
-
-.song-block-add {
-    flex: 0 0 auto;
-    opacity: 0;
-    margin-top: 0.15rem;
-    transition: opacity 0.12s ease-in-out;
-}
-
-.song-block-row:hover .song-block-add,
-.song-block-row:focus-within .song-block-add {
-    opacity: 1;
+.song-block-menu-dropdown .nav-dropdown-menu.song-block-menu {
+    min-width: 10rem;
 }
 
 .song-block-textarea {

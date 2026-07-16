@@ -13,30 +13,30 @@
      class="song-block-row"
      th:id="'song-block-' + ${block.id}"
      th:attr="data-block-id=${block.id}">
-    <div class="song-block-controls" role="group" aria-label="Line actions">
-        <button type="button" class="song-block-btn" data-action="up"
-                title="Move line up" aria-label="Move line up">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-        </button>
-        <button type="button" class="song-block-btn" data-action="down"
-                title="Move line down" aria-label="Move line down">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-        </button>
-        <button type="button" class="song-block-btn song-block-delete" data-action="delete"
-                title="Delete line" aria-label="Delete line">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-        </button>
-    </div>
+    <!--/* Not aria-hidden (unlike the screenplay's duplicated block controls):
+           this menu is the only way to move or delete a lyric line. */-->
+    <aside class="song-block-controls" role="group" aria-label="Line actions">
+        <div class="song-block-controls-inner">
+            <button type="button" class="create-below create-below-menu-toggle song-block-add"
+                    data-action="add-below"
+                    title="Add line below" aria-label="Add line below">+</button>
+            <div class="nav-dropdown block-drag-menu-dropdown song-block-menu-dropdown">
+                <button type="button"
+                        class="block-drag-menu-toggle nav-dropdown-toggle song-block-menu-toggle"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        title="Line options"
+                        aria-label="Line options">&#8942;&#8942;</button>
+                <div class="nav-dropdown-menu block-drag-menu song-block-menu"
+                     role="menu" aria-label="Line options">
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-action="up">Move line up</button>
+                    <button type="button" class="nav-dropdown-item" role="menuitem" data-action="down">Move line down</button>
+                    <hr class="nav-dropdown-divider" />
+                    <button type="button" class="nav-dropdown-item block-drag-menu-delete" role="menuitem" data-action="delete">Delete line</button>
+                </div>
+            </div>
+        </div>
+    </aside>
     <textarea class="song-block-textarea"
               rows="1"
               spellcheck="true"
@@ -44,14 +44,6 @@
               aria-label="Lyrics line"
               th:attr="data-block-id=${block.id},data-autofocus=${focusBlockId != null and focusBlockId == block.id ? 'true' : null}"
               th:text="${block.content}"></textarea>
-    <button type="button" class="song-block-add" data-action="add-below"
-            title="Add line below" aria-label="Add line below">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-    </button>
 </div>
 
 <th:block th:fragment="forbidden"></th:block>

@@ -25,7 +25,8 @@
             Snapshots of <strong th:text="${viewModel.songTitle}">this song</strong>.
             Auto-saves update in place about every 10 minutes when the lyrics change. Restoring creates a “Before restore” snapshot first.
         </p>
-        <form th:action="@{/song/version/create}" method="POST" hx-boost="false" class="version-save-form">
+        <form th:if="${canEditScript == null or canEditScript}"
+              th:action="@{/song/version/create}" method="POST" hx-boost="false" class="version-save-form">
             <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
             <label>
                 Label
@@ -33,7 +34,10 @@
             </label>
             <button type="submit">Save Current Snapshot</button>
         </form>
-        <p th:if="${#lists.isEmpty(viewModel.versions)}">No versions saved yet. Save a version to create a snapshot you can restore later.</p>
+        <th:block th:if="${#lists.isEmpty(viewModel.versions)}">
+            <p th:if="${canEditScript == null or canEditScript}">No versions saved yet. Save a version to create a snapshot you can restore later.</p>
+            <p th:unless="${canEditScript == null or canEditScript}">No versions saved yet.</p>
+        </th:block>
         <table th:if="${not #lists.isEmpty(viewModel.versions)}" class="version-history-table">
             <thead>
                 <tr>
@@ -62,7 +66,7 @@
                     </td>
                     <td th:text="${version.title}"></td>
                     <td th:text="${version.lineCount}"></td>
-                    <td class="nowrap">
+                    <td class="nowrap" th:if="${canEditScript == null or canEditScript}">
                         <form th:action="@{/song/version/restore}" method="POST" hx-boost="false" style="display: inline">
                             <input type="hidden" name="id" th:value="${version.id}" />
                             <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
@@ -74,6 +78,7 @@
                             <button type="submit" role="button" _="on click if not confirm('Delete this snapshot?') halt">Delete</button>
                         </form>
                     </td>
+                    <td class="nowrap" th:unless="${canEditScript == null or canEditScript}"></td>
                 </tr>
             </tbody>
         </table>

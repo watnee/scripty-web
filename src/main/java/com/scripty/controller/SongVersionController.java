@@ -14,8 +14,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Snapshot history for a song, mirroring {@link ProjectVersionController}.
- * Access follows the song editor's rule: any project member may view and
- * restore, unlike the screenplay which requires script write access.
+ * Any project member may view the history; saving, restoring and deleting
+ * require script write access, matching both the screenplay and the song
+ * editor, which renders read-only without it.
  */
 @Controller
 @RequestMapping(value = "/song/version")
@@ -35,6 +36,11 @@ public class SongVersionController {
         return projectId != null && projectAccess.canAccessProject(projectId, principal);
     }
 
+    private boolean canEditDocument(Integer documentId, Principal principal) {
+        Integer projectId = songBlockService.projectIdForDocument(documentId);
+        return projectId != null && projectAccess.canEditScript(projectId, principal);
+    }
+
     @RequestMapping(value = "/list")
     public String list(@RequestParam Integer documentId, Model model, Principal principal) {
         if (!canAccessDocument(documentId, principal)) {
@@ -42,6 +48,7 @@ public class SongVersionController {
         }
         SongVersionHistoryViewModel viewModel = songVersionService.getVersionHistoryViewModel(documentId);
         model.addAttribute("viewModel", viewModel);
+        model.addAttribute("canEditScript", canEditDocument(documentId, principal));
         return "song/versionHistory";
     }
 
@@ -49,7 +56,7 @@ public class SongVersionController {
     public String create(@RequestParam Integer documentId,
                          @RequestParam(defaultValue = "") String label,
                          Principal principal) {
-        if (!canAccessDocument(documentId, principal)) {
+        if (!canEditDocument(documentId, principal)) {
             return "redirect:/project/list";
         }
         if (label == null || label.isBlank()) {
@@ -63,7 +70,7 @@ public class SongVersionController {
     public String restore(@RequestParam Integer id,
                           @RequestParam Integer documentId,
                           Principal principal) {
-        if (!canAccessDocument(documentId, principal)) {
+        if (!canEditDocument(documentId, principal)) {
             return "redirect:/project/list";
         }
         if (!songVersionService.restoreVersionForDocument(id, documentId)) {
@@ -76,7 +83,7 @@ public class SongVersionController {
     public String delete(@RequestParam Integer id,
                          @RequestParam Integer documentId,
                          Principal principal) {
-        if (!canAccessDocument(documentId, principal)) {
+        if (!canEditDocument(documentId, principal)) {
             return "redirect:/project/list";
         }
         songVersionService.deleteVersionForDocument(id, documentId);

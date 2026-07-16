@@ -12848,3 +12848,30 @@ body.focus-mode #project-lists-dropdown {
         padding: 0.35em 0.6em;
     }
 }
+
+/* --- Block selection (Notion-style) -------------------------------------
+   Whole-block highlight for dragging across blocks, Cmd/Ctrl+A, and Escape.
+   See block-selection.js. Last in the file so it wins over the row hover and
+   textarea focus backgrounds. */
+.block-row.block-selected,
+.song-block-row.block-selected {
+    background: color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
+    border-radius: 6px;
+}
+
+.song-block-row.block-selected .song-block-textarea,
+.song-block-row.block-selected .song-block-textarea:focus {
+    background: transparent;
+}
+
+/* While blocks are selected the block highlight is the selection, so the
+   browser's text highlight would only double up on it. */
+html.scripty-block-selecting .block-row,
+html.scripty-block-selecting .song-block-row {
+    user-select: none;
+}
+
+html.scripty-block-selecting .block-row ::selection,
+html.scripty-block-selecting .song-block-row ::selection {
+    background: transparent;
+}

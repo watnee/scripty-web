@@ -685,6 +685,25 @@ public class BlockController {
         return redirectAfterBulkAction(projectId, blockIds);
     }
 
+    @RequestMapping(value = "/bulkSetHighlight", method = RequestMethod.POST)
+    public String bulkSetHighlight(@RequestParam String ids, @RequestParam(required = false) String highlight,
+                                   @RequestParam(required = false) Integer projectId,
+                                   Principal principal) {
+        List<Integer> blockIds = parseBlockIds(ids);
+        if (blockIds.isEmpty() || denyBulk(blockIds, projectId, principal)) {
+            return denyRedirect();
+        }
+        Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        if (resolvedProjectId != null) {
+            projectUndoRedoService.recordCheckpoint(resolvedProjectId);
+        }
+        blockService.setBlockHighlights(blockIds, highlight);
+        if (resolvedProjectId != null) {
+            projectVersionService.autoSaveVersion(resolvedProjectId);
+        }
+        return redirectAfterBulkAction(projectId, blockIds);
+    }
+
     @RequestMapping(value = "/bulkToggleStyle", method = RequestMethod.POST)
     public String bulkToggleStyle(@RequestParam String ids, @RequestParam String style,
                                   @RequestParam(required = false) Integer projectId,

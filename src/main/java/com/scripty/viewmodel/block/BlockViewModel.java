@@ -121,6 +121,16 @@ public class BlockViewModel {
         this.font = font;
     }
 
+    private String highlight;
+
+    public String getHighlight() {
+        return highlight;
+    }
+
+    public void setHighlight(String highlight) {
+        this.highlight = highlight;
+    }
+
     private boolean textBold;
     private boolean textItalic;
     private boolean textUnderline;

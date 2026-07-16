@@ -22,6 +22,9 @@
         { id: 'project-text-format-dropdown', toggle: '.text-format-toolbar-btn', keepOpenOnItemClick: true }
     ];
 
+    // Mirrors Block.HIGHLIGHTS; '' (no highlight) is the implicit default.
+    var HIGHLIGHTS = ['YELLOW', 'GREEN', 'BLUE', 'RED', 'GRAY'];
+
     var ALIGN_ICONS = {
         LEFT: '<line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="15" y2="12"></line><line x1="3" y1="18" x2="18" y2="18"></line>',
         CENTER: '<line x1="3" y1="6" x2="21" y2="6"></line><line x1="6" y1="12" x2="18" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line>',
@@ -109,11 +112,36 @@
         });
     }
 
+    function readBlockHighlight(row) {
+        if (!row) return '';
+        var content = row.querySelector('.block-content') || row;
+        for (var i = 0; i < HIGHLIGHTS.length; i++) {
+            if (content.classList.contains('block-highlight-' + HIGHLIGHTS[i].toLowerCase())) {
+                return HIGHLIGHTS[i];
+            }
+        }
+        return '';
+    }
+
+    function syncTextHighlightMenu(highlight) {
+        var current = highlight || '';
+        var menu = document.querySelector('#project-text-format-dropdown .text-format-menu');
+        if (!menu) return;
+        menu.querySelectorAll('.bulk-highlight-btn').forEach(function (btn) {
+            var btnHighlight = (btn.getAttribute('data-bulk-highlight') || '').toUpperCase();
+            var isActive = btnHighlight === current;
+            btn.classList.toggle('is-active', isActive);
+            btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            btn.setAttribute('role', 'menuitemradio');
+        });
+    }
+
     function syncFormatToolbarFromRow(row) {
         if (!row) return;
         syncTextAlignMenu(readBlockAlign(row));
         syncTextStyleButtons(row);
         syncTextFontMenu(readBlockFont(row));
+        syncTextHighlightMenu(readBlockHighlight(row));
     }
 
     function closeAllDropdowns(exceptDropdown) {

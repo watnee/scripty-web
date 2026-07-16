@@ -4137,7 +4137,7 @@
             document.body.addEventListener('mousedown', function(e) {
                 if (!document.querySelector('.project-script')) return;
                 var formatControl = e.target.closest(
-                    '.bulk-align-btn, .bulk-style-btn, .bulk-font-btn, .text-format-toolbar-btn'
+                    '.bulk-align-btn, .bulk-style-btn, .bulk-font-btn, .bulk-highlight-btn, .text-format-toolbar-btn'
                 );
                 if (!formatControl) return;
                 e.preventDefault();
@@ -4198,6 +4198,25 @@
                         fields: {
                             ids: fontIds.join(','),
                             font: fontBtn.getAttribute('data-bulk-font') || '',
+                            projectId: resolveBulkProjectId()
+                        }
+                    });
+                    return;
+                }
+
+                var highlightBtn = e.target.closest('.bulk-highlight-btn');
+                if (highlightBtn) {
+                    e.preventDefault();
+                    var highlightIds = resolveAlignStyleTargetIds(highlightBtn);
+                    if (highlightIds.length === 0) {
+                        window.scriptyBulkSelectionAlert();
+                        return;
+                    }
+                    runBulkAction({
+                        action: '/block/bulkSetHighlight',
+                        fields: {
+                            ids: highlightIds.join(','),
+                            highlight: highlightBtn.getAttribute('data-bulk-highlight') || '',
                             projectId: resolveBulkProjectId()
                         }
                     });

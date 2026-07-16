@@ -35,7 +35,7 @@ public class SongUndoRedoServiceImpl implements SongUndoRedoService {
         if (documentId == null) {
             return;
         }
-        List<String> lines = songBlockService.snapshotLines(documentId);
+        List<SongBlockService.LineSnapshot> lines = songBlockService.snapshotLines(documentId);
         if (lines == null) {
             return;
         }
@@ -76,12 +76,12 @@ public class SongUndoRedoServiceImpl implements SongUndoRedoService {
         if (from.isEmpty()) {
             return false;
         }
-        List<String> current = songBlockService.snapshotLines(documentId);
+        List<SongBlockService.LineSnapshot> current = songBlockService.snapshotLines(documentId);
         if (current == null) {
             return false;
         }
         String entry = from.pop();
-        List<String> restored = decode(entry);
+        List<SongBlockService.LineSnapshot> restored = decode(entry);
         if (restored == null) {
             saveState(documentId, state);
             return false;
@@ -102,7 +102,7 @@ public class SongUndoRedoServiceImpl implements SongUndoRedoService {
         return documentId != null && !getState(documentId).redoStack.isEmpty();
     }
 
-    private String encode(List<String> lines) {
+    private String encode(List<SongBlockService.LineSnapshot> lines) {
         try {
             return objectMapper.writeValueAsString(lines);
         } catch (JsonProcessingException e) {
@@ -110,12 +110,12 @@ public class SongUndoRedoServiceImpl implements SongUndoRedoService {
         }
     }
 
-    private List<String> decode(String json) {
+    private List<SongBlockService.LineSnapshot> decode(String json) {
         if (json == null || json.isBlank()) {
             return null;
         }
         try {
-            return objectMapper.readValue(json, new TypeReference<List<String>>() { });
+            return objectMapper.readValue(json, new TypeReference<List<SongBlockService.LineSnapshot>>() { });
         } catch (JsonProcessingException e) {
             return null;
         }

@@ -1,0 +1,1 @@
+ALTER TABLE `block` ADD COLUMN `highlight` VARCHAR(20) NULL;

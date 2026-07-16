@@ -19,6 +19,7 @@ public class BlockResource extends RepresentationModel<BlockResource> {
     private String tags;
     private String textAlign;
     private String font;
+    private String highlight;
     private Boolean textBold;
     private Boolean textItalic;
     private Boolean textUnderline;
@@ -125,6 +126,14 @@ public class BlockResource extends RepresentationModel<BlockResource> {
 
     public void setFont(String font) {
         this.font = font;
+    }
+
+    public String getHighlight() {
+        return highlight;
+    }
+
+    public void setHighlight(String highlight) {
+        this.highlight = highlight;
     }
 
     public Boolean getTextBold() {

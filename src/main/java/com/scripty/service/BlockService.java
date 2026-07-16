@@ -47,5 +47,8 @@ public interface BlockService {
     void setBlockAlignments(java.util.List<Integer> ids, String align);
 
     void setBlockFonts(java.util.List<Integer> ids, String font);
+
+    /** Sets the background tint on the given blocks; an unknown or blank color clears it. */
+    void setBlockHighlights(java.util.List<Integer> ids, String highlight);
     void toggleBlockTextStyles(java.util.List<Integer> ids, String style);
 }

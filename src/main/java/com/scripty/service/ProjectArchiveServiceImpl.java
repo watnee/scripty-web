@@ -118,6 +118,7 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
             entry.sceneDelimiter = block.isSceneDelimiter();
             entry.textAlign = block.getTextAlign();
             entry.font = block.getFont();
+            entry.highlight = block.getHighlight();
             entry.textBold = block.isTextBold();
             entry.textItalic = block.isTextItalic();
             entry.textUnderline = block.isTextUnderline();
@@ -283,6 +284,7 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
                     block.setTextAlign(align != null && Block.TEXT_ALIGNS.contains(align) ? align : null);
                     String font = entry.font != null ? entry.font.trim().toUpperCase() : null;
                     block.setFont(font != null && Block.FONTS.contains(font) ? font : null);
+                    block.setHighlight(Block.normalizeHighlight(entry.highlight));
                     block.setTextBold(entry.textBold);
                     block.setTextItalic(entry.textItalic);
                     block.setTextUnderline(entry.textUnderline);

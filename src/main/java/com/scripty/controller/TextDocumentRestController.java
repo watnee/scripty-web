@@ -161,6 +161,85 @@ public class TextDocumentRestController {
         return ResponseEntity.ok(assembler.toDeleteModel(resolvedProjectId));
     }
 
+    /** Reassigns the sort order of a project's songs/notes to the supplied order. */
+    @RequestMapping(value = "/reorder", method = RequestMethod.POST,
+            consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<?> reorder(
+            @RequestParam Integer projectId,
+            @RequestBody(required = false) ReorderRequest request,
+            Principal principal) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request == null || request.orderedIds() == null || request.orderedIds().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("orderedIds", "Provide the documents in their new order."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        List<TextDocument> reordered =
+                textDocumentService.reorder(projectId, request.orderedIds(), currentUser(principal));
+        if (reordered == null) {
+            return new ResponseEntity<>(
+                    Map.of("orderedIds", "Those documents do not all belong to this project."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        return list(projectId, null, principal);
+    }
+
+    /** Copies a song or note into a new document titled "… (copy)". */
+    @RequestMapping(value = "/{id}/duplicate", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<?> duplicate(
+            @PathVariable Integer id,
+            @RequestParam(required = false) Integer projectId,
+            Principal principal) {
+        User user = currentUser(principal);
+        TextDocumentViewModel viewModel = textDocumentService.getViewModel(id, user);
+        if (viewModel == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Integer resolvedProjectId = projectId != null ? projectId : viewModel.getProjectId();
+        if (!projectAccess.canEditScript(resolvedProjectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        TextDocument copy = textDocumentService.duplicate(id, resolvedProjectId, user);
+        if (copy == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        EntityModel<TextDocumentResource> resource =
+                assembler.toModel(textDocumentService.getViewModel(copy.getId(), user));
+        return ResponseEntity
+                .created(resource.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .body(resource);
+    }
+
+    /** Switches a document between song and note (SONG or NOTES). */
+    @RequestMapping(value = "/{id}/change-type", method = RequestMethod.POST,
+            consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<?> changeType(
+            @PathVariable Integer id,
+            @RequestBody(required = false) ChangeTypeRequest request,
+            @RequestParam(required = false) Integer projectId,
+            Principal principal) {
+        if (request == null || request.type() == null || request.type().isBlank()) {
+            return new ResponseEntity<>(Map.of("type", "Choose SONG or NOTES."), HttpStatus.BAD_REQUEST);
+        }
+        User user = currentUser(principal);
+        TextDocumentViewModel viewModel = textDocumentService.getViewModel(id, user);
+        if (viewModel == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Integer resolvedProjectId = projectId != null ? projectId : viewModel.getProjectId();
+        if (!projectAccess.canEditScript(resolvedProjectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        TextDocument changed =
+                textDocumentService.changeType(id, resolvedProjectId, normalizeType(request.type()), user);
+        if (changed == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(assembler.toModel(textDocumentService.getViewModel(changed.getId(), user)));
+    }
+
     /** Inserts a document's content into the screenplay as blocks. */
     @RequestMapping(value = "/{id}/insert", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<?> insert(
@@ -263,5 +342,11 @@ public class TextDocumentRestController {
     }
 
     public record ShareEmailRequest(String email) {
+    }
+
+    public record ReorderRequest(List<Integer> orderedIds) {
+    }
+
+    public record ChangeTypeRequest(String type) {
     }
 }

@@ -7,6 +7,7 @@ import com.scripty.controller.ProjectController;
 import com.scripty.controller.ProjectRestController;
 import com.scripty.controller.TextDocumentRestController;
 import com.scripty.dto.Project;
+import com.scripty.dto.TextDocument;
 import com.scripty.viewmodel.project.projectlist.ProjectTeamViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
@@ -107,6 +108,8 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(PersonRestController.class).list(id, null)).withRel(ApiRel.CHARACTERS),
                 linkTo(methodOn(ActorRestController.class).list(id, null)).withRel(ApiRel.ACTORS),
                 linkTo(methodOn(TextDocumentRestController.class).list(id, null, null)).withRel(ApiRel.DOCUMENTS),
+                linkTo(methodOn(TextDocumentRestController.class).list(id, TextDocument.TYPE_SONG, null)).withRel(ApiRel.SONGS),
+                linkTo(methodOn(TextDocumentRestController.class).list(id, TextDocument.TYPE_NOTES, null)).withRel(ApiRel.NOTES),
                 linkTo(methodOn(ProjectController.class).syncStatus(id, null, null, null)).withRel(ApiRel.SYNC_STATUS),
                 linkTo(methodOn(ProjectController.class).undoRedoStatus(id, null, null)).withRel(ApiRel.UNDO_REDO_STATUS),
                 linkTo(methodOn(ProjectController.class).exportScript(id, "fountain", null, null)).withRel(ApiRel.EXPORT),

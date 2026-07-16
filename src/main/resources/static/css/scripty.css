@@ -3400,7 +3400,8 @@ tr[data-block-id]:focus-within .block-tags-list {
 }
 
 tr.filtered-out,
-.block-row.filtered-out {
+.block-row.filtered-out,
+.song-block-row.filtered-out {
     display: none !important;
 }
 

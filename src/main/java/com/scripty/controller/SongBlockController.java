@@ -106,4 +106,16 @@ public class SongBlockController {
         songBlockService.moveDown(id);
         return renderList(songBlockService.documentIdForBlock(id), id, model);
     }
+
+    @RequestMapping(value = "/moveTo", method = RequestMethod.POST)
+    public String moveTo(@RequestParam Integer id,
+                         @RequestParam Integer position,
+                         Model model,
+                         Principal principal) {
+        if (!canEditBlock(id, principal)) {
+            return "songblock/blocks :: forbidden";
+        }
+        songBlockService.moveTo(id, position != null ? position : 0);
+        return renderList(songBlockService.documentIdForBlock(id), id, model);
+    }
 }

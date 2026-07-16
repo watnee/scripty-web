@@ -46,4 +46,10 @@ public interface SongBlockService {
     SongBlock moveUp(Integer blockId);
 
     SongBlock moveDown(Integer blockId);
+
+    /**
+     * Moves a block to {@code position} (zero-based index within the song),
+     * clamped to the song's bounds. Backs drag-and-drop reordering.
+     */
+    SongBlock moveTo(Integer blockId, int position);
 }

@@ -39,6 +39,10 @@ public final class ApiRel {
     public static final String CHANGE_TYPE = "changeType";
     public static final String TOGGLE_DEFAULT = "toggleDefault";
     public static final String IMPORT_PROJECT = "importProject";
+    public static final String VERSIONS = "versions";
+    public static final String VERSION = "version";
+    public static final String RESTORE = "restore";
+    public static final String CREATE = "create";
 
     private ApiRel() {
     }

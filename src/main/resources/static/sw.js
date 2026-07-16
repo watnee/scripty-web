@@ -1,12 +1,14 @@
-const CACHE_NAME = 'scripty-cache-v109';
+const CACHE_NAME = 'scripty-cache-v110';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/offline-project.html',
   '/css/missing.min.css',
   '/css/scripty.css',
   '/js/htmx.min.js',
+  '/js/htmx-security.js',
   '/js/_hyperscript.min.js',
   '/js/shortcuts.js',
+  '/js/song-export-select.js',
   '/js/help-center.js',
   '/js/csrf.js',
   '/js/text-size.js',
@@ -93,6 +95,32 @@ async function putInCache(request, response) {
   if (url.search) {
     await cache.put(bareAssetRequest(url), response.clone());
   }
+}
+
+// An origin/CDN failure (500, 502, Cloudflare 525) resolves rather than throws,
+// so a plain .catch() would hand the page an HTML error body as its script or
+// stylesheet. Treat any non-ok status like a network error and prefer the last
+// good cached copy; only propagate the failure when nothing is cached.
+async function networkFirstAsset(request) {
+  let response;
+  try {
+    response = await fetch(request);
+  } catch (err) {
+    const cached = await matchCached(request, { ignoreSearch: true });
+    if (cached) {
+      return cached;
+    }
+    throw err;
+  }
+  if (!response.ok) {
+    const cached = await matchCached(request, { ignoreSearch: true });
+    if (cached) {
+      return cached;
+    }
+    return response;
+  }
+  await putInCache(request, response);
+  return response;
 }
 
 async function navigationFallback(request) {
@@ -190,14 +218,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.pathname.startsWith('/css/') || url.pathname.startsWith('/js/') || url.pathname.startsWith('/dictionaries/')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          putInCache(event.request, response);
-          return response;
-        })
-        .catch(() => matchCached(event.request, { ignoreSearch: true }))
-    );
+    event.respondWith(networkFirstAsset(event.request));
     return;
   }
 

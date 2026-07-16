@@ -42,6 +42,9 @@
                 </ol>
             </nav>
             <div class="text-document-top-bar-actions">
+                <th:block th:if="${isSong and !isNew}">
+                    <th:block th:replace="~{fragments/songEditMenu :: menu(${commandModel.id})}"></th:block>
+                </th:block>
                 <div class="nav-dropdown song-export-dropdown"
                      id="song-export-dropdown"
                      th:if="${isSong and !isNew}">

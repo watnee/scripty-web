@@ -6343,6 +6343,9 @@
     <!-- Song block editor (add/edit/delete/reorder lyric lines): loaded from nav
          so it survives HTMX-boosted navigation into the song editor. -->
     <script th:src="@{/js/song-blocks.js(v=${assetVersion})}"></script>
+    <!-- Song editor Edit menu (undo/redo/search): loaded from nav for the same
+         reason as song-blocks.js above. -->
+    <script th:src="@{/js/song-edit-menu.js(v=${assetVersion})}"></script>
     <!-- Custom spellcheck (Typo.js + suggestions popup): loaded from nav so it
          works on both the script editor and the song/note editor, and survives
          HTMX-boosted navigation. -->

@@ -185,6 +185,40 @@ public class SongBlockServiceImpl implements SongBlockService {
         return reorder(doc, blocks, idx, target);
     }
 
+    @Override
+    @Transactional
+    public List<String> snapshotLines(Integer documentId) {
+        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        if (doc == null) {
+            return null;
+        }
+        return ensureSeeded(doc).stream()
+                .map(b -> b.getContent() != null ? b.getContent() : "")
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void replaceLines(Integer documentId, List<String> lines) {
+        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        if (doc == null || lines == null) {
+            return;
+        }
+        songBlockRepository.deleteAll(songBlockRepository.findByTextDocumentIdOrderByOrderAsc(doc.getId()));
+        // Hibernate orders inserts before deletes at flush time; force the deletes
+        // out first so a later read of this document does not see the old rows.
+        songBlockRepository.flush();
+        List<SongBlock> blocks = new ArrayList<>();
+        for (String line : lines) {
+            blocks.add(newBlock(doc, line));
+        }
+        if (blocks.isEmpty()) {
+            blocks.add(newBlock(doc, ""));
+        }
+        renumberAndSave(blocks);
+        rebuildDocumentContent(doc, blocks);
+    }
+
     private SongBlock move(Integer blockId, int delta) {
         SongBlock block = read(blockId);
         if (block == null || block.getTextDocument() == null) {

@@ -1,0 +1,158 @@
+package com.scripty.service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpSession;
+import java.io.Serializable;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+@Service
+public class SongUndoRedoServiceImpl implements SongUndoRedoService {
+
+    private static final int MAX_STACK_SIZE = 50;
+    private static final String SESSION_KEY_PREFIX = "songUndoRedo_";
+
+    private final SongBlockService songBlockService;
+    private final ObjectMapper objectMapper;
+
+    @Autowired
+    public SongUndoRedoServiceImpl(SongBlockService songBlockService, ObjectMapper objectMapper) {
+        this.songBlockService = songBlockService;
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void recordCheckpoint(Integer documentId) {
+        if (documentId == null) {
+            return;
+        }
+        List<String> lines = songBlockService.snapshotLines(documentId);
+        if (lines == null) {
+            return;
+        }
+        UndoRedoState state = getState(documentId);
+        state.undoStack.push(encode(lines));
+        state.redoStack.clear();
+        while (state.undoStack.size() > MAX_STACK_SIZE) {
+            state.undoStack.removeLast();
+        }
+        saveState(documentId, state);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void recordCheckpointForBlock(Integer blockId) {
+        recordCheckpoint(songBlockService.documentIdForBlock(blockId));
+    }
+
+    @Override
+    @Transactional
+    public boolean undo(Integer documentId) {
+        return apply(documentId, true);
+    }
+
+    @Override
+    @Transactional
+    public boolean redo(Integer documentId) {
+        return apply(documentId, false);
+    }
+
+    private boolean apply(Integer documentId, boolean undo) {
+        if (documentId == null) {
+            return false;
+        }
+        UndoRedoState state = getState(documentId);
+        Deque<String> from = undo ? state.undoStack : state.redoStack;
+        Deque<String> to = undo ? state.redoStack : state.undoStack;
+        if (from.isEmpty()) {
+            return false;
+        }
+        List<String> current = songBlockService.snapshotLines(documentId);
+        if (current == null) {
+            return false;
+        }
+        String entry = from.pop();
+        List<String> restored = decode(entry);
+        if (restored == null) {
+            saveState(documentId, state);
+            return false;
+        }
+        to.push(encode(current));
+        songBlockService.replaceLines(documentId, restored);
+        saveState(documentId, state);
+        return true;
+    }
+
+    @Override
+    public boolean canUndo(Integer documentId) {
+        return documentId != null && !getState(documentId).undoStack.isEmpty();
+    }
+
+    @Override
+    public boolean canRedo(Integer documentId) {
+        return documentId != null && !getState(documentId).redoStack.isEmpty();
+    }
+
+    private String encode(List<String> lines) {
+        try {
+            return objectMapper.writeValueAsString(lines);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to encode song undo snapshot", e);
+        }
+    }
+
+    private List<String> decode(String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() { });
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    private String sessionKey(Integer documentId) {
+        return SESSION_KEY_PREFIX + documentId;
+    }
+
+    private HttpSession getSession() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        return attrs == null ? null : attrs.getRequest().getSession(true);
+    }
+
+    private UndoRedoState getState(Integer documentId) {
+        HttpSession session = getSession();
+        if (session == null) {
+            return new UndoRedoState();
+        }
+        UndoRedoState state = (UndoRedoState) session.getAttribute(sessionKey(documentId));
+        if (state == null) {
+            state = new UndoRedoState();
+            session.setAttribute(sessionKey(documentId), state);
+        }
+        return state;
+    }
+
+    private void saveState(Integer documentId, UndoRedoState state) {
+        HttpSession session = getSession();
+        if (session != null) {
+            session.setAttribute(sessionKey(documentId), state);
+        }
+    }
+
+    static class UndoRedoState implements Serializable {
+        private static final long serialVersionUID = 1L;
+        private final Deque<String> undoStack = new ArrayDeque<>();
+        private final Deque<String> redoStack = new ArrayDeque<>();
+    }
+}

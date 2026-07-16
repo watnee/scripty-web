@@ -52,4 +52,16 @@ public interface SongBlockService {
      * clamped to the song's bounds. Backs drag-and-drop reordering.
      */
     SongBlock moveTo(Integer blockId, int position);
+
+    /**
+     * The song's lines in order, as an undo/redo snapshot. Null when the
+     * document does not exist.
+     */
+    List<String> snapshotLines(Integer documentId);
+
+    /**
+     * Replaces the song's blocks with {@code lines}, restoring a snapshot taken
+     * by {@link #snapshotLines}. Keeps at least one (empty) block.
+     */
+    void replaceLines(Integer documentId, List<String> lines);
 }

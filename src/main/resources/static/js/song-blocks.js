@@ -381,6 +381,10 @@
         requestAnimationFrame(growAll);
     }
 
+    // Lets the Edit menu (song-edit-menu.js) swap in the list returned by
+    // undo/redo through the same re-baseline + re-measure path.
+    window.scriptySongBlocksReplaceList = replaceList;
+
     document.body.addEventListener('htmx:afterSettle', init);
     document.body.addEventListener('htmx:afterSwap', init);
     document.body.addEventListener('htmx:historyRestore', init);

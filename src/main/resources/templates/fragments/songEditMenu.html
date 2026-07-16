@@ -1,0 +1,56 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="menu(documentId)">
+    <!--/* The song editor's Edit menu, mirroring the screenplay's
+           fragments/historyToolbarButtons. Ids are song-scoped so the project
+           editor's undo-redo.js / project-search.js (loaded globally from nav)
+           do not claim these controls. */-->
+    <div class="nav-dropdown song-history-dropdown"
+         id="song-history-dropdown"
+         th:attr="data-document-id=${documentId}">
+        <button type="button"
+                id="song-nav-edit"
+                class="nav-dropdown-toggle history-toolbar-btn"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label="Edit"
+                title="Edit">
+            Edit
+        </button>
+        <div class="nav-dropdown-menu history-menu" role="menu" aria-label="Edit">
+            <button id="song-nav-undo" type="button" class="nav-dropdown-item history-action-btn" role="menuitem" aria-label="Undo" title="Undo">
+                <span class="nav-dropdown-item-label">Undo</span>
+                <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
+            </button>
+            <button id="song-nav-redo" type="button" class="nav-dropdown-item history-action-btn" role="menuitem" aria-label="Redo" title="Redo">
+                <span class="nav-dropdown-item-label">Redo</span>
+                <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
+            </button>
+            <div class="nav-dropdown-divider" role="separator"></div>
+            <button id="song-nav-search"
+                    type="button"
+                    class="nav-dropdown-item"
+                    role="menuitem"
+                    aria-label="Search lyrics"
+                    title="Search lyrics">
+                <span class="nav-dropdown-item-label">Search</span>
+                <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
+            </button>
+        </div>
+    </div>
+    <div class="project-search-dropdown song-search-dropdown" id="song-search-dropdown">
+        <div class="project-search-wrap">
+            <label class="visually-hidden" for="song-search">Search lyrics</label>
+            <input type="search"
+                   id="song-search"
+                   class="project-search-input"
+                   placeholder="Search lyrics..."
+                   autocomplete="off"
+                   enterkeyhint="search"
+                   tabindex="-1" />
+            <button type="button"
+                    id="song-search-clear"
+                    class="project-search-clear"
+                    aria-label="Clear search"
+                    hidden>&times;</button>
+        </div>
+    </div>
+</th:block>

@@ -3,7 +3,10 @@ package com.scripty.controller;
 import com.scripty.dto.SongBlock;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.SongBlockService;
+import com.scripty.service.SongUndoRedoService;
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +30,9 @@ public class SongBlockController {
 
     @Autowired
     ProjectAccessSupport projectAccess;
+
+    @Autowired
+    SongUndoRedoService songUndoRedoService;
 
     // Song editing follows the same rule as the song editor itself: any project
     // member may edit (project access), unlike screenplay blocks which need write.
@@ -54,6 +60,7 @@ public class SongBlockController {
         if (!canEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+        songUndoRedoService.recordCheckpointForBlock(id);
         songBlockService.editContent(id, content);
         return ResponseEntity.noContent().build();
     }
@@ -66,6 +73,7 @@ public class SongBlockController {
         if (!canEditBlock(id, principal)) {
             return "songblock/blocks :: forbidden";
         }
+        songUndoRedoService.recordCheckpointForBlock(id);
         SongBlock created = songBlockService.createBelow(id, content);
         Integer documentId = songBlockService.documentIdForBlock(id);
         return renderList(documentId, created != null ? created.getId() : null, model);
@@ -76,6 +84,7 @@ public class SongBlockController {
         if (!canEditDocument(documentId, principal)) {
             return "songblock/blocks :: forbidden";
         }
+        songUndoRedoService.recordCheckpoint(documentId);
         SongBlock created = songBlockService.appendBlock(documentId);
         return renderList(documentId, created != null ? created.getId() : null, model);
     }
@@ -85,6 +94,7 @@ public class SongBlockController {
         if (!canEditBlock(id, principal)) {
             return "songblock/blocks :: forbidden";
         }
+        songUndoRedoService.recordCheckpointForBlock(id);
         Integer documentId = songBlockService.deleteBlock(id);
         return renderList(documentId, null, model);
     }
@@ -94,6 +104,7 @@ public class SongBlockController {
         if (!canEditBlock(id, principal)) {
             return "songblock/blocks :: forbidden";
         }
+        songUndoRedoService.recordCheckpointForBlock(id);
         songBlockService.moveUp(id);
         return renderList(songBlockService.documentIdForBlock(id), id, model);
     }
@@ -103,6 +114,7 @@ public class SongBlockController {
         if (!canEditBlock(id, principal)) {
             return "songblock/blocks :: forbidden";
         }
+        songUndoRedoService.recordCheckpointForBlock(id);
         songBlockService.moveDown(id);
         return renderList(songBlockService.documentIdForBlock(id), id, model);
     }
@@ -115,7 +127,45 @@ public class SongBlockController {
         if (!canEditBlock(id, principal)) {
             return "songblock/blocks :: forbidden";
         }
+        songUndoRedoService.recordCheckpointForBlock(id);
         songBlockService.moveTo(id, position != null ? position : 0);
         return renderList(songBlockService.documentIdForBlock(id), id, model);
+    }
+
+    // --- undo / redo ------------------------------------------------------
+    //
+    // Mirrors the screenplay's Edit menu (/project/undo, /project/redo,
+    // /project/undoRedoStatus): the stacks are session-scoped snapshots, so they
+    // last for the session and are per song document.
+
+    @RequestMapping(value = "/undo", method = RequestMethod.POST)
+    public String undo(@RequestParam Integer documentId, Model model, Principal principal) {
+        if (!canEditDocument(documentId, principal)) {
+            return "songblock/blocks :: forbidden";
+        }
+        songUndoRedoService.undo(documentId);
+        return renderList(documentId, null, model);
+    }
+
+    @RequestMapping(value = "/redo", method = RequestMethod.POST)
+    public String redo(@RequestParam Integer documentId, Model model, Principal principal) {
+        if (!canEditDocument(documentId, principal)) {
+            return "songblock/blocks :: forbidden";
+        }
+        songUndoRedoService.redo(documentId);
+        return renderList(documentId, null, model);
+    }
+
+    @RequestMapping(value = "/undoRedoStatus", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> undoRedoStatus(@RequestParam Integer documentId,
+                                                              Principal principal) {
+        if (!canEditDocument(documentId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Map<String, Object> status = new HashMap<>();
+        status.put("canUndo", songUndoRedoService.canUndo(documentId));
+        status.put("canRedo", songUndoRedoService.canRedo(documentId));
+        return ResponseEntity.ok(status);
     }
 }

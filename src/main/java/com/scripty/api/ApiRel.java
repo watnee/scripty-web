@@ -37,6 +37,8 @@ public final class ApiRel {
     public static final String REORDER = "reorder";
     public static final String DUPLICATE = "duplicate";
     public static final String CHANGE_TYPE = "changeType";
+    public static final String RENAME = "rename";
+    public static final String TEXT = "text";
     public static final String TOGGLE_DEFAULT = "toggleDefault";
     public static final String IMPORT_PROJECT = "importProject";
     public static final String VERSIONS = "versions";

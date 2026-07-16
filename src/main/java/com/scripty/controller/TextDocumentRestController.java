@@ -16,6 +16,7 @@ import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
 import jakarta.validation.Valid;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -27,6 +28,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -90,6 +92,20 @@ public class TextDocumentRestController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(assembler.toModel(viewModel));
+    }
+
+    /** Plain-text form of a document ("Title\n\ncontent"), matching the web /text view. */
+    @RequestMapping(value = "/{id}/text", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> text(@PathVariable Integer id, Principal principal) {
+        TextDocumentViewModel viewModel = textDocumentService.getViewModel(id, currentUser(principal));
+        if (viewModel == null) {
+            return ResponseEntity.notFound().build();
+        }
+        String content = viewModel.getContent() == null ? "" : viewModel.getContent();
+        String body = viewModel.getTitle() + "\n\n" + content;
+        return ResponseEntity.ok()
+                .contentType(new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
+                .body(body);
     }
 
     @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
@@ -240,6 +256,35 @@ public class TextDocumentRestController {
         return ResponseEntity.ok(assembler.toModel(textDocumentService.getViewModel(changed.getId(), user)));
     }
 
+    /** Renames a song or note without touching its content (web /rename parity). */
+    @RequestMapping(value = "/{id}/rename", method = RequestMethod.POST,
+            consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<?> rename(
+            @PathVariable Integer id,
+            @RequestBody(required = false) RenameRequest request,
+            @RequestParam(required = false) Integer projectId,
+            Principal principal) {
+        if (request == null || request.title() == null || request.title().isBlank()) {
+            return new ResponseEntity<>(Map.of("title", "Give the document a title."), HttpStatus.BAD_REQUEST);
+        }
+        User user = currentUser(principal);
+        TextDocumentViewModel viewModel = textDocumentService.getViewModel(id, user);
+        if (viewModel == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Integer resolvedProjectId = projectId != null ? projectId : viewModel.getProjectId();
+        if (!projectAccess.canEditScript(resolvedProjectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        TextDocument renamed = textDocumentService.rename(id, resolvedProjectId, request.title(), user);
+        if (renamed == null) {
+            return new ResponseEntity<>(
+                    Map.of("title", "Could not rename that document. Check the title and try again."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(assembler.toModel(textDocumentService.getViewModel(renamed.getId(), user)));
+    }
+
     /** Inserts a document's content into the screenplay as blocks. */
     @RequestMapping(value = "/{id}/insert", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<?> insert(
@@ -348,5 +393,8 @@ public class TextDocumentRestController {
     }
 
     public record ChangeTypeRequest(String type) {
+    }
+
+    public record RenameRequest(String title) {
     }
 }

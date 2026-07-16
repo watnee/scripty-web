@@ -19,9 +19,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * Builds HAL resources for project text documents (songs and notes). Mutation
- * links (update, delete, insert, share, import) appear only when the current
- * user can edit the script — the client gates its UI on their presence, the
- * same rule the block editor uses.
+ * links (update, rename, delete, insert, share, import) appear only when the
+ * current user can edit the script — the client gates its UI on their presence,
+ * the same rule the block editor uses. The read-only {@code text} link (a
+ * plain-text rendering) is always present.
  */
 @Component
 public class TextDocumentResourceAssembler {
@@ -92,6 +93,7 @@ public class TextDocumentResourceAssembler {
     private org.springframework.hateoas.Link[] documentLinks(int id, Integer projectId, String type) {
         List<org.springframework.hateoas.Link> links = new ArrayList<>();
         links.add(linkTo(methodOn(TextDocumentRestController.class).show(id, null)).withSelfRel());
+        links.add(linkTo(methodOn(TextDocumentRestController.class).text(id, null)).withRel(ApiRel.TEXT));
         if (projectId != null) {
             links.add(linkTo(methodOn(TextDocumentRestController.class).list(projectId, null, null))
                     .withRel(ApiRel.DOCUMENTS));
@@ -101,6 +103,8 @@ public class TextDocumentResourceAssembler {
         if (canEdit(projectId)) {
             links.add(linkTo(methodOn(TextDocumentRestController.class).update(id, null, null, null))
                     .withRel(ApiRel.UPDATE));
+            links.add(linkTo(methodOn(TextDocumentRestController.class).rename(id, null, projectId, null))
+                    .withRel(ApiRel.RENAME));
             links.add(linkTo(methodOn(TextDocumentRestController.class).delete(id, null, null))
                     .withRel(ApiRel.DELETE));
             links.add(linkTo(methodOn(TextDocumentRestController.class).insert(id, null, null))

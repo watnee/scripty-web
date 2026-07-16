@@ -6372,6 +6372,56 @@ body:has(main.text-documents-page) > main.text-documents-page {
     border-left: 3px solid color-mix(in srgb, var(--td-draft) 65%, var(--td-line));
 }
 
+/* Export selection checkbox. Explicit inline-flex so the box lines up with the
+   card title rather than sitting on the text baseline. */
+.text-document-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    vertical-align: middle;
+    flex: 0 0 auto;
+    padding-top: 0.15rem;
+}
+
+.text-document-select-checkbox {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent, #475569);
+}
+
+.text-documents-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    vertical-align: middle;
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--muted-fg, #64748b);
+    cursor: pointer;
+    user-select: none;
+}
+
+.text-documents-select-all input {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent, #475569);
+}
+
+/* Tells the reader what the format links below will actually export. */
+.song-export-scope {
+    padding: 0.35rem 0.65rem 0.15rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted, #888);
+    user-select: none;
+}
+
 .text-document-card-main {
     flex: 1 1 16rem;
     min-width: 0;

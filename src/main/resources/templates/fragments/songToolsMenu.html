@@ -1,0 +1,41 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="menu">
+    <!--/* The song editor's Tools menu, mirroring the screenplay's Tools dropdown
+           in project/show.html: a word-count toggle and the spellcheck toggle.
+           Word count is computed live over the lyric textareas by
+           song-tools-menu.js and shown in the toolbar meta bar; the toggle reuses
+           word-count-toggle.js (the shared #nav-word-count-toggle handler and the
+           html.scripty-word-count-hidden class). Spellcheck reuses the global
+           toggle (browser-spellcheck.js), which already covers the song block
+           textareas. Loaded from nav.html so it survives HTMX-boosted navigation. */-->
+    <div class="nav-dropdown tools-dropdown song-tools-dropdown" id="song-tools-dropdown">
+        <button id="song-nav-tools"
+                type="button"
+                class="nav-dropdown-toggle tools-toolbar-btn"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label="Tools"
+                title="Tools">
+            Tools
+        </button>
+        <div class="nav-dropdown-menu tools-menu" role="menu" aria-label="Tools">
+            <button id="nav-word-count-toggle"
+                    type="button"
+                    class="nav-dropdown-item word-count-filter-toggle is-active"
+                    role="menuitemcheckbox"
+                    aria-pressed="true"
+                    aria-checked="false"
+                    aria-label="Show word count"
+                    title="Show word count">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 19V5"></path>
+                    <path d="M4 19h16"></path>
+                    <path d="M8 15V9"></path>
+                    <path d="M12 15v-3"></path>
+                    <path d="M16 15V7"></path>
+                </svg>
+                <span>Word count</span>
+            </button>
+            <button th:replace="~{fragments/spellcheckToggle :: menuItem}"></button>
+        </div>
+    </div>
+</th:block>

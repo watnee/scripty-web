@@ -3905,10 +3905,22 @@ input.project-list-search::-webkit-search-results-decoration {
    enough on a phone to read as the menu not opening at all. The screenplay's
    toolbar menus get this from .project-tools-group; these are outside it. */
 .song-file-dropdown .nav-dropdown-menu.file-menu,
-.song-history-dropdown .nav-dropdown-menu.history-menu {
+.song-history-dropdown .nav-dropdown-menu.history-menu,
+.song-tools-dropdown .nav-dropdown-menu.tools-menu {
     left: 0;
     right: auto;
     transform-origin: top left;
+}
+
+/* The song editor's word-count readout rides the toolbar meta bar and is hidden
+   unless the Tools > Word count toggle is on, mirroring the screenplay's
+   .project-script-stats (word-count-toggle.js owns the html class). */
+.song-word-count {
+    white-space: nowrap;
+}
+
+html.scripty-word-count-hidden .song-word-count {
+    display: none;
 }
 
 .project-tools-group .file-dropdown,

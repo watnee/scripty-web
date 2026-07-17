@@ -15,6 +15,7 @@ import com.scripty.viewmodel.project.projectlist.ProjectTeamViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.viewmodel.project.stats.ScriptStatsViewModel;
+import com.scripty.viewmodel.project.trash.TrashedProjectViewModel;
 import com.scripty.service.DocxExportService;
 import com.scripty.service.EpubExportService;
 import com.scripty.service.FdxExportService;
@@ -22,6 +23,7 @@ import com.scripty.service.FountainExportService;
 import com.scripty.service.FountainImportService;
 import com.scripty.service.PdfExportService;
 import com.scripty.service.ProjectArchiveService;
+import com.scripty.service.ProjectPurgeService;
 import com.scripty.service.ProjectService;
 import com.scripty.service.ScriptImportException;
 import com.scripty.service.ScriptStatsService;
@@ -136,11 +138,15 @@ public class ProjectController {
     @Autowired
     ProjectArchiveService projectArchiveService;
 
+    @Autowired
+    ProjectPurgeService projectPurgeService;
+
     @RequestMapping(value = "/list")
     public String list(Model model, Principal principal) {
 
         String userTeam = null;
         Integer defaultProjectId = null;
+        boolean admin = false;
         if (principal != null) {
             User currentUser = userService.readByUsername(principal.getName());
             if (currentUser != null) {
@@ -148,6 +154,7 @@ public class ProjectController {
                     userTeam = currentUser.getTeam();
                 }
                 defaultProjectId = currentUser.getDefaultProjectId();
+                admin = currentUser.isAdmin();
             }
         }
 
@@ -155,6 +162,8 @@ public class ProjectController {
 
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("defaultProjectId", defaultProjectId);
+        model.addAttribute("isAdmin", admin);
+        model.addAttribute("hasTrashedProjects", admin && !projectService.getTrashedProjects().isEmpty());
 
         return "project/list";
     }
@@ -403,6 +412,57 @@ public class ProjectController {
         }
         projectService.deleteProject(id);
         return "redirect:/project/list";
+    }
+
+    /**
+     * Trashed projects are invisible to {@link #denyProjectAccess} — the entity's
+     * @SQLRestriction hides them — so the trash routes check admin directly and
+     * resolve the project through the repository's native queries. Admin is also
+     * enforced in SecurityConfig; this is the in-controller half of that pair.
+     */
+    @RequestMapping(value = "/trash")
+    public String trash(Model model, Principal principal) {
+        if (!isAdmin(principal)) {
+            return "redirect:/project/list";
+        }
+        List<Project> trashed = projectService.getTrashedProjects();
+        List<TrashedProjectViewModel> viewModels = new ArrayList<>();
+        for (Project project : trashed) {
+            viewModels.add(new TrashedProjectViewModel(
+                    project.getId(),
+                    project.getTitle(),
+                    project.getDeletedAt(),
+                    project.getDeletedAt() != null
+                            ? project.getDeletedAt().plusDays(projectPurgeService.getRetentionDays())
+                            : null));
+        }
+        model.addAttribute("projects", viewModels);
+        model.addAttribute("retentionDays", projectPurgeService.getRetentionDays());
+        return "project/trash";
+    }
+
+    @RequestMapping(value = "/restore", method = RequestMethod.POST)
+    public String restore(@RequestParam Integer id, Principal principal, RedirectAttributes redirectAttributes) {
+        if (!isAdmin(principal)) {
+            return "redirect:/project/list";
+        }
+        Project project = projectService.getTrashedProject(id);
+        if (project == null || !projectService.restoreProject(id)) {
+            redirectAttributes.addFlashAttribute("trashMessage",
+                    "That project is no longer in the trash.");
+            return "redirect:/project/trash";
+        }
+        redirectAttributes.addFlashAttribute("trashMessage",
+                "Restored \"" + project.getTitle() + "\".");
+        return "redirect:/project/trash";
+    }
+
+    private boolean isAdmin(Principal principal) {
+        if (principal == null) {
+            return false;
+        }
+        User user = userService.readByUsername(principal.getName());
+        return user != null && user.isAdmin();
     }
 
     @RequestMapping(value = "/edit")

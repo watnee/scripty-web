@@ -1170,11 +1170,23 @@ body.login-body main.login-page {
     background: rgba(127, 29, 29, 0.35);
 }
 
+:root.-dark-theme .login-success {
+    color: #86efac;
+    border-color: rgba(134, 239, 172, 0.35);
+    background: rgba(22, 101, 52, 0.35);
+}
+
 @media (prefers-color-scheme: dark) {
     :root:not(.-no-dark-theme) .login-error {
         color: #fca5a5;
         border-color: rgba(248, 113, 113, 0.35);
         background: rgba(127, 29, 29, 0.35);
+    }
+
+    :root:not(.-no-dark-theme) .login-success {
+        color: #86efac;
+        border-color: rgba(134, 239, 172, 0.35);
+        background: rgba(22, 101, 52, 0.35);
     }
 }
 

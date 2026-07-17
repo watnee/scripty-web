@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - Deleted Projects</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('projects')}"></div>
+    <main class="project-list-page">
+
+        <div class="login-success" th:if="${trashMessage}" role="status">
+            <span th:text="${trashMessage}"></span>
+        </div>
+
+        <div class="project-list-header">
+            <div class="project-list-header-text">
+                <h1>Deleted Projects</h1>
+                <p class="muted" th:if="${!#lists.isEmpty(projects)}"
+                   th:text="|Deleted projects are kept for ${retentionDays} days, then permanently removed.|"></p>
+                <p class="muted" th:if="${#lists.isEmpty(projects)}">Nothing has been deleted.</p>
+            </div>
+            <div class="project-list-header-actions">
+                <a th:href="@{/project/list}" role="button">Back to Projects</a>
+            </div>
+        </div>
+
+        <table th:if="${!#lists.isEmpty(projects)}">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Deleted</th>
+                    <th>Permanently removed</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="project : ${projects}">
+                    <td th:text="${project.title}"></td>
+                    <td th:text="${project.deletedAt != null ? #temporals.format(project.deletedAt, 'MMM d, yyyy, h:mm a') : ''}"></td>
+                    <td th:text="${project.purgeAt != null ? #temporals.format(project.purgeAt, 'MMM d, yyyy') : ''}"></td>
+                    <td>
+                        <form th:action="@{/project/restore}" method="post">
+                            <input type="hidden" name="id" th:value="${project.id}">
+                            <button type="submit">Restore</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </main>
+</body>
+</html>

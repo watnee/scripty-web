@@ -36,6 +36,10 @@
                         id="project-list-import-btn"
                         class="project-list-import-btn"
                         title="Import a project from a .scripty.json file">Import Project</button>
+                <a th:if="${hasTrashedProjects}"
+                   th:href="@{/project/trash}"
+                   role="button"
+                   title="Restore a recently deleted project">Deleted Projects</a>
                 <a th:href="@{/project/create}" role="button" class="project-list-create-btn">
                     <span class="project-list-create-icon" aria-hidden="true">+</span>
                     New Project

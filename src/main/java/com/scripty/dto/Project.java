@@ -15,9 +15,19 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.hibernate.annotations.SQLRestriction;
 
+/**
+ * Deleting a project only stamps {@code deletedAt}; the row survives for a
+ * recovery window and is purged by {@link com.scripty.service.ProjectPurgeService}.
+ * The {@link SQLRestriction} hides trashed projects from every JPQL query and
+ * association load, so callers need no filtering of their own. Reaching a
+ * trashed project therefore requires the native queries on
+ * {@link com.scripty.repository.ProjectRepository}, which bypass the restriction.
+ */
 @Entity
 @Table(name = "project")
+@SQLRestriction("deleted_at is null")
 public class Project {
 
     @Id
@@ -40,6 +50,9 @@ public class Project {
 
     @Column(name = "last_edited")
     private LocalDateTime lastEdited;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -70,6 +83,14 @@ public class Project {
 
     public void setLastEdited(LocalDateTime lastEdited) {
         this.lastEdited = lastEdited;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 
     public String getScreenplayTitle() {

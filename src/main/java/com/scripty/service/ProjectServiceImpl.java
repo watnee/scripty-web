@@ -26,6 +26,7 @@ import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectShareUserViewModel;
 import com.scripty.viewmodel.project.projectprofile.SceneViewModel;
 import com.scripty.viewmodel.user.userprofile.UserProjectAccessViewModel;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -534,8 +535,27 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public Project deleteProject(Integer id) {
         Project project = projectRepository.findById(id).orElse(null);
-        projectRepository.delete(project);
-        return project;
+        if (project == null) {
+            return null;
+        }
+        project.setDeletedAt(LocalDateTime.now());
+        return projectRepository.save(project);
+    }
+
+    @Override
+    public List<Project> getTrashedProjects() {
+        return projectRepository.findTrashed();
+    }
+
+    @Override
+    public Project getTrashedProject(Integer id) {
+        return id == null ? null : projectRepository.findTrashedById(id).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public boolean restoreProject(Integer id) {
+        return id != null && projectRepository.restoreById(id) > 0;
     }
 
     @Override

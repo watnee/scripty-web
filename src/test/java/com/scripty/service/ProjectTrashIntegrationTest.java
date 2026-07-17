@@ -1,0 +1,135 @@
+package com.scripty.service;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.scripty.dto.Project;
+import com.scripty.repository.ProjectRepository;
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
+
+/**
+ * Covers the soft-delete lifecycle against a real database: the @SQLRestriction
+ * that hides trashed projects, the native queries that deliberately bypass it,
+ * and the purge relying on the schema's ON DELETE CASCADE to remove content.
+ */
+@SpringBootTest
+@ActiveProfiles("test")
+class ProjectTrashIntegrationTest {
+
+    @Autowired
+    private ProjectService projectService;
+
+    @Autowired
+    private ProjectPurgeService projectPurgeService;
+
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    private Integer createProjectWithBlock(String title) {
+        Project project = new Project();
+        project.setTitle(title);
+        Integer projectId = projectRepository.save(project).getId();
+        jdbcTemplate.update(
+                "INSERT INTO block (`order`, content, `type`, project_id) VALUES (1, 'A line of action.', 'ACTION', ?)",
+                projectId);
+        return projectId;
+    }
+
+    private int blockCount(Integer projectId) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM block WHERE project_id = ?", Integer.class, projectId);
+        return count == null ? 0 : count;
+    }
+
+    private void backdateDeletedAt(Integer projectId, int daysAgo) {
+        jdbcTemplate.update("UPDATE project SET deleted_at = ? WHERE id = ?",
+                LocalDateTime.now().minusDays(daysAgo), projectId);
+    }
+
+    @Test
+    void deletingHidesProjectButKeepsItRecoverable() {
+        Integer projectId = createProjectWithBlock("Hidden But Kept");
+
+        projectService.deleteProject(projectId);
+
+        // Invisible to ordinary reads...
+        assertNull(projectService.read(projectId));
+        assertFalse(projectRepository.findById(projectId).isPresent());
+        assertFalse(projectRepository.findAllWithTeams().stream()
+                .anyMatch(p -> projectId.equals(p.getId())));
+
+        // ...but still in the trash, with its content intact.
+        assertNotNull(projectService.getTrashedProject(projectId));
+        assertEquals(1, blockCount(projectId));
+    }
+
+    @Test
+    void restoreBringsBackProjectAndContent() {
+        Integer projectId = createProjectWithBlock("Back From The Dead");
+        projectService.deleteProject(projectId);
+
+        assertTrue(projectService.restoreProject(projectId));
+
+        Project restored = projectService.read(projectId);
+        assertNotNull(restored);
+        assertNull(restored.getDeletedAt());
+        assertEquals(1, blockCount(projectId));
+        assertNull(projectService.getTrashedProject(projectId));
+    }
+
+    @Test
+    void restoringAProjectThatIsNotTrashedReportsFailure() {
+        Integer projectId = createProjectWithBlock("Never Deleted");
+
+        assertFalse(projectService.restoreProject(projectId));
+        assertFalse(projectService.restoreProject(999999));
+    }
+
+    @Test
+    void purgeRemovesProjectsPastTheRecoveryWindowAndCascadesToContent() {
+        Integer projectId = createProjectWithBlock("Past The Window");
+        projectService.deleteProject(projectId);
+        backdateDeletedAt(projectId, projectPurgeService.getRetentionDays() + 1);
+
+        projectPurgeService.purgeExpiredProjects();
+
+        assertNull(projectService.getTrashedProject(projectId));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM project WHERE id = ?", Integer.class, projectId));
+        // The FK cascade, not application code, is what removes the blocks.
+        assertEquals(0, blockCount(projectId));
+    }
+
+    @Test
+    void purgeSparesProjectsInsideTheRecoveryWindow() {
+        Integer projectId = createProjectWithBlock("Still In The Window");
+        projectService.deleteProject(projectId);
+        backdateDeletedAt(projectId, projectPurgeService.getRetentionDays() - 1);
+
+        projectPurgeService.purgeExpiredProjects();
+
+        assertNotNull(projectService.getTrashedProject(projectId));
+        assertEquals(1, blockCount(projectId));
+    }
+
+    @Test
+    void purgeLeavesLiveProjectsAlone() {
+        Integer projectId = createProjectWithBlock("Very Much Alive");
+
+        projectPurgeService.purgeExpiredProjects();
+
+        assertNotNull(projectService.read(projectId));
+        assertEquals(1, blockCount(projectId));
+    }
+}

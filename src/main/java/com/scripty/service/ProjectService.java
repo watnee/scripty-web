@@ -42,7 +42,20 @@ public interface ProjectService {
     TitlePageCommandModel getTitlePageCommandModel(Integer id);
     Project saveTitlePageCommandModel(TitlePageCommandModel titlePageCommandModel);
 
+    /**
+     * Moves the project to the trash. The row and all its content survive until
+     * {@link ProjectPurgeService} purges it after the recovery window.
+     */
     Project deleteProject(Integer id);
+
+    /** Trashed projects, most recently deleted first. Admin-only. */
+    List<Project> getTrashedProjects();
+
+    /** A single trashed project, or null if it is not in the trash. Admin-only. */
+    Project getTrashedProject(Integer id);
+
+    /** Returns false if the project is not in the trash (already restored, or purged). */
+    boolean restoreProject(Integer id);
 
     void setProjectTeams(Integer projectId, java.util.List<Integer> teamIds);
 

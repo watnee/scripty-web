@@ -160,10 +160,15 @@ public class ProjectController {
 
         ProjectListViewModel viewModel = projectService.getProjectListViewModel(userTeam);
 
+        long trashedCount = admin ? projectService.getTrashedProjectCount() : 0;
+
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("defaultProjectId", defaultProjectId);
         model.addAttribute("isAdmin", admin);
-        model.addAttribute("hasTrashedProjects", admin && !projectService.getTrashedProjects().isEmpty());
+        // The trash link is always available to admins so deleted projects are
+        // discoverable even when none are currently in the trash.
+        model.addAttribute("hasTrashedProjects", admin);
+        model.addAttribute("trashedCount", trashedCount);
 
         return "project/list";
     }
@@ -425,35 +430,92 @@ public class ProjectController {
         if (!isAdmin(principal)) {
             return "redirect:/project/list";
         }
+        int retentionDays = projectPurgeService.getRetentionDays();
+        LocalDateTime now = LocalDateTime.now();
         List<Project> trashed = projectService.getTrashedProjects();
         List<TrashedProjectViewModel> viewModels = new ArrayList<>();
         for (Project project : trashed) {
+            LocalDateTime deletedAt = project.getDeletedAt();
+            LocalDateTime purgeAt = deletedAt != null ? deletedAt.plusDays(retentionDays) : null;
+            long daysUntilPurge = purgeAt != null
+                    ? Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(now, purgeAt))
+                    : retentionDays;
             viewModels.add(new TrashedProjectViewModel(
                     project.getId(),
                     project.getTitle(),
-                    project.getDeletedAt(),
-                    project.getDeletedAt() != null
-                            ? project.getDeletedAt().plusDays(projectPurgeService.getRetentionDays())
-                            : null));
+                    deletedAt,
+                    purgeAt,
+                    relativeTime(deletedAt, now),
+                    daysUntilPurge));
         }
         model.addAttribute("projects", viewModels);
-        model.addAttribute("retentionDays", projectPurgeService.getRetentionDays());
+        model.addAttribute("retentionDays", retentionDays);
         return "project/trash";
     }
 
+    /** Renders a deletion timestamp as a coarse "N days/hours ago" phrase. */
+    private String relativeTime(LocalDateTime when, LocalDateTime now) {
+        if (when == null) {
+            return "";
+        }
+        long minutes = java.time.temporal.ChronoUnit.MINUTES.between(when, now);
+        if (minutes < 1) {
+            return "just now";
+        }
+        if (minutes < 60) {
+            return minutes + (minutes == 1 ? " minute ago" : " minutes ago");
+        }
+        long hours = minutes / 60;
+        if (hours < 24) {
+            return hours + (hours == 1 ? " hour ago" : " hours ago");
+        }
+        long days = hours / 24;
+        return days + (days == 1 ? " day ago" : " days ago");
+    }
+
     @RequestMapping(value = "/restore", method = RequestMethod.POST)
-    public String restore(@RequestParam Integer id, Principal principal, RedirectAttributes redirectAttributes) {
+    public String restore(@RequestParam(name = "ids", required = false) List<Integer> ids,
+                          Principal principal,
+                          RedirectAttributes redirectAttributes) {
         if (!isAdmin(principal)) {
             return "redirect:/project/list";
         }
-        Project project = projectService.getTrashedProject(id);
-        if (project == null || !projectService.restoreProject(id)) {
-            redirectAttributes.addFlashAttribute("trashMessage",
-                    "That project is no longer in the trash.");
-            return "redirect:/project/trash";
+        int restored = projectService.restoreProjects(ids);
+        redirectAttributes.addFlashAttribute("trashMessage", restored == 0
+                ? "Those projects are no longer in the trash."
+                : restored == 1
+                        ? "Restored 1 project."
+                        : "Restored " + restored + " projects.");
+        return "redirect:/project/trash";
+    }
+
+    @RequestMapping(value = "/restoreAll", method = RequestMethod.POST)
+    public String restoreAll(Principal principal, RedirectAttributes redirectAttributes) {
+        if (!isAdmin(principal)) {
+            return "redirect:/project/list";
         }
-        redirectAttributes.addFlashAttribute("trashMessage",
-                "Restored \"" + project.getTitle() + "\".");
+        int restored = projectService.restoreAllTrashed();
+        redirectAttributes.addFlashAttribute("trashMessage", restored == 0
+                ? "The trash is already empty."
+                : restored == 1
+                        ? "Restored 1 project."
+                        : "Restored all " + restored + " projects.");
+        return "redirect:/project/trash";
+    }
+
+    @RequestMapping(value = "/purge", method = RequestMethod.POST)
+    public String purge(@RequestParam(name = "ids", required = false) List<Integer> ids,
+                        Principal principal,
+                        RedirectAttributes redirectAttributes) {
+        if (!isAdmin(principal)) {
+            return "redirect:/project/list";
+        }
+        int purged = projectService.purgeProjects(ids);
+        redirectAttributes.addFlashAttribute("trashMessage", purged == 0
+                ? "Nothing was deleted — those projects are no longer in the trash."
+                : purged == 1
+                        ? "Permanently deleted 1 project."
+                        : "Permanently deleted " + purged + " projects.");
         return "redirect:/project/trash";
     }
 

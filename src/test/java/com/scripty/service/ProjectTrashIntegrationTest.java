@@ -167,4 +167,71 @@ class ProjectTrashIntegrationTest {
         assertNotNull(projectService.read(projectId));
         assertEquals(1, blockCount(projectId));
     }
+
+    @Test
+    void restoreProjectsBringsBackTheSelectedIdsOnly() {
+        Integer restoredId = createProjectWithBlock("Restore Me");
+        Integer leftId = createProjectWithBlock("Leave Me");
+        projectService.deleteProject(restoredId);
+        projectService.deleteProject(leftId);
+
+        assertEquals(1, projectService.restoreProjects(java.util.List.of(restoredId, 999999)));
+
+        assertNotNull(projectService.read(restoredId));
+        assertNull(projectService.read(leftId));
+        assertNotNull(projectService.getTrashedProject(leftId));
+    }
+
+    @Test
+    void restoreAllTrashedBringsBackEveryTrashedProject() {
+        Integer firstId = createProjectWithBlock("First Trashed");
+        Integer secondId = createProjectWithBlock("Second Trashed");
+        projectService.deleteProject(firstId);
+        projectService.deleteProject(secondId);
+        long before = projectService.getTrashedProjectCount();
+
+        int restored = projectService.restoreAllTrashed();
+
+        assertTrue(restored >= 2, "expected at least the two just-trashed projects");
+        assertEquals(before, restored);
+        assertNotNull(projectService.read(firstId));
+        assertNotNull(projectService.read(secondId));
+        assertEquals(0, projectService.getTrashedProjectCount());
+    }
+
+    @Test
+    void purgeProjectsDeletesImmediatelyAndCascadesToContent() {
+        Integer projectId = createProjectWithBlock("Purge Me Now");
+        projectService.deleteProject(projectId);
+
+        // No backdating: an admin purge skips the recovery window entirely.
+        assertEquals(1, projectService.purgeProjects(java.util.List.of(projectId)));
+
+        assertNull(projectService.getTrashedProject(projectId));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM project WHERE id = ?", Integer.class, projectId));
+        assertEquals(0, blockCount(projectId));
+    }
+
+    @Test
+    void purgeProjectsRefusesToTouchLiveProjects() {
+        Integer liveId = createProjectWithBlock("Not In The Trash");
+
+        assertEquals(0, projectService.purgeProjects(java.util.List.of(liveId)));
+
+        assertNotNull(projectService.read(liveId));
+        assertEquals(1, blockCount(liveId));
+    }
+
+    @Test
+    void getTrashedProjectCountCountsOnlyTrashedProjects() {
+        Integer liveId = createProjectWithBlock("Alive");
+        Integer trashedId = createProjectWithBlock("Trashed");
+        long before = projectService.getTrashedProjectCount();
+
+        projectService.deleteProject(trashedId);
+
+        assertEquals(before + 1, projectService.getTrashedProjectCount());
+        assertNotNull(projectService.read(liveId));
+    }
 }

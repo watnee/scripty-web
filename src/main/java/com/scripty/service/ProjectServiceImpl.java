@@ -554,6 +554,11 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    public long getTrashedProjectCount() {
+        return projectRepository.countTrashed();
+    }
+
+    @Override
     public Project getTrashedProject(Integer id) {
         return id == null ? null : projectRepository.findTrashedById(id).orElse(null);
     }
@@ -562,6 +567,43 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional
     public boolean restoreProject(Integer id) {
         return id != null && projectRepository.restoreById(id) > 0;
+    }
+
+    @Override
+    @Transactional
+    public int restoreProjects(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        int restored = 0;
+        for (Integer id : ids) {
+            if (id != null && projectRepository.restoreById(id) > 0) {
+                restored++;
+            }
+        }
+        return restored;
+    }
+
+    @Override
+    @Transactional
+    public int restoreAllTrashed() {
+        return projectRepository.restoreAllTrashed();
+    }
+
+    @Override
+    @Transactional
+    public int purgeProjects(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        int purged = 0;
+        for (Integer id : ids) {
+            if (id != null) {
+                userRepository.clearDefaultProject(id);
+                purged += projectRepository.purgeTrashedById(id);
+            }
+        }
+        return purged;
     }
 
     @Override

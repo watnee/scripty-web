@@ -52,10 +52,30 @@ class ProjectTrashAccessTest {
 
     @Test
     void restoreRequiresAdmin() throws Exception {
-        mockMvc.perform(post("/project/restore").param("id", "1").with(csrf()))
+        mockMvc.perform(post("/project/restore").param("ids", "1").with(csrf()))
                 .andExpect(status().is3xxRedirection());
 
-        mockMvc.perform(post("/project/restore").param("id", "1")
+        mockMvc.perform(post("/project/restore").param("ids", "1")
+                        .with(user("member").roles("USER")).with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void restoreAllRequiresAdmin() throws Exception {
+        mockMvc.perform(post("/project/restoreAll").with(csrf()))
+                .andExpect(status().is3xxRedirection());
+
+        mockMvc.perform(post("/project/restoreAll")
+                        .with(user("member").roles("USER")).with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void permanentDeleteRequiresAdmin() throws Exception {
+        mockMvc.perform(post("/project/purge").param("ids", "1").with(csrf()))
+                .andExpect(status().is3xxRedirection());
+
+        mockMvc.perform(post("/project/purge").param("ids", "1")
                         .with(user("member").roles("USER")).with(csrf()))
                 .andExpect(status().isForbidden());
     }

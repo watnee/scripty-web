@@ -30,6 +30,10 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
             nativeQuery = true)
     List<Project> findTrashed();
 
+    @Query(value = "SELECT COUNT(*) FROM project WHERE deleted_at IS NOT NULL",
+            nativeQuery = true)
+    long countTrashed();
+
     @Query(value = "SELECT * FROM project WHERE id = :id AND deleted_at IS NOT NULL",
             nativeQuery = true)
     Optional<Project> findTrashedById(@Param("id") Integer id);
@@ -38,6 +42,21 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
     @Query(value = "UPDATE project SET deleted_at = NULL WHERE id = :id AND deleted_at IS NOT NULL",
             nativeQuery = true)
     int restoreById(@Param("id") Integer id);
+
+    @Modifying
+    @Query(value = "UPDATE project SET deleted_at = NULL WHERE deleted_at IS NOT NULL",
+            nativeQuery = true)
+    int restoreAllTrashed();
+
+    /**
+     * Immediately hard-deletes a single trashed project, skipping the retention
+     * window. Guarded by {@code deleted_at IS NOT NULL} so a live project can
+     * never be purged through this path. Cascades like {@link #purgeTrashedBefore}.
+     */
+    @Modifying
+    @Query(value = "DELETE FROM project WHERE id = :id AND deleted_at IS NOT NULL",
+            nativeQuery = true)
+    int purgeTrashedById(@Param("id") Integer id);
 
     /**
      * Hard-deletes trashed projects past the recovery window. Every table

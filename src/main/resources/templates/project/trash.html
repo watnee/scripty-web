@@ -10,7 +10,7 @@
 </head>
 <body hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('projects')}"></div>
-    <main class="project-list-page">
+    <main class="project-list-page project-trash-page">
 
         <div class="login-success" th:if="${trashMessage}" role="status">
             <span th:text="${trashMessage}"></span>
@@ -20,37 +20,105 @@
             <div class="project-list-header-text">
                 <h1>Deleted Projects</h1>
                 <p class="muted" th:if="${!#lists.isEmpty(projects)}"
-                   th:text="|Deleted projects are kept for ${retentionDays} days, then permanently removed.|"></p>
-                <p class="muted" th:if="${#lists.isEmpty(projects)}">Nothing has been deleted.</p>
+                   th:text="|Deleted projects are kept for ${retentionDays} days, then permanently removed. Restore one to bring it fully back.|"></p>
+                <p class="muted" th:if="${#lists.isEmpty(projects)}">Deleted projects can be restored here for a while before they are gone for good.</p>
             </div>
             <div class="project-list-header-actions">
                 <a th:href="@{/project/list}" role="button">Back to Projects</a>
             </div>
         </div>
 
-        <table th:if="${!#lists.isEmpty(projects)}">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Deleted</th>
-                    <th>Permanently removed</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="project : ${projects}">
-                    <td th:text="${project.title}"></td>
-                    <td th:text="${project.deletedAt != null ? #temporals.format(project.deletedAt, 'MMM d, yyyy, h:mm a') : ''}"></td>
-                    <td th:text="${project.purgeAt != null ? #temporals.format(project.purgeAt, 'MMM d, yyyy') : ''}"></td>
-                    <td>
-                        <form th:action="@{/project/restore}" method="post">
-                            <input type="hidden" name="id" th:value="${project.id}">
-                            <button type="submit">Restore</button>
-                        </form>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <!-- Empty state -->
+        <div class="project-trash-empty" th:if="${#lists.isEmpty(projects)}">
+            <div class="project-trash-empty-icon" aria-hidden="true">🗑️</div>
+            <p class="project-trash-empty-title">The trash is empty</p>
+            <p class="muted">When you delete a project it lands here, where you can restore it for
+                <span th:text="${retentionDays}">30</span> days.</p>
+        </div>
+
+        <th:block th:if="${!#lists.isEmpty(projects)}">
+            <!-- Bulk action toolbar. Row checkboxes bind to this form via the form="" attribute. -->
+            <form id="trash-bulk-form" method="post" class="project-trash-toolbar">
+                <label class="project-trash-selectall">
+                    <input type="checkbox" id="trash-select-all">
+                    <span>Select all</span>
+                </label>
+                <span class="project-trash-selection-count" id="trash-selection-count" aria-live="polite"></span>
+                <div class="project-trash-toolbar-actions">
+                    <button type="submit" th:formaction="@{/project/restore}"
+                            id="trash-restore-selected" class="trash-btn" disabled>Restore selected</button>
+                    <button type="button" id="trash-purge-selected" class="trash-btn bad" disabled>Delete selected permanently</button>
+                    <button type="submit" th:formaction="@{/project/restoreAll}" formnovalidate
+                            class="trash-btn trash-btn-ghost">Restore all</button>
+                </div>
+            </form>
+
+            <table class="project-trash-table">
+                <thead>
+                    <tr>
+                        <th class="project-trash-check-col"><span class="visually-hidden">Select</span></th>
+                        <th>Title</th>
+                        <th>Deleted</th>
+                        <th>Auto-deletes</th>
+                        <th><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="project : ${projects}" class="project-trash-row">
+                        <td class="project-trash-check-col">
+                            <input type="checkbox" class="trash-select" name="ids"
+                                   th:value="${project.id}" form="trash-bulk-form"
+                                   th:aria-label="|Select ${project.title}|">
+                        </td>
+                        <td class="project-trash-title" th:text="${project.title}"></td>
+                        <td>
+                            <span th:text="${project.deletedAgo}"
+                                  th:title="${project.deletedAt != null ? #temporals.format(project.deletedAt, 'MMM d, yyyy, h:mm a') : ''}"></span>
+                        </td>
+                        <td>
+                            <span th:text="${project.purgeAt != null ? #temporals.format(project.purgeAt, 'MMM d, yyyy') : ''}"></span>
+                            <span class="project-trash-badge"
+                                  th:classappend="${project.expiringSoon} ? 'project-trash-badge-warn' : ''"
+                                  th:text="${project.daysUntilPurge == 0 ? 'today' : (project.daysUntilPurge == 1 ? 'in 1 day' : 'in ' + project.daysUntilPurge + ' days')}"></span>
+                        </td>
+                        <td>
+                            <div class="project-trash-row-actions">
+                                <form th:action="@{/project/restore}" method="post" class="project-trash-inline-form">
+                                    <input type="hidden" name="ids" th:value="${project.id}">
+                                    <button type="submit" class="trash-btn">Restore</button>
+                                </form>
+                                <button type="button" class="trash-btn bad trash-purge-btn"
+                                        th:data-purge-id="${project.id}"
+                                        th:data-purge-title="${project.title}">Delete permanently</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Hidden form that performs the permanent delete once confirmed. -->
+            <form id="trash-purge-form" th:action="@{/project/purge}" method="post" hidden>
+                <span id="trash-purge-ids"></span>
+            </form>
+
+            <!-- Permanent-delete confirmation modal. -->
+            <div id="trash-purge-modal" class="confirm-modal" hidden aria-modal="true" role="dialog"
+                 aria-labelledby="trash-purge-title">
+                <div class="confirm-modal-panel">
+                    <h2 id="trash-purge-title">Delete permanently?</h2>
+                    <p id="trash-purge-message"></p>
+                    <p class="muted">This cannot be undone — the project and all of its content are removed immediately.</p>
+                    <div class="confirm-modal-actions">
+                        <button type="button" id="trash-purge-cancel">Cancel</button>
+                        <button type="button" id="trash-purge-confirm" class="bad">Delete permanently</button>
+                    </div>
+                </div>
+            </div>
+        </th:block>
     </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:src="@{/js/project-trash.js(v=${assetVersion})}"></script>
 </body>
 </html>

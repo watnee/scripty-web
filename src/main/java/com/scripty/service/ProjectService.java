@@ -51,11 +51,27 @@ public interface ProjectService {
     /** Trashed projects, most recently deleted first. Admin-only. */
     List<Project> getTrashedProjects();
 
+    /** How many projects are currently in the trash. Admin-only. */
+    long getTrashedProjectCount();
+
     /** A single trashed project, or null if it is not in the trash. Admin-only. */
     Project getTrashedProject(Integer id);
 
     /** Returns false if the project is not in the trash (already restored, or purged). */
     boolean restoreProject(Integer id);
+
+    /** Restores each id still in the trash; returns how many were restored. Admin-only. */
+    int restoreProjects(List<Integer> ids);
+
+    /** Restores every trashed project; returns how many were restored. Admin-only. */
+    int restoreAllTrashed();
+
+    /**
+     * Immediately and permanently deletes trashed projects, skipping the
+     * retention window. Only projects actually in the trash are removed.
+     * Returns how many were purged. Admin-only.
+     */
+    int purgeProjects(List<Integer> ids);
 
     void setProjectTeams(Integer projectId, java.util.List<Integer> teamIds);
 

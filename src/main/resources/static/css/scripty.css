@@ -3445,16 +3445,13 @@ tr.filtered-out,
 }
 
 /* Default Project Row Highlight in List */
-tr.default-project-row {
-    background-color: rgba(245, 158, 11, 0.05) !important;
+.project-list-card.default-project-row {
+    background-color: rgba(245, 158, 11, 0.05);
+    border-left-color: #f59e0b;
 }
 
-tr.default-project-row:hover {
-    background-color: rgba(245, 158, 11, 0.09) !important;
-}
-
-tr.default-project-row td:first-child {
-    border-left: 3px solid #f59e0b;
+.project-list-card.default-project-row:hover {
+    background-color: rgba(245, 158, 11, 0.09);
 }
 
 /* Star Icon Style Toggle */
@@ -3544,6 +3541,8 @@ tr.default-project-row td:first-child {
 
 /* Project List Page */
 .project-list-page {
+    --pl-line: var(--border, #cbd5e1);
+    --pl-mark: var(--accent, #475569);
     max-width: 920px;
     margin: 0 auto;
     padding: 0 1.25rem 2.5rem;
@@ -3554,8 +3553,30 @@ tr.default-project-row td:first-child {
     justify-content: space-between;
     align-items: flex-start;
     gap: 1rem;
-    margin: 0.75rem 0 1.25rem;
+    margin: 0.75rem 0 1.1rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--pl-line);
     flex-wrap: wrap;
+}
+
+.project-list-header-intro {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.project-list-header-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--pl-mark) 14%, transparent);
+    color: var(--pl-mark);
 }
 
 .project-list-header h1 {
@@ -4798,47 +4819,59 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
 }
 
 .project-list-panel {
-    border: 1px solid var(--border, #cbd5e1);
-    border-radius: 10px;
-    background: var(--box-bg, #ffffff);
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.project-list-table {
-    width: 100%;
     margin: 0;
-    border-collapse: collapse;
 }
 
-.project-list-row {
-    border-bottom: 1px solid var(--border, #cbd5e1);
-    transition: background-color 0.15s ease;
+/* Card list — mirrors the Songs/Notes document list (.text-documents-list /
+   .text-document-card) so Projects reads as the same component family. */
+.project-list-cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
-.project-list-row:hover {
-    background: var(--accent-bg, rgba(0, 0, 0, 0.02));
+.project-list-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1.05rem 1.15rem;
+    border: 1px solid var(--pl-line, var(--border, #cbd5e1));
+    border-left: 3px solid color-mix(in srgb, var(--pl-mark, var(--accent, #475569)) 55%, var(--pl-line, var(--border, #cbd5e1)));
+    border-radius: calc(var(--border-radius, 0.5rem) + 2px);
+    background: var(--box-bg, var(--bg, #fff));
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--fg, #000) 4%, transparent);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    animation: text-documents-rise 0.4s ease both;
+    animation-delay: calc(0.04s * var(--card-i, 0));
 }
 
-.project-list-row:last-child {
-    border-bottom: none;
+.project-list-card:hover {
+    border-color: color-mix(in srgb, var(--accent, #475569) 45%, var(--pl-line, var(--border, #cbd5e1)));
+    box-shadow: 0 8px 22px -16px color-mix(in srgb, var(--fg, #000) 45%, transparent);
+    transform: translateY(-1px);
 }
 
-.project-list-star-cell {
-    width: 2.75rem;
-    padding: 0 0 0 0.35rem;
-    text-align: center;
-    vertical-align: middle;
+@media (prefers-reduced-motion: reduce) {
+    .project-list-card {
+        animation: none !important;
+    }
+}
+
+.project-list-star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    align-self: flex-start;
+    padding-top: 0.1rem;
 }
 
 .project-list-star-form {
     margin: 0;
-    display: inline;
-}
-
-.project-list-main-cell {
-    padding: 0.95rem 1rem 0.95rem 0;
-    vertical-align: middle;
+    display: inline-flex;
 }
 
 .project-title-container {
@@ -4847,6 +4880,8 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
     align-items: center;
     gap: 1rem;
     width: 100%;
+    min-width: 0;
+    flex: 1;
 }
 
 .project-list-title-wrap {
@@ -5105,8 +5140,35 @@ a.project-list-team:hover {
     background: var(--accent-bg-hover, rgba(0, 0, 0, 0.04));
 }
 
+/* Team list keeps the classic bordered-table layout. It used to inherit this
+   from .project-list-panel/.project-list-table/.project-list-row, but those were
+   repurposed for the Projects card list, so the styling lives here now. */
+.team-list-panel {
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 10px;
+    background: var(--box-bg, #ffffff);
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.team-list-table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+}
+
 .team-list-row {
     scroll-margin-top: 1rem;
+    border-bottom: 1px solid var(--border, #cbd5e1);
+    transition: background-color 0.15s ease;
+}
+
+.team-list-row:hover {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.02));
+}
+
+.team-list-row:last-child {
+    border-bottom: none;
 }
 
 .project-list-actions {

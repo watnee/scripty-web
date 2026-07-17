@@ -353,19 +353,40 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     // --- stack storage ----------------------------------------------------
 
     private UndoRedoState getState(Integer projectId, Integer editionId) {
+        Integer resolvedEditionId = resolveEditionId(projectId, editionId);
         Integer userId = currentUserId();
         return userId != null
-                ? getPersistentState(projectId, editionId, userId)
-                : getSessionState(projectId, editionId);
+                ? getPersistentState(projectId, resolvedEditionId, userId)
+                : getSessionState(projectId, resolvedEditionId);
     }
 
     private void saveState(Integer projectId, Integer editionId, UndoRedoState state) {
+        Integer resolvedEditionId = resolveEditionId(projectId, editionId);
         Integer userId = currentUserId();
         if (userId != null) {
-            savePersistentState(projectId, editionId, userId, state);
+            savePersistentState(projectId, resolvedEditionId, userId, state);
         } else {
-            saveSessionState(projectId, editionId, state);
+            saveSessionState(projectId, resolvedEditionId, state);
         }
+    }
+
+    /**
+     * A null {@code editionId} means "the default edition" everywhere else in the
+     * editor — {@link ProjectVersionService#buildSnapshotJson} and
+     * {@code applySnapshotJson} both resolve it that way. The undo stacks must key
+     * by the same concrete edition, or a checkpoint recorded with a null edition
+     * (bulk delete, inline create, session-less API clients) lands under a
+     * different key than the resolved edition id the web editor sends on undo, and
+     * that history is invisible — undo silently restores nothing. Canonicalize to
+     * the default edition's id so record and query always agree.
+     */
+    private Integer resolveEditionId(Integer projectId, Integer editionId) {
+        if (editionId != null || projectId == null) {
+            return editionId;
+        }
+        return scriptEditionRepository.findDefaultByProjectId(projectId)
+                .map(ScriptEdition::getId)
+                .orElse(null);
     }
 
     /**

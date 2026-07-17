@@ -69,7 +69,7 @@ public class SongExportServiceImpl implements SongExportService {
     @Override
     @Transactional(readOnly = true)
     public SongExport exportSong(Integer documentId, Format format, User currentUser) {
-        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
         if (doc == null || doc.getProject() == null
                 || !TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
             return null;
@@ -94,7 +94,7 @@ public class SongExportServiceImpl implements SongExportService {
         // supplied can only ever narrow the result, never widen it.
         List<TextDocument> songs = new ArrayList<>();
         for (TextDocument doc : textDocumentRepository
-                .findByProjectIdOrderBySortOrderAscUpdatedAtDesc(projectId)) {
+                .findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(projectId)) {
             if (!TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
                 continue;
             }

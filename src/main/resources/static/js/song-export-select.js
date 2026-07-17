@@ -149,7 +149,9 @@
                 var label = ids.length === 1
                     ? '"' + titleOf(ids[0]) + '"'
                     : plural(ids.length, 'song');
-                if (!window.confirm('Delete ' + label + '? This cannot be undone.')) return;
+                var pronoun = ids.length === 1 ? 'it' : 'them';
+                if (!window.confirm('Move ' + label + ' to the trash? You can restore '
+                        + pronoun + ' for 30 days.')) return;
 
                 Array.prototype.slice.call(deleteForm.querySelectorAll('input[name="id"]'))
                     .forEach(function (old) { old.remove(); });

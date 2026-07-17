@@ -54,7 +54,7 @@ class SongBlockServiceImplTest {
         doc.setDocumentType(TextDocument.TYPE_SONG);
         doc.setContent("");
 
-        when(textDocumentRepository.findById(7)).thenReturn(Optional.of(doc));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(7)).thenReturn(Optional.of(doc));
         when(textDocumentRepository.save(any(TextDocument.class))).thenAnswer(i -> i.getArgument(0));
         when(projectRepository.save(any(Project.class))).thenAnswer(i -> i.getArgument(0));
 

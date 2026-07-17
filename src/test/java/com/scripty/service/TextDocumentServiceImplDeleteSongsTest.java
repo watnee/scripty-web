@@ -1,6 +1,8 @@
 package com.scripty.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -67,46 +69,51 @@ class TextDocumentServiceImplDeleteSongsTest {
     }
 
     @Test
-    void deleteSongsDeletesEverySelectedSong() {
-        when(textDocumentRepository.findByIdAndProjectId(42, 7)).thenReturn(Optional.of(song));
-        when(textDocumentRepository.findByIdAndProjectId(43, 7)).thenReturn(Optional.of(otherSong));
+    void deleteSongsTrashesEverySelectedSong() {
+        when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(42, 7)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(43, 7)).thenReturn(Optional.of(otherSong));
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
         assertEquals(2, service.deleteSongs(List.of(42, 43), 7, user));
 
-        verify(textDocumentRepository).delete(song);
-        verify(textDocumentRepository).delete(otherSong);
+        // A bulk delete is still recoverable: it trashes rather than destroys.
+        assertTrue(song.isDeleted());
+        assertTrue(otherSong.isDeleted());
+        verify(textDocumentRepository).save(song);
+        verify(textDocumentRepository).save(otherSong);
+        verify(textDocumentRepository, never()).delete(any(TextDocument.class));
     }
 
     @Test
     void deleteSongsCountsRepeatedIdsOnce() {
-        when(textDocumentRepository.findByIdAndProjectId(42, 7)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(42, 7)).thenReturn(Optional.of(song));
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
         assertEquals(1, service.deleteSongs(List.of(42, 42), 7, user));
     }
 
     @Test
-    void deleteSongsSkipsMissingAndNonSongIdsButDeletesTheRest() {
+    void deleteSongsSkipsMissingAndNonSongIdsButTrashesTheRest() {
         otherSong.setDocumentType(TextDocument.TYPE_NOTES);
-        when(textDocumentRepository.findByIdAndProjectId(42, 7)).thenReturn(Optional.of(song));
-        when(textDocumentRepository.findByIdAndProjectId(43, 7)).thenReturn(Optional.of(otherSong));
-        when(textDocumentRepository.findByIdAndProjectId(99, 7)).thenReturn(Optional.empty());
+        when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(42, 7)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(43, 7)).thenReturn(Optional.of(otherSong));
+        when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(99, 7)).thenReturn(Optional.empty());
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
         assertEquals(1, service.deleteSongs(Arrays.asList(42, 43, 99, null), 7, user));
 
-        verify(textDocumentRepository).delete(song);
-        verify(textDocumentRepository, never()).delete(otherSong);
+        assertTrue(song.isDeleted());
+        assertFalse(otherSong.isDeleted(), "a stale selection must not take a note with it");
     }
 
     @Test
     void deleteSongsRequiresProjectAccess() {
-        when(textDocumentRepository.findByIdAndProjectId(42, 7)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(42, 7)).thenReturn(Optional.of(song));
         when(projectService.canUserAccessProject(7, user)).thenReturn(false);
 
         assertEquals(0, service.deleteSongs(List.of(42), 7, user));
 
+        verify(textDocumentRepository, never()).save(any(TextDocument.class));
         verify(textDocumentRepository, never()).delete(any(TextDocument.class));
     }
 
@@ -117,6 +124,7 @@ class TextDocumentServiceImplDeleteSongsTest {
         assertEquals(0, service.deleteSongs(List.of(42), null, user));
         assertEquals(0, service.deleteSongs(List.of(42), 7, null));
 
+        verify(textDocumentRepository, never()).save(any(TextDocument.class));
         verify(textDocumentRepository, never()).delete(any(TextDocument.class));
     }
 }

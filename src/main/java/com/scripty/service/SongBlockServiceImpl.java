@@ -57,7 +57,7 @@ public class SongBlockServiceImpl implements SongBlockService {
         if (documentId == null) {
             return null;
         }
-        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
         if (doc == null || doc.getProject() == null) {
             return null;
         }
@@ -77,7 +77,7 @@ public class SongBlockServiceImpl implements SongBlockService {
     @Override
     @Transactional
     public List<SongBlockViewModel> getBlocks(Integer documentId) {
-        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
         if (doc == null) {
             return List.of();
         }
@@ -88,7 +88,7 @@ public class SongBlockServiceImpl implements SongBlockService {
     @Override
     @Transactional
     public SongBlock appendBlock(Integer documentId) {
-        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
         if (doc == null) {
             return null;
         }
@@ -203,7 +203,7 @@ public class SongBlockServiceImpl implements SongBlockService {
     @Override
     @Transactional
     public List<LineSnapshot> snapshotLines(Integer documentId) {
-        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
         if (doc == null) {
             return null;
         }
@@ -215,7 +215,7 @@ public class SongBlockServiceImpl implements SongBlockService {
     @Override
     @Transactional
     public void replaceLines(Integer documentId, List<LineSnapshot> lines) {
-        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
         if (doc == null || lines == null) {
             return;
         }

@@ -51,7 +51,7 @@ public class SongVersionServiceImpl implements SongVersionService {
     public SongVersionHistoryViewModel getVersionHistoryViewModel(Integer documentId) {
         SongVersionHistoryViewModel vm = new SongVersionHistoryViewModel();
         TextDocument doc = documentId != null
-                ? textDocumentRepository.findById(documentId).orElse(null)
+                ? textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null)
                 : null;
         if (doc == null) {
             vm.setDocumentId(documentId != null ? documentId : 0);
@@ -104,7 +104,7 @@ public class SongVersionServiceImpl implements SongVersionService {
 
     private SongVersion createVersionFromSnapshot(Integer documentId, String label, String snapshotJson) {
         TextDocument doc = documentId != null
-                ? textDocumentRepository.findById(documentId).orElse(null)
+                ? textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null)
                 : null;
         if (doc == null || snapshotJson == null) {
             return null;
@@ -121,7 +121,7 @@ public class SongVersionServiceImpl implements SongVersionService {
     @Transactional
     public String buildSnapshotJson(Integer documentId) {
         TextDocument doc = documentId != null
-                ? textDocumentRepository.findById(documentId).orElse(null)
+                ? textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null)
                 : null;
         if (doc == null) {
             return null;
@@ -212,7 +212,7 @@ public class SongVersionServiceImpl implements SongVersionService {
         // replaceLines rebuilds the document content and stamps updatedAt, so the
         // title is saved through the same document instance it loads.
         songBlockService.replaceLines(documentId, linesOf(snapshot));
-        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
         if (doc != null) {
             String title = titleOf(snapshot);
             if (title != null && !title.isBlank()) {

@@ -48,6 +48,14 @@
            th:text="${documentShareMessage}"
            role="status"></p>
 
+        <p class="text-document-import-banner"
+           th:if="${documentTrashMessage != null}"
+           role="status">
+            <span th:text="${documentTrashMessage}">Moved to the trash.</span>
+            <a th:href="@{/project/documents/trash(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
+               th:text="${isSongList} ? 'View deleted songs' : 'View deleted notes'">View trash</a>
+        </p>
+
         <section class="text-documents-section"
                  th:classappend="${isSongList} ? ' text-documents-section--songs' : ' text-documents-section--drafts'"
                  th:attr="aria-labelledby=${isSongList} ? 'songs-heading' : 'drafts-heading'">
@@ -124,6 +132,11 @@
                             th:if="${isSongList and !#lists.isEmpty(documents)}"
                             title="Select songs to delete"
                             disabled>Delete</button>
+                    <a th:if="${isSongList} ? ${viewModel.trashedSongCount > 0} : ${viewModel.trashedDraftCount > 0}"
+                       th:href="@{/project/documents/trash(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
+                       class="project-list-action-btn project-list-action-btn--secondary"
+                       th:title="${isSongList} ? 'Restore a deleted song' : 'Restore a deleted note'"
+                       th:text="'Trash (' + (${isSongList} ? ${viewModel.trashedSongCount} : ${viewModel.trashedDraftCount}) + ')'">Trash</a>
                     <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
                        class="project-list-action-btn project-list-action-btn--primary"
                        th:text="${isSongList} ? 'New Song' : 'New Note'">New</a>
@@ -300,7 +313,7 @@
                               method="post"
                               class="text-document-delete-form"
                               hx-boost="false"
-                              th:attr="onsubmit=${isSongList} ? 'return confirm(\'Delete this song? This cannot be undone.\');' : 'return confirm(\'Delete this note? This cannot be undone.\');'">
+                              th:attr="onsubmit=${isSongList} ? 'return confirm(\'Move this song to the trash? You can restore it for 30 days.\');' : 'return confirm(\'Move this note to the trash? You can restore it for 30 days.\');'">
                             <input type="hidden" name="id" th:value="${doc.id}" />
                             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
                             <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />

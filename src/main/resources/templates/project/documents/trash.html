@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title th:text="${isSongList} ? ('Scripty - Deleted songs — ' + ${viewModel.projectTitle}) : ('Scripty - Deleted notes — ' + ${viewModel.projectTitle})">Scripty - Trash</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main class="text-documents-page"
+          th:classappend="${isSongList} ? ' text-documents-page--songs' : ' text-documents-page--drafts'">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}">Project</a></li>
+                    <li><a th:href="${isSongList} ? @{/project/documents/songs(projectId=${viewModel.projectId})} : @{/project/documents/notes(projectId=${viewModel.projectId})}"
+                           th:text="${isSongList} ? 'Songs' : 'Notes'">Documents</a></li>
+                    <li aria-current="page">Trash</li>
+                </ol>
+            </nav>
+        </div>
+
+        <p class="text-document-import-banner"
+           th:if="${documentTrashMessage != null}"
+           th:text="${documentTrashMessage}"
+           role="status"></p>
+
+        <section class="text-documents-section">
+            <div class="text-documents-section-header">
+                <div class="text-documents-section-intro">
+                    <span class="text-documents-section-mark" aria-hidden="true">🗑</span>
+                    <div>
+                        <div class="text-documents-heading-row">
+                            <h2 id="trash-heading" th:text="${isSongList} ? 'Deleted songs' : 'Deleted notes'">Trash</h2>
+                        </div>
+                        <p class="muted">
+                            Restore brings the
+                            <span th:text="${isSongList} ? 'song' : 'note'">item</span>
+                            back with its lyrics and version history intact.
+                        </p>
+                    </div>
+                </div>
+                <div class="text-documents-section-actions">
+                    <a th:href="@{/project/documents/trash(projectId=${viewModel.projectId}, type=${isSongList} ? 'NOTES' : 'SONG')}"
+                       class="project-list-action-btn project-list-action-btn--secondary"
+                       th:if="${otherCount > 0}"
+                       th:text="${isSongList} ? 'Deleted notes (' + ${otherCount} + ')' : 'Deleted songs (' + ${otherCount} + ')'">Other</a>
+                    <a th:href="${isSongList} ? @{/project/documents/songs(projectId=${viewModel.projectId})} : @{/project/documents/notes(projectId=${viewModel.projectId})}"
+                       class="project-list-action-btn project-list-action-btn--primary"
+                       th:text="${isSongList} ? 'Back to Songs' : 'Back to Notes'">Back</a>
+                </div>
+            </div>
+
+            <div class="text-documents-empty-state" th:if="${#lists.isEmpty(documents)}">
+                <p class="text-documents-empty-title"
+                   th:text="${isSongList} ? 'No deleted songs' : 'No deleted notes'">Empty</p>
+                <p class="muted">
+                    Anything you delete lands here first, and stays recoverable for 30 days.
+                </p>
+            </div>
+
+            <ul class="text-documents-list" th:if="${!#lists.isEmpty(documents)}">
+                <li th:each="doc, iter : ${documents}"
+                    class="text-document-card"
+                    th:style="'--card-i:' + ${iter.index}">
+                    <div class="text-document-card-main">
+                        <span class="text-document-card-title" th:text="${doc.title}">Untitled</span>
+                        <div class="text-document-card-meta">
+                            <span class="text-document-type-badge"
+                                  th:classappend="${isSongList} ? ' text-document-type-badge--song'"
+                                  th:text="${isSongList} ? 'Song' : ${doc.documentTypeLabel}">Type</span>
+                            <span class="muted"
+                                  th:if="${doc.deletedAt != null}"
+                                  th:title="${#temporals.format(doc.deletedAt, 'MMM d, yyyy, h:mm a')}">
+                                Deleted <span th:replace="~{fragments/lastEditedTime :: relativeTime(${doc.deletedAt})}"></span>
+                            </span>
+                            <span class="muted"
+                                  th:if="${doc.purgesAt != null}"
+                                  th:text="'Deletes permanently on ' + ${#temporals.format(doc.purgesAt, 'MMM d, yyyy')}">Purge date</span>
+                        </div>
+                        <p class="text-document-preview"
+                           th:if="${!#strings.isEmpty(doc.preview)}"
+                           th:text="${doc.preview}"></p>
+                        <p class="text-document-preview text-document-preview--empty" th:if="${#strings.isEmpty(doc.preview)}">Empty</p>
+                    </div>
+                    <div class="text-document-card-actions">
+                        <form th:action="@{/project/documents/restore}" method="post" hx-boost="false">
+                            <input type="hidden" name="id" th:value="${doc.id}" />
+                            <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                            <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--primary"
+                                    th:title="${isSongList} ? 'Put this song back in the list' : 'Put this note back in the list'">Restore</button>
+                        </form>
+                        <form th:action="@{/project/documents/purge}"
+                              method="post"
+                              hx-boost="false"
+                              class="text-document-purge-form"
+                              th:attr="data-doc-title=${doc.title}">
+                            <input type="hidden" name="id" th:value="${doc.id}" />
+                            <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                            <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn">Delete forever</button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+        </section>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script>
+        (function() {
+            document.querySelectorAll('.text-document-purge-form').forEach(function(purgeForm) {
+                purgeForm.addEventListener('submit', function(e) {
+                    var title = purgeForm.getAttribute('data-doc-title') || 'this item';
+                    var message = 'Permanently delete "' + title + '"?\n\n'
+                        + 'Its lyrics and version history go with it. This cannot be undone.';
+                    if (!window.confirm(message)) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

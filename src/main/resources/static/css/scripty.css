@@ -12106,38 +12106,135 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
     position: absolute;
     z-index: 1300;
     margin: 0;
-    padding: 0.25rem 0;
+    padding: 0.3rem;
     list-style: none;
-    background: var(--bg, #fff);
+    min-width: 11rem;
+    background: var(--box-bg, var(--bg, #fff));
     color: var(--fg, #111);
-    border: 1px solid color-mix(in srgb, var(--fg, #111) 18%, transparent);
-    box-shadow: none;
-    max-height: 14rem;
+    border: 1px solid color-mix(in srgb, var(--fg, #111) 12%, transparent);
+    border-radius: calc(var(--border-radius, 0.2rem) + 0.35rem);
+    box-shadow: 0 14px 32px -16px rgba(12, 18, 34, 0.55),
+                0 2px 6px -3px rgba(12, 18, 34, 0.3);
+    max-width: min(20rem, calc(100vw - 1rem));
+    max-height: 16rem;
+    overflow-x: hidden;
     overflow-y: auto;
     font-size: 0.85rem;
+    line-height: 1.35;
     letter-spacing: normal;
     text-transform: none;
+    -webkit-overflow-scrolling: touch;
+    animation: scripty-spell-pop 120ms ease-out;
+}
+
+@keyframes scripty-spell-pop {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scripty-spell-suggestions { animation: none; }
 }
 
 .scripty-spell-suggestions li {
-    padding: 0.35rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.55rem;
+    border-radius: var(--border-radius, 0.2rem);
     cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* Long words / labels ellipsize rather than force a horizontal scrollbar */
+.scripty-spell-suggestions .scripty-spell-word,
+.scripty-spell-suggestions .scripty-spell-action-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Header — the flagged word, echoing the wavy error mark */
+.scripty-spell-suggestions li.scripty-spell-header {
+    padding: 0.15rem 0.55rem 0.4rem;
+    margin-bottom: 0.25rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--fg, #111) 8%, transparent);
+    border-radius: 0;
+    cursor: default;
+}
+
+.scripty-spell-suggestions .scripty-spell-header-word {
+    font-weight: 600;
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-decoration: underline wavy
+        color-mix(in srgb, var(--bad-fg-color, #e11d48) 80%, transparent);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+}
+
+.scripty-spell-suggestions li.scripty-spell-suggestion .scripty-spell-word {
+    font-weight: 500;
 }
 
 .scripty-spell-suggestions li.is-active,
-.scripty-spell-suggestions li:hover {
-    background: color-mix(in srgb, var(--accent, #145591) 16%, transparent);
+.scripty-spell-suggestions li[data-suggestion]:hover,
+.scripty-spell-suggestions li[data-action]:hover {
+    background: color-mix(in srgb, var(--accent, #145591) 15%, transparent);
     color: var(--accent, #145591);
 }
 
-.scripty-spell-suggestions li.scripty-spell-ignore,
-.scripty-spell-suggestions li.scripty-spell-delete {
-    border-top: 1px solid color-mix(in srgb, var(--fg, #111) 12%, transparent);
-    margin-top: 0.15rem;
-    font-size: 0.8rem;
-    color: color-mix(in srgb, var(--fg, #111) 70%, transparent);
-    text-transform: none;
-    letter-spacing: normal;
+.scripty-spell-suggestions li.scripty-spell-empty {
+    color: var(--muted-fg, #64748b);
+    font-style: italic;
+    cursor: default;
+    padding-top: 0.15rem;
+    padding-bottom: 0.35rem;
+}
+
+/* Divider between suggestions and the action rows */
+.scripty-spell-suggestions li.scripty-spell-sep {
+    height: 1px;
+    min-height: 1px;
+    padding: 0;
+    margin: 0.3rem 0.25rem;
+    background: color-mix(in srgb, var(--fg, #111) 10%, transparent);
+    border-radius: 0;
+    cursor: default;
+    pointer-events: none;
+}
+
+.scripty-spell-suggestions li.scripty-spell-action {
+    font-size: 0.82rem;
+    color: color-mix(in srgb, var(--fg, #111) 78%, transparent);
+}
+
+.scripty-spell-suggestions li.scripty-spell-action .scripty-spell-ico {
+    flex: 0 0 auto;
+    opacity: 0.7;
+}
+
+.scripty-spell-suggestions li.scripty-spell-action:hover .scripty-spell-ico,
+.scripty-spell-suggestions li.scripty-spell-action.is-active .scripty-spell-ico {
+    opacity: 1;
+}
+
+/* Delete is destructive — tint its hover/active red */
+.scripty-spell-suggestions li.scripty-spell-delete:hover,
+.scripty-spell-suggestions li.scripty-spell-delete.is-active {
+    background: color-mix(in srgb, var(--bad-fg-color, #e11d48) 14%, transparent);
+    color: var(--bad-fg-color, #e11d48);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.-no-dark-theme):not([data-theme-setting="light"]) .scripty-spell-suggestions {
+        box-shadow: 0 16px 38px -18px rgba(0, 0, 0, 0.8),
+                    0 0 0 1px color-mix(in srgb, var(--fg, #e5e7eb) 8%, transparent);
+    }
 }
 
 /* Fountain power-user: character autocomplete */

@@ -10922,6 +10922,32 @@ html.scripty-page-view-mode body.focus-mode .project-script {
         width: auto;
         text-align: left;
     }
+
+    /* Scene headings sit flush-left at the action margin (industry standard),
+       not centered — the last screenplay element still using the older
+       centered layout. Matches print and the left-aligned action lines. */
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-scene .script-block-text,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-scene .reader-visible-text,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-scene .block-input-textarea,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-scene textarea,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-scene h2.scene-header {
+        text-align: left;
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+
+/* Page view mirrors the printed page: scene headings flush-left at the action
+   margin, matching print output and the continuous editor above (print already
+   left-aligns them by default). */
+html.scripty-page-view-mode .project-script .block-content.block-type-scene .script-block-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-scene .reader-visible-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-scene .block-input-textarea,
+html.scripty-page-view-mode .project-script .block-content.block-type-scene textarea,
+html.scripty-page-view-mode .project-script .block-content.block-type-scene h2.scene-header {
+    text-align: left;
+    margin-left: 0;
+    margin-right: 0;
 }
 
 /* Full-width stretches the sheet; metrics already use % of the page body. */

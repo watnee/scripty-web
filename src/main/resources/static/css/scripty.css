@@ -3044,6 +3044,13 @@ body.htmx-swapping {
     margin-bottom: 0.25rem !important;
 }
 
+/* A SCENE block shows as <h2 class="scene-header"> but swaps to a margin-less
+   <span> on click. Without this the !important margins above vanish in the swap
+   and every block below jumps up. Reader's bare .scene-header keeps them. */
+h2.script-block-text.scene-header {
+    margin: 0 !important;
+}
+
 h1.scene-header > small a[role="button"] {
     font-size: 0.75em;
 }

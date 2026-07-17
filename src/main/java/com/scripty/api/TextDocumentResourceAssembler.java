@@ -1,6 +1,8 @@
 package com.scripty.api;
 
 import com.scripty.controller.ProjectRestController;
+import com.scripty.controller.SongBlockRestController;
+import com.scripty.controller.SongVersionRestController;
 import com.scripty.controller.TextDocumentRestController;
 import com.scripty.dto.TextDocument;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
@@ -92,6 +94,14 @@ public class TextDocumentResourceAssembler {
     private org.springframework.hateoas.Link[] documentLinks(int id, Integer projectId, String type) {
         List<org.springframework.hateoas.Link> links = new ArrayList<>();
         links.add(linkTo(methodOn(TextDocumentRestController.class).show(id, null)).withSelfRel());
+        if (TextDocument.TYPE_SONG.equalsIgnoreCase(type)) {
+            // Only songs are edited as ordered blocks and versioned; notes are
+            // plain content, with no lyrics or history to navigate to.
+            links.add(linkTo(methodOn(SongBlockRestController.class).list(id, null))
+                    .withRel(ApiRel.SONG_BLOCKS));
+            links.add(linkTo(methodOn(SongVersionRestController.class).list(id, null))
+                    .withRel(ApiRel.VERSIONS));
+        }
         if (projectId != null) {
             links.add(linkTo(methodOn(TextDocumentRestController.class).list(projectId, null, null))
                     .withRel(ApiRel.DOCUMENTS));

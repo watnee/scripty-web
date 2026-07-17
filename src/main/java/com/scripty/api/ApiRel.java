@@ -30,6 +30,9 @@ public final class ApiRel {
     public static final String DOCUMENTS = "documents";
     public static final String DOCUMENT = "document";
     public static final String SONGS = "songs";
+    public static final String SONG = "song";
+    public static final String SONG_BLOCKS = "songBlocks";
+    public static final String SET_HIGHLIGHT = "setHighlight";
     public static final String NOTES = "notes";
     public static final String INSERT = "insert";
     public static final String SHARE_EMAIL = "shareEmail";

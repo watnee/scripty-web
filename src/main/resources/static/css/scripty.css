@@ -3036,6 +3036,13 @@ body.htmx-swapping {
     font-size: 1em;
 }
 
+/* A SCENE block shows as <h2 class="scene-header"> but swaps to a margin-less
+   <span> on click. The :not() above already keeps the margins off it; this holds
+   the line against any other !important h2 margin escaping into the block grid. */
+h2.script-block-text.scene-header {
+    margin: 0 !important;
+}
+
 h1.scene-header > small a[role="button"] {
     font-size: 0.75em;
 }

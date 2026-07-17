@@ -17,6 +17,8 @@ public class ProjectActivity {
 
     public static final String ACTION_PROJECT_CREATED = "PROJECT_CREATED";
     public static final String ACTION_PROJECT_RENAMED = "PROJECT_RENAMED";
+    public static final String ACTION_PROJECT_DELETED = "PROJECT_DELETED";
+    public static final String ACTION_PROJECT_RESTORED = "PROJECT_RESTORED";
     public static final String ACTION_TITLE_PAGE_UPDATED = "TITLE_PAGE_UPDATED";
     public static final String ACTION_TEAMS_UPDATED = "TEAMS_UPDATED";
     public static final String ACTION_SCRIPT_EDITED = "SCRIPT_EDITED";

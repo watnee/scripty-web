@@ -20,6 +20,11 @@
             <span th:text="${projectImportMessage}"></span>
         </div>
 
+        <div class="login-success" th:if="${projectTrashMessage != null}" role="status">
+            <span th:text="${projectTrashMessage}">Moved to the trash.</span>
+            <a th:href="@{/project/trash}">View trash</a>
+        </div>
+
         <div class="project-list-header">
             <div class="project-list-header-text">
                 <h1>Projects</h1>
@@ -32,6 +37,10 @@
                 <p class="muted" th:if="${#lists.isEmpty(viewModel.projects)}">Your screenplays live here.</p>
             </div>
             <div class="project-list-header-actions">
+                <a th:href="@{/project/trash}"
+                   role="button"
+                   class="project-list-import-btn"
+                   title="Screenplays you deleted in the last 30 days">Trash</a>
                 <button type="button"
                         id="project-list-import-btn"
                         class="project-list-import-btn"

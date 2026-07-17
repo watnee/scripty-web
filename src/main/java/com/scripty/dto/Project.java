@@ -15,9 +15,24 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.hibernate.annotations.SQLRestriction;
 
+/**
+ * Screenplays are soft deleted: {@code deleted_at} marks one as trashed instead of
+ * removing the row, so its scenes, versions, editions, and documents survive until
+ * the trash is purged.
+ *
+ * <p>Unlike {@link TextDocument}, whose reads all funnel through a repository that
+ * names its side of the line, projects are loaded by {@code findById} from dozens of
+ * call sites. The {@link SQLRestriction} below is what makes that safe: Hibernate
+ * appends it to every query for this entity, so a trashed screenplay disappears from
+ * every read path at once and a missed call site can't leak one. The cost is that
+ * reaching a trashed project takes a deliberate opt-out — see the native queries in
+ * {@code ProjectRepository}, which are the only way back in.
+ */
 @Entity
 @Table(name = "project")
+@SQLRestriction("deleted_at is null")
 public class Project {
 
     @Id
@@ -40,6 +55,9 @@ public class Project {
 
     @Column(name = "last_edited")
     private LocalDateTime lastEdited;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -66,6 +84,18 @@ public class Project {
 
     public LocalDateTime getLastEdited() {
         return lastEdited;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public boolean isTrashed() {
+        return deletedAt != null;
     }
 
     public void setLastEdited(LocalDateTime lastEdited) {

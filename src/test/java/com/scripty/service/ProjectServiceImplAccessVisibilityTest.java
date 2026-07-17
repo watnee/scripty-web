@@ -12,6 +12,7 @@ import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.TeamRepository;
+import com.scripty.repository.UserRepository;
 import com.scripty.viewmodel.project.projectprofile.ProjectShareUserViewModel;
 import com.scripty.viewmodel.user.userprofile.UserProjectAccessViewModel;
 import java.util.List;
@@ -39,6 +40,8 @@ class ProjectServiceImplAccessVisibilityTest {
     private ProjectActivityService projectActivityService;
     @Mock
     private ScriptEditionService scriptEditionService;
+    @Mock
+    private UserRepository userRepository;
 
     private ProjectServiceImpl projectService;
 
@@ -51,7 +54,8 @@ class ProjectServiceImplAccessVisibilityTest {
                 teamRepository,
                 userService,
                 projectActivityService,
-                scriptEditionService);
+                scriptEditionService,
+                userRepository);
     }
 
     @Test

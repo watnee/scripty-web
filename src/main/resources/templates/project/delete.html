@@ -20,55 +20,27 @@
             </ol>
         </nav>
 
-        <div class="box bad" style="margin-bottom: 2rem; border-left: 5px solid var(--bad-fg, #d32f2f); padding: 1.5rem; background: var(--bg-bad, #fde8e8); border-radius: 6px;">
-            <h2 style="color: var(--bad-fg, #d32f2f); margin-top: 0;">⚠️ Danger Zone: Delete Project</h2>
+        <div class="box" style="margin-bottom: 2rem; border-left: 5px solid var(--muted-fg, #6b7280); padding: 1.5rem; border-radius: 6px;">
+            <h2 style="margin-top: 0;">Delete Project</h2>
             <p>You are about to delete the project <strong id="project-title-to-match" th:text="${viewModel.title}">[Project Title]</strong>.</p>
-            <p style="font-weight: bold;">This action is permanent and cannot be undone.</p>
-            <p>Deleting this project will permanently remove:</p>
-            <ul>
-                <li>All scenes and blocks</li>
-                <li>All character profiles and association data</li>
-                <li>All auto-save history and versions</li>
-            </ul>
+            <p>It moves to the trash, where you can restore it for the next 30 days. Its scenes,
+               character profiles, version history, editions, songs, and notes all go with it and
+               come back intact.</p>
+            <p>After 30 days it is deleted for good. You can also delete it permanently before then
+               from the <a th:href="@{/project/trash}">trash</a>.</p>
         </div>
 
         <form th:action="@{/project/delete}" method="post" style="max-width: 500px;">
             <input type="hidden" name="id" th:value="${viewModel.id}" />
-            
-            <p>
-                To confirm deletion, please type the project name: 
-                <strong style="user-select: all;" th:text="${viewModel.title}">[Project Title]</strong>
-            </p>
-            
-            <label style="display: block; margin-bottom: 1.5rem;">
-                <input type="text" id="confirm-title-input" placeholder="Type project name here" autocomplete="off" style="width: 100%; box-sizing: border-box;" />
-            </label>
-            
+
             <p style="display: flex; gap: 1rem; align-items: center;">
                 <a th:href="@{/project/show(id=${viewModel.id})}" role="button" class="secondary">Cancel</a>
-                <button type="submit" id="delete-submit-btn" class="bad" disabled style="background-color: var(--bad-fg, #d32f2f); color: white;">Permanently Delete Project</button>
+                <button type="submit" id="delete-submit-btn">Move to Trash</button>
             </p>
         </form>
     </main>
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
-    <script>
-    (function() {
-        const projectTitleEl = document.getElementById('project-title-to-match');
-        const projectTitle = projectTitleEl ? projectTitleEl.textContent : '';
-        const input = document.getElementById('confirm-title-input');
-        const btn = document.getElementById('delete-submit-btn');
-        if (input && btn) {
-            input.addEventListener('input', function() {
-                if (input.value.trim() === projectTitle.trim()) {
-                    btn.removeAttribute('disabled');
-                } else {
-                    btn.setAttribute('disabled', 'true');
-                }
-            });
-        }
-    })();
-    </script>
 </body>
 </html>

@@ -397,12 +397,58 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/delete")
-    public String delete(@RequestParam Integer id, Principal principal) {
+    public String delete(@RequestParam Integer id, Principal principal,
+                         RedirectAttributes redirectAttributes) {
         if (denyProjectAccess(id, principal)) {
             return "redirect:/project/list";
         }
-        projectService.deleteProject(id);
+        Project deleted = projectService.deleteProject(id);
+        if (deleted != null) {
+            redirectAttributes.addFlashAttribute(
+                    "projectTrashMessage",
+                    "Moved \"" + deleted.getTitle() + "\" to the trash.");
+        }
         return "redirect:/project/list";
+    }
+
+    @RequestMapping(value = "/trash")
+    public String trash(Model model, Principal principal) {
+        User currentUser = principal != null ? userService.readByUsername(principal.getName()) : null;
+        if (currentUser == null) {
+            return "redirect:/project/list";
+        }
+        model.addAttribute("viewModel", projectService.getProjectTrashViewModel(currentUser));
+        return "project/trash";
+    }
+
+    @RequestMapping(value = "/restore", method = RequestMethod.POST)
+    public String restore(@RequestParam Integer id, Principal principal,
+                          RedirectAttributes redirectAttributes) {
+        User currentUser = principal != null ? userService.readByUsername(principal.getName()) : null;
+        // Access is checked against the trashed project itself — denyProjectAccess can't help
+        // here, since the restriction hides the project from the lookup it does.
+        Project restored = currentUser != null ? projectService.restoreProject(id, currentUser) : null;
+        if (restored == null) {
+            redirectAttributes.addFlashAttribute(
+                    "projectTrashMessage",
+                    "Could not restore that screenplay. It may already have been restored or deleted for good.");
+            return "redirect:/project/trash";
+        }
+        redirectAttributes.addFlashAttribute(
+                "projectTrashMessage",
+                "Restored \"" + restored.getTitle() + "\".");
+        return "redirect:/project/list";
+    }
+
+    @RequestMapping(value = "/purge", method = RequestMethod.POST)
+    public String purge(@RequestParam Integer id, Principal principal,
+                        RedirectAttributes redirectAttributes) {
+        User currentUser = principal != null ? userService.readByUsername(principal.getName()) : null;
+        boolean purged = currentUser != null && projectService.purgeProject(id, currentUser);
+        redirectAttributes.addFlashAttribute(
+                "projectTrashMessage",
+                purged ? "Deleted permanently." : "Could not delete that screenplay.");
+        return "redirect:/project/trash";
     }
 
     @RequestMapping(value = "/edit")

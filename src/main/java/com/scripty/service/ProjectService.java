@@ -11,6 +11,7 @@ import com.scripty.viewmodel.project.editproject.EditProjectViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectShareUserViewModel;
+import com.scripty.viewmodel.project.projecttrash.ProjectTrashViewModel;
 import com.scripty.viewmodel.user.userprofile.UserProjectAccessViewModel;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,22 @@ public interface ProjectService {
     TitlePageCommandModel getTitlePageCommandModel(Integer id);
     Project saveTitlePageCommandModel(TitlePageCommandModel titlePageCommandModel);
 
+    /**
+     * Moves a screenplay to the trash. Its scenes, versions, editions, and documents stay put
+     * so a restore brings the whole thing back; the row is removed for good only by
+     * {@link #purgeProject} or, after the retention window, {@link #purgeExpiredProjects}.
+     */
     Project deleteProject(Integer id);
+
+    ProjectTrashViewModel getProjectTrashViewModel(User currentUser);
+
+    Project restoreProject(Integer id, User currentUser);
+
+    /** Permanently deletes a trashed screenplay. Reachable only from the trash. */
+    boolean purgeProject(Integer id, User currentUser);
+
+    /** Permanently deletes trashed screenplays past the retention window. For the nightly job. */
+    int purgeExpiredProjects();
 
     void setProjectTeams(Integer projectId, java.util.List<Integer> teamIds);
 

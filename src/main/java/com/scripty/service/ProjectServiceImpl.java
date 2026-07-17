@@ -14,6 +14,7 @@ import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.TeamRepository;
+import com.scripty.repository.UserRepository;
 import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
@@ -25,7 +26,10 @@ import com.scripty.viewmodel.project.projectprofile.PersonViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectShareUserViewModel;
 import com.scripty.viewmodel.project.projectprofile.SceneViewModel;
+import com.scripty.viewmodel.project.projecttrash.ProjectTrashItemViewModel;
+import com.scripty.viewmodel.project.projecttrash.ProjectTrashViewModel;
 import com.scripty.viewmodel.user.userprofile.UserProjectAccessViewModel;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +51,11 @@ public class ProjectServiceImpl implements ProjectService {
     private final UserService userService;
     private final ProjectActivityService projectActivityService;
     private final ScriptEditionService scriptEditionService;
+    private final UserRepository userRepository;
+
+    /** How long a trashed screenplay stays recoverable before the purge job removes it. */
+    @Value("${scripty.projects.trash-retention-days:30}")
+    private int trashRetentionDays = 30;
 
     @Autowired
     public ProjectServiceImpl(ProjectRepository projectRepository,
@@ -54,7 +64,8 @@ public class ProjectServiceImpl implements ProjectService {
                               TeamRepository teamRepository,
                               UserService userService,
                               ProjectActivityService projectActivityService,
-                              ScriptEditionService scriptEditionService) {
+                              ScriptEditionService scriptEditionService,
+                              UserRepository userRepository) {
         this.projectRepository = projectRepository;
         this.personRepository = personRepository;
         this.blockRepository = blockRepository;
@@ -62,6 +73,7 @@ public class ProjectServiceImpl implements ProjectService {
         this.userService = userService;
         this.projectActivityService = projectActivityService;
         this.scriptEditionService = scriptEditionService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -532,10 +544,104 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional
     public Project deleteProject(Integer id) {
+        if (id == null) {
+            return null;
+        }
         Project project = projectRepository.findById(id).orElse(null);
-        projectRepository.delete(project);
+        if (project == null) {
+            return null;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        // Soft delete: the row and everything hanging off it — scenes, versions, editions,
+        // documents, characters — stay put, so a restore brings the screenplay back whole.
+        // The @SQLRestriction on Project is what hides it from every read path from here on.
+        projectRepository.markTrashed(id, now);
+        project.setDeletedAt(now);
+        // The FK only nulls this on a real delete, so clear it now — otherwise the screenplay
+        // stays someone's default and their dashboard resolves to something they can't open.
+        userRepository.clearDefaultProject(id);
+        projectActivityService.recordForCurrentUser(
+                id,
+                ProjectActivity.ACTION_PROJECT_DELETED,
+                "moved \"" + project.getTitle() + "\" to the trash",
+                ProjectActivity.ENTITY_PROJECT,
+                id);
         return project;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProjectTrashViewModel getProjectTrashViewModel(User currentUser) {
+        ProjectTrashViewModel vm = new ProjectTrashViewModel();
+        vm.setRetentionDays(trashRetentionDays);
+        if (currentUser == null) {
+            return vm;
+        }
+        List<ProjectTrashItemViewModel> items = new ArrayList<>();
+        for (Project project : projectRepository.findTrashed()) {
+            if (!canUserAccessProject(project, currentUser)) {
+                continue;
+            }
+            ProjectTrashItemViewModel item = new ProjectTrashItemViewModel();
+            item.setId(project.getId());
+            item.setTitle(project.getTitle());
+            item.setDeletedAt(project.getDeletedAt());
+            item.setPurgesAt(project.getDeletedAt().plusDays(trashRetentionDays));
+            items.add(item);
+        }
+        vm.setProjects(items);
+        return vm;
+    }
+
+    @Override
+    @Transactional
+    public Project restoreProject(Integer id, User currentUser) {
+        if (id == null || currentUser == null) {
+            return null;
+        }
+        Project project = projectRepository.findTrashedById(id).orElse(null);
+        if (project == null || !canUserAccessProject(project, currentUser)) {
+            return null;
+        }
+        projectRepository.markRestored(id);
+        project.setDeletedAt(null);
+        projectActivityService.recordForCurrentUser(
+                id,
+                ProjectActivity.ACTION_PROJECT_RESTORED,
+                "restored \"" + project.getTitle() + "\" from the trash",
+                ProjectActivity.ENTITY_PROJECT,
+                id);
+        return project;
+    }
+
+    @Override
+    @Transactional
+    public boolean purgeProject(Integer id, User currentUser) {
+        if (id == null || currentUser == null) {
+            return false;
+        }
+        // Only something already in the trash can be purged, so this can never be reached
+        // straight from the list — deleting always leaves a recovery window.
+        Project project = projectRepository.findTrashedById(id).orElse(null);
+        if (project == null || !canUserAccessProject(project, currentUser)) {
+            return false;
+        }
+        // No activity record: project_activity cascades off project_id, so the row would be
+        // deleted by the very statement it describes.
+        return projectRepository.purgeTrashed(id) > 0;
+    }
+
+    @Override
+    @Transactional
+    public int purgeExpiredProjects() {
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(trashRetentionDays);
+        int purged = 0;
+        for (Project project : projectRepository.findTrashedBefore(cutoff)) {
+            purged += projectRepository.purgeTrashed(project.getId());
+        }
+        return purged;
     }
 
     @Override

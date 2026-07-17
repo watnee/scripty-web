@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - Deleted screenplays</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main class="text-documents-page">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li aria-current="page">Trash</li>
+                </ol>
+            </nav>
+        </div>
+
+        <p class="text-document-import-banner"
+           th:if="${projectTrashMessage != null}"
+           th:text="${projectTrashMessage}"
+           role="status"></p>
+
+        <section class="text-documents-section">
+            <div class="text-documents-section-header">
+                <div class="text-documents-section-intro">
+                    <span class="text-documents-section-mark" aria-hidden="true">🗑</span>
+                    <div>
+                        <div class="text-documents-heading-row">
+                            <h2 id="trash-heading">Deleted screenplays</h2>
+                        </div>
+                        <p class="muted">
+                            Restore brings the screenplay back with its scenes, version history,
+                            editions, songs, and notes intact.
+                        </p>
+                    </div>
+                </div>
+                <div class="text-documents-section-actions">
+                    <a th:href="@{/project/list}"
+                       class="project-list-action-btn project-list-action-btn--primary">Back to Projects</a>
+                </div>
+            </div>
+
+            <div class="text-documents-empty-state" th:if="${#lists.isEmpty(viewModel.projects)}">
+                <p class="text-documents-empty-title">No deleted screenplays</p>
+                <p class="muted"
+                   th:text="'Anything you delete lands here first, and stays recoverable for '
+                            + ${viewModel.retentionDays} + ' days.'">Empty</p>
+            </div>
+
+            <ul class="text-documents-list" th:if="${!#lists.isEmpty(viewModel.projects)}">
+                <li th:each="project, iter : ${viewModel.projects}"
+                    class="text-document-card"
+                    th:style="'--card-i:' + ${iter.index}">
+                    <div class="text-document-card-main">
+                        <span class="text-document-card-title" th:text="${project.title}">Untitled</span>
+                        <div class="text-document-card-meta">
+                            <span class="muted"
+                                  th:if="${project.deletedAt != null}"
+                                  th:title="${#temporals.format(project.deletedAt, 'MMM d, yyyy, h:mm a')}">
+                                Deleted <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.deletedAt})}"></span>
+                            </span>
+                            <span class="muted"
+                                  th:if="${project.purgesAt != null}"
+                                  th:text="'Deletes permanently on ' + ${#temporals.format(project.purgesAt, 'MMM d, yyyy')}">Purge date</span>
+                        </div>
+                    </div>
+                    <div class="text-document-card-actions">
+                        <form th:action="@{/project/restore}" method="post" hx-boost="false">
+                            <input type="hidden" name="id" th:value="${project.id}" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--primary"
+                                    title="Put this screenplay back in the list">Restore</button>
+                        </form>
+                        <form th:action="@{/project/purge}"
+                              method="post"
+                              hx-boost="false"
+                              class="project-purge-form"
+                              th:attr="data-project-title=${project.title}">
+                            <input type="hidden" name="id" th:value="${project.id}" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn">Delete forever</button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+        </section>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script>
+        (function() {
+            document.querySelectorAll('.project-purge-form').forEach(function(purgeForm) {
+                purgeForm.addEventListener('submit', function(e) {
+                    var title = purgeForm.getAttribute('data-project-title') || 'this screenplay';
+                    var message = 'Permanently delete "' + title + '"?\n\n'
+                        + 'Its scenes, version history, editions, songs, and notes go with it. '
+                        + 'This cannot be undone.';
+                    if (!window.confirm(message)) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

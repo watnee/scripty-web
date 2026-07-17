@@ -16,7 +16,9 @@ import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -282,6 +284,31 @@ public class TextDocumentServiceImpl implements TextDocumentService {
                 "deleted \"" + title + "\"",
                 ProjectActivity.ENTITY_DOCUMENT,
                 id);
+    }
+
+    @Override
+    @Transactional
+    public int deleteSongs(List<Integer> ids, Integer projectId, User currentUser) {
+        if (ids == null || ids.isEmpty() || projectId == null || currentUser == null) {
+            return 0;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return 0;
+        }
+        int deleted = 0;
+        Set<Integer> seen = new LinkedHashSet<>();
+        for (Integer id : ids) {
+            if (id == null || !seen.add(id)) {
+                continue;
+            }
+            TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+            if (doc == null || !TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+                continue;
+            }
+            delete(id, projectId, currentUser);
+            deleted++;
+        }
+        return deleted;
     }
 
     @Override

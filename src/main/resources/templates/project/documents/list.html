@@ -118,6 +118,12 @@
                             class="project-list-action-btn project-list-action-btn--secondary"
                             th:if="${isSongList and !#lists.isEmpty(documents)}"
                             title="Email every song in this project">Email</button>
+                    <button type="button"
+                            id="songs-delete-selected"
+                            class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn"
+                            th:if="${isSongList and !#lists.isEmpty(documents)}"
+                            title="Select songs to delete"
+                            disabled>Delete</button>
                     <a th:href="@{/project/documents/create(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
                        class="project-list-action-btn project-list-action-btn--primary"
                        th:text="${isSongList} ? 'New Song' : 'New Note'">New</a>
@@ -132,6 +138,15 @@
                   hidden>
                 <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
                 <input type="hidden" name="email" />
+            </form>
+
+            <form id="songs-delete-form"
+                  th:if="${isSongList and !#lists.isEmpty(documents)}"
+                  th:action="@{/project/documents/delete-songs}"
+                  method="post"
+                  hx-boost="false"
+                  hidden>
+                <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
             </form>
 
             <form id="import-doc-form"

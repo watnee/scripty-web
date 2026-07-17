@@ -294,6 +294,22 @@ public class TextDocumentController {
         return "redirect:" + listUrl(projectId, TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type)));
     }
 
+    @RequestMapping(value = "/delete-songs", method = RequestMethod.POST)
+    public String deleteSongs(@RequestParam(name = "id", required = false) List<Integer> ids,
+                              @RequestParam Integer projectId,
+                              Principal principal,
+                              RedirectAttributes redirectAttributes) {
+        int deleted = textDocumentService.deleteSongs(ids, projectId, currentUser(principal));
+        if (deleted == 1) {
+            redirectAttributes.addFlashAttribute("documentShareMessage", "Deleted 1 song.");
+        } else if (deleted > 1) {
+            redirectAttributes.addFlashAttribute("documentShareMessage", "Deleted " + deleted + " songs.");
+        } else {
+            redirectAttributes.addFlashAttribute("documentShareMessage", "Could not delete those songs.");
+        }
+        return "redirect:" + listUrl(projectId, true);
+    }
+
     @RequestMapping(value = "/share-email", method = RequestMethod.POST)
     public String shareEmail(@RequestParam(name = "id", required = false) List<Integer> ids,
                              @RequestParam Integer projectId,

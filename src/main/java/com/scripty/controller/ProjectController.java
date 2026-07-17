@@ -809,6 +809,71 @@ public class ProjectController {
                 .body(fountain.getBytes(StandardCharsets.UTF_8));
     }
 
+    @RequestMapping(value = "/export-projects", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> exportProjects(
+            @RequestParam(required = false) List<Integer> ids,
+            Principal principal) {
+        List<Integer> resolved = new ArrayList<>();
+        if (ids == null || ids.isEmpty()) {
+            // Empty selection means "select all" — every project the user can see.
+            resolved.addAll(accessibleProjectIds(principal));
+        } else {
+            for (Integer id : ids) {
+                if (id != null && !resolved.contains(id) && !denyProjectAccess(id, principal)) {
+                    resolved.add(id);
+                }
+            }
+        }
+        if (resolved.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (resolved.size() == 1) {
+            Integer id = resolved.get(0);
+            Project project = projectService.read(id);
+            byte[] archive = projectArchiveService.exportProject(id);
+            if (project == null || archive == null) {
+                return ResponseEntity.notFound().build();
+            }
+            String filename = exportFilename(project, "scripty.json");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(archive);
+        }
+
+        byte[] zip = projectArchiveService.exportProjectsZip(resolved);
+        if (zip == null) {
+            return ResponseEntity.notFound().build();
+        }
+        String filename = "scripty-projects-" + resolved.size() + ".zip";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(zip);
+    }
+
+    private List<Integer> accessibleProjectIds(Principal principal) {
+        String userTeam = null;
+        if (principal != null) {
+            User currentUser = userService.readByUsername(principal.getName());
+            if (currentUser != null
+                    && !currentUser.isAdmin() && !currentUser.isDirector() && !currentUser.isProducer()
+                    && !currentUser.isWriter() && !currentUser.isActor() && !currentUser.isCrew()
+                    && !currentUser.isDirectorOfPhotography() && !currentUser.isCastingDirector()) {
+                userTeam = currentUser.getTeam();
+            }
+        }
+        ProjectListViewModel viewModel = projectService.getProjectListViewModel(userTeam);
+        List<Integer> ids = new ArrayList<>();
+        if (viewModel != null && viewModel.getProjects() != null) {
+            for (ProjectViewModel project : viewModel.getProjects()) {
+                ids.add(project.getId());
+            }
+        }
+        return ids;
+    }
+
     private static String exportFilename(Project project, String extension) {
         String fallback = "script." + extension;
         String base = null;
@@ -836,15 +901,50 @@ public class ProjectController {
     }
 
     @RequestMapping(value = "/importProject", method = RequestMethod.POST)
-    public String importProject(@RequestParam("file") MultipartFile file,
+    public String importProject(@RequestParam("file") MultipartFile[] files,
                                 RedirectAttributes redirectAttributes) {
-        try {
-            Project project = projectArchiveService.importProject(file);
-            return "redirect:/project/show?id=" + project.getId();
-        } catch (ScriptImportException e) {
-            redirectAttributes.addFlashAttribute("projectImportMessage", e.getUserMessage());
+        List<Project> imported = new ArrayList<>();
+        List<String> failures = new ArrayList<>();
+        if (files != null) {
+            for (MultipartFile file : files) {
+                if (file == null || file.isEmpty()) {
+                    continue;
+                }
+                try {
+                    imported.add(projectArchiveService.importProject(file));
+                } catch (ScriptImportException e) {
+                    String name = file.getOriginalFilename();
+                    failures.add((name != null && !name.isBlank() ? name + ": " : "") + e.getUserMessage());
+                }
+            }
+        }
+
+        // A single clean import lands the user in the new project, matching the
+        // long-standing one-file behaviour.
+        if (imported.size() == 1 && failures.isEmpty()) {
+            return "redirect:/project/show?id=" + imported.get(0).getId();
+        }
+        if (imported.isEmpty() && failures.isEmpty()) {
+            redirectAttributes.addFlashAttribute("projectImportMessage",
+                    "No file selected. Choose a .scripty.json file exported from Scripty.");
             return "redirect:/project/list";
         }
+
+        StringBuilder message = new StringBuilder();
+        if (!imported.isEmpty()) {
+            message.append("Imported ").append(imported.size())
+                    .append(imported.size() == 1 ? " project." : " projects.");
+        }
+        if (!failures.isEmpty()) {
+            if (message.length() > 0) {
+                message.append(' ');
+            }
+            message.append(failures.size())
+                    .append(failures.size() == 1 ? " file couldn't be imported: " : " files couldn't be imported: ")
+                    .append(String.join("; ", failures));
+        }
+        redirectAttributes.addFlashAttribute("projectImportMessage", message.toString());
+        return "redirect:/project/list";
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)

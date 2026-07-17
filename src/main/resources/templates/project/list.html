@@ -57,6 +57,7 @@
                    id="project-list-import-file"
                    name="file"
                    accept=".json,.scripty.json,application/json"
+                   multiple
                    aria-hidden="true"
                    tabindex="-1" />
         </form>
@@ -93,6 +94,20 @@
             </div>
         </div>
 
+        <div class="project-list-bulkbar" th:if="${!#lists.isEmpty(viewModel.projects)}">
+            <label class="project-list-select-all" for="project-list-select-all">
+                <input type="checkbox" id="project-list-select-all" />
+                <span id="project-list-export-scope">All projects</span>
+            </label>
+            <a id="project-list-download-btn"
+               class="project-list-download-btn"
+               th:href="@{/project/export-projects}"
+               role="button"
+               hx-boost="false"
+               download
+               title="Download the selected projects as .scripty.json files">Download</a>
+        </div>
+
         <div class="project-list-panel" th:if="${!#lists.isEmpty(viewModel.projects)}">
             <table id="table-projects" class="project-list-table">
                 <tbody>
@@ -100,6 +115,12 @@
                         class="project-list-row"
                         th:classappend="${project.id == defaultProjectId} ? 'default-project-row' : ''"
                         th:attr="data-sort-title=${#strings.toLowerCase(project.title)}, data-sort-edited=${project.lastEdited != null ? #temporals.format(project.lastEdited, 'yyyy-MM-dd''T''HH:mm:ss') : ''}">
+                        <td class="project-list-select-cell">
+                            <input type="checkbox"
+                                   class="project-list-select-checkbox"
+                                   th:value="${project.id}"
+                                   th:aria-label="|Select ${project.title}|" />
+                        </td>
                         <td class="project-list-star-cell">
                             <form th:action="@{/project/toggleDefault}" method="POST" class="project-list-star-form">
                                 <input type="hidden" name="id" th:value="${project.id}" />
@@ -166,6 +187,7 @@
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:src="@{/js/project-export-select.js(v=${assetVersion})}"></script>
     <script th:inline="javascript">
     (function() {
         const importBtn = document.getElementById('project-list-import-btn');
@@ -179,7 +201,9 @@
         importFile.addEventListener('change', function() {
             if (importFile.files && importFile.files.length > 0) {
                 importBtn.disabled = true;
-                importBtn.textContent = 'Importing…';
+                importBtn.textContent = importFile.files.length > 1
+                    ? 'Importing ' + importFile.files.length + '…'
+                    : 'Importing…';
                 importForm.submit();
             }
         });

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title th:text="'Scripty - Deleted blocks — ' + ${viewModel.projectTitle}">Scripty - Deleted blocks</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main class="text-documents-page">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}">Project</a></li>
+                    <li aria-current="page">Deleted blocks</li>
+                </ol>
+            </nav>
+        </div>
+
+        <p class="text-document-import-banner"
+           th:if="${blockTrashMessage != null}"
+           th:text="${blockTrashMessage}"
+           role="status"></p>
+
+        <section class="text-documents-section">
+            <div class="text-documents-section-header">
+                <div class="text-documents-section-intro">
+                    <span class="text-documents-section-mark" aria-hidden="true">🗑</span>
+                    <div>
+                        <div class="text-documents-heading-row">
+                            <h2 id="trash-heading">Deleted blocks</h2>
+                        </div>
+                        <p class="muted">
+                            Restore drops a block back into your script with its text and formatting intact.
+                            Deleted blocks stay here for
+                            <span th:text="${viewModel.retentionDays}">30</span> days.
+                        </p>
+                    </div>
+                </div>
+                <div class="text-documents-section-actions">
+                    <a th:href="@{/project/show(id=${viewModel.projectId})}"
+                       class="project-list-action-btn project-list-action-btn--primary">Back to script</a>
+                </div>
+            </div>
+
+            <div class="text-documents-empty-state" th:if="${#lists.isEmpty(viewModel.blocks)}">
+                <p class="text-documents-empty-title">No deleted blocks</p>
+                <p class="muted">
+                    Anything you delete from the script lands here first, and stays recoverable for
+                    <span th:text="${viewModel.retentionDays}">30</span> days.
+                </p>
+            </div>
+
+            <ul class="text-documents-list" th:if="${!#lists.isEmpty(viewModel.blocks)}">
+                <li th:each="block, iter : ${viewModel.blocks}"
+                    class="text-document-card"
+                    th:style="'--card-i:' + ${iter.index}">
+                    <div class="text-document-card-main">
+                        <div class="text-document-card-meta">
+                            <span class="text-document-type-badge" th:text="${block.typeLabel}">Type</span>
+                            <span class="text-document-type-badge"
+                                  th:if="${block.editionName != null}"
+                                  th:text="${block.editionName}">Edition</span>
+                            <span class="muted"
+                                  th:if="${block.deletedAt != null}"
+                                  th:title="${#temporals.format(block.deletedAt, 'MMM d, yyyy, h:mm a')}">
+                                Deleted
+                                <span th:replace="~{fragments/lastEditedTime :: relativeTime(${block.deletedAt})}"></span>
+                                <span th:if="${block.deletedByName != null}" th:text="'by ' + ${block.deletedByName}"></span>
+                            </span>
+                            <span class="muted"
+                                  th:if="${block.purgeAt != null}"
+                                  th:text="'Deletes permanently on ' + ${#temporals.format(block.purgeAt, 'MMM d, yyyy')}">Purge date</span>
+                        </div>
+                        <p class="text-document-preview"
+                           th:if="${!block.empty}"
+                           th:text="${block.preview}"></p>
+                        <p class="text-document-preview text-document-preview--empty" th:if="${block.empty}">Empty block</p>
+                    </div>
+                    <div class="text-document-card-actions">
+                        <form th:action="@{/block/restore}" method="post" hx-boost="false">
+                            <input type="hidden" name="id" th:value="${block.id}" />
+                            <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--primary"
+                                    title="Put this block back in the script">Restore</button>
+                        </form>
+                        <form th:action="@{/block/purge}"
+                              method="post"
+                              hx-boost="false"
+                              class="block-purge-form">
+                            <input type="hidden" name="id" th:value="${block.id}" />
+                            <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn">Delete forever</button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+        </section>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script>
+        (function() {
+            document.querySelectorAll('.block-purge-form').forEach(function(purgeForm) {
+                purgeForm.addEventListener('submit', function(e) {
+                    var message = 'Permanently delete this block?\n\nIt will no longer be recoverable.';
+                    if (!window.confirm(message)) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

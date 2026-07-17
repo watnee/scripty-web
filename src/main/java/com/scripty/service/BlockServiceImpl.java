@@ -4,11 +4,14 @@ import com.scripty.commandmodel.block.createblock.CreateBlockCommandModel;
 import com.scripty.commandmodel.block.createblockbelow.CreateBlockBelowCommandModel;
 import com.scripty.commandmodel.block.editblock.EditBlockCommandModel;
 import com.scripty.dto.Block;
+import com.scripty.dto.DeletedBlock;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
 import com.scripty.dto.ScriptEdition;
 import com.scripty.dto.ProjectActivity;
+import com.scripty.dto.User;
 import com.scripty.repository.BlockRepository;
+import com.scripty.repository.DeletedBlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.viewmodel.block.BlockViewModel;
@@ -18,9 +21,12 @@ import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
 import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 import com.scripty.viewmodel.block.editblock.EditPersonViewModel;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,25 +34,31 @@ import org.springframework.transaction.annotation.Transactional;
 public class BlockServiceImpl implements BlockService {
 
     private final BlockRepository blockRepository;
+    private final DeletedBlockRepository deletedBlockRepository;
     private final PersonRepository personRepository;
     private final ProjectRepository projectRepository;
     private final ProjectActivityService projectActivityService;
     private final ProjectUndoRedoService projectUndoRedoService;
     private final ScriptEditionService scriptEditionService;
+    private final UserService userService;
 
     @Autowired
     public BlockServiceImpl(BlockRepository blockRepository,
+                            DeletedBlockRepository deletedBlockRepository,
                             PersonRepository personRepository,
                             ProjectRepository projectRepository,
                             ProjectActivityService projectActivityService,
                             @org.springframework.context.annotation.Lazy ProjectUndoRedoService projectUndoRedoService,
-                            ScriptEditionService scriptEditionService) {
+                            ScriptEditionService scriptEditionService,
+                            UserService userService) {
         this.blockRepository = blockRepository;
+        this.deletedBlockRepository = deletedBlockRepository;
         this.personRepository = personRepository;
         this.projectRepository = projectRepository;
         this.projectActivityService = projectActivityService;
         this.projectUndoRedoService = projectUndoRedoService;
         this.scriptEditionService = scriptEditionService;
+        this.userService = userService;
     }
 
     @Override
@@ -612,12 +624,57 @@ public class BlockServiceImpl implements BlockService {
         Block block = blockRepository.findById(id).orElse(null);
         Project project = block.getProject();
         ScriptEdition edition = resolveEdition(block);
+        deletedBlockRepository.save(DeletedBlock.capture(block, resolveCurrentUser(), LocalDateTime.now()));
         blockRepository.delete(block);
         if (edition != null) {
             blockRepository.decrementOrdersAbove(block.getOrder(), edition.getId());
         }
         recordScriptEdited(project, edition);
         return block;
+    }
+
+    @Override
+    @Transactional
+    public Block restoreBlock(DeletedBlock record) {
+        Project project = record.getProject();
+        ScriptEdition edition = record.getScriptEdition() != null
+                ? record.getScriptEdition()
+                : scriptEditionService.ensureDefaultEdition(project.getId());
+        if (edition == null) {
+            return null;
+        }
+
+        // The script kept moving after the delete, so the stored position may now
+        // point past the end. Clamp it into the current range and open a gap there.
+        int liveCount = blockRepository.countByScriptEditionId(edition.getId());
+        int order = record.getOriginalOrder() != null ? record.getOriginalOrder() : liveCount + 1;
+        order = Math.max(1, Math.min(order, liveCount + 1));
+        blockRepository.incrementOrdersAbove(order - 1, edition.getId());
+
+        Block block = new Block();
+        block.setProject(project);
+        block.setScriptEdition(edition);
+        block.setOrder(order);
+        block.setContent(record.getContent() != null ? record.getContent() : "");
+        block.setType(normalizeBlockType(record.getType()));
+        block.setSceneDelimiter(record.isSceneDelimiter());
+        block.setBookmarked(record.isBookmarked());
+        block.setPinned(record.isPinned());
+        block.setTags(record.getTags());
+        block.setTextAlign(record.getTextAlign());
+        block.setFont(record.getFont());
+        block.setHighlight(record.getHighlight());
+        block.setTextBold(record.isTextBold());
+        block.setTextItalic(record.isTextItalic());
+        block.setTextUnderline(record.isTextUnderline());
+        block.setSourceDocumentId(record.getSourceDocumentId());
+        if (record.getPersonName() != null && !record.getPersonName().isBlank()) {
+            block.setPerson(findOrCreatePerson(record.getPersonName(), project, edition));
+        }
+
+        Block saved = blockRepository.save(block);
+        recordScriptEdited(project, edition);
+        return saved;
     }
 
     @Override
@@ -784,6 +841,19 @@ public class BlockServiceImpl implements BlockService {
         return sb.toString().trim();
     }
 
+
+    /** The signed-in user, or null for the dev auto-login / unauthenticated paths. */
+    private User resolveCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        String username = authentication.getName();
+        if (username == null || username.isBlank() || "anonymousUser".equals(username)) {
+            return null;
+        }
+        return userService.readByUsername(username);
+    }
 
     private ScriptEdition resolveEdition(Block block) {
         if (block != null && block.getScriptEdition() != null) {
@@ -1058,6 +1128,8 @@ public class BlockServiceImpl implements BlockService {
         }
         java.util.Set<Integer> projectIds = new java.util.HashSet<>();
         java.util.Set<Integer> editionIds = new java.util.HashSet<>();
+        User deletedBy = resolveCurrentUser();
+        LocalDateTime deletedAt = LocalDateTime.now();
         for (Integer id : ids) {
             blockRepository.findById(id).ifPresent(block -> {
                 if (block.getProject() != null) {
@@ -1066,6 +1138,7 @@ public class BlockServiceImpl implements BlockService {
                 if (block.getScriptEdition() != null) {
                     editionIds.add(block.getScriptEdition().getId());
                 }
+                deletedBlockRepository.save(DeletedBlock.capture(block, deletedBy, deletedAt));
             });
         }
         blockRepository.deleteAllById(ids);

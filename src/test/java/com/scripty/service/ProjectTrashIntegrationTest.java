@@ -7,7 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.scripty.dto.Project;
+import com.scripty.dto.User;
 import com.scripty.repository.ProjectRepository;
+import com.scripty.repository.UserRepository;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,9 @@ class ProjectTrashIntegrationTest {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -72,6 +77,36 @@ class ProjectTrashIntegrationTest {
         // ...but still in the trash, with its content intact.
         assertNotNull(projectService.getTrashedProject(projectId));
         assertEquals(1, blockCount(projectId));
+    }
+
+    /**
+     * The column's ON DELETE SET NULL only fires on the purge, so without an
+     * explicit clear a user would keep defaulting to a project in the trash.
+     */
+    @Test
+    void deletingClearsTheProjectAsAnyonesDefault() {
+        Integer projectId = createProjectWithBlock("Someone's Default");
+        User user = userRepository.findByUsername("admin").orElseThrow();
+        user.setDefaultProjectId(projectId);
+        userRepository.save(user);
+
+        projectService.deleteProject(projectId);
+
+        assertNull(userRepository.findByUsername("admin").orElseThrow().getDefaultProjectId());
+    }
+
+    /** Other users' defaults are untouched. */
+    @Test
+    void deletingLeavesDefaultsPointingAtOtherProjects() {
+        Integer keptId = createProjectWithBlock("Kept Default");
+        Integer doomedId = createProjectWithBlock("Doomed");
+        User user = userRepository.findByUsername("admin").orElseThrow();
+        user.setDefaultProjectId(keptId);
+        userRepository.save(user);
+
+        projectService.deleteProject(doomedId);
+
+        assertEquals(keptId, userRepository.findByUsername("admin").orElseThrow().getDefaultProjectId());
     }
 
     @Test

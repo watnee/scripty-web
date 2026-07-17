@@ -14,6 +14,7 @@ import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.TeamRepository;
+import com.scripty.repository.UserRepository;
 import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.project.createproject.CreateProjectViewModel;
@@ -44,6 +45,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final PersonRepository personRepository;
     private final BlockRepository blockRepository;
     private final TeamRepository teamRepository;
+    private final UserRepository userRepository;
     private final UserService userService;
     private final ProjectActivityService projectActivityService;
     private final ScriptEditionService scriptEditionService;
@@ -53,6 +55,7 @@ public class ProjectServiceImpl implements ProjectService {
                               PersonRepository personRepository,
                               BlockRepository blockRepository,
                               TeamRepository teamRepository,
+                              UserRepository userRepository,
                               UserService userService,
                               ProjectActivityService projectActivityService,
                               ScriptEditionService scriptEditionService) {
@@ -60,6 +63,7 @@ public class ProjectServiceImpl implements ProjectService {
         this.personRepository = personRepository;
         this.blockRepository = blockRepository;
         this.teamRepository = teamRepository;
+        this.userRepository = userRepository;
         this.userService = userService;
         this.projectActivityService = projectActivityService;
         this.scriptEditionService = scriptEditionService;
@@ -533,11 +537,13 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional
     public Project deleteProject(Integer id) {
         Project project = projectRepository.findById(id).orElse(null);
         if (project == null) {
             return null;
         }
+        userRepository.clearDefaultProject(id);
         project.setDeletedAt(LocalDateTime.now());
         return projectRepository.save(project);
     }

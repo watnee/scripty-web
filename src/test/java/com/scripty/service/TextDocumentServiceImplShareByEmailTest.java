@@ -83,7 +83,7 @@ class TextDocumentServiceImplShareByEmailTest {
 
     @Test
     void shareSongsByEmailSendsLyricsAndRecordsActivity() {
-        when(textDocumentRepository.findById(42)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(42)).thenReturn(Optional.of(song));
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
         List<TextDocument> shared = service.shareSongsByEmail(List.of(42), " friend@example.com ", user);
@@ -104,8 +104,8 @@ class TextDocumentServiceImplShareByEmailTest {
 
     @Test
     void shareSongsByEmailSendsSelectedSongsAsOneMessage() {
-        when(textDocumentRepository.findById(42)).thenReturn(Optional.of(song));
-        when(textDocumentRepository.findById(43)).thenReturn(Optional.of(otherSong));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(42)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(43)).thenReturn(Optional.of(otherSong));
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
         List<TextDocument> shared = service.shareSongsByEmail(List.of(42, 43), "friend@example.com", user);
@@ -130,9 +130,9 @@ class TextDocumentServiceImplShareByEmailTest {
     @Test
     void shareSongsByEmailSkipsUnshareableIdsButSendsTheRest() {
         otherSong.setDocumentType(TextDocument.TYPE_NOTES);
-        when(textDocumentRepository.findById(42)).thenReturn(Optional.of(song));
-        when(textDocumentRepository.findById(43)).thenReturn(Optional.of(otherSong));
-        when(textDocumentRepository.findById(99)).thenReturn(Optional.empty());
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(42)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(43)).thenReturn(Optional.of(otherSong));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(99)).thenReturn(Optional.empty());
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
         List<TextDocument> shared = service.shareSongsByEmail(Arrays.asList(42, 43, 99, null), "friend@example.com", user);
@@ -162,7 +162,7 @@ class TextDocumentServiceImplShareByEmailTest {
     @Test
     void shareSongsByEmailRejectsNonSongDocuments() {
         song.setDocumentType(TextDocument.TYPE_NOTES);
-        when(textDocumentRepository.findById(42)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(42)).thenReturn(Optional.of(song));
 
         assertTrue(service.shareSongsByEmail(List.of(42), "friend@example.com", user).isEmpty());
         verify(emailService, never()).send(anyString(), anyString(), anyString());
@@ -170,7 +170,7 @@ class TextDocumentServiceImplShareByEmailTest {
 
     @Test
     void shareSongsByEmailRequiresProjectAccess() {
-        when(textDocumentRepository.findById(42)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(42)).thenReturn(Optional.of(song));
         when(projectService.canUserAccessProject(7, user)).thenReturn(false);
 
         assertTrue(service.shareSongsByEmail(List.of(42), "friend@example.com", user).isEmpty());

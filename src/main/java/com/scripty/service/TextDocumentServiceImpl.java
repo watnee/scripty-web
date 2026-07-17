@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.HtmlUtils;
@@ -34,6 +35,10 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     private final ProjectActivityService projectActivityService;
     private final ScriptEditionService scriptEditionService;
     private final EmailService emailService;
+
+    /** How long a trashed document stays recoverable before the purge job removes it. */
+    @Value("${scripty.documents.trash-retention-days:30}")
+    private int trashRetentionDays = 30;
 
     @Autowired
     public TextDocumentServiceImpl(TextDocumentRepository textDocumentRepository,
@@ -58,7 +63,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
 
     @Override
     public TextDocument read(Integer id) {
-        return textDocumentRepository.findById(id).orElse(null);
+        return textDocumentRepository.findByIdAndDeletedAtIsNull(id).orElse(null);
     }
 
     @Override
@@ -73,7 +78,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         vm.setProjectTitle(project.getTitle());
         List<TextDocumentViewModel> songs = new ArrayList<>();
         List<TextDocumentViewModel> drafts = new ArrayList<>();
-        for (TextDocument doc : textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(projectId)) {
+        for (TextDocument doc : textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(projectId)) {
             TextDocumentViewModel docVm = toViewModel(doc, project, false);
             if (TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
                 songs.add(docVm);
@@ -83,13 +88,20 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         }
         vm.setSongs(songs);
         vm.setDrafts(drafts);
+        // Drafts are "everything that isn't a song", so count them by subtraction
+        // rather than trying to enumerate the note-ish types here.
+        int trashedSongs = textDocumentRepository
+                .countByProjectIdAndDocumentTypeAndDeletedAtIsNotNull(projectId, TextDocument.TYPE_SONG);
+        vm.setTrashedSongCount(trashedSongs);
+        vm.setTrashedDraftCount(
+                textDocumentRepository.countByProjectIdAndDeletedAtIsNotNull(projectId) - trashedSongs);
         return vm;
     }
 
     @Override
     @Transactional(readOnly = true)
     public TextDocumentViewModel getViewModel(Integer id, User currentUser) {
-        TextDocument doc = textDocumentRepository.findById(id).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(id).orElse(null);
         if (doc == null || doc.getProject() == null) {
             return null;
         }
@@ -102,7 +114,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     @Override
     @Transactional(readOnly = true)
     public TextDocumentCommandModel getCommandModel(Integer id, User currentUser) {
-        TextDocument doc = textDocumentRepository.findById(id).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(id).orElse(null);
         if (doc == null || doc.getProject() == null) {
             return null;
         }
@@ -153,7 +165,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         TextDocument doc;
         boolean isNew = commandModel.getId() == null;
         if (!isNew) {
-            doc = textDocumentRepository.findByIdAndProjectId(commandModel.getId(), commandModel.getProjectId())
+            doc = textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(commandModel.getId(), commandModel.getProjectId())
                     .orElse(null);
             if (doc == null) {
                 return null;
@@ -162,7 +174,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             doc = new TextDocument();
             doc.setProject(project);
             doc.setCreatedAt(now);
-            doc.setSortOrder(textDocumentRepository.countByProjectId(project.getId()));
+            doc.setSortOrder(textDocumentRepository.countByProjectIdAndDeletedAtIsNull(project.getId()));
         }
 
         String title = PlainTextSanitizer.sanitizeSingleLine(
@@ -225,7 +237,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         if (!projectService.canUserAccessProject(projectId, currentUser)) {
             return null;
         }
-        TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(id, projectId).orElse(null);
         if (doc == null) {
             return null;
         }
@@ -257,31 +269,140 @@ public class TextDocumentServiceImpl implements TextDocumentService {
 
     @Override
     @Transactional
-    public void delete(Integer id, Integer projectId, User currentUser) {
+    public TextDocument delete(Integer id, Integer projectId, User currentUser) {
         if (id == null || projectId == null || currentUser == null) {
-            return;
+            return null;
         }
         if (!projectService.canUserAccessProject(projectId, currentUser)) {
-            return;
+            return null;
         }
-        TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(id, projectId).orElse(null);
         if (doc == null) {
-            return;
+            return null;
         }
-        String title = doc.getTitle();
+        LocalDateTime now = LocalDateTime.now();
+        // Soft delete: the row, its lyric blocks, and its version history stay put so
+        // the document can be restored. Script insertions keep pointing at it too,
+        // which is what lets a restore pick its sync links back up.
+        doc.setDeletedAt(now);
+        textDocumentRepository.save(doc);
+
         Project project = doc.getProject();
-        textDocumentRepository.delete(doc);
         if (project != null) {
-            project.setLastEdited(LocalDateTime.now());
+            project.setLastEdited(now);
             projectRepository.save(project);
         }
         projectActivityService.record(
                 projectId,
                 currentUser.getId(),
                 ProjectActivity.ACTION_DOCUMENT_DELETED,
-                "deleted \"" + title + "\"",
+                "moved \"" + doc.getTitle() + "\" to the trash",
                 ProjectActivity.ENTITY_DOCUMENT,
                 id);
+        return doc;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TextDocumentListViewModel getTrashViewModel(Integer projectId, User currentUser) {
+        Project project = requireAccessibleProject(projectId, currentUser);
+        if (project == null) {
+            return null;
+        }
+        TextDocumentListViewModel vm = new TextDocumentListViewModel();
+        vm.setProjectId(project.getId());
+        vm.setProjectTitle(project.getTitle());
+        List<TextDocumentViewModel> songs = new ArrayList<>();
+        List<TextDocumentViewModel> drafts = new ArrayList<>();
+        for (TextDocument doc : textDocumentRepository
+                .findByProjectIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(projectId)) {
+            TextDocumentViewModel docVm = toViewModel(doc, project, false);
+            docVm.setDeletedAt(doc.getDeletedAt());
+            docVm.setPurgesAt(doc.getDeletedAt().plusDays(trashRetentionDays));
+            if (TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+                songs.add(docVm);
+            } else {
+                drafts.add(docVm);
+            }
+        }
+        vm.setSongs(songs);
+        vm.setDrafts(drafts);
+        return vm;
+    }
+
+    @Override
+    @Transactional
+    public TextDocument restore(Integer id, Integer projectId, User currentUser) {
+        if (id == null || projectId == null || currentUser == null) {
+            return null;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return null;
+        }
+        TextDocument doc = textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNotNull(id, projectId)
+                .orElse(null);
+        if (doc == null) {
+            return null;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        doc.setDeletedAt(null);
+        // Send it back to the end of the list: its old sort_order may well belong to
+        // another document by now, and ties only affect ordering within the list.
+        doc.setSortOrder(textDocumentRepository.countByProjectIdAndDeletedAtIsNull(projectId));
+        TextDocument saved = textDocumentRepository.save(doc);
+
+        Project project = doc.getProject();
+        if (project != null) {
+            project.setLastEdited(now);
+            projectRepository.save(project);
+        }
+        projectActivityService.record(
+                projectId,
+                currentUser.getId(),
+                ProjectActivity.ACTION_DOCUMENT_RESTORED,
+                "restored \"" + saved.getTitle() + "\" from the trash",
+                ProjectActivity.ENTITY_DOCUMENT,
+                saved.getId());
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public boolean purge(Integer id, Integer projectId, User currentUser) {
+        if (id == null || projectId == null || currentUser == null) {
+            return false;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return false;
+        }
+        // Only something already in the trash can be purged, so this can never be
+        // reached straight from the list — deleting always leaves a recovery window.
+        TextDocument doc = textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNotNull(id, projectId)
+                .orElse(null);
+        if (doc == null) {
+            return false;
+        }
+        String title = doc.getTitle();
+        textDocumentRepository.delete(doc);
+        projectActivityService.record(
+                projectId,
+                currentUser.getId(),
+                ProjectActivity.ACTION_DOCUMENT_PURGED,
+                "permanently deleted \"" + title + "\"",
+                ProjectActivity.ENTITY_DOCUMENT,
+                id);
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public int purgeExpired() {
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(trashRetentionDays);
+        List<TextDocument> expired = textDocumentRepository.findByDeletedAtBefore(cutoff);
+        for (TextDocument doc : expired) {
+            textDocumentRepository.delete(doc);
+        }
+        return expired.size();
     }
 
     @Override
@@ -298,7 +419,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             if (id == null) {
                 return null;
             }
-            TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+            TextDocument doc = textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(id, projectId).orElse(null);
             if (doc == null) {
                 // Reject the whole request if any id is unknown or from another project.
                 return null;
@@ -334,7 +455,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         if (!projectService.canUserAccessProject(projectId, currentUser)) {
             return null;
         }
-        TextDocument source = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+        TextDocument source = textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(id, projectId).orElse(null);
         if (source == null) {
             return null;
         }
@@ -345,7 +466,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         copy.setTitle(copyTitle(source.getTitle()));
         copy.setDocumentType(source.getDocumentType());
         copy.setContent(source.getContent());
-        copy.setSortOrder(textDocumentRepository.countByProjectId(projectId));
+        copy.setSortOrder(textDocumentRepository.countByProjectIdAndDeletedAtIsNull(projectId));
         copy.setCreatedAt(now);
         copy.setUpdatedAt(now);
         TextDocument saved = textDocumentRepository.save(copy);
@@ -372,7 +493,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         if (!projectService.canUserAccessProject(projectId, currentUser)) {
             return null;
         }
-        TextDocument doc = textDocumentRepository.findByIdAndProjectId(id, projectId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(id, projectId).orElse(null);
         if (doc == null) {
             return null;
         }
@@ -413,7 +534,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     @Override
     @Transactional
     public List<Block> insertIntoScript(Integer documentId, Integer afterBlockId, String asType, User currentUser) {
-        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
         if (doc == null || doc.getProject() == null) {
             return List.of();
         }
@@ -475,7 +596,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     @Override
     @Transactional
     public boolean syncInsertedBlocks(Integer documentId, User currentUser) {
-        TextDocument doc = textDocumentRepository.findById(documentId).orElse(null);
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
         if (doc == null || doc.getProject() == null) {
             return false;
         }
@@ -521,7 +642,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             if (id == null) {
                 continue;
             }
-            TextDocument doc = textDocumentRepository.findById(id).orElse(null);
+            TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(id).orElse(null);
             if (doc == null || doc.getProject() == null
                     || !TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
                 continue;

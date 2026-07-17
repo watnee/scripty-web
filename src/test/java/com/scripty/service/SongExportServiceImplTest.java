@@ -73,7 +73,7 @@ class SongExportServiceImplTest {
     @Test
     void exportsSingleSongAsTextWithTitleAndLyrics() {
         TextDocument doc = song(1, "Hold The Line", "First verse\n\nSecond verse");
-        when(textDocumentRepository.findById(1)).thenReturn(Optional.of(doc));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
 
         SongExportService.SongExport export =
                 service.exportSong(1, SongExportService.Format.TXT, user);
@@ -91,7 +91,7 @@ class SongExportServiceImplTest {
     @Test
     void untitledSongStillGetsAHeadingAndFilename() {
         TextDocument doc = song(1, "  ", "La la la");
-        when(textDocumentRepository.findById(1)).thenReturn(Optional.of(doc));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
 
         SongExportService.SongExport export =
                 service.exportSong(1, SongExportService.Format.TXT, user);
@@ -105,18 +105,18 @@ class SongExportServiceImplTest {
     void exportSongRejectsNotes() {
         TextDocument doc = song(1, "Not a song", "body");
         doc.setDocumentType(TextDocument.TYPE_NOTES);
-        when(textDocumentRepository.findById(1)).thenReturn(Optional.of(doc));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
 
         assertNull(service.exportSong(1, SongExportService.Format.TXT, user));
     }
 
     @Test
     void exportSongRejectsUnknownIdAndInaccessibleProject() {
-        when(textDocumentRepository.findById(99)).thenReturn(Optional.empty());
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(99)).thenReturn(Optional.empty());
         assertNull(service.exportSong(99, SongExportService.Format.TXT, user));
 
         TextDocument doc = song(1, "Locked", "body");
-        when(textDocumentRepository.findById(1)).thenReturn(Optional.of(doc));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
         when(projectService.canUserAccessProject(eq(PROJECT_ID), any())).thenReturn(false);
 
         assertNull(service.exportSong(1, SongExportService.Format.TXT, user));
@@ -130,7 +130,7 @@ class SongExportServiceImplTest {
         TextDocument second = song(3, "Closer", "two");
 
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("My Musical")));
-        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+        when(textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
                 .thenReturn(List.of(first, note, second));
 
         SongExportService.SongExport export =
@@ -152,7 +152,7 @@ class SongExportServiceImplTest {
         TextDocument second = song(3, "Closer", "two");
 
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("My Musical")));
-        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+        when(textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
                 .thenReturn(List.of(first, second));
 
         SongExportService.SongExport export =
@@ -173,7 +173,7 @@ class SongExportServiceImplTest {
         TextDocument last = song(3, "Closer", "two");
 
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("My Musical")));
-        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+        when(textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
                 .thenReturn(List.of(first, middle, last));
 
         // Ids are passed newest-first; list order should still win.
@@ -191,7 +191,7 @@ class SongExportServiceImplTest {
     void songIdsFromOtherProjectsAreIgnoredNotExported() {
         TextDocument mine = song(1, "Mine", "my lyrics");
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("Demo")));
-        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+        when(textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
                 .thenReturn(List.of(mine));
 
         // 404 rather than an empty document: the ids matched nothing here.
@@ -209,7 +209,7 @@ class SongExportServiceImplTest {
         TextDocument first = song(1, "Opener", "one");
         TextDocument second = song(3, "Closer", "two");
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("Demo")));
-        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+        when(textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
                 .thenReturn(List.of(first, second));
 
         SongExportService.SongExport export =
@@ -234,7 +234,7 @@ class SongExportServiceImplTest {
     @Test
     void exportsEmptySongListWithoutFailing() {
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("Empty")));
-        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+        when(textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
                 .thenReturn(List.of());
 
         for (SongExportService.Format format : SongExportService.Format.values()) {
@@ -247,7 +247,7 @@ class SongExportServiceImplTest {
     @Test
     void rendersBinaryFormatsWithTheirOwnSignatures() {
         TextDocument doc = song(1, "Song", "line one\n\nline two");
-        when(textDocumentRepository.findById(1)).thenReturn(Optional.of(doc));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
 
         SongExportService.SongExport pdf = service.exportSong(1, SongExportService.Format.PDF, user);
         assertNotNull(pdf);
@@ -268,7 +268,7 @@ class SongExportServiceImplTest {
         project.setWriters("Written by\nJane Doe");
         TextDocument doc = song(1, "Hold The Line", "First verse\n\nSecond verse");
         doc.setProject(project);
-        when(textDocumentRepository.findById(1)).thenReturn(Optional.of(doc));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
 
         SongExportService.SongExport export =
                 service.exportSong(1, SongExportService.Format.EPUB, user);
@@ -298,7 +298,7 @@ class SongExportServiceImplTest {
     @Test
     void epubGivesEachSongItsOwnChapterAndTocEntry() throws Exception {
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("My Musical")));
-        when(textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+        when(textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
                 .thenReturn(List.of(song(1, "Opener", "one"), song(3, "Closer", "two")));
 
         SongExportService.SongExport export =
@@ -321,7 +321,7 @@ class SongExportServiceImplTest {
     @Test
     void epubRoundTripsLyricsThroughImport() throws Exception {
         TextDocument doc = song(1, "Hold The Line", "First line\nSecond line\n\nSecond verse");
-        when(textDocumentRepository.findById(1)).thenReturn(Optional.of(doc));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
 
         SongExportService.SongExport export =
                 service.exportSong(1, SongExportService.Format.EPUB, user);
@@ -334,7 +334,7 @@ class SongExportServiceImplTest {
     @Test
     void epubEscapesXmlSpecialCharacters() throws Exception {
         TextDocument doc = song(1, "Tom & Jerry", "They <say> \"hi\"");
-        when(textDocumentRepository.findById(1)).thenReturn(Optional.of(doc));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
 
         SongExportService.SongExport export =
                 service.exportSong(1, SongExportService.Format.EPUB, user);

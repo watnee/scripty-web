@@ -100,7 +100,7 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
             archive.characters.add(entry);
         }
 
-        for (TextDocument document : textDocumentRepository.findByProjectIdOrderBySortOrderAscUpdatedAtDesc(projectId)) {
+        for (TextDocument document : textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(projectId)) {
             ProjectArchive.Document entry = new ProjectArchive.Document();
             entry.key = document.getId();
             entry.title = document.getTitle();

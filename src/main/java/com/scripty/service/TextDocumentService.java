@@ -39,7 +39,38 @@ public interface TextDocumentService {
      */
     TextDocument rename(Integer id, Integer projectId, String title, User currentUser);
 
-    void delete(Integer id, Integer projectId, User currentUser);
+    /**
+     * Moves a document to the trash. Its lyric blocks, version history, and script
+     * insertions are all left intact, so {@link #restore} can bring it back whole.
+     * @return the trashed document, or null if it wasn't found or isn't accessible
+     */
+    TextDocument delete(Integer id, Integer projectId, User currentUser);
+
+    /**
+     * Lists the project's trashed documents, most recently deleted first, with the
+     * date each one is due to be purged.
+     * @return the trash, or null if the project isn't accessible
+     */
+    TextDocumentListViewModel getTrashViewModel(Integer projectId, User currentUser);
+
+    /**
+     * Brings a trashed document back into the list, at the end of its section.
+     * @return the restored document, or null if it isn't in this project's trash
+     */
+    TextDocument restore(Integer id, Integer projectId, User currentUser);
+
+    /**
+     * Permanently deletes a trashed document, along with its lyric blocks and version
+     * history. Only reachable from the trash, so a delete is always recoverable first.
+     * @return true if something was purged
+     */
+    boolean purge(Integer id, Integer projectId, User currentUser);
+
+    /**
+     * Permanently deletes every trashed document past the retention window.
+     * @return how many were purged
+     */
+    int purgeExpired();
 
     /**
      * Reassigns the sort order of a project's documents to match {@code orderedIds}.

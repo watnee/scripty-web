@@ -289,9 +289,68 @@ public class TextDocumentController {
     public String delete(@RequestParam Integer id,
                          @RequestParam Integer projectId,
                          @RequestParam(required = false) String type,
-                         Principal principal) {
-        textDocumentService.delete(id, projectId, currentUser(principal));
-        return "redirect:" + listUrl(projectId, TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type)));
+                         Principal principal,
+                         RedirectAttributes redirectAttributes) {
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        TextDocument deleted = textDocumentService.delete(id, projectId, currentUser(principal));
+        if (deleted != null) {
+            redirectAttributes.addFlashAttribute(
+                    "documentTrashMessage",
+                    "Moved \"" + deleted.getTitle() + "\" to the trash.");
+        }
+        return "redirect:" + listUrl(projectId, isSong);
+    }
+
+    @RequestMapping(value = "/trash")
+    public String trash(@RequestParam Integer projectId,
+                        @RequestParam(required = false) String type,
+                        Model model,
+                        Principal principal) {
+        TextDocumentListViewModel viewModel = textDocumentService.getTrashViewModel(projectId, currentUser(principal));
+        if (viewModel == null) {
+            return "redirect:/project/list";
+        }
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        model.addAttribute("viewModel", viewModel);
+        model.addAttribute("listType", isSong ? TextDocument.TYPE_SONG : TextDocument.TYPE_NOTES);
+        model.addAttribute("isSongList", isSong);
+        model.addAttribute("documents", isSong ? viewModel.getSongs() : viewModel.getDrafts());
+        model.addAttribute("otherCount", isSong ? viewModel.getDrafts().size() : viewModel.getSongs().size());
+        return "project/documents/trash";
+    }
+
+    @RequestMapping(value = "/restore", method = RequestMethod.POST)
+    public String restore(@RequestParam Integer id,
+                          @RequestParam Integer projectId,
+                          @RequestParam(required = false) String type,
+                          Principal principal,
+                          RedirectAttributes redirectAttributes) {
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        TextDocument restored = textDocumentService.restore(id, projectId, currentUser(principal));
+        if (restored == null) {
+            redirectAttributes.addFlashAttribute(
+                    "documentTrashMessage",
+                    "Could not restore that item. It may already have been restored or purged.");
+            return "redirect:" + trashUrl(projectId, isSong);
+        }
+        redirectAttributes.addFlashAttribute(
+                "documentTrashMessage",
+                "Restored \"" + restored.getTitle() + "\".");
+        return "redirect:" + listUrl(projectId, isSong);
+    }
+
+    @RequestMapping(value = "/purge", method = RequestMethod.POST)
+    public String purge(@RequestParam Integer id,
+                        @RequestParam Integer projectId,
+                        @RequestParam(required = false) String type,
+                        Principal principal,
+                        RedirectAttributes redirectAttributes) {
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        boolean purged = textDocumentService.purge(id, projectId, currentUser(principal));
+        redirectAttributes.addFlashAttribute(
+                "documentTrashMessage",
+                purged ? "Deleted permanently." : "Could not delete that item.");
+        return "redirect:" + trashUrl(projectId, isSong);
     }
 
     @RequestMapping(value = "/share-email", method = RequestMethod.POST)
@@ -403,6 +462,11 @@ public class TextDocumentController {
 
     private static String listUrl(Integer projectId, boolean isSong) {
         return listPath(isSong) + "?projectId=" + projectId;
+    }
+
+    private static String trashUrl(Integer projectId, boolean isSong) {
+        return "/project/documents/trash?projectId=" + projectId
+                + "&type=" + (isSong ? TextDocument.TYPE_SONG : TextDocument.TYPE_NOTES);
     }
 
     private User currentUser(Principal principal) {

@@ -64,7 +64,7 @@ class SongVersionServiceImplTest {
 
     @Test
     void buildSnapshotJsonReturnsNullForMissingDocument() {
-        when(textDocumentRepository.findById(DOC_ID)).thenReturn(Optional.empty());
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(DOC_ID)).thenReturn(Optional.empty());
 
         org.junit.jupiter.api.Assertions.assertNull(service.buildSnapshotJson(DOC_ID));
     }
@@ -311,7 +311,7 @@ class SongVersionServiceImplTest {
 
     @Test
     void historyForMissingDocumentIsEmpty() {
-        when(textDocumentRepository.findById(DOC_ID)).thenReturn(Optional.empty());
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(DOC_ID)).thenReturn(Optional.empty());
 
         SongVersionHistoryViewModel vm = service.getVersionHistoryViewModel(DOC_ID);
 
@@ -326,7 +326,7 @@ class SongVersionServiceImplTest {
     }
 
     private void stubDocument(String title) {
-        when(textDocumentRepository.findById(DOC_ID)).thenReturn(Optional.of(document(title)));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(DOC_ID)).thenReturn(Optional.of(document(title)));
     }
 
     private static TextDocument document(String title) {

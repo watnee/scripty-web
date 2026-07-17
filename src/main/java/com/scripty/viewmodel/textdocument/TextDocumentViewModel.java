@@ -15,6 +15,10 @@ public class TextDocumentViewModel {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String preview;
+    /** Set only for documents in the trash. */
+    private LocalDateTime deletedAt;
+    /** When the purge job will remove this trashed document for good. */
+    private LocalDateTime purgesAt;
 
     public Integer getId() {
         return id;
@@ -102,5 +106,21 @@ public class TextDocumentViewModel {
 
     public void setPreview(String preview) {
         this.preview = preview;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public LocalDateTime getPurgesAt() {
+        return purgesAt;
+    }
+
+    public void setPurgesAt(LocalDateTime purgesAt) {
+        this.purgesAt = purgesAt;
     }
 }

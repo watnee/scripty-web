@@ -9,6 +9,10 @@ public class TextDocumentListViewModel {
     private String projectTitle;
     private List<TextDocumentViewModel> songs = new ArrayList<>();
     private List<TextDocumentViewModel> drafts = new ArrayList<>();
+    /** How many songs are sitting in the trash, so the list can offer a way back to them. */
+    private int trashedSongCount;
+    /** How many notes are sitting in the trash. */
+    private int trashedDraftCount;
 
     public Integer getProjectId() {
         return projectId;
@@ -40,6 +44,22 @@ public class TextDocumentListViewModel {
 
     public void setDrafts(List<TextDocumentViewModel> drafts) {
         this.drafts = drafts != null ? drafts : new ArrayList<>();
+    }
+
+    public int getTrashedSongCount() {
+        return trashedSongCount;
+    }
+
+    public void setTrashedSongCount(int trashedSongCount) {
+        this.trashedSongCount = trashedSongCount;
+    }
+
+    public int getTrashedDraftCount() {
+        return trashedDraftCount;
+    }
+
+    public void setTrashedDraftCount(int trashedDraftCount) {
+        this.trashedDraftCount = trashedDraftCount;
     }
 
     public boolean isEmpty() {

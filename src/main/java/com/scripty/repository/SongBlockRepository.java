@@ -9,4 +9,8 @@ public interface SongBlockRepository extends JpaRepository<SongBlock, Integer> {
     List<SongBlock> findByTextDocumentIdOrderByOrderAsc(Integer textDocumentId);
 
     int countByTextDocumentId(Integer textDocumentId);
+
+    List<SongBlock> findBySongEditionIdOrderByOrderAsc(Integer songEditionId);
+
+    int countBySongEditionId(Integer songEditionId);
 }

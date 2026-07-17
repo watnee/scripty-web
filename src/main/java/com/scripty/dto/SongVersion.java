@@ -28,6 +28,11 @@ public class SongVersion {
     @JoinColumn(name = "text_document_id", nullable = false)
     private TextDocument textDocument;
 
+    /** The song version this snapshot belongs to; see {@link SongEdition}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "song_edition_id")
+    private SongEdition songEdition;
+
     @Column(nullable = false)
     private String label;
 
@@ -51,6 +56,14 @@ public class SongVersion {
 
     public void setTextDocument(TextDocument textDocument) {
         this.textDocument = textDocument;
+    }
+
+    public SongEdition getSongEdition() {
+        return songEdition;
+    }
+
+    public void setSongEdition(SongEdition songEdition) {
+        this.songEdition = songEdition;
     }
 
     public String getLabel() {

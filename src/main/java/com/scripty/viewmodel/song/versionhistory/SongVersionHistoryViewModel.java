@@ -8,6 +8,8 @@ public class SongVersionHistoryViewModel {
     private int projectId;
     private String projectTitle;
     private String songTitle;
+    private Integer editionId;
+    private String editionName;
     private List<SongVersionViewModel> versions = List.of();
 
     public int getDocumentId() {
@@ -16,6 +18,22 @@ public class SongVersionHistoryViewModel {
 
     public void setDocumentId(int documentId) {
         this.documentId = documentId;
+    }
+
+    public Integer getEditionId() {
+        return editionId;
+    }
+
+    public void setEditionId(Integer editionId) {
+        this.editionId = editionId;
+    }
+
+    public String getEditionName() {
+        return editionName;
+    }
+
+    public void setEditionName(String editionName) {
+        this.editionName = editionName;
     }
 
     public int getProjectId() {

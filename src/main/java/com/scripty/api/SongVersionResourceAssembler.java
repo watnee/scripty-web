@@ -52,16 +52,16 @@ public class SongVersionResourceAssembler {
             }
         }
         CollectionModel<EntityModel<SongVersionResource>> collection = CollectionModel.of(resources)
-                .add(linkTo(methodOn(SongVersionRestController.class).list(documentId, null))
+                .add(linkTo(methodOn(SongVersionRestController.class).list(documentId, null, null))
                         .withSelfRel())
                 .add(linkTo(methodOn(TextDocumentRestController.class).show(documentId, null))
                         .withRel(ApiRel.SONG))
-                .add(linkTo(methodOn(SongBlockRestController.class).list(documentId, null))
+                .add(linkTo(methodOn(SongBlockRestController.class).list(documentId, null, null))
                         .withRel(ApiRel.SONG_BLOCKS))
                 .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null))
                         .withRel(ApiRel.PROJECT));
         if (canEdit(projectId)) {
-            collection.add(linkTo(methodOn(SongVersionRestController.class).create(documentId, null, null))
+            collection.add(linkTo(methodOn(SongVersionRestController.class).create(documentId, null, null, null))
                     .withRel(ApiRel.CREATE));
         }
         return collection;
@@ -81,19 +81,19 @@ public class SongVersionResourceAssembler {
 
     private Link[] versionLinks(int id, int documentId, int projectId) {
         List<Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(SongVersionRestController.class).show(id, documentId, null))
+        links.add(linkTo(methodOn(SongVersionRestController.class).show(id, documentId, null, null))
                 .withSelfRel());
-        links.add(linkTo(methodOn(SongVersionRestController.class).list(documentId, null))
+        links.add(linkTo(methodOn(SongVersionRestController.class).list(documentId, null, null))
                 .withRel(ApiRel.VERSIONS));
         if (canEdit(projectId)) {
-            links.add(linkTo(methodOn(SongVersionRestController.class).restore(id, documentId, null))
+            links.add(linkTo(methodOn(SongVersionRestController.class).restore(id, documentId, null, null))
                     .withRel(ApiRel.RESTORE));
-            links.add(linkTo(methodOn(SongVersionRestController.class).delete(id, documentId, null))
+            links.add(linkTo(methodOn(SongVersionRestController.class).delete(id, documentId, null, null))
                     .withRel(ApiRel.DELETE));
         }
         links.add(linkTo(methodOn(TextDocumentRestController.class).show(documentId, null))
                 .withRel(ApiRel.SONG));
-        links.add(linkTo(methodOn(SongBlockRestController.class).list(documentId, null))
+        links.add(linkTo(methodOn(SongBlockRestController.class).list(documentId, null, null))
                 .withRel(ApiRel.SONG_BLOCKS));
         links.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null))
                 .withRel(ApiRel.PROJECT));

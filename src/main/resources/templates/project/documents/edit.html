@@ -53,7 +53,8 @@
             <div class="text-document-top-bar-actions">
                 <th:block th:if="${!isNew}">
                     <th:block th:replace="~{fragments/songFileMenu :: menu(${commandModel.id}, ${projectId})}"></th:block>
-                    <th:block th:replace="~{fragments/songEditMenu :: menu(${commandModel.id})}"></th:block>
+                    <th:block th:replace="~{fragments/songEditMenu :: menu(${commandModel.id}, ${editionId})}"></th:block>
+                    <th:block th:replace="~{fragments/songVersionMenu :: menu}"></th:block>
                 </th:block>
                 <th:block th:replace="~{fragments/textDocumentAbout :: about(${isSong})}"></th:block>
             </div>
@@ -92,7 +93,7 @@
                 </label>
                 <div th:if="${isSong}"
                      class="song-blocks-editor"
-                     th:attr="data-document-id=${commandModel.id}"
+                     th:attr="data-document-id=${commandModel.id},data-edition-id=${editionId}"
                      data-can-edit="true">
                     <div th:replace="~{songblock/blocks :: blocks}"></div>
                 </div>

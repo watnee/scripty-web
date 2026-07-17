@@ -1,4 +1,4 @@
-<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="menu(documentId)">
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="menu(documentId, editionId)">
     <!--/* The song editor's Edit menu, mirroring the screenplay's
            fragments/historyToolbarButtons. Ids are song-scoped so the project
            editor's undo-redo.js / project-search.js (loaded globally from nav)
@@ -39,10 +39,10 @@
             <a id="song-nav-history"
                class="nav-dropdown-item"
                role="menuitem"
-               th:href="@{/song/version/list(documentId=${documentId})}"
-               aria-label="Version history"
-               title="Version history">
-                <span class="nav-dropdown-item-label">Version history</span>
+               th:href="@{/song/version/list(documentId=${documentId}, editionId=${editionId})}"
+               aria-label="Snapshot history"
+               title="Snapshot history">
+                <span class="nav-dropdown-item-label">Snapshot history</span>
             </a>
         </div>
     </div>

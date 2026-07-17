@@ -20,4 +20,17 @@ public interface SongVersionRepository extends JpaRepository<SongVersion, Intege
             """)
     List<SongVersion> findAutoSavesByTextDocumentIdOrderByCreatedAtDesc(
             @Param("textDocumentId") Integer textDocumentId);
+
+    List<SongVersion> findBySongEditionIdOrderByCreatedAtDesc(Integer songEditionId);
+
+    SongVersion findFirstBySongEditionIdOrderByCreatedAtDesc(Integer songEditionId);
+
+    @Query("""
+            SELECT v FROM SongVersion v
+            WHERE v.songEdition.id = :songEditionId
+              AND v.label LIKE 'Auto-save%'
+            ORDER BY v.createdAt DESC, v.id DESC
+            """)
+    List<SongVersion> findAutoSavesBySongEditionIdOrderByCreatedAtDesc(
+            @Param("songEditionId") Integer songEditionId);
 }

@@ -2529,8 +2529,16 @@ button.script-edition-publish-toggle:focus-visible {
     color: var(--fg, inherit);
 }
 
+.script-edition-delete-form {
+    display: inline-flex;
+    flex-shrink: 0;
+    margin: 0;
+}
+
 .script-edition-row .script-edition-lock-toggle,
-.script-edition-row .script-edition-history-toggle {
+.script-edition-row .script-edition-history-toggle,
+.script-edition-row .script-edition-rename-toggle,
+.script-edition-row .script-edition-delete-toggle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2541,17 +2549,36 @@ button.script-edition-publish-toggle:focus-visible {
     margin: 0;
     gap: 0;
     flex-shrink: 0;
+    border: none;
+    background: transparent;
     border-radius: 0.45rem;
     color: var(--muted-fg, #64748b);
     text-decoration: none;
+    cursor: pointer;
 }
 
 .script-edition-row .script-edition-lock-toggle:hover,
 .script-edition-row .script-edition-lock-toggle:focus-visible,
 .script-edition-row .script-edition-history-toggle:hover,
-.script-edition-row .script-edition-history-toggle:focus-visible {
+.script-edition-row .script-edition-history-toggle:focus-visible,
+.script-edition-row .script-edition-rename-toggle:hover,
+.script-edition-row .script-edition-rename-toggle:focus-visible {
     color: var(--fg, inherit);
     background: var(--accent-bg, rgba(0, 0, 0, 0.05));
+}
+
+.script-edition-row .script-edition-delete-toggle:hover,
+.script-edition-row .script-edition-delete-toggle:focus-visible {
+    color: var(--danger-fg, #b91c1c);
+    background: var(--danger-bg, rgba(185, 28, 28, 0.08));
+}
+
+.script-edition-row .script-edition-rename-toggle svg,
+.script-edition-row .script-edition-delete-toggle svg {
+    width: 13px;
+    height: 13px;
+    display: block;
+    flex-shrink: 0;
 }
 
 .script-edition-row .script-edition-lock-toggle.is-active {

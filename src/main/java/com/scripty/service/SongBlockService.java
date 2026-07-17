@@ -29,14 +29,18 @@ public interface SongBlockService {
     /** Document id owning the block, or null if not found. */
     Integer documentIdForBlock(Integer blockId);
 
-    /**
-     * Returns the song's blocks, seeding them from the document's free-text
-     * content on first access (or a single empty block when there is none).
-     */
-    List<SongBlockViewModel> getBlocks(Integer documentId);
+    /** Song version (edition) id owning the block, or null if not found. */
+    Integer editionIdForBlock(Integer blockId);
 
-    /** Appends a new empty block at the end of the song. */
-    SongBlock appendBlock(Integer documentId);
+    /**
+     * Returns the given song version's blocks, seeding them from the document's
+     * free-text content on first access when the version is published (or a
+     * single empty block otherwise).
+     */
+    List<SongBlockViewModel> getBlocks(Integer documentId, Integer editionId);
+
+    /** Appends a new empty block at the end of the given song version. */
+    SongBlock appendBlock(Integer documentId, Integer editionId);
 
     /**
      * Saves {@code afterContent} onto the origin block (when non-null) and
@@ -64,14 +68,14 @@ public interface SongBlockService {
     SongBlock moveTo(Integer blockId, int position);
 
     /**
-     * The song's lines in order, as an undo/redo snapshot. Null when the
-     * document does not exist.
+     * The song version's lines in order, as an undo/redo snapshot. Null when the
+     * document or version does not exist.
      */
-    List<LineSnapshot> snapshotLines(Integer documentId);
+    List<LineSnapshot> snapshotLines(Integer documentId, Integer editionId);
 
     /**
-     * Replaces the song's blocks with {@code lines}, restoring a snapshot taken
-     * by {@link #snapshotLines}. Keeps at least one (empty) block.
+     * Replaces the song version's blocks with {@code lines}, restoring a snapshot
+     * taken by {@link #snapshotLines}. Keeps at least one (empty) block.
      */
-    void replaceLines(Integer documentId, List<LineSnapshot> lines);
+    void replaceLines(Integer documentId, Integer editionId, List<LineSnapshot> lines);
 }

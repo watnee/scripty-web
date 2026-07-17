@@ -22,6 +22,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 class SongUndoRedoServiceImplTest {
 
     private static final Integer DOC_ID = 7;
+    private static final Integer EDITION_ID = 100;
 
     private SongBlockService songBlockService;
     private SongUndoRedoServiceImpl service;
@@ -44,7 +45,7 @@ class SongUndoRedoServiceImplTest {
         service = new SongUndoRedoServiceImpl(songBlockService, new ObjectMapper());
 
         lines = lines(line("one"));
-        when(songBlockService.snapshotLines(DOC_ID)).thenAnswer(i -> new ArrayList<>(lines));
+        when(songBlockService.snapshotLines(DOC_ID, EDITION_ID)).thenAnswer(i -> new ArrayList<>(lines));
         doAnswerReplace();
 
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
@@ -53,9 +54,9 @@ class SongUndoRedoServiceImplTest {
     @SuppressWarnings("unchecked")
     private void doAnswerReplace() {
         org.mockito.Mockito.doAnswer(i -> {
-            lines = new ArrayList<>((List<LineSnapshot>) i.getArgument(1));
+            lines = new ArrayList<>((List<LineSnapshot>) i.getArgument(2));
             return null;
-        }).when(songBlockService).replaceLines(eq(DOC_ID), org.mockito.ArgumentMatchers.anyList());
+        }).when(songBlockService).replaceLines(eq(DOC_ID), eq(EDITION_ID), org.mockito.ArgumentMatchers.anyList());
     }
 
     @AfterEach
@@ -65,101 +66,102 @@ class SongUndoRedoServiceImplTest {
 
     @Test
     void undoRestoresTheSnapshotTakenBeforeTheChange() {
-        service.recordCheckpoint(DOC_ID);
+        service.recordCheckpoint(DOC_ID, EDITION_ID);
         lines = lines(line("one edited"), line("two"));
 
-        assertTrue(service.canUndo(DOC_ID));
-        assertTrue(service.undo(DOC_ID));
+        assertTrue(service.canUndo(DOC_ID, EDITION_ID));
+        assertTrue(service.undo(DOC_ID, EDITION_ID));
         assertEquals(List.of(line("one")), lines);
     }
 
     @Test
     void undoRestoresHighlightsAlongWithTheText() {
         lines = lines(new LineSnapshot("chorus", "YELLOW"));
-        service.recordCheckpoint(DOC_ID);
+        service.recordCheckpoint(DOC_ID, EDITION_ID);
         lines = lines(new LineSnapshot("chorus edited", null));
 
-        assertTrue(service.undo(DOC_ID));
+        assertTrue(service.undo(DOC_ID, EDITION_ID));
         assertEquals(List.of(new LineSnapshot("chorus", "YELLOW")), lines);
     }
 
     @Test
     void redoReappliesWhatUndoReverted() {
-        service.recordCheckpoint(DOC_ID);
+        service.recordCheckpoint(DOC_ID, EDITION_ID);
         lines = lines(line("one edited"));
 
-        service.undo(DOC_ID);
+        service.undo(DOC_ID, EDITION_ID);
         assertEquals(List.of(line("one")), lines);
 
-        assertTrue(service.canRedo(DOC_ID));
-        assertTrue(service.redo(DOC_ID));
+        assertTrue(service.canRedo(DOC_ID, EDITION_ID));
+        assertTrue(service.redo(DOC_ID, EDITION_ID));
         assertEquals(List.of(line("one edited")), lines);
     }
 
     @Test
     void undoWalksBackThroughSuccessiveCheckpoints() {
-        service.recordCheckpoint(DOC_ID);
+        service.recordCheckpoint(DOC_ID, EDITION_ID);
         lines = lines(line("first"));
-        service.recordCheckpoint(DOC_ID);
+        service.recordCheckpoint(DOC_ID, EDITION_ID);
         lines = lines(line("second"));
 
-        service.undo(DOC_ID);
+        service.undo(DOC_ID, EDITION_ID);
         assertEquals(List.of(line("first")), lines);
-        service.undo(DOC_ID);
+        service.undo(DOC_ID, EDITION_ID);
         assertEquals(List.of(line("one")), lines);
 
-        assertFalse(service.canUndo(DOC_ID));
-        assertFalse(service.undo(DOC_ID));
+        assertFalse(service.canUndo(DOC_ID, EDITION_ID));
+        assertFalse(service.undo(DOC_ID, EDITION_ID));
     }
 
     @Test
     void aNewCheckpointDropsTheRedoStack() {
-        service.recordCheckpoint(DOC_ID);
+        service.recordCheckpoint(DOC_ID, EDITION_ID);
         lines = lines(line("one edited"));
-        service.undo(DOC_ID);
-        assertTrue(service.canRedo(DOC_ID));
+        service.undo(DOC_ID, EDITION_ID);
+        assertTrue(service.canRedo(DOC_ID, EDITION_ID));
 
-        service.recordCheckpoint(DOC_ID);
+        service.recordCheckpoint(DOC_ID, EDITION_ID);
 
-        assertFalse(service.canRedo(DOC_ID));
-        assertFalse(service.redo(DOC_ID));
+        assertFalse(service.canRedo(DOC_ID, EDITION_ID));
+        assertFalse(service.redo(DOC_ID, EDITION_ID));
     }
 
     @Test
     void undoAndRedoAreNoOpsWithNothingRecorded() {
-        assertFalse(service.canUndo(DOC_ID));
-        assertFalse(service.canRedo(DOC_ID));
-        assertFalse(service.undo(DOC_ID));
-        assertFalse(service.redo(DOC_ID));
+        assertFalse(service.canUndo(DOC_ID, EDITION_ID));
+        assertFalse(service.canRedo(DOC_ID, EDITION_ID));
+        assertFalse(service.undo(DOC_ID, EDITION_ID));
+        assertFalse(service.redo(DOC_ID, EDITION_ID));
         assertEquals(List.of(line("one")), lines);
     }
 
     @Test
     void stacksAreKeptPerDocument() {
         Integer otherDoc = 8;
-        when(songBlockService.snapshotLines(otherDoc)).thenReturn(lines(line("other")));
+        when(songBlockService.snapshotLines(otherDoc, EDITION_ID)).thenReturn(lines(line("other")));
 
-        service.recordCheckpoint(DOC_ID);
+        service.recordCheckpoint(DOC_ID, EDITION_ID);
 
-        assertTrue(service.canUndo(DOC_ID));
-        assertFalse(service.canUndo(otherDoc));
+        assertTrue(service.canUndo(DOC_ID, EDITION_ID));
+        assertFalse(service.canUndo(otherDoc, EDITION_ID));
     }
 
     @Test
     void checkpointForBlockResolvesTheOwningDocument() {
         when(songBlockService.documentIdForBlock(99)).thenReturn(DOC_ID);
+        when(songBlockService.editionIdForBlock(99)).thenReturn(EDITION_ID);
 
         service.recordCheckpointForBlock(99);
 
-        assertTrue(service.canUndo(DOC_ID));
+        assertTrue(service.canUndo(DOC_ID, EDITION_ID));
     }
 
     @Test
     void checkpointIsSkippedForAnUnknownDocument() {
-        when(songBlockService.snapshotLines(404)).thenReturn(null);
+        when(songBlockService.snapshotLines(404, EDITION_ID)).thenReturn(null);
 
-        service.recordCheckpoint(404);
+        service.recordCheckpoint(404, EDITION_ID);
 
-        assertFalse(service.canUndo(404));
+        assertFalse(service.canUndo(404, EDITION_ID));
     }
 }

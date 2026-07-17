@@ -2,9 +2,11 @@ package com.scripty.controller;
 
 import com.scripty.api.SongVersionResource;
 import com.scripty.api.SongVersionResourceAssembler;
+import com.scripty.dto.SongEdition;
 import com.scripty.dto.SongVersion;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.SongBlockService;
+import com.scripty.service.SongEditionService;
 import com.scripty.service.SongVersionService;
 import com.scripty.viewmodel.song.versionhistory.SongVersionHistoryViewModel;
 import com.scripty.viewmodel.song.versionhistory.SongVersionViewModel;
@@ -42,6 +44,9 @@ public class SongVersionRestController {
     SongBlockService songBlockService;
 
     @Autowired
+    SongEditionService songEditionService;
+
+    @Autowired
     ProjectAccessSupport projectAccess;
 
     @Autowired
@@ -57,15 +62,25 @@ public class SongVersionRestController {
         return projectId != null && projectAccess.canEditScript(projectId, principal);
     }
 
+    /** Resolves a missing editionId to the song's default version (back-compat). */
+    private Integer effectiveEdition(Integer documentId, Integer editionId) {
+        SongEdition edition = songEditionService.requireForDocument(documentId, editionId);
+        if (edition == null) {
+            edition = songEditionService.ensureDefaultEdition(documentId);
+        }
+        return edition != null ? edition.getId() : editionId;
+    }
+
     /** Saved versions for a song, newest first. */
     @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<CollectionModel<EntityModel<SongVersionResource>>> list(
             @RequestParam Integer documentId,
+            @RequestParam(required = false) Integer editionId,
             Principal principal) {
         if (!canAccessDocument(documentId, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        SongVersionHistoryViewModel viewModel = songVersionService.getVersionHistoryViewModel(documentId);
+        SongVersionHistoryViewModel viewModel = songVersionService.getVersionHistoryViewModel(documentId, editionId);
         return ResponseEntity.ok(assembler.toCollection(viewModel));
     }
 
@@ -73,11 +88,12 @@ public class SongVersionRestController {
     public ResponseEntity<EntityModel<SongVersionResource>> show(
             @PathVariable Integer id,
             @RequestParam Integer documentId,
+            @RequestParam(required = false) Integer editionId,
             Principal principal) {
         if (!canAccessDocument(documentId, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        SongVersionHistoryViewModel viewModel = songVersionService.getVersionHistoryViewModel(documentId);
+        SongVersionHistoryViewModel viewModel = songVersionService.getVersionHistoryViewModel(documentId, editionId);
         SongVersionViewModel version = findVersion(viewModel, id);
         if (version == null) {
             return ResponseEntity.notFound().build();
@@ -89,6 +105,7 @@ public class SongVersionRestController {
     @RequestMapping(method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
     public ResponseEntity<?> create(
             @RequestParam Integer documentId,
+            @RequestParam(required = false) Integer editionId,
             @RequestBody(required = false) CreateSongVersionRequest request,
             Principal principal) {
         if (!canEditDocument(documentId, principal)) {
@@ -98,8 +115,8 @@ public class SongVersionRestController {
         if (label == null || label.isBlank()) {
             label = "Version";
         }
-        SongVersion created = songVersionService.createVersion(documentId, label);
-        SongVersionHistoryViewModel viewModel = songVersionService.getVersionHistoryViewModel(documentId);
+        SongVersion created = songVersionService.createVersion(documentId, editionId, label);
+        SongVersionHistoryViewModel viewModel = songVersionService.getVersionHistoryViewModel(documentId, editionId);
         SongVersionViewModel version = created != null ? findVersion(viewModel, created.getId()) : null;
         if (version == null) {
             // Should not happen, but never fail the create over a read-back miss.
@@ -117,14 +134,17 @@ public class SongVersionRestController {
     public ResponseEntity<?> restore(
             @PathVariable Integer id,
             @RequestParam Integer documentId,
+            @RequestParam(required = false) Integer editionId,
             Principal principal) {
         if (!canEditDocument(documentId, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        if (!songVersionService.restoreVersionForDocument(id, documentId)) {
+        Integer resolved = effectiveEdition(documentId, editionId);
+        if (!songVersionService.restoreVersionForDocument(id, resolved)) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(assembler.toCollection(songVersionService.getVersionHistoryViewModel(documentId)));
+        return ResponseEntity.ok(assembler.toCollection(
+                songVersionService.getVersionHistoryViewModel(documentId, resolved)));
     }
 
     /** Deletes a saved version, then returns the refreshed history. */
@@ -132,14 +152,17 @@ public class SongVersionRestController {
     public ResponseEntity<?> delete(
             @PathVariable Integer id,
             @RequestParam Integer documentId,
+            @RequestParam(required = false) Integer editionId,
             Principal principal) {
         if (!canEditDocument(documentId, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        if (!songVersionService.deleteVersionForDocument(id, documentId)) {
+        Integer resolved = effectiveEdition(documentId, editionId);
+        if (!songVersionService.deleteVersionForDocument(id, resolved)) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(assembler.toCollection(songVersionService.getVersionHistoryViewModel(documentId)));
+        return ResponseEntity.ok(assembler.toCollection(
+                songVersionService.getVersionHistoryViewModel(documentId, resolved)));
     }
 
     private SongVersionViewModel findVersion(SongVersionHistoryViewModel viewModel, Integer versionId) {

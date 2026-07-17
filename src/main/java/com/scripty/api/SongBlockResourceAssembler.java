@@ -65,10 +65,10 @@ public class SongBlockResourceAssembler {
             resources.add(toModel(block, projectId));
         }
         CollectionModel<EntityModel<SongBlockResource>> collection = CollectionModel.of(resources)
-                .add(linkTo(methodOn(SongBlockRestController.class).list(documentId, null)).withSelfRel())
+                .add(linkTo(methodOn(SongBlockRestController.class).list(documentId, null, null)).withSelfRel())
                 .add(documentLinks(documentId, projectId, false));
         if (canEdit(projectId)) {
-            collection.add(linkTo(methodOn(SongBlockRestController.class).append(documentId, null))
+            collection.add(linkTo(methodOn(SongBlockRestController.class).append(documentId, null, null))
                     .withRel(ApiRel.CREATE));
         }
         return collection;
@@ -124,12 +124,12 @@ public class SongBlockResourceAssembler {
         List<Link> links = new ArrayList<>();
         if (documentId != null) {
             if (includeSiblings) {
-                links.add(linkTo(methodOn(SongBlockRestController.class).list(documentId, null))
+                links.add(linkTo(methodOn(SongBlockRestController.class).list(documentId, null, null))
                         .withRel(ApiRel.SONG_BLOCKS));
             }
             links.add(linkTo(methodOn(TextDocumentRestController.class).show(documentId, null))
                     .withRel(ApiRel.SONG));
-            links.add(linkTo(methodOn(SongVersionRestController.class).list(documentId, null))
+            links.add(linkTo(methodOn(SongVersionRestController.class).list(documentId, null, null))
                     .withRel(ApiRel.VERSIONS));
         }
         if (projectId != null) {

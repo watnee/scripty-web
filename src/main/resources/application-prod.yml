@@ -59,6 +59,6 @@ app:
   # above are ignored; MAIL_ENABLED is not required.
   email-worker-url: ${EMAIL_WORKER_URL:}
   email-worker-secret: ${EMAIL_WORKER_SECRET:}
-  asset-version: ${APP_ASSET_VERSION:232}
+  asset-version: ${APP_ASSET_VERSION:233}
   # Static assets + public offline shells only; project HTML lives in IndexedDB.
   service-worker-enabled: true

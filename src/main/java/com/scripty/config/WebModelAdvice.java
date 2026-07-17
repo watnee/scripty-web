@@ -9,11 +9,13 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @ControllerAdvice
 public class WebModelAdvice {
 
-    @Value("${app.asset-version:228}")
-    private String assetVersion;
+    private final String assetVersion;
+    private final boolean serviceWorkerEnabled;
 
-    @Value("${app.service-worker-enabled:false}")
-    private boolean serviceWorkerEnabled;
+    public WebModelAdvice(FeatureFlags featureFlags, @Value("${app.asset-version:228}") String assetVersion) {
+        this.assetVersion = assetVersion;
+        this.serviceWorkerEnabled = featureFlags.isEnabled(FeatureFlag.SERVICE_WORKER);
+    }
 
     @ModelAttribute("assetVersion")
     public String assetVersion() {

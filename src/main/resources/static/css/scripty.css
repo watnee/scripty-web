@@ -9723,6 +9723,11 @@ main h3:not(.script-block-text) {
 .script-content.entry-content {
     --screenplay-action-width: 6in;
     --screenplay-dialogue-width: 3.5in;
+    /* Left indents as % of the 6in action column: 2.2in / 1in / 1.5in —
+       matches page-view and print (industry-standard screenplay positions). */
+    --screenplay-character-indent: 36.667%;
+    --screenplay-dialogue-indent: 16.667%;
+    --screenplay-parenthetical-indent: 25%;
     --screenplay-chrome-gap: 1rem;
     --screenplay-paper: var(--box-bg, #fff);
     --screenplay-desk: transparent;
@@ -10852,6 +10857,71 @@ html.scripty-page-view-mode .project-script .block-content.block-type-transition
 
 html.scripty-page-view-mode body.focus-mode .project-script {
     max-width: none;
+}
+
+/* Continuous edit/read mode: industry-standard left-indented screenplay
+   positions within the centered action column — character 2.2in, dialogue
+   1in (3.5in wide), parenthetical 1.5in — instead of the older centered
+   layout. Scoped to desktop/tablet and non-page-view; page-view and print
+   keep their own (matching) rules, and the mobile block below keeps its
+   centered narrow column. */
+@media screen and (min-width: 641px) {
+    html:not(.scripty-page-view-mode) .project-script .block-content .script-character-name,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-character .script-block-text,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-character .reader-visible-text,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-character .block-input-textarea,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-character textarea,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-dual_dialogue .script-block-text,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-dual_dialogue .reader-visible-text,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-dual_dialogue .block-input-textarea,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-dual_dialogue textarea {
+        display: block;
+        text-align: left;
+        margin-left: var(--screenplay-character-indent, 36.667%);
+        margin-right: 0;
+        width: auto;
+        max-width: none;
+    }
+
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-dialogue {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-dialogue .script-block-text,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-dialogue .reader-visible-text,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-dialogue .block-input-textarea,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-dialogue textarea,
+    html:not(.scripty-page-view-mode) .project-script .script-block--dialogue .script-block-text,
+    html:not(.scripty-page-view-mode) .project-script .script-block--dialogue .reader-visible-text,
+    html:not(.scripty-page-view-mode) .project-script .script-block--dialogue .block-input-textarea,
+    html:not(.scripty-page-view-mode) .project-script .block-row:has(.script-character-name) .script-block-text,
+    html:not(.scripty-page-view-mode) .project-script .block-row:has(.script-character-name) .reader-visible-text,
+    html:not(.scripty-page-view-mode) .project-script .block-content:has(.script-character-name) .block-input-textarea {
+        display: block;
+        width: var(--screenplay-dialogue-width, 3.5in);
+        max-width: var(--screenplay-dialogue-width, 3.5in);
+        margin-left: var(--screenplay-dialogue-indent, 16.667%);
+        margin-right: 0;
+        text-align: left;
+    }
+
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-parenthetical {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-parenthetical .script-block-text,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-parenthetical .reader-visible-text,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-parenthetical .block-input-textarea,
+    html:not(.scripty-page-view-mode) .project-script .block-content.block-type-parenthetical textarea {
+        display: block;
+        margin-left: var(--screenplay-parenthetical-indent, 25%);
+        margin-right: 0;
+        max-width: 33.333%;
+        width: auto;
+        text-align: left;
+    }
 }
 
 /* Full-width stretches the sheet; metrics already use % of the page body. */

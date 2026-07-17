@@ -3024,10 +3024,16 @@ body.htmx-swapping {
     }
 }
 
-.scene-header {
+/* Scene-heading rows only — block-text scene headings are spaced by the
+   .block-row rules and must not inherit this !important margin. */
+.scene-header:not(.script-block-text) {
     font-size: 1em !important;
     margin-top: 0.5rem !important;
     margin-bottom: 0.25rem !important;
+}
+
+.scene-header.script-block-text {
+    font-size: 1em;
 }
 
 h1.scene-header > small a[role="button"] {
@@ -9482,12 +9488,13 @@ main h1 {
     margin-bottom: 0.4rem !important;
 }
 
-main h2 {
+/* :not(.script-block-text) — screenplay headings are laid out by the block rules */
+main h2:not(.script-block-text) {
     margin-top: 0.4rem !important;
     margin-bottom: 0.4rem !important;
 }
 
-main h3 {
+main h3:not(.script-block-text) {
     margin-top: 0.4rem !important;
     margin-bottom: 0.4rem !important;
 }
@@ -11359,8 +11366,11 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     padding-top: 0.15em;
 }
 
+/* The select-all row is the real :first-child when editing, so the first scene
+   heading needs the adjacent-sibling case too. */
 .project-script .scene-blocks > .block-row[data-block-type="SCENE"]:first-child > .block-content,
-.project-script .block-row[data-block-type="SCENE"]:first-child > .block-content {
+.project-script .block-row[data-block-type="SCENE"]:first-child > .block-content,
+.project-script .scene-blocks > .project-script-select-row + .block-row[data-block-type="SCENE"] > .block-content {
     margin-top: 0;
 }
 

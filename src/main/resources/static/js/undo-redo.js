@@ -92,6 +92,63 @@
             });
     }
 
+    var HISTORY_TOAST_KEY = 'scriptyHistoryToast';
+    var toastHideTimer = null;
+
+    function showHistoryToast(message) {
+        if (!message) return;
+        var toast = document.getElementById('scripty-editor-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'scripty-editor-toast';
+            toast.className = 'scripty-editor-toast';
+            toast.setAttribute('role', 'status');
+            toast.setAttribute('aria-live', 'polite');
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.hidden = false;
+        toast.classList.add('is-visible');
+        if (toastHideTimer) {
+            clearTimeout(toastHideTimer);
+        }
+        toastHideTimer = setTimeout(function () {
+            toast.classList.remove('is-visible');
+            toast.hidden = true;
+        }, 3200);
+    }
+
+    function historyToastMessage(action, data) {
+        var delta = data && typeof data.blockDelta === 'number' ? data.blockDelta : 0;
+        if (delta > 0) {
+            return 'Restored ' + delta + (delta === 1 ? ' block' : ' blocks');
+        }
+        return action === 'undo' ? 'Change undone' : 'Change redone';
+    }
+
+    // The action triggers a full navigation, so carry the confirmation across the
+    // reload in sessionStorage and surface it once the fresh page has loaded.
+    function stashHistoryToast(action, data) {
+        try {
+            sessionStorage.setItem(HISTORY_TOAST_KEY, historyToastMessage(action, data));
+        } catch (e) { /* storage unavailable — skip the toast */ }
+    }
+
+    function drainHistoryToast() {
+        var message = null;
+        try {
+            message = sessionStorage.getItem(HISTORY_TOAST_KEY);
+            if (message !== null) {
+                sessionStorage.removeItem(HISTORY_TOAST_KEY);
+            }
+        } catch (e) {
+            return;
+        }
+        if (message) {
+            showHistoryToast(message);
+        }
+    }
+
     function performHistoryAction(action) {
         var dropdown = document.getElementById('history-dropdown');
         if (dropdown) {
@@ -123,6 +180,7 @@
         }).then(function (response) { return response.json(); })
             .then(function (data) {
                 if (data.success) {
+                    stashHistoryToast(action, data);
                     if (data.moveOnly) {
                         window.location.reload();
                     } else {
@@ -267,12 +325,18 @@
     window.scriptyUpdateUndoRedoButtons = updateUndoRedoButtons;
     window.scriptyPerformHistoryAction = performHistoryAction;
     window.scriptyInitHistoryDropdown = initHistoryDropdown;
+    window.scriptyShowHistoryToast = showHistoryToast;
 
     document.body.addEventListener('htmx:afterSwap', initHistoryDropdown);
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initHistoryDropdown);
-    } else {
+    function onInitialLoad() {
         initHistoryDropdown();
+        drainHistoryToast();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', onInitialLoad);
+    } else {
+        onInitialLoad();
     }
 })();

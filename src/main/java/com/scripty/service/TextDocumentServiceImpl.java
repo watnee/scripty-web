@@ -16,7 +16,9 @@ import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -403,6 +405,34 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             textDocumentRepository.delete(doc);
         }
         return expired.size();
+    }
+
+    @Override
+    @Transactional
+    public int deleteSongs(List<Integer> ids, Integer projectId, User currentUser) {
+        if (ids == null || ids.isEmpty() || projectId == null || currentUser == null) {
+            return 0;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return 0;
+        }
+        int deleted = 0;
+        Set<Integer> seen = new LinkedHashSet<>();
+        for (Integer id : ids) {
+            if (id == null || !seen.add(id)) {
+                continue;
+            }
+            TextDocument doc = textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(id, projectId)
+                    .orElse(null);
+            if (doc == null || !TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+                continue;
+            }
+            // Delegates to the single-song delete, so a bulk delete lands in the
+            // trash the same way and stays restorable.
+            delete(id, projectId, currentUser);
+            deleted++;
+        }
+        return deleted;
     }
 
     @Override

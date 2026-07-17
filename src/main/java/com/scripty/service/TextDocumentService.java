@@ -73,6 +73,13 @@ public interface TextDocumentService {
     int purgeExpired();
 
     /**
+     * Deletes several of a project's songs at once. Ids that are missing, outside the
+     * project, or not songs are skipped, so a stale selection can never take a note with it.
+     * @return the number of songs actually deleted
+     */
+    int deleteSongs(List<Integer> ids, Integer projectId, User currentUser);
+
+    /**
      * Reassigns the sort order of a project's documents to match {@code orderedIds}.
      * Every id must belong to the project; the client typically sends one type's
      * list (songs or notes), which is enough because the list view splits by type.

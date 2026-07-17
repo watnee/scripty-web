@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * HTMX endpoints backing the song block editor. Structural changes return the
@@ -112,6 +113,62 @@ public class SongBlockController {
         Integer documentId = songBlockService.deleteBlock(id);
         songVersionService.autoSaveVersion(documentId);
         return renderList(documentId, null, model);
+    }
+
+    // --- recover deleted lines -------------------------------------------
+    //
+    // Deleting a line soft-deletes it into a per-song trash. This page mirrors
+    // the document trash (project/documents/trash): any project member may view
+    // it, restore and delete-forever need script write access.
+
+    @RequestMapping(value = "/trash", method = RequestMethod.GET)
+    public String trash(@RequestParam Integer documentId, Model model, Principal principal) {
+        if (!canAccessDocument(documentId, principal)) {
+            return "redirect:/project/list";
+        }
+        var viewModel = songBlockService.getDeletedBlocksViewModel(documentId);
+        if (viewModel == null) {
+            return "redirect:/project/list";
+        }
+        model.addAttribute("viewModel", viewModel);
+        model.addAttribute("canEditScript", canEditDocument(documentId, principal));
+        return "song/deletedBlocks";
+    }
+
+    @RequestMapping(value = "/restore", method = RequestMethod.POST)
+    public String restore(@RequestParam Integer id,
+                          @RequestParam Integer documentId,
+                          Principal principal,
+                          RedirectAttributes redirectAttributes) {
+        if (!canEditBlock(id, principal)) {
+            return "redirect:/project/list";
+        }
+        songUndoRedoService.recordCheckpointForBlock(id);
+        Integer restoredDocumentId = songBlockService.restoreBlock(id);
+        if (restoredDocumentId == null) {
+            redirectAttributes.addFlashAttribute(
+                    "songBlockTrashMessage",
+                    "Could not restore that line. It may already have been restored or deleted for good.");
+            return "redirect:/song/block/trash?documentId=" + documentId;
+        }
+        songVersionService.autoSaveVersion(restoredDocumentId);
+        redirectAttributes.addFlashAttribute("songBlockTrashMessage", "Restored the line.");
+        return "redirect:/song/block/trash?documentId=" + restoredDocumentId;
+    }
+
+    @RequestMapping(value = "/purge", method = RequestMethod.POST)
+    public String purge(@RequestParam Integer id,
+                        @RequestParam Integer documentId,
+                        Principal principal,
+                        RedirectAttributes redirectAttributes) {
+        if (!canEditBlock(id, principal)) {
+            return "redirect:/project/list";
+        }
+        Integer purgedDocumentId = songBlockService.purgeBlock(id);
+        redirectAttributes.addFlashAttribute(
+                "songBlockTrashMessage",
+                purgedDocumentId != null ? "Deleted the line permanently." : "Could not delete that line.");
+        return "redirect:/song/block/trash?documentId=" + documentId;
     }
 
     @RequestMapping(value = "/setHighlight", method = RequestMethod.POST)

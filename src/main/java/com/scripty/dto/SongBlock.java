@@ -45,6 +45,15 @@ public class SongBlock {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    /**
+     * Soft-delete timestamp. Null means the line is live; a non-null value moves
+     * it to the song's "recently deleted lines" recovery list, from which it can
+     * be restored or purged. Purging (or purging the parent document) removes the
+     * row for good.
+     */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     public Integer getId() {
         return id;
     }
@@ -99,5 +108,17 @@ public class SongBlock {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
     }
 }

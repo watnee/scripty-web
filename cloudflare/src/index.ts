@@ -12,6 +12,14 @@ import { Container, getContainer } from "@cloudflare/containers";
  * Minimal structural type so we do not depend on a specific
  * @cloudflare/workers-types revision shipping the binding type.
  */
+interface EmailAttachment {
+  content: string | ArrayBuffer | ArrayBufferView;
+  filename: string;
+  type?: string;
+  disposition?: "attachment" | "inline";
+  contentId?: string;
+}
+
 interface EmailSendBinding {
   send(message: {
     from: { email: string; name?: string };
@@ -19,6 +27,7 @@ interface EmailSendBinding {
     subject: string;
     html?: string;
     text?: string;
+    attachments?: EmailAttachment[];
   }): Promise<{ messageId?: string }>;
 }
 
@@ -139,11 +148,57 @@ function parseFrom(from: string): { email: string; name?: string } {
   return { email: from.trim() };
 }
 
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+/**
+ * Normalise the JSON attachment payload from the Railway app into the shape the
+ * EMAIL binding expects. Base64-encoded content is decoded to an ArrayBuffer so
+ * binary files (e.g. a screenplay PDF) survive the JSON hop intact.
+ */
+function parseAttachments(
+  raw:
+    | Array<{
+        filename?: string;
+        type?: string;
+        encoding?: string;
+        content?: string;
+        disposition?: "attachment" | "inline";
+        contentId?: string;
+      }>
+    | undefined,
+): EmailAttachment[] | undefined {
+  if (!raw || raw.length === 0) {
+    return undefined;
+  }
+  return raw.map((a) => {
+    if (!a.filename || !a.content) {
+      throw new Error("each attachment requires filename and content");
+    }
+    const content =
+      a.encoding === "base64" ? base64ToArrayBuffer(a.content) : a.content;
+    return {
+      content,
+      filename: a.filename,
+      type: a.type,
+      disposition: a.disposition ?? "attachment",
+      ...(a.contentId ? { contentId: a.contentId } : {}),
+    };
+  });
+}
+
 /**
  * POST /internal/email — send transactional email via the EMAIL binding.
  * Lets the Railway deployment (and anything else holding EMAIL_PROXY_SECRET)
  * use Cloudflare Email Sending without a Cloudflare API token.
- * Body: { from: "Name <addr>" | addr, to, subject, html?, text? }
+ * Body: { from: "Name <addr>" | addr, to, subject, html?, text?,
+ *         attachments?: [{ filename, type?, encoding?, content, disposition? }] }
  */
 async function handleEmailSend(request: Request, env: Env): Promise<Response> {
   if (request.method !== "POST") {
@@ -156,7 +211,21 @@ async function handleEmailSend(request: Request, env: Env): Promise<Response> {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  let body: { from?: string; to?: string; subject?: string; html?: string; text?: string };
+  let body: {
+    from?: string;
+    to?: string;
+    subject?: string;
+    html?: string;
+    text?: string;
+    attachments?: Array<{
+      filename?: string;
+      type?: string;
+      encoding?: string;
+      content?: string;
+      disposition?: "attachment" | "inline";
+      contentId?: string;
+    }>;
+  };
   try {
     body = await request.json();
   } catch {
@@ -166,6 +235,16 @@ async function handleEmailSend(request: Request, env: Env): Promise<Response> {
   if (!from || !to || !subject || !(html || text)) {
     return Response.json(
       { error: "required: from, to, subject and html or text" },
+      { status: 400 },
+    );
+  }
+
+  let attachments: EmailAttachment[] | undefined;
+  try {
+    attachments = parseAttachments(body.attachments);
+  } catch (e) {
+    return Response.json(
+      { error: e instanceof Error ? e.message : "invalid attachment" },
       { status: 400 },
     );
   }
@@ -191,6 +270,7 @@ async function handleEmailSend(request: Request, env: Env): Promise<Response> {
       subject,
       html,
       text: textBody,
+      ...(attachments && attachments.length > 0 ? { attachments } : {}),
     });
     return Response.json({ messageId: result?.messageId ?? null });
   } catch (e) {

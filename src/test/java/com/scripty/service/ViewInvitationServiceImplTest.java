@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -36,6 +37,7 @@ class ViewInvitationServiceImplTest {
     private ProjectRepository projectRepository;
     private ProjectService projectService;
     private EmailService emailService;
+    private PdfExportService pdfExportService;
     private ProjectActivityService projectActivityService;
     private ViewInvitationServiceImpl service;
 
@@ -48,10 +50,11 @@ class ViewInvitationServiceImplTest {
         projectRepository = mock(ProjectRepository.class);
         projectService = mock(ProjectService.class);
         emailService = mock(EmailService.class);
+        pdfExportService = mock(PdfExportService.class);
         projectActivityService = mock(ProjectActivityService.class);
         service = new ViewInvitationServiceImpl(
                 viewInvitationRepository, projectRepository, projectService,
-                emailService, projectActivityService, "https://scripty.example");
+                emailService, pdfExportService, projectActivityService, "https://scripty.example");
 
         project = new Project();
         project.setId(7);
@@ -89,9 +92,29 @@ class ViewInvitationServiceImplTest {
         assertTrue(saved.getExpiresAt().isAfter(LocalDateTime.now().plusDays(29)));
 
         verify(emailService).send(eq("reader@example.com"), anyString(),
-                contains("/view?token=" + saved.getToken()));
+                contains("/view?token=" + saved.getToken()), isNull());
         verify(projectActivityService).record(eq(7), eq(3), anyString(),
                 contains("view the screenplay"), anyString(), any());
+    }
+
+    @Test
+    void sendInvitationAttachesPdfWhenRequested() {
+        when(projectRepository.findWithTeamsById(7)).thenReturn(Optional.of(project));
+        when(projectService.canUserAccessProject(project, inviter)).thenReturn(true);
+        byte[] pdf = "PDF".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        when(pdfExportService.exportProject(7)).thenReturn(pdf);
+
+        SendViewInvitationCommandModel command = command("reader@example.com");
+        command.setAttachPdf(true);
+        service.sendInvitation(command, inviter);
+
+        ArgumentCaptor<EmailAttachment> captor = ArgumentCaptor.forClass(EmailAttachment.class);
+        verify(emailService).send(eq("reader@example.com"), anyString(), anyString(), captor.capture());
+        EmailAttachment attachment = captor.getValue();
+        assertNotNull(attachment);
+        assertEquals("application/pdf", attachment.contentType());
+        assertTrue(attachment.filename().endsWith(".pdf"));
+        assertEquals(pdf, attachment.content());
     }
 
     @Test
@@ -119,7 +142,7 @@ class ViewInvitationServiceImplTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.sendInvitation(command("reader@example.com"), inviter));
-        verify(emailService, never()).send(anyString(), anyString(), anyString());
+        verify(emailService, never()).send(anyString(), anyString(), anyString(), any());
     }
 
     @Test

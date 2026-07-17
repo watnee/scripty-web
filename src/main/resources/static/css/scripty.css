@@ -4391,6 +4391,23 @@ html.scripty-screenplay-full-width .view-menu .full-width-toolbar-btn .full-widt
     color: var(--fg, inherit);
 }
 
+/* missing.css leaves checkbox + label misaligned; force an explicit inline-flex
+   row so the box and its text sit on one baseline. */
+.project-share-invite-attach {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.1rem 0;
+    font-size: 0.8rem;
+    color: var(--muted, #6b7280);
+    cursor: pointer;
+}
+
+.project-share-invite-attach input {
+    margin: 0;
+    flex: 0 0 auto;
+}
+
 /* Explicit block: as an inline <label> the wrapper has no width of its own, so
    the absolutely positioned list would size against the inline box instead of
    the input it belongs to. */

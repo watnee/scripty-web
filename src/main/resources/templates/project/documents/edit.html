@@ -41,21 +41,20 @@
                     </li>
                 </ol>
             </nav>
-            <div class="text-document-top-bar-actions" th:unless="${isSong}">
+            <div class="text-document-top-bar-actions">
                 <th:block th:replace="~{fragments/textDocumentAbout :: about(${isSong})}"></th:block>
             </div>
         </div>
 
         <!--/* The song editor puts its menus on their own row under the breadcrumb,
-               like the screenplay's toolbar row. Notes have only the info popover,
-               so they keep it inline in the bar above. */-->
+               like the screenplay's toolbar row. The info popover lives in the
+               breadcrumb bar above for both songs and notes. */-->
         <div class="text-document-toolbar-row" th:if="${isSong}">
             <div class="text-document-top-bar-actions">
                 <th:block th:if="${!isNew}">
                     <th:block th:replace="~{fragments/songFileMenu :: menu(${commandModel.id}, ${projectId})}"></th:block>
                     <th:block th:replace="~{fragments/songEditMenu :: menu(${commandModel.id})}"></th:block>
                 </th:block>
-                <th:block th:replace="~{fragments/textDocumentAbout :: about(${isSong})}"></th:block>
             </div>
             <div class="text-document-meta-bar text-document-meta-bar--toolbar">
                 <th:block th:replace="~{fragments/textDocumentMeta :: meta(${updatedAt})}"></th:block>

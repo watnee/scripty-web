@@ -4045,6 +4045,11 @@
                 });
             }
 
+            // The per-block drag menu (hydrated later, outside this closure) posts
+            // through the same flush/CSRF path as the Format toolbar.
+            window.scriptyRunBulkAction = runBulkAction;
+            window.scriptyResolveBulkProjectId = resolveBulkProjectId;
+
             function getBlockRowCopyText(row) {
                 if (!row) return '';
 
@@ -4755,6 +4760,30 @@
         }
         window.scriptyHydrateCreateBelowMenu = hydrateCreateBelowMenu;
 
+        // Mirrors Block.HIGHLIGHTS / readBlockHighlight in project-toolbar-dropdowns.js;
+        // '' (no highlight) is the implicit default.
+        var BLOCK_DRAG_MENU_HIGHLIGHTS = ['YELLOW', 'GREEN', 'BLUE', 'RED', 'GRAY'];
+
+        function readBlockDragMenuHighlight(row) {
+            if (!row) return '';
+            var content = row.querySelector('.block-content') || row;
+            for (var i = 0; i < BLOCK_DRAG_MENU_HIGHLIGHTS.length; i++) {
+                if (content.classList.contains('block-highlight-' + BLOCK_DRAG_MENU_HIGHLIGHTS[i].toLowerCase())) {
+                    return BLOCK_DRAG_MENU_HIGHLIGHTS[i];
+                }
+            }
+            return '';
+        }
+
+        function syncBlockDragMenuHighlight(menu, highlight) {
+            var current = highlight || '';
+            menu.querySelectorAll('.block-drag-menu-highlight-btn').forEach(function(btn) {
+                var isActive = (btn.getAttribute('data-highlight') || '').toUpperCase() === current;
+                btn.classList.toggle('is-active', isActive);
+                btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            });
+        }
+
         function hydrateBlockDragMenu(dropdown) {
             if (!dropdown) return;
             var menu = dropdown.querySelector('.block-drag-menu');
@@ -4767,13 +4796,16 @@
             var row = dropdown.closest('.block-row, tr');
             var bookmarkBtn = menu.querySelector('.block-drag-menu-bookmark');
             var pinBtn = menu.querySelector('.block-drag-menu-pin');
+            var highlightSubmenu = menu.querySelector('.block-drag-menu-highlight');
             if (!row || !row.hasAttribute('data-block-id')) {
-                // Unsaved create rows cannot be bookmarked or pinned.
+                // Unsaved create rows cannot be bookmarked, pinned or highlighted.
                 var savedDivider = menu.querySelector('.block-drag-menu-saved-divider');
                 if (savedDivider) savedDivider.remove();
                 if (bookmarkBtn) bookmarkBtn.remove();
                 if (pinBtn) pinBtn.remove();
+                if (highlightSubmenu) highlightSubmenu.remove();
             } else {
+                syncBlockDragMenuHighlight(menu, readBlockDragMenuHighlight(row));
                 if (bookmarkBtn && row.getAttribute('data-bookmarked') === 'true') {
                     bookmarkBtn.textContent = 'Remove bookmark';
                     bookmarkBtn.setAttribute('data-bookmarked', 'true');
@@ -5431,6 +5463,30 @@
                     if (typeof window.scriptyApplyElementType === 'function') {
                         window.scriptyApplyElementType(type, row.getAttribute('data-block-id'));
                     }
+                });
+            });
+
+            menu.querySelectorAll('[data-block-drag-action="set-highlight"]').forEach(function(highlightBtn) {
+                highlightBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeAllBlockDragMenus();
+                    var row = findBlockRow(dropdown);
+                    var blockId = row && row.getAttribute('data-block-id');
+                    if (!blockId || typeof window.scriptyRunBulkAction !== 'function') return;
+                    // Unlike the Format toolbar, this targets the menu's own row,
+                    // never the checkbox selection or the focused block.
+                    window.scriptyRunBulkAction({
+                        action: '/block/bulkSetHighlight',
+                        fields: {
+                            ids: blockId,
+                            highlight: highlightBtn.getAttribute('data-highlight') || '',
+                            projectId: window.scriptyResolveBulkProjectId
+                                ? window.scriptyResolveBulkProjectId()
+                                : (resolveProjectId() || '')
+                        },
+                        flushBlockIds: [blockId]
+                    });
                 });
             });
 

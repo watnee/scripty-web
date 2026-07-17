@@ -1959,6 +1959,20 @@ button.block-drag-menu-toggle.nav-dropdown-toggle:active {
     padding: 0.48rem 0.62rem;
 }
 
+/* Radio items (highlight swatches) in the block/line menu mark the current pick. */
+.block-drag-menu .nav-dropdown-item[role="menuitemradio"][aria-checked="true"] {
+    color: var(--accent, #475569);
+    font-weight: 600;
+}
+
+.block-drag-menu .nav-dropdown-item[role="menuitemradio"][aria-checked="true"]::after {
+    content: "✓";
+    margin-left: auto;
+    padding-left: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
 .block-drag-menu .nav-dropdown-divider {
     margin: 0.3rem 0.4rem;
     background-color: color-mix(in srgb, var(--border, #cbd5e1) 75%, transparent);

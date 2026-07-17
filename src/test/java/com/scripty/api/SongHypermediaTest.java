@@ -1,0 +1,166 @@
+package com.scripty.api;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.scripty.dto.User;
+import com.scripty.security.ProjectAccessSupport;
+import com.scripty.viewmodel.song.versionhistory.SongVersionHistoryViewModel;
+import com.scripty.viewmodel.song.versionhistory.SongVersionViewModel;
+import com.scripty.viewmodel.songblock.SongBlockViewModel;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.hateoas.RepresentationModel;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.mock.web.MockHttpServletRequest;
+
+/**
+ * The song API tells a client what it may do by which links it emits: a
+ * read-only member gets no restore, delete or update affordance. These tests
+ * pin that, since the links are what the UI gates on — the controllers enforce
+ * the same rule independently.
+ */
+class SongHypermediaTest {
+
+    private static final int DOCUMENT_ID = 7;
+    private static final int PROJECT_ID = 3;
+
+    private final ProjectAccessSupport projectAccess = mock(ProjectAccessSupport.class);
+    private final SongVersionResourceAssembler versionAssembler = new SongVersionResourceAssembler();
+    private final SongBlockResourceAssembler blockAssembler = new SongBlockResourceAssembler();
+
+    @BeforeEach
+    void setUp() {
+        versionAssembler.projectAccess = projectAccess;
+        blockAssembler.projectAccess = projectAccess;
+
+        // linkTo(methodOn(...)) needs a current request to build absolute hrefs.
+        RequestContextHolder.setRequestAttributes(
+                new ServletRequestAttributes(new MockHttpServletRequest()));
+
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken("member", "n/a", List.of());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        when(projectAccess.currentUser(any(Authentication.class))).thenReturn(new User());
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+        RequestContextHolder.resetRequestAttributes();
+    }
+
+    private void givenCanEdit(boolean canEdit) {
+        when(projectAccess.canEditScript(eq(PROJECT_ID), any(User.class))).thenReturn(canEdit);
+    }
+
+    private SongVersionHistoryViewModel versionHistory() {
+        SongVersionViewModel version = new SongVersionViewModel();
+        version.setId(11);
+        version.setLabel("Draft");
+        SongVersionHistoryViewModel history = new SongVersionHistoryViewModel();
+        history.setDocumentId(DOCUMENT_ID);
+        history.setProjectId(PROJECT_ID);
+        history.setVersions(List.of(version));
+        return history;
+    }
+
+    private List<SongBlockViewModel> blocks() {
+        return List.of(new SongBlockViewModel(5, DOCUMENT_ID, 0, "line one", null));
+    }
+
+    private static boolean hasLink(RepresentationModel<?> model, String rel) {
+        return model.getLink(rel).isPresent();
+    }
+
+    @Test
+    void writerSeesVersionMutationLinks() {
+        givenCanEdit(true);
+
+        CollectionModel<EntityModel<SongVersionResource>> collection =
+                versionAssembler.toCollection(versionHistory());
+        EntityModel<SongVersionResource> version = collection.getContent().iterator().next();
+
+        assertTrue(hasLink(collection, ApiRel.CREATE));
+        assertTrue(hasLink(version, ApiRel.RESTORE));
+        assertTrue(hasLink(version, ApiRel.DELETE));
+    }
+
+    @Test
+    void readOnlyMemberSeesNoVersionMutationLinks() {
+        givenCanEdit(false);
+
+        CollectionModel<EntityModel<SongVersionResource>> collection =
+                versionAssembler.toCollection(versionHistory());
+        EntityModel<SongVersionResource> version = collection.getContent().iterator().next();
+
+        assertFalse(hasLink(collection, ApiRel.CREATE));
+        assertFalse(hasLink(version, ApiRel.RESTORE));
+        assertFalse(hasLink(version, ApiRel.DELETE));
+        // Reading and navigating stay available.
+        assertTrue(version.getLink(IanaLinkRelations.SELF).isPresent());
+        assertTrue(hasLink(version, ApiRel.SONG));
+        assertTrue(hasLink(collection, ApiRel.SONG_BLOCKS));
+    }
+
+    @Test
+    void writerSeesBlockMutationLinks() {
+        givenCanEdit(true);
+
+        CollectionModel<EntityModel<SongBlockResource>> collection =
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+        EntityModel<SongBlockResource> block = collection.getContent().iterator().next();
+
+        assertTrue(hasLink(collection, ApiRel.CREATE));
+        assertTrue(hasLink(block, ApiRel.UPDATE));
+        assertTrue(hasLink(block, ApiRel.DELETE));
+        assertTrue(hasLink(block, ApiRel.CREATE_BELOW));
+        assertTrue(hasLink(block, ApiRel.MOVE));
+        assertTrue(hasLink(block, ApiRel.SET_HIGHLIGHT));
+    }
+
+    @Test
+    void readOnlyMemberSeesNoBlockMutationLinks() {
+        givenCanEdit(false);
+
+        CollectionModel<EntityModel<SongBlockResource>> collection =
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+        EntityModel<SongBlockResource> block = collection.getContent().iterator().next();
+
+        assertFalse(hasLink(collection, ApiRel.CREATE));
+        assertFalse(hasLink(block, ApiRel.UPDATE));
+        assertFalse(hasLink(block, ApiRel.DELETE));
+        assertFalse(hasLink(block, ApiRel.CREATE_BELOW));
+        assertFalse(hasLink(block, ApiRel.MOVE));
+        assertFalse(hasLink(block, ApiRel.SET_HIGHLIGHT));
+        // Reading and navigating stay available.
+        assertTrue(hasLink(block, ApiRel.SONG));
+        assertTrue(hasLink(block, ApiRel.VERSIONS));
+        assertTrue(hasLink(block, ApiRel.PROJECT));
+    }
+
+    @Test
+    void anonymousClientSeesNoMutationLinks() {
+        SecurityContextHolder.clearContext();
+
+        CollectionModel<EntityModel<SongBlockResource>> collection =
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+        EntityModel<SongBlockResource> block = collection.getContent().iterator().next();
+
+        assertFalse(hasLink(collection, ApiRel.CREATE));
+        assertFalse(hasLink(block, ApiRel.UPDATE));
+    }
+}

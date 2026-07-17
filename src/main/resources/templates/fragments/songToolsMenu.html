@@ -1,0 +1,27 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="menu">
+    <!--/* The song editor's Tools menu, mirroring the screenplay's Tools
+           dropdown in project/show.html. The text size buttons reuse the ids
+           #text-size-decrease / #text-size-increase so the globally-loaded
+           js/text-size.js (from nav) drives them, and .song-block-textarea
+           scales via the shared --scripty-text-scale custom property. */-->
+    <div class="nav-dropdown tools-dropdown song-tools-dropdown" id="song-tools-dropdown">
+        <button id="song-nav-tools"
+                type="button"
+                class="nav-dropdown-toggle tools-toolbar-btn"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label="Tools"
+                title="Tools">
+            Tools
+        </button>
+        <div class="nav-dropdown-menu tools-menu" role="menu" aria-label="Tools">
+            <div class="tools-menu-text-size" role="group" aria-label="Text size">
+                <span class="tools-menu-text-size-label">Text size</span>
+                <span class="text-size-buttons">
+                    <button id="text-size-decrease" type="button" class="text-size-btn" aria-label="Decrease text size">A−</button>
+                    <button id="text-size-increase" type="button" class="text-size-btn" aria-label="Increase text size">A+</button>
+                </span>
+            </div>
+        </div>
+    </div>
+</th:block>

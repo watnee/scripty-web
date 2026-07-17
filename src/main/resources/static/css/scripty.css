@@ -6761,7 +6761,7 @@ body:has(main.text-documents-page) > main.text-documents-page {
     display: flex;
     flex-direction: column;
     gap: 0.1rem;
-    padding-top: 0.75rem;
+    padding-top: 1.5rem;
 }
 
 .song-block-row {

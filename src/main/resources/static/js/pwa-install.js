@@ -26,6 +26,130 @@
         return iOS || iPadOs;
     }
 
+    // Work out where the user actually installs, so the guide shows the real
+    // menu names for their browser instead of generic steps.
+    function detectPlatform() {
+        var ua = window.navigator.userAgent || '';
+        var ios = isIos();
+        var android = /Android/.test(ua);
+        var edge = /Edg(A|iOS|)?\//.test(ua);
+        var opera = /OPR\//.test(ua) || /Opera/.test(ua);
+        var firefox = /Firefox\//.test(ua) || /FxiOS/.test(ua);
+        var samsung = /SamsungBrowser/.test(ua);
+        // iOS is always WebKit; treat every iOS browser as the "share sheet" flow.
+        var chrome = !ios && /Chrome\//.test(ua) && !edge && !opera && !samsung;
+        var safari = !chrome && !edge && !opera && !firefox
+            && (ios || /Safari\//.test(ua));
+
+        var os = ios ? 'ios' : android ? 'android' : 'desktop';
+        var browser = firefox ? 'firefox'
+            : edge ? 'edge'
+            : samsung ? 'samsung'
+            : opera ? 'opera'
+            : chrome ? 'chrome'
+            : safari ? 'safari'
+            : 'other';
+        return { os: os, browser: browser, ios: ios, android: android };
+    }
+
+    function esc(s) {
+        return String(s).replace(/[&<>"]/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+        });
+    }
+
+    // Returns { title, lead, steps[], note } tailored to the current browser/OS.
+    function guideContent() {
+        var p = detectPlatform();
+
+        if (p.os === 'ios') {
+            var iosNote = p.browser === 'safari'
+                ? 'The Home Screen icon opens Scripty full-screen, and lets you write offline.'
+                : 'Add to Home Screen works from any iPhone browser — if you don’t see it, open Scripty in <strong>Safari</strong> first.';
+            return {
+                title: 'Add Scripty to your Home Screen',
+                lead: 'On iPhone and iPad you install by adding Scripty to the Home Screen.',
+                steps: [
+                    'Tap the <strong>Share</strong> button (the square with an up arrow) in the toolbar.',
+                    'Scroll down and tap <strong>Add to Home Screen</strong>.',
+                    'Tap <strong>Add</strong> — Scripty appears on your Home Screen.'
+                ],
+                note: iosNote
+            };
+        }
+
+        if (p.os === 'android') {
+            var menuName = p.browser === 'firefox' ? 'Install'
+                : p.browser === 'samsung' ? 'Add page to' + '…'
+                : 'Install app';
+            return {
+                title: 'Install Scripty',
+                lead: 'Install Scripty from your browser menu for a full-screen app icon.',
+                steps: [
+                    'Open the browser menu (the <strong>⋮</strong> icon, usually top-right).',
+                    'Tap <strong>' + esc(menuName) + '</strong> (it may say <strong>Add to Home screen</strong>).',
+                    'Confirm with <strong>Install</strong> / <strong>Add</strong>.'
+                ],
+                note: 'Once installed, Scripty opens like any other app.'
+            };
+        }
+
+        // Desktop
+        if (p.browser === 'chrome' || p.browser === 'edge') {
+            var menuLabel = p.browser === 'edge'
+                ? 'Apps → Install Scripty'
+                : 'Install Scripty';
+            return {
+                title: 'Install Scripty',
+                lead: 'Install Scripty as a desktop app that opens in its own window.',
+                steps: [
+                    'Look for the <strong>install icon</strong> at the right end of the address bar (a monitor with a down arrow, or ⊕).',
+                    'Click it — or open the browser menu (<strong>⋮</strong>) and choose <strong>' + esc(menuLabel) + '</strong>.',
+                    'Click <strong>Install</strong> in the dialog.'
+                ],
+                note: 'No install icon? Reload the page once, then check the address bar again.'
+            };
+        }
+
+        if (p.browser === 'safari') {
+            return {
+                title: 'Add Scripty to your Dock',
+                lead: 'Safari on macOS installs web apps into your Dock.',
+                steps: [
+                    'Open the <strong>File</strong> menu in Safari’s menu bar.',
+                    'Choose <strong>Add to Dock…</strong> (on older Safari: <strong>Share → Add to Dock</strong>).',
+                    'Click <strong>Add</strong> — Scripty opens from your Dock like an app.'
+                ],
+                note: 'Add to Dock needs macOS Sonoma or later. On older macOS, use Chrome or Edge to install.'
+            };
+        }
+
+        if (p.browser === 'firefox') {
+            return {
+                title: 'Install Scripty',
+                lead: 'Firefox on desktop can’t install web apps yet.',
+                steps: [
+                    'Open Scripty in <strong>Chrome</strong> or <strong>Microsoft Edge</strong>.',
+                    'Use the <strong>install icon</strong> in the address bar (or menu → <strong>Install Scripty</strong>).',
+                    'Or just bookmark this page to keep it handy in Firefox.'
+                ],
+                note: 'Prefer Firefox? You can keep using Scripty in the browser — installing is optional.'
+            };
+        }
+
+        // Unknown browser fallback.
+        return {
+            title: 'Install Scripty',
+            lead: 'Install Scripty for a full-screen app icon and offline writing.',
+            steps: [
+                'Open your browser’s menu.',
+                'Look for <strong>Install app</strong>, <strong>Install Scripty</strong>, or <strong>Add to Home Screen</strong>.',
+                'Confirm to add Scripty to your device.'
+            ],
+            note: 'Chrome and Edge give the smoothest install experience.'
+        };
+    }
+
     function isDismissed() {
         try {
             var raw = localStorage.getItem(DISMISS_KEY);
@@ -62,21 +186,7 @@
         guideEl.setAttribute('role', 'dialog');
         guideEl.setAttribute('aria-modal', 'true');
         guideEl.setAttribute('aria-labelledby', 'scripty-pwa-install-guide-title');
-        guideEl.innerHTML =
-            '<div class="scripty-pwa-install-guide-card">' +
-            '  <h2 id="scripty-pwa-install-guide-title">Install Scripty</h2>' +
-            '  <p class="scripty-pwa-install-guide-lead">Add Scripty to your Home Screen for a full-screen app and offline writing.</p>' +
-            '  <ol class="scripty-pwa-install-guide-steps">' +
-            '    <li>Tap the <strong>Share</strong> button in Safari.</li>' +
-            '    <li>Scroll and tap <strong>Add to Home Screen</strong>.</li>' +
-            '    <li>Tap <strong>Add</strong>.</li>' +
-            '  </ol>' +
-            '  <p class="scripty-pwa-install-guide-note muted">On Chrome or Edge, use the browser menu → <strong>Install app</strong> / <strong>Install Scripty</strong>.</p>' +
-            '  <div class="scripty-pwa-install-guide-actions">' +
-            '    <a class="scripty-pwa-install-guide-help" href="/help#install-app">More help</a>' +
-            '    <button type="button" class="scripty-pwa-install-guide-close">Got it</button>' +
-            '  </div>' +
-            '</div>';
+        guideEl.innerHTML = '<div class="scripty-pwa-install-guide-card"></div>';
         document.body.appendChild(guideEl);
         guideEl.addEventListener('click', function (e) {
             if (e.target === guideEl || e.target.closest('.scripty-pwa-install-guide-close')) {
@@ -86,8 +196,23 @@
         return guideEl;
     }
 
+    function renderGuide() {
+        var c = guideContent();
+        var steps = c.steps.map(function (s) { return '<li>' + s + '</li>'; }).join('');
+        ensureGuide().querySelector('.scripty-pwa-install-guide-card').innerHTML =
+            '<h2 id="scripty-pwa-install-guide-title">' + esc(c.title) + '</h2>' +
+            '<p class="scripty-pwa-install-guide-lead">' + esc(c.lead) + '</p>' +
+            '<ol class="scripty-pwa-install-guide-steps">' + steps + '</ol>' +
+            '<p class="scripty-pwa-install-guide-note muted">' + c.note + '</p>' +
+            '<div class="scripty-pwa-install-guide-actions">' +
+            '  <a class="scripty-pwa-install-guide-help" href="/help#install-app">More help</a>' +
+            '  <button type="button" class="scripty-pwa-install-guide-close">Got it</button>' +
+            '</div>';
+    }
+
     function showGuide() {
-        ensureGuide().hidden = false;
+        renderGuide();
+        guideEl.hidden = false;
         document.documentElement.classList.add('scripty-pwa-guide-open');
     }
 
@@ -106,8 +231,8 @@
         bannerEl.setAttribute('aria-label', 'Install Scripty');
         bannerEl.innerHTML =
             '<div class="scripty-pwa-install-banner-copy">' +
-            '  <strong>Install Scripty</strong>' +
-            '  <span>Open it like an app — including offline writing on projects you’ve visited.</span>' +
+            '  <strong>Install Scripty as an app</strong>' +
+            '  <span>Get a Home Screen / desktop icon that opens full-screen — plus offline writing on projects you’ve visited.</span>' +
             '</div>' +
             '<div class="scripty-pwa-install-banner-actions">' +
             '  <button type="button" class="scripty-pwa-install-banner-install">Install</button>' +

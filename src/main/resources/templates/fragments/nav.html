@@ -32,6 +32,15 @@
     </nav>
     <div class="header-actions">
         <div class="header-actions-group" aria-label="Account">
+        <button type="button" class="scripty-install-nav-btn" data-scripty-install-app hidden
+                aria-label="Install Scripty as an app" title="Install Scripty as an app">
+            <svg class="scripty-install-nav-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12"></path>
+                <path d="m7 10 5 5 5-5"></path>
+                <path d="M5 21h14"></path>
+            </svg>
+            <span class="scripty-install-nav-label">Install app</span>
+        </button>
         <th:block th:unless="${currentPage == 'project'}">
             <div th:replace="~{:: helpDropdown(${currentPage})}"></div>
         </th:block>

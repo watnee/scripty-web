@@ -10,47 +10,77 @@
 </head>
 <body hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('projects')}"></div>
-    <main class="project-list-page">
-
-        <div class="login-success" th:if="${trashMessage}" role="status">
-            <span th:text="${trashMessage}"></span>
+    <main class="text-documents-page text-documents-page--drafts">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li aria-current="page">Trash</li>
+                </ol>
+            </nav>
         </div>
 
-        <div class="project-list-header">
-            <div class="project-list-header-text">
-                <h1>Deleted Projects</h1>
-                <p class="muted" th:if="${!#lists.isEmpty(projects)}"
-                   th:text="|Deleted projects are kept for ${retentionDays} days, then permanently removed.|"></p>
-                <p class="muted" th:if="${#lists.isEmpty(projects)}">Nothing has been deleted.</p>
-            </div>
-            <div class="project-list-header-actions">
-                <a th:href="@{/project/list}" role="button">Back to Projects</a>
-            </div>
-        </div>
+        <p class="text-document-import-banner"
+           th:if="${trashMessage != null}"
+           th:text="${trashMessage}"
+           role="status"></p>
 
-        <table th:if="${!#lists.isEmpty(projects)}">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Deleted</th>
-                    <th>Permanently removed</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="project : ${projects}">
-                    <td th:text="${project.title}"></td>
-                    <td th:text="${project.deletedAt != null ? #temporals.format(project.deletedAt, 'MMM d, yyyy, h:mm a') : ''}"></td>
-                    <td th:text="${project.purgeAt != null ? #temporals.format(project.purgeAt, 'MMM d, yyyy') : ''}"></td>
-                    <td>
-                        <form th:action="@{/project/restore}" method="post">
+        <section class="text-documents-section text-documents-section--drafts">
+            <div class="text-documents-section-header">
+                <div class="text-documents-section-intro">
+                    <span class="text-documents-section-mark text-documents-section-mark--draft" aria-hidden="true">🗑</span>
+                    <div>
+                        <div class="text-documents-heading-row">
+                            <h2 id="trash-heading">Deleted Projects</h2>
+                        </div>
+                        <p class="muted">
+                            Restore brings the project back with its songs and notes intact.
+                        </p>
+                    </div>
+                </div>
+                <div class="text-documents-section-actions">
+                    <a th:href="@{/project/list}"
+                       class="project-list-action-btn project-list-action-btn--primary">Back to Projects</a>
+                </div>
+            </div>
+
+            <div class="text-documents-empty-state" th:if="${#lists.isEmpty(projects)}">
+                <p class="text-documents-empty-title">No deleted projects</p>
+                <p class="muted">
+                    Anything you delete lands here first, and stays recoverable for
+                    <span th:text="${retentionDays}">30</span> days.
+                </p>
+            </div>
+
+            <ul class="text-documents-list" th:if="${!#lists.isEmpty(projects)}">
+                <li th:each="project, iter : ${projects}"
+                    class="text-document-card text-document-card--draft"
+                    th:style="'--card-i:' + ${iter.index}">
+                    <div class="text-document-card-main">
+                        <span class="text-document-card-title" th:text="${project.title}">Untitled</span>
+                        <div class="text-document-card-meta">
+                            <span class="text-document-type-badge">Project</span>
+                            <span class="muted"
+                                  th:if="${project.deletedAt != null}"
+                                  th:title="${#temporals.format(project.deletedAt, 'MMM d, yyyy, h:mm a')}">
+                                Deleted <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.deletedAt})}"></span>
+                            </span>
+                            <span class="muted"
+                                  th:if="${project.purgeAt != null}"
+                                  th:text="'Deletes permanently on ' + ${#temporals.format(project.purgeAt, 'MMM d, yyyy')}">Purge date</span>
+                        </div>
+                    </div>
+                    <div class="text-document-card-actions">
+                        <form th:action="@{/project/restore}" method="post" hx-boost="false">
                             <input type="hidden" name="id" th:value="${project.id}">
-                            <button type="submit">Restore</button>
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--primary"
+                                    title="Put this project back in the list">Restore</button>
                         </form>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                    </div>
+                </li>
+            </ul>
+        </section>
     </main>
 </body>
 </html>

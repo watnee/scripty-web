@@ -10039,6 +10039,16 @@ html.scripty-block-text-selecting .block-actions-controls {
     max-width: 100%;
 }
 
+/* Pin the editing chrome (breadcrumb row + tools row) to the top of the
+   viewport so the toolbar stays reachable while the script scrolls beneath it.
+   Needs an opaque background so scrolling script text doesn't show through. */
+.project-editor-chrome {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--bg, #fff);
+}
+
 .project-script .scene-header-links {
     margin: 0;
 }

@@ -86,6 +86,7 @@
 </head>
 <body hx-boost="true" class="has-toolbar-brand">
     <div th:replace="~{fragments/nav :: nav('project')}"></div>
+    <div class="project-editor-chrome">
     <aside class="top-bar project-top-bar hide-in-reader-view sidebar menu">
         <div class="project-top-bar-breadcrumb">
             <nav aria-label="Breadcrumb">
@@ -867,6 +868,7 @@
             </div>
         </div>
     </aside>
+    </div>
     <main role="main">
         <div class="text-document-insert-banner hide-in-reader-view sidebar menu"
              th:if="${scriptImportMessage != null}"

@@ -4713,6 +4713,11 @@ html.scripty-hide-block-element-labels .block-element-label {
     display: none !important;
 }
 
+/* Show/hide comments: Note blocks act as screenplay comments/annotations. */
+html.scripty-hide-block-notes .block-row[data-block-type="NOTE"] {
+    display: none !important;
+}
+
 .project-script .block-element-label {
     grid-column: 1;
     grid-row: 1;

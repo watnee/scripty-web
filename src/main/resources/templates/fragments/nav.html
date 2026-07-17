@@ -3623,12 +3623,14 @@
             var pinsToggle = document.getElementById('nav-pins-toggle');
             var selectToggle = document.getElementById('nav-select-toggle');
             var elementLabelsToggle = document.getElementById('nav-element-labels-toggle');
+            var notesToggle = document.getElementById('nav-notes-toggle');
             var lockToggle = document.getElementById('nav-lock-toggle');
             var editionToggle = document.querySelector('#script-edition-dropdown .script-edition-toggle');
             var bookmarksKey = 'scripty-show-block-bookmarks-project-' + projectId;
             var pinsKey = 'scripty-show-block-pins-project-' + projectId;
             var selectKey = 'scripty-show-block-select-project-' + projectId;
             var elementLabelsKey = 'scripty-show-block-element-labels-project-' + projectId;
+            var notesKey = 'scripty-show-block-notes-project-' + projectId;
             var editionId = window.scriptyEditionId || null;
             var blockEditLockedKey = editionId
                 ? 'scripty-block-edit-locked-edition-' + editionId
@@ -3641,18 +3643,22 @@
             var showPins = localStorage.getItem(pinsKey);
             var showSelect = localStorage.getItem(selectKey);
             var showElementLabels = localStorage.getItem(elementLabelsKey);
+            var showNotes = localStorage.getItem(notesKey);
             var blockEditLocked = !canEditScript || blockEditLockedStored === 'true';
 
             showBookmarks = showBookmarks === null ? false : showBookmarks !== 'false';
             showPins = showPins === null ? false : showPins !== 'false';
             showSelect = showSelect === null ? false : showSelect !== 'false';
             showElementLabels = showElementLabels === null ? false : showElementLabels !== 'false';
+            // Comments (Note blocks) are content, so they default to visible.
+            showNotes = showNotes === null ? true : showNotes !== 'false';
 
             function applyMarkerVisibility() {
                 document.documentElement.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);
                 document.documentElement.classList.toggle('scripty-hide-block-pins', !showPins);
                 document.documentElement.classList.toggle('scripty-hide-block-select', !showSelect);
                 document.documentElement.classList.toggle('scripty-hide-block-element-labels', !showElementLabels);
+                document.documentElement.classList.toggle('scripty-hide-block-notes', !showNotes);
             }
 
             function applyBlockEditLock() {
@@ -3742,7 +3748,7 @@
                 var viewBtn = document.querySelector('#project-view-dropdown .view-toolbar-btn');
                 if (!viewBtn) return;
                 // Highlight when any marker visibility is currently off.
-                var anyHidden = !showBookmarks || !showPins || !showSelect || !showElementLabels;
+                var anyHidden = !showBookmarks || !showPins || !showSelect || !showElementLabels || !showNotes;
                 viewBtn.classList.toggle('is-active', anyHidden);
             }
 
@@ -3803,6 +3809,19 @@
                 if (typeof window.scriptySetMenuShortcut === 'function') {
                     window.scriptySetMenuShortcut(elementLabelsToggle, hint);
                 }
+                syncViewToolbarActive();
+            }
+
+            function syncNotesToggleUi() {
+                if (!notesToggle) return;
+                // aria-checked reflects "comments shown"; the button is active
+                // (highlighted) when comments are hidden, matching the other
+                // View-menu markers.
+                notesToggle.setAttribute('aria-pressed', showNotes ? 'false' : 'true');
+                notesToggle.setAttribute('aria-checked', showNotes ? 'true' : 'false');
+                notesToggle.classList.toggle('is-active', !showNotes);
+                notesToggle.title = showNotes ? 'Hide comments' : 'Show comments';
+                notesToggle.setAttribute('aria-label', notesToggle.title);
                 syncViewToolbarActive();
             }
 
@@ -3932,6 +3951,17 @@
                 });
             }
 
+            if (notesToggle && !notesToggle.dataset.markerToggleInit) {
+                notesToggle.dataset.markerToggleInit = 'true';
+                syncNotesToggleUi();
+                notesToggle.addEventListener('click', function() {
+                    showNotes = !showNotes;
+                    localStorage.setItem(notesKey, showNotes ? 'true' : 'false');
+                    syncNotesToggleUi();
+                    applyMarkerVisibility();
+                });
+            }
+
             if (lockToggle && !lockToggle.dataset.markerToggleInit) {
                 lockToggle.dataset.markerToggleInit = 'true';
                 syncLockToggleUi();
@@ -3964,6 +3994,7 @@
             syncPinToggleUi();
             syncSelectToggleUi();
             syncElementLabelsToggleUi();
+            syncNotesToggleUi();
             syncLockToggleUi();
             applyMarkerVisibility();
             applyBlockEditLock();

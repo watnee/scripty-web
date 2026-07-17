@@ -58,6 +58,45 @@
                 <button type="button" class="nav-dropdown-item" role="menuitem" data-block-drag-action="set-type" data-set-type="PAGE_BREAK">Page Break</button>
             </div>
         </div>
+        <div class="block-drag-submenu block-drag-menu-highlight" data-block-drag-submenu="highlight">
+            <button type="button"
+                    class="nav-dropdown-item block-drag-submenu-toggle"
+                    role="menuitem"
+                    aria-haspopup="true"
+                    aria-expanded="false">Highlight<span class="block-drag-submenu-caret" aria-hidden="true">›</span></button>
+            <div class="nav-dropdown-menu block-drag-submenu-menu" role="menu" aria-label="Highlight">
+                <button type="button" class="nav-dropdown-item block-drag-menu-highlight-btn" role="menuitemradio"
+                        data-block-drag-action="set-highlight" data-highlight="" aria-checked="false">
+                    <span class="block-highlight-swatch block-highlight-swatch--none" aria-hidden="true"></span>
+                    <span>No highlight</span>
+                </button>
+                <button type="button" class="nav-dropdown-item block-drag-menu-highlight-btn" role="menuitemradio"
+                        data-block-drag-action="set-highlight" data-highlight="YELLOW" aria-checked="false">
+                    <span class="block-highlight-swatch block-highlight-yellow" aria-hidden="true"></span>
+                    <span>Yellow</span>
+                </button>
+                <button type="button" class="nav-dropdown-item block-drag-menu-highlight-btn" role="menuitemradio"
+                        data-block-drag-action="set-highlight" data-highlight="GREEN" aria-checked="false">
+                    <span class="block-highlight-swatch block-highlight-green" aria-hidden="true"></span>
+                    <span>Green</span>
+                </button>
+                <button type="button" class="nav-dropdown-item block-drag-menu-highlight-btn" role="menuitemradio"
+                        data-block-drag-action="set-highlight" data-highlight="BLUE" aria-checked="false">
+                    <span class="block-highlight-swatch block-highlight-blue" aria-hidden="true"></span>
+                    <span>Blue</span>
+                </button>
+                <button type="button" class="nav-dropdown-item block-drag-menu-highlight-btn" role="menuitemradio"
+                        data-block-drag-action="set-highlight" data-highlight="RED" aria-checked="false">
+                    <span class="block-highlight-swatch block-highlight-red" aria-hidden="true"></span>
+                    <span>Red</span>
+                </button>
+                <button type="button" class="nav-dropdown-item block-drag-menu-highlight-btn" role="menuitemradio"
+                        data-block-drag-action="set-highlight" data-highlight="GRAY" aria-checked="false">
+                    <span class="block-highlight-swatch block-highlight-gray" aria-hidden="true"></span>
+                    <span>Gray</span>
+                </button>
+            </div>
+        </div>
         <hr class="nav-dropdown-divider block-drag-menu-saved-divider" />
         <button type="button"
                 class="nav-dropdown-item block-drag-menu-bookmark"

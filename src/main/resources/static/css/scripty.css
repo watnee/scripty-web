@@ -1959,6 +1959,20 @@ button.block-drag-menu-toggle.nav-dropdown-toggle:active {
     padding: 0.48rem 0.62rem;
 }
 
+/* Radio items (highlight swatches) in the block/line menu mark the current pick. */
+.block-drag-menu .nav-dropdown-item[role="menuitemradio"][aria-checked="true"] {
+    color: var(--accent, #475569);
+    font-weight: 600;
+}
+
+.block-drag-menu .nav-dropdown-item[role="menuitemradio"][aria-checked="true"]::after {
+    content: "✓";
+    margin-left: auto;
+    padding-left: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
 .block-drag-menu .nav-dropdown-divider {
     margin: 0.3rem 0.4rem;
     background-color: color-mix(in srgb, var(--border, #cbd5e1) 75%, transparent);
@@ -3028,6 +3042,13 @@ body.htmx-swapping {
     font-size: 1em !important;
     margin-top: 0.5rem !important;
     margin-bottom: 0.25rem !important;
+}
+
+/* A SCENE block shows as <h2 class="scene-header"> but swaps to a margin-less
+   <span> on click. Without this the !important margins above vanish in the swap
+   and every block below jumps up. Reader's bare .scene-header keeps them. */
+h2.script-block-text.scene-header {
+    margin: 0 !important;
 }
 
 h1.scene-header > small a[role="button"] {

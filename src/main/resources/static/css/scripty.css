@@ -11072,6 +11072,38 @@ html.scripty-screenplay-full-width.scripty-page-view-mode .project-script::after
     margin-bottom: 0;
 }
 
+/* Vertical rhythm between screenplay elements (continuous edit/read mode).
+   One blank line before action, character cues, sections, transitions, and
+   speeches that carry their own character name; ~1.5 blank lines before a new
+   scene. A character cue -> parenthetical -> (unnamed) dialogue belong to one
+   speech and stay tight, so only speech-starting rows get a gap.
+
+   The margin lives on the stable .block-row wrapper, keyed off the
+   data-block-type attribute — that attribute does not change when a block is
+   clicked into for editing (only the inner content swaps), so the layout never
+   jumps between display and edit states. The adjacent-sibling combinator means
+   the first row of a scene never gets a leading gap. Gaps scale with the
+   reader's text-size control, and page-view/print keep their own page-accurate
+   spacing. */
+html:not(.scripty-page-view-mode) .project-script {
+    --screenplay-element-gap: calc(18pt * var(--scripty-text-scale, 1));
+    --screenplay-scene-gap: calc(27pt * var(--scripty-text-scale, 1));
+}
+
+html:not(.scripty-page-view-mode) .project-script .scene-blocks .block-row[data-block-type] + .block-row[data-block-type="ACTION"],
+html:not(.scripty-page-view-mode) .project-script .scene-blocks .block-row[data-block-type] + .block-row[data-block-type="CHARACTER"],
+html:not(.scripty-page-view-mode) .project-script .scene-blocks .block-row[data-block-type] + .block-row[data-block-type="DUAL_DIALOGUE"],
+html:not(.scripty-page-view-mode) .project-script .scene-blocks .block-row[data-block-type] + .block-row[data-block-type="SECTION"],
+html:not(.scripty-page-view-mode) .project-script .scene-blocks .block-row[data-block-type] + .block-row[data-block-type="TRANSITION"],
+html:not(.scripty-page-view-mode) .project-script .scene-blocks .block-row[data-block-type] + .block-row[data-block-type="DIALOGUE"]:has(.script-character-name) {
+    margin-top: var(--screenplay-element-gap);
+}
+
+html:not(.scripty-page-view-mode) .project-script .scene-blocks .block-row[data-block-type] + .block-row[data-block-type="SCENE"],
+html:not(.scripty-page-view-mode) .project-script .script-scene + .script-scene {
+    margin-top: var(--screenplay-scene-gap);
+}
+
 
 .project-script aside.block-left-controls,
 .project-script aside.block-actions {

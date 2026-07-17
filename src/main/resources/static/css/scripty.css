@@ -11361,19 +11361,6 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     letter-spacing: 0.03em;
 }
 
-.project-script .block-row[data-block-type="SCENE"] > .block-content {
-    margin-top: 1.15em;
-    padding-top: 0.15em;
-}
-
-/* The select-all row is the real :first-child when editing, so the first scene
-   heading needs the adjacent-sibling case too. */
-.project-script .scene-blocks > .block-row[data-block-type="SCENE"]:first-child > .block-content,
-.project-script .block-row[data-block-type="SCENE"]:first-child > .block-content,
-.project-script .scene-blocks > .project-script-select-row + .block-row[data-block-type="SCENE"] > .block-content {
-    margin-top: 0;
-}
-
 .block-content.block-type-character .script-block-text,
 .block-content.block-type-dual_dialogue .script-block-text {
     text-align: center;

@@ -3574,15 +3574,38 @@ tr.default-project-row td:first-child {
 
 .project-list-header-actions {
     display: inline-flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.project-list-header-buttons {
+    display: inline-flex;
     align-items: center;
     gap: 0.6rem;
     flex-shrink: 0;
+}
+
+.project-list-import-hint {
+    max-width: 22rem;
+    text-align: right;
+    font-size: 0.8rem !important;
+    line-height: 1.35;
+}
+
+.project-list-import-hint code {
+    font-size: 0.9em;
+    padding: 0.05rem 0.3rem;
+    border-radius: 4px;
+    background: var(--muted-bg, rgba(100, 116, 139, 0.12));
 }
 
 .project-list-import-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.4rem;
     margin: 0;
     padding: 0.6rem 1.1rem;
     border-radius: 8px;
@@ -3595,6 +3618,12 @@ tr.default-project-row td:first-child {
     flex-shrink: 0;
     cursor: pointer;
     transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.project-list-import-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .project-list-import-btn:hover,
@@ -8675,6 +8704,17 @@ kbd {
         width: 100%;
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .project-list-header-buttons {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .project-list-import-hint {
+        max-width: none;
+        text-align: left;
     }
 
     .project-list-import-btn {

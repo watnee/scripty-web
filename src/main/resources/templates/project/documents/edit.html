@@ -58,6 +58,14 @@
                 </th:block>
             </div>
             <div class="text-document-meta-bar text-document-meta-bar--toolbar">
+                <span class="song-word-count muted"
+                      id="song-word-count"
+                      th:if="${!isNew}"
+                      role="status"
+                      aria-live="polite"
+                      title="Word count for this song">
+                    <span data-stat="words">0</span> words
+                </span>
                 <th:block th:replace="~{fragments/textDocumentMeta :: meta(${updatedAt})}"></th:block>
             </div>
         </div>

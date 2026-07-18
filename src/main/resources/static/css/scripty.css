@@ -10740,9 +10740,33 @@ html.scripty-page-view-mode .project-script .scene-blocks .block-row {
     margin: 0;
 }
 
-/* Industry rhythm: blank line before scene headings (except first on a page) */
-html.scripty-page-view-mode .project-script .screenplay-page-body > .block-row[data-block-type="SCENE"]:not(:first-child) {
+/* Industry vertical rhythm: a blank line separates elements on the page.
+   Pagination measures rows in-place, so :first-child margins collapse to 0
+   and are excluded from page-fill height (see rowLayoutHeight in
+   page-view-mode.js). */
+html.scripty-page-view-mode .project-script .screenplay-page-body > .block-row {
     margin-top: 1em;
+}
+
+/* Dialogue and parentheticals hug the character cue above them — no leading
+   gap within a speech group. The first row on a page never carries a top gap. */
+html.scripty-page-view-mode .project-script .screenplay-page-body > .block-row:first-child,
+html.scripty-page-view-mode .project-script .screenplay-page-body > .block-row[data-block-type="DIALOGUE"],
+html.scripty-page-view-mode .project-script .screenplay-page-body > .block-row[data-block-type="PARENTHETICAL"] {
+    margin-top: 0;
+}
+
+/* Scene headings get a fuller break before them to mark the new scene. */
+html.scripty-page-view-mode .project-script .screenplay-page-body > .block-row[data-block-type="SCENE"]:not(:first-child) {
+    margin-top: 2em;
+}
+
+/* While editing, the hidden select-all chrome row is the real :first-child, so
+   the first visible element on page 1 would otherwise inherit a leading gap
+   (2em for a scene heading). Reset it — this rule follows the scene rule and
+   matches its specificity, so the top of page 1 lines up with later pages. */
+html.scripty-page-view-mode .project-script .screenplay-page-body > .project-script-select-row + .block-row[data-block-type] {
+    margin-top: 0;
 }
 
 html.scripty-page-view-mode .project-script .block-content {

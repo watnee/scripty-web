@@ -18,6 +18,9 @@
     var PAGE_ACTIVE_CLASS = 'screenplay-page--active';
     var PAGE_BODY_CLASS = 'screenplay-page-body';
     var PAGE_NUMBER_CLASS = 'screenplay-page-number';
+    var PAGE_OVERFLOW_CLASS = 'screenplay-page--overflowing';
+    var CONT_MARKER_CLASS = 'screenplay-cont-marker';
+    var OVERFLOW_TOLERANCE = 12;
     var reflowTimer = null;
     var measuring = false;
     var enterAnimPending = false;
@@ -97,6 +100,10 @@
         var wrap = sceneBlocks.querySelector(':scope > .' + PAGES_WRAP_CLASS);
         if (!wrap) return;
 
+        // Continuation markers are generated chrome — drop them so they never
+        // leak back into the continuous-scroll DOM or survive into a reflow.
+        stripContMarkers(wrap);
+
         var fragment = document.createDocumentFragment();
         var pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
         for (var i = 0; i < pages.length; i++) {
@@ -172,6 +179,141 @@
             height += (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
         } catch (err) { /* ignore */ }
         return height;
+    }
+
+    function blockTypeOf(el) {
+        return (el && el.getAttribute && el.getAttribute('data-block-type')) || '';
+    }
+
+    function isSpeechRow(type) {
+        return type === 'DIALOGUE' || type === 'PARENTHETICAL';
+    }
+
+    /**
+     * Rows that must not be separated by a page boundary are collected into a
+     * single indivisible atom, so the placement loop moves the whole unit to the
+     * next page at once instead of stranding a cue or heading at the bottom:
+     *   - CHARACTER / PARENTHETICAL bind forward to the line they introduce
+     *   - SCENE binds forward to its first body row (no orphaned headings)
+     *   - chrome rows (select rows, inline create) bind to the block they precede
+     */
+    function buildAtoms(children) {
+        var atoms = [];
+        var i = 0;
+
+        while (i < children.length) {
+            var rows = [children[i]];
+            var type = blockTypeOf(children[i]);
+            i += 1;
+
+            while (i < children.length && !blockTypeOf(children[i]) && isChromeRow(children[i])) {
+                rows.push(children[i]);
+                i += 1;
+            }
+
+            if (type === 'CHARACTER' || type === 'PARENTHETICAL') {
+                while (i < children.length) {
+                    var nextType = blockTypeOf(children[i]);
+                    if (!nextType && isChromeRow(children[i])) {
+                        rows.push(children[i]);
+                        i += 1;
+                        continue;
+                    }
+                    if (!isSpeechRow(nextType)) break;
+                    rows.push(children[i]);
+                    i += 1;
+                    if (nextType === 'DIALOGUE') break;
+                }
+            } else if (type === 'SCENE') {
+                while (i < children.length) {
+                    var followType = blockTypeOf(children[i]);
+                    if (!followType && isChromeRow(children[i])) {
+                        rows.push(children[i]);
+                        i += 1;
+                        continue;
+                    }
+                    if (!followType || followType === 'PAGE_BREAK') break;
+                    rows.push(children[i]);
+                    i += 1;
+                    break;
+                }
+            }
+
+            atoms.push({
+                rows: rows,
+                type: type,
+                forcedBreak: isForcedBreak(rows[0])
+            });
+        }
+
+        return atoms;
+    }
+
+    function atomsHeight(rows) {
+        var total = 0;
+        for (var i = 0; i < rows.length; i++) {
+            total += rowLayoutHeight(rows[i]);
+        }
+        return total;
+    }
+
+    function appendAtom(page, atom) {
+        for (var i = 0; i < atom.rows.length; i++) {
+            page.body.appendChild(atom.rows[i]);
+        }
+        return atomsHeight(atom.rows);
+    }
+
+    /** An atom that opens with dialogue or a parenthetical continues the previous speech. */
+    function continuesSpeech(atom) {
+        return !!atom && isSpeechRow(atom.type);
+    }
+
+    function speakerName(row) {
+        var field = row.querySelector
+            ? row.querySelector('.block-input-textarea, textarea[name="content"], .block-content')
+            : null;
+        var text = field
+            ? (field.value != null ? field.value : field.textContent)
+            : (row.textContent || '');
+        return String(text || '')
+            .trim()
+            .split('\n')[0]
+            .replace(/\s*\(CONT'D\)\s*$/i, '')
+            .trim()
+            .toUpperCase();
+    }
+
+    /**
+     * Returns the speaker still holding the floor after this atom:
+     * a name when the atom carries a cue, null when the speech simply continues,
+     * '' when an action/scene/transition row ends the speech.
+     */
+    function trailingSpeaker(atom) {
+        for (var i = atom.rows.length - 1; i >= 0; i--) {
+            if (blockTypeOf(atom.rows[i]) === 'CHARACTER') {
+                return speakerName(atom.rows[i]);
+            }
+        }
+        return continuesSpeech(atom) ? null : '';
+    }
+
+    function makeContMarker(modifier, text) {
+        var el = document.createElement('div');
+        el.className = CONT_MARKER_CLASS + ' ' + CONT_MARKER_CLASS + '--' + modifier;
+        el.setAttribute('data-screenplay-marker', modifier);
+        el.setAttribute('aria-hidden', 'true');
+        el.textContent = text;
+        return el;
+    }
+
+    function stripContMarkers(root) {
+        if (!root) return;
+        root.querySelectorAll('[data-screenplay-marker]').forEach(function (el) { el.remove(); });
+    }
+
+    function isContMarker(el) {
+        return !!(el && el.getAttribute && el.getAttribute('data-screenplay-marker'));
     }
 
     function updateRealPageCount(count) {
@@ -296,6 +438,7 @@
         if (!sceneBlocks) return;
 
         var editState = captureEditState();
+        var pageCount = 0;
         measuring = true;
         try {
             unwrapPages();
@@ -327,33 +470,52 @@
 
             startPage();
 
-            for (var i = 0; i < children.length; i++) {
-                var child = children[i];
-                var forcedBreak = isForcedBreak(child);
+            // Height of a (MORE) line, reserved on pages that break mid-speech.
+            var probeMarker = makeContMarker('more', '(MORE)');
+            current.body.appendChild(probeMarker);
+            var contReserve = rowLayoutHeight(probeMarker);
+            probeMarker.remove();
 
-                current.body.appendChild(child);
-                // Search-filtered rows stay in the DOM (order-preserving) but
-                // contribute no height while .filtered-out hides them.
-                var height = rowLayoutHeight(child);
+            var atoms = buildAtoms(children);
+            var lastSpeaker = '';
 
-                if (!forcedBreak && currentHeight > 0 && currentHeight + height > usableHeight + 0.5) {
-                    startPage();
-                    current.body.appendChild(child);
-                    height = rowLayoutHeight(child);
-                }
+            for (var a = 0; a < atoms.length; a++) {
+                var atom = atoms[a];
 
-                if (forcedBreak) {
-                    // Page-break markers become the page boundary; hide their height contribution.
-                    if (currentHeight === 0 && current.body.children.length === 1) {
-                        // Leading page break: keep an empty page then continue.
-                    }
-                    if (i < children.length - 1) {
-                        startPage();
-                    }
+                if (atom.forcedBreak) {
+                    // Page-break markers become the boundary; they contribute no height.
+                    appendAtom(current, atom);
+                    if (a < atoms.length - 1) startPage();
                     continue;
                 }
 
+                // Search-filtered rows stay in the DOM (order-preserving) but
+                // contribute no height while .filtered-out hides them.
+                var height = appendAtom(current, atom);
+
+                // Leave room for a (MORE) line when the next atom carries the
+                // same speech onto the following page.
+                var willNeedMore = continuesSpeech(atoms[a + 1]) && !!lastSpeaker;
+                var limit = usableHeight - (willNeedMore ? contReserve : 0);
+
+                if (currentHeight > 0 && currentHeight + height > limit + 0.5) {
+                    var contSpeaker = (continuesSpeech(atom) && lastSpeaker) ? lastSpeaker : '';
+                    var brokenPage = current;
+                    startPage();
+                    // appendAtom moves the rows off the page they overflowed.
+                    height = appendAtom(current, atom);
+                    if (contSpeaker) {
+                        brokenPage.body.appendChild(makeContMarker('more', '(MORE)'));
+                        var contd = makeContMarker('contd', contSpeaker + " (CONT'D)");
+                        current.body.insertBefore(contd, current.body.firstChild);
+                        currentHeight += rowLayoutHeight(contd);
+                    }
+                }
+
                 currentHeight += height;
+
+                var speaker = trailingSpeaker(atom);
+                if (speaker !== null) lastSpeaker = speaker;
             }
 
             // Drop leading/trailing pages that only hold page-breaks or hidden chrome.
@@ -362,6 +524,7 @@
                 for (var c = 0; c < body.children.length; c++) {
                     var row = body.children[c];
                     if (isForcedBreak(row)) continue;
+                    if (isContMarker(row)) continue;
                     if (isChromeRow(row)) continue;
                     if (row.getAttribute && row.getAttribute('data-block-id')) return true;
                     return true;
@@ -419,10 +582,33 @@
             var finalPages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
             for (var n = 0; n < finalPages.length; n++) {
                 var num = n + 1;
-                finalPages[n].setAttribute('data-page', String(num));
-                finalPages[n].setAttribute('aria-label', 'Page ' + num);
-                var label = finalPages[n].querySelector(':scope > .' + PAGE_NUMBER_CLASS);
+                var pageEl = finalPages[n];
+                pageEl.setAttribute('data-page', String(num));
+                pageEl.setAttribute('aria-label', 'Page ' + num);
+                var label = pageEl.querySelector(':scope > .' + PAGE_NUMBER_CLASS);
                 if (label) label.textContent = String(num);
+
+                var pageBody = pageEl.querySelector(':scope > .' + PAGE_BODY_CLASS);
+                if (!pageBody) continue;
+
+                // Merging empty pages can strand a marker mid-page; a (MORE) is
+                // only meaningful last and a (CONT'D) only first.
+                pageBody.querySelectorAll('[data-screenplay-marker="more"]').forEach(function (el) {
+                    if (el !== pageBody.lastElementChild) el.remove();
+                });
+                pageBody.querySelectorAll('[data-screenplay-marker="contd"]').forEach(function (el) {
+                    if (el !== pageBody.firstElementChild) el.remove();
+                });
+
+                // A single block taller than the sheet would otherwise be clipped
+                // by the page body's overflow:hidden — let that page grow instead.
+                // The tolerance keeps sub-pixel rounding across many rows from
+                // stretching an otherwise well-fitted page; a genuine overrun is
+                // an unsplittable block, which overshoots by far more than this.
+                pageEl.classList.toggle(
+                    PAGE_OVERFLOW_CLASS,
+                    pageBody.scrollHeight > pageBody.clientHeight + OVERFLOW_TOLERANCE
+                );
             }
 
             updateRealPageCount(finalPages.length);
@@ -436,10 +622,16 @@
                 }, 520);
             }
 
+            pageCount = finalPages.length;
             syncActivePage();
         } finally {
             measuring = false;
             restoreEditState(editState);
+            try {
+                window.dispatchEvent(new CustomEvent('scripty:pages-paginated', {
+                    detail: { count: pageCount }
+                }));
+            } catch (err) { /* ignore */ }
         }
     }
 
@@ -521,6 +713,16 @@
     });
 
     window.addEventListener('scripty:full-width-changed', function () {
+        if (window.scriptyIsPageViewMode()) scheduleReflow(50);
+    });
+
+    // Zoom and paper size both change the sheet's usable height, so the line
+    // budget per page has to be measured again.
+    window.addEventListener('scripty:page-zoom-changed', function () {
+        if (window.scriptyIsPageViewMode()) scheduleReflow(50);
+    });
+
+    window.addEventListener('scripty:page-setup-changed', function () {
         if (window.scriptyIsPageViewMode()) scheduleReflow(50);
     });
 

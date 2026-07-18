@@ -6,11 +6,11 @@ import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
-import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfWriter;
 import com.scripty.dto.Block;
+import com.scripty.dto.PageSetup;
 import com.scripty.dto.Project;
 import com.scripty.dto.ScriptEdition;
 import com.scripty.repository.BlockRepository;
@@ -23,16 +23,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Industry-style US Letter screenplay PDF (Courier 12pt), matching print CSS margins
- * and element indents.
+ * Industry-style screenplay PDF (Courier 12pt), matching print CSS margins and
+ * element indents. Paper size and margins follow the caller's {@link PageSetup},
+ * defaulting to US Letter with 1in margins (1.5in on the binding edge).
  */
 @Service
 public class PdfExportServiceImpl implements PdfExportService {
-
-    private static final float LEFT_MARGIN = 108f;   // 1.5in
-    private static final float RIGHT_MARGIN = 72f;   // 1in
-    private static final float TOP_MARGIN = 72f;     // 1in
-    private static final float BOTTOM_MARGIN = 72f;  // 1in
 
     private static final float CHARACTER_INDENT = 158.4f;      // 2.2in
     private static final float DIALOGUE_INDENT = 72f;          // 1in
@@ -60,6 +56,13 @@ public class PdfExportServiceImpl implements PdfExportService {
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId, Integer editionId) {
+        return exportProject(projectId, editionId, PageSetup.DEFAULT);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportProject(Integer projectId, Integer editionId, PageSetup pageSetup) {
+        PageSetup setup = pageSetup != null ? pageSetup : PageSetup.DEFAULT;
         Project project = projectRepository.findById(projectId).orElse(null);
         ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
@@ -67,7 +70,12 @@ public class PdfExportServiceImpl implements PdfExportService {
                 : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            Document document = new Document(PageSize.LETTER, LEFT_MARGIN, RIGHT_MARGIN, TOP_MARGIN, BOTTOM_MARGIN);
+            Document document = new Document(
+                    setup.paper().rectangle(),
+                    setup.margins().left(),
+                    setup.margins().right(),
+                    setup.margins().top(),
+                    setup.margins().bottom());
             PdfWriter.getInstance(document, out);
             document.open();
 

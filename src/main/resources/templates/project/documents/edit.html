@@ -51,12 +51,16 @@
                breadcrumb bar above for both songs and notes. */-->
         <div class="text-document-toolbar-row" th:if="${isSong}">
             <div class="text-document-top-bar-actions">
-                <th:block th:if="${!isNew}">
+                <!--/* .project-tools-group is the screenplay toolbar's menu-bar styling
+                       (spacing, plain-label toggles, left-aligned panels, hidden toggle
+                       icons). Wrapping the song menus in it keeps the two toolbars
+                       identical rather than re-stating the rules for song selectors. */-->
+                <div class="project-tools-group" role="group" aria-label="Song tools" th:if="${!isNew}">
                     <th:block th:replace="~{fragments/songFileMenu :: menu(${commandModel.id}, ${projectId})}"></th:block>
                     <th:block th:replace="~{fragments/songEditMenu :: menu(${commandModel.id}, ${editionId})}"></th:block>
                     <th:block th:replace="~{fragments/songVersionMenu :: menu}"></th:block>
                     <th:block th:replace="~{fragments/songToolsMenu :: menu}"></th:block>
-                </th:block>
+                </div>
             </div>
             <div class="text-document-meta-bar text-document-meta-bar--toolbar">
                 <span class="song-word-count muted"

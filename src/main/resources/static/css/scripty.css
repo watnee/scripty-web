@@ -4190,24 +4190,17 @@ input.project-list-search::-webkit-search-results-decoration {
     user-select: none;
 }
 
-/* The song editor's File menu is not inside .project-tools-group, so the
-   screenplay's open rule below does not reach it; `.nav-dropdown.open
-   .nav-dropdown-menu` ties on specificity with the .file-menu hide rule above
-   and loses on order. */
-.song-file-dropdown.open .nav-dropdown-menu.file-menu {
-    display: block;
-}
+/* The song editor's menus now live inside .project-tools-group (see
+   project/documents/edit.html), so the screenplay's open-state and
+   left-alignment rules below reach them and the song-specific overrides that
+   used to sit here are no longer needed.
 
-/* Both song toolbar toggles sit at the left end of their row, so the panel's
-   default right-edge alignment hangs it off the left of the screen — badly
-   enough on a phone to read as the menu not opening at all. The screenplay's
-   toolbar menus get this from .project-tools-group; these are outside it. */
-.song-file-dropdown .nav-dropdown-menu.file-menu,
-.song-history-dropdown .nav-dropdown-menu.history-menu,
-.song-tools-dropdown .nav-dropdown-menu.tools-menu {
-    left: 0;
-    right: auto;
-    transform-origin: top left;
+   The group wraps on the screenplay because nine menus have to fit the 6in
+   toolbar column. The song row holds four and spans the page, so it stays on
+   one line — otherwise opening Edit > Search, which expands inline, pushes
+   Tools onto a second row. */
+.text-document-toolbar-row .project-tools-group {
+    flex-wrap: nowrap;
 }
 
 /* The song editor's word-count readout rides the toolbar meta bar and is hidden
@@ -6540,6 +6533,14 @@ body:has(main.text-documents-page) > main.text-documents-page {
        zone the lifted toolbar drops into and keep the crumbs on a single line. */
     .text-document-edit-page--song .top-bar nav[aria-label="Breadcrumb"] {
         max-width: calc(100% - 21rem);
+    }
+
+    /* Edit > Search expands the search field inline, so the lifted toolbar
+       outgrows that reserved zone and runs over the crumbs. Give the zone the
+       extra width for as long as the field is open; the title clips to suit. */
+    .text-document-edit-page--song:has(.song-search-dropdown.is-open) .top-bar nav[aria-label="Breadcrumb"],
+    .text-document-edit-page--song:has(.song-search-dropdown.has-value) .top-bar nav[aria-label="Breadcrumb"] {
+        max-width: calc(100% - 33rem);
     }
 
     .text-document-edit-page--song .top-bar nav[aria-label="Breadcrumb"] > ol {

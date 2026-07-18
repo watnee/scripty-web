@@ -3705,6 +3705,12 @@ tr.filtered-out,
 }
 
 /* Project List Page */
+/* missing.css gives every <header> margin-block: calc(2*var(--gap)), which leaves
+   a ~45px void between the nav and the Projects heading. Scoped to this page only. */
+body:has(main.project-list-page) > header.sidebar.menu {
+    margin-bottom: 0;
+}
+
 .project-list-page {
     --pl-line: var(--border, #cbd5e1);
     --pl-mark: var(--accent, #475569);
@@ -3789,20 +3795,6 @@ tr.filtered-out,
     font-weight: 700;
     line-height: 1;
     vertical-align: middle;
-}
-
-.project-list-import-hint {
-    max-width: 22rem;
-    text-align: right;
-    font-size: 0.8rem !important;
-    line-height: 1.35;
-}
-
-.project-list-import-hint code {
-    font-size: 0.9em;
-    padding: 0.05rem 0.3rem;
-    border-radius: 4px;
-    background: var(--muted-bg, rgba(100, 116, 139, 0.12));
 }
 
 .project-list-import-btn {
@@ -9214,11 +9206,6 @@ kbd {
         width: 100%;
         flex-direction: column;
         align-items: stretch;
-    }
-
-    .project-list-import-hint {
-        max-width: none;
-        text-align: left;
     }
 
     .project-list-import-btn {

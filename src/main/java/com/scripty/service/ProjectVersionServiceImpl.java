@@ -214,8 +214,8 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         Project project = projectRepository.findById(projectId).orElse(null);
         ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
-                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
-                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+                ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
         List<Person> persons = edition != null
                 ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
                 : personRepository.findByProjectIdOrderByNameAsc(projectId);
@@ -296,8 +296,8 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         }
 
         List<Block> existingBlocks = edition != null
-                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
-                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+                ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
         blockRepository.deleteAll(existingBlocks);
 
         List<Person> existingPersons = edition != null

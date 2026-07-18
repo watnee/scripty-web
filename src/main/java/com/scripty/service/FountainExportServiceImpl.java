@@ -49,8 +49,8 @@ public class FountainExportServiceImpl implements FountainExportService {
         Project project = projectRepository.findById(projectId).orElse(null);
         ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
-                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
-                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+                ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
         StringBuilder sb = new StringBuilder();
 
         if (project != null) {

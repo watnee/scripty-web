@@ -102,7 +102,7 @@ class ProjectArchiveServiceImplTest {
         when(scriptEditionRepository.findByProjectIdOrderByNameAsc(7)).thenReturn(List.of(edition));
         when(personRepository.findByProjectIdOrderByNameAsc(7)).thenReturn(List.of(person));
         when(textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(7)).thenReturn(List.of(document));
-        when(blockRepository.findByProjectIdOrderByOrderAsc(7)).thenReturn(List.of(scene, cue));
+        when(blockRepository.findByProjectIdOrderByOrderAscIdAsc(7)).thenReturn(List.of(scene, cue));
 
         String json = new String(service.exportProject(7), StandardCharsets.UTF_8);
 

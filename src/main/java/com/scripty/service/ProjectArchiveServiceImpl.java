@@ -124,7 +124,7 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
             archive.documents.add(entry);
         }
 
-        for (Block block : blockRepository.findByProjectIdOrderByOrderAsc(projectId)) {
+        for (Block block : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId)) {
             ProjectArchive.BlockEntry entry = new ProjectArchive.BlockEntry();
             entry.order = block.getOrder();
             entry.type = block.getType();

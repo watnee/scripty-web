@@ -603,8 +603,8 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         }
         if (afterBlock == null) {
             List<Block> existing = edition != null
-                    ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
-                    : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+                    ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
+                    : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
             if (existing.isEmpty()) {
                 return List.of();
             }
@@ -659,7 +659,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             return false;
         }
         String blockType = resolveInsertBlockType(doc.getDocumentType(), null);
-        List<Block> existing = blockRepository.findBySourceDocumentIdOrderByOrderAsc(doc.getId());
+        List<Block> existing = blockRepository.findBySourceDocumentIdOrderByOrderAscIdAsc(doc.getId());
         if (!existing.isEmpty() && existing.get(0).getType() != null) {
             // Preserve the type used at insert (e.g. draft inserted as Action).
             blockType = existing.get(0).getType();

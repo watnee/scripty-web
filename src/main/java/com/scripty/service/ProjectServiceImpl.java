@@ -374,8 +374,8 @@ public class ProjectServiceImpl implements ProjectService {
 
         ProjectProfileViewModel vm = new ProjectProfileViewModel();
         List<Block> blocks = edition != null
-                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
-                : blockRepository.findByProjectIdOrderByOrderAsc(project.getId());
+                ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAscIdAsc(project.getId());
         List<Person> persons = edition != null
                 ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
                 : personRepository.findByProjectIdOrderByNameAsc(project.getId());

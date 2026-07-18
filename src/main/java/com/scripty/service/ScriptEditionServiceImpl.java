@@ -376,7 +376,7 @@ public class ScriptEditionServiceImpl implements ScriptEditionService {
             personMap.put(sourcePerson.getId(), copy);
         }
 
-        List<Block> sourceBlocks = blockRepository.findByScriptEditionIdOrderByOrderAsc(source.getId());
+        List<Block> sourceBlocks = blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(source.getId());
         for (Block sourceBlock : sourceBlocks) {
             Block copy = new Block();
             copy.setOrder(sourceBlock.getOrder());

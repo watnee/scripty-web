@@ -11,9 +11,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.scripty.dto.Project;
+import com.scripty.dto.SongBlock;
+import com.scripty.dto.SongEdition;
 import com.scripty.dto.TextDocument;
 import com.scripty.dto.User;
 import com.scripty.repository.ProjectRepository;
+import com.scripty.repository.SongBlockRepository;
 import com.scripty.repository.TextDocumentRepository;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -35,6 +38,8 @@ class SongExportServiceImplTest {
     private TextDocumentRepository textDocumentRepository;
     private ProjectRepository projectRepository;
     private ProjectService projectService;
+    private SongEditionService songEditionService;
+    private SongBlockRepository songBlockRepository;
     private SongExportServiceImpl service;
     private User user;
 
@@ -43,12 +48,16 @@ class SongExportServiceImplTest {
         textDocumentRepository = mock(TextDocumentRepository.class);
         projectRepository = mock(ProjectRepository.class);
         projectService = mock(ProjectService.class);
+        songEditionService = mock(SongEditionService.class);
+        songBlockRepository = mock(SongBlockRepository.class);
         user = new User();
 
         service = new SongExportServiceImpl();
         ReflectionTestUtils.setField(service, "textDocumentRepository", textDocumentRepository);
         ReflectionTestUtils.setField(service, "projectRepository", projectRepository);
         ReflectionTestUtils.setField(service, "projectService", projectService);
+        ReflectionTestUtils.setField(service, "songEditionService", songEditionService);
+        ReflectionTestUtils.setField(service, "songBlockRepository", songBlockRepository);
 
         when(projectService.canUserAccessProject(any(Integer.class), any())).thenReturn(true);
     }
@@ -68,6 +77,53 @@ class SongExportServiceImplTest {
         doc.setDocumentType(TextDocument.TYPE_SONG);
         doc.setProject(project("Demo"));
         return doc;
+    }
+
+    private SongBlock songBlock(String content) {
+        SongBlock block = new SongBlock();
+        block.setContent(content);
+        return block;
+    }
+
+    @Test
+    void exportsTheActiveVersionsBlocksNotTheStalePublishedCache() {
+        // The cached content field is only rebuilt for the published version, so
+        // an unpublished active version used to export the wrong lyrics silently.
+        TextDocument doc = song(1, "Hold The Line", "STALE PUBLISHED LYRICS");
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
+
+        SongEdition draft = new SongEdition();
+        draft.setId(42);
+        draft.setPublished(false);
+        when(songEditionService.getDefaultForDocument(1)).thenReturn(draft);
+        when(songBlockRepository.findBySongEditionIdAndDeletedAtIsNullOrderByOrderAsc(42))
+                .thenReturn(List.of(songBlock("Draft verse one"), songBlock("Draft verse two")));
+
+        String body = new String(
+                service.exportSong(1, SongExportService.Format.TXT, user).content(),
+                StandardCharsets.UTF_8);
+
+        assertTrue(body.contains("Draft verse one"), "active version lyrics missing; got:\n" + body);
+        assertTrue(body.contains("Draft verse two"), "active version lyrics missing; got:\n" + body);
+        assertFalse(body.contains("STALE PUBLISHED LYRICS"), "exported the stale cache; got:\n" + body);
+    }
+
+    @Test
+    void fallsBackToCachedContentForLegacySongsWithoutBlocks() {
+        TextDocument doc = song(1, "Hold The Line", "Legacy lyrics");
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
+
+        SongEdition edition = new SongEdition();
+        edition.setId(42);
+        when(songEditionService.getDefaultForDocument(1)).thenReturn(edition);
+        when(songBlockRepository.findBySongEditionIdAndDeletedAtIsNullOrderByOrderAsc(42))
+                .thenReturn(List.of());
+
+        String body = new String(
+                service.exportSong(1, SongExportService.Format.TXT, user).content(),
+                StandardCharsets.UTF_8);
+
+        assertTrue(body.contains("Legacy lyrics"), "legacy fallback missing; got:\n" + body);
     }
 
     @Test

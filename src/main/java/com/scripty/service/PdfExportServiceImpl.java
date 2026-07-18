@@ -38,9 +38,18 @@ public class PdfExportServiceImpl implements PdfExportService {
     private static final float DIALOGUE_INDENT = 72f;          // 1in
     private static final float DIALOGUE_RIGHT = 108f;          // keep dialogue ~3.5in wide
     private static final float PARENTHETICAL_INDENT = 108f;    // 1.5in
-    private static final float PARENTHETICAL_RIGHT = 216f;     // ~2in wide
+    // Text column is 432pt; 432 - 108 - 180 = 144pt = 2in wide, matching page view.
+    private static final float PARENTHETICAL_RIGHT = 180f;
 
-    private static final float ELEMENT_SPACING = 3.6f; // ~0.05in
+    /**
+     * Industry vertical rhythm, matching page view (scripty.css "Page view" block):
+     * one blank line (12pt) between elements, a fuller 24pt break before a scene
+     * heading, and no gap inside a speech group (character → parenthetical →
+     * dialogue). Spacing is carried entirely by spacingBefore so it composes the
+     * same way the CSS margin-top rules do.
+     */
+    private static final float ELEMENT_SPACING = 12f;   // 1em blank line
+    private static final float SCENE_SPACING = 24f;     // 2em before a scene heading
 
     @Autowired
     private BlockRepository blockRepository;
@@ -191,15 +200,15 @@ public class PdfExportServiceImpl implements PdfExportService {
         switch (type) {
             case Block.TYPE_SCENE, Block.TYPE_SHOT -> {
                 Paragraph p = styledParagraph(content.trim().toUpperCase(Locale.ROOT), styleFlags(block, Font.BOLD));
-                p.setSpacingBefore(ELEMENT_SPACING);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingBefore(SCENE_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
             case Block.TYPE_ACTION, Block.TYPE_TEXT, Block.TYPE_LYRICS -> {
                 int flags = styleFlags(block, Block.TYPE_LYRICS.equals(type) ? Font.ITALIC : Font.NORMAL);
                 Paragraph p = styledParagraph(content, flags);
                 p.setSpacingBefore(ELEMENT_SPACING);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
             case Block.TYPE_CHARACTER, Block.TYPE_DUAL_DIALOGUE -> {
@@ -218,7 +227,7 @@ public class PdfExportServiceImpl implements PdfExportService {
                 p.setIndentationLeft(DIALOGUE_INDENT);
                 p.setIndentationRight(DIALOGUE_RIGHT);
                 p.setSpacingBefore(0f);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
             case Block.TYPE_PARENTHETICAL -> {
@@ -237,14 +246,14 @@ public class PdfExportServiceImpl implements PdfExportService {
                 Paragraph p = styledParagraph(content.trim().toUpperCase(Locale.ROOT), styleFlags(block, Font.NORMAL));
                 p.setAlignment(Element.ALIGN_RIGHT);
                 p.setSpacingBefore(ELEMENT_SPACING);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
             case Block.TYPE_CENTERED -> {
                 Paragraph p = styledParagraph(content, styleFlags(block, Font.NORMAL));
                 p.setAlignment(Element.ALIGN_CENTER);
                 p.setSpacingBefore(ELEMENT_SPACING);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
             case Block.TYPE_PAGE_BREAK -> {
@@ -254,7 +263,7 @@ public class PdfExportServiceImpl implements PdfExportService {
             default -> {
                 Paragraph p = styledParagraph(content, styleFlags(block, Font.NORMAL));
                 p.setSpacingBefore(ELEMENT_SPACING);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
         }

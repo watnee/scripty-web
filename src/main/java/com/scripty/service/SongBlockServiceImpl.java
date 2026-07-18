@@ -8,12 +8,15 @@ import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.SongBlockRepository;
 import com.scripty.repository.TextDocumentRepository;
 import com.scripty.util.PlainTextSanitizer;
+import com.scripty.viewmodel.song.deletedblocks.DeletedSongBlockViewModel;
+import com.scripty.viewmodel.song.deletedblocks.DeletedSongBlocksViewModel;
 import com.scripty.viewmodel.songblock.SongBlockViewModel;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +26,10 @@ public class SongBlockServiceImpl implements SongBlockService {
     private final SongBlockRepository songBlockRepository;
     private final TextDocumentRepository textDocumentRepository;
     private final ProjectRepository projectRepository;
+
+    // Trashed lines stay recoverable for this long; matches the document trash window.
+    @Value("${scripty.songblocks.trash-retention-days:30}")
+    private int trashRetentionDays = 30;
 
     @Autowired
     public SongBlockServiceImpl(SongBlockRepository songBlockRepository,
@@ -112,7 +119,7 @@ public class SongBlockServiceImpl implements SongBlockService {
             after.setContent(PlainTextSanitizer.sanitize(afterContent));
             after.setUpdatedAt(LocalDateTime.now());
         }
-        List<SongBlock> blocks = new ArrayList<>(songBlockRepository.findByTextDocumentIdOrderByOrderAsc(doc.getId()));
+        List<SongBlock> blocks = new ArrayList<>(songBlockRepository.findByTextDocumentIdAndDeletedAtIsNullOrderByOrderAsc(doc.getId()));
         int idx = indexOf(blocks, afterBlockId);
         SongBlock created = newBlock(doc, "");
         blocks.add(idx + 1, created);
@@ -153,19 +160,98 @@ public class SongBlockServiceImpl implements SongBlockService {
     @Transactional
     public Integer deleteBlock(Integer blockId) {
         SongBlock block = read(blockId);
-        if (block == null || block.getTextDocument() == null) {
+        if (block == null || block.getTextDocument() == null || block.isDeleted()) {
             return null;
         }
         TextDocument doc = block.getTextDocument();
-        List<SongBlock> blocks = new ArrayList<>(songBlockRepository.findByTextDocumentIdOrderByOrderAsc(doc.getId()));
+        List<SongBlock> blocks = new ArrayList<>(songBlockRepository.findByTextDocumentIdAndDeletedAtIsNullOrderByOrderAsc(doc.getId()));
         blocks.removeIf(b -> b.getId().equals(blockId));
-        songBlockRepository.delete(block);
+        // Soft delete: the line drops out of the song but is kept, so it can be
+        // restored from the "recently deleted lines" recovery view.
+        LocalDateTime now = LocalDateTime.now();
+        block.setDeletedAt(now);
+        block.setUpdatedAt(now);
+        songBlockRepository.save(block);
         if (blocks.isEmpty()) {
             blocks.add(newBlock(doc, ""));
         }
         renumberAndSave(blocks);
         rebuildDocumentContent(doc, blocks);
         return doc.getId();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DeletedSongBlocksViewModel getDeletedBlocksViewModel(Integer documentId) {
+        TextDocument doc = documentId != null
+                ? textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null)
+                : null;
+        if (doc == null) {
+            return null;
+        }
+        DeletedSongBlocksViewModel vm = new DeletedSongBlocksViewModel();
+        vm.setDocumentId(doc.getId());
+        vm.setSongTitle(doc.getTitle());
+        if (doc.getProject() != null) {
+            vm.setProjectId(doc.getProject().getId());
+            vm.setProjectTitle(doc.getProject().getTitle());
+        }
+        List<DeletedSongBlockViewModel> deleted = new ArrayList<>();
+        for (SongBlock block : songBlockRepository
+                .findByTextDocumentIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(doc.getId())) {
+            deleted.add(new DeletedSongBlockViewModel(
+                    block.getId(),
+                    block.getContent(),
+                    block.getHighlight(),
+                    block.getDeletedAt(),
+                    block.getDeletedAt() != null ? block.getDeletedAt().plusDays(trashRetentionDays) : null));
+        }
+        vm.setBlocks(deleted);
+        return vm;
+    }
+
+    @Override
+    @Transactional
+    public Integer restoreBlock(Integer blockId) {
+        SongBlock block = read(blockId);
+        if (block == null || block.getTextDocument() == null || !block.isDeleted()) {
+            return null;
+        }
+        TextDocument doc = block.getTextDocument();
+        LocalDateTime now = LocalDateTime.now();
+        block.setDeletedAt(null);
+        block.setUpdatedAt(now);
+        // Send it back to the end of the song: its old order long since belongs to
+        // another line, and the user can drag it wherever they want from there.
+        List<SongBlock> blocks = new ArrayList<>(songBlockRepository.findByTextDocumentIdAndDeletedAtIsNullOrderByOrderAsc(doc.getId()));
+        blocks.removeIf(b -> b.getId().equals(blockId));
+        blocks.add(block);
+        renumberAndSave(blocks);
+        rebuildDocumentContent(doc, blocks);
+        return doc.getId();
+    }
+
+    @Override
+    @Transactional
+    public Integer purgeBlock(Integer blockId) {
+        SongBlock block = read(blockId);
+        // Only a trashed line can be purged, so this is never reachable from the
+        // editor — deleting always leaves a recovery window first.
+        if (block == null || !block.isDeleted()) {
+            return null;
+        }
+        Integer documentId = block.getTextDocument() != null ? block.getTextDocument().getId() : null;
+        songBlockRepository.delete(block);
+        return documentId;
+    }
+
+    @Override
+    @Transactional
+    public int purgeExpiredBlocks() {
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(trashRetentionDays);
+        List<SongBlock> expired = songBlockRepository.findByDeletedAtNotNullAndDeletedAtBefore(cutoff);
+        songBlockRepository.deleteAll(expired);
+        return expired.size();
     }
 
     @Override
@@ -188,7 +274,7 @@ public class SongBlockServiceImpl implements SongBlockService {
             return null;
         }
         TextDocument doc = block.getTextDocument();
-        List<SongBlock> blocks = new ArrayList<>(songBlockRepository.findByTextDocumentIdOrderByOrderAsc(doc.getId()));
+        List<SongBlock> blocks = new ArrayList<>(songBlockRepository.findByTextDocumentIdAndDeletedAtIsNullOrderByOrderAsc(doc.getId()));
         int idx = indexOf(blocks, blockId);
         if (idx < 0) {
             return block;
@@ -219,7 +305,7 @@ public class SongBlockServiceImpl implements SongBlockService {
         if (doc == null || lines == null) {
             return;
         }
-        songBlockRepository.deleteAll(songBlockRepository.findByTextDocumentIdOrderByOrderAsc(doc.getId()));
+        songBlockRepository.deleteAll(songBlockRepository.findByTextDocumentIdAndDeletedAtIsNullOrderByOrderAsc(doc.getId()));
         // Hibernate orders inserts before deletes at flush time; force the deletes
         // out first so a later read of this document does not see the old rows.
         songBlockRepository.flush();
@@ -242,7 +328,7 @@ public class SongBlockServiceImpl implements SongBlockService {
             return null;
         }
         TextDocument doc = block.getTextDocument();
-        List<SongBlock> blocks = new ArrayList<>(songBlockRepository.findByTextDocumentIdOrderByOrderAsc(doc.getId()));
+        List<SongBlock> blocks = new ArrayList<>(songBlockRepository.findByTextDocumentIdAndDeletedAtIsNullOrderByOrderAsc(doc.getId()));
         int idx = indexOf(blocks, blockId);
         int target = idx + delta;
         if (idx < 0 || target < 0 || target >= blocks.size()) {
@@ -262,7 +348,7 @@ public class SongBlockServiceImpl implements SongBlockService {
     // --- helpers ---------------------------------------------------------
 
     private List<SongBlock> ensureSeeded(TextDocument doc) {
-        List<SongBlock> existing = songBlockRepository.findByTextDocumentIdOrderByOrderAsc(doc.getId());
+        List<SongBlock> existing = songBlockRepository.findByTextDocumentIdAndDeletedAtIsNullOrderByOrderAsc(doc.getId());
         if (!existing.isEmpty()) {
             return existing;
         }
@@ -299,7 +385,7 @@ public class SongBlockServiceImpl implements SongBlockService {
     private void rebuildDocumentContent(TextDocument doc, List<SongBlock> blocks) {
         List<SongBlock> ordered = blocks != null
                 ? blocks
-                : songBlockRepository.findByTextDocumentIdOrderByOrderAsc(doc.getId());
+                : songBlockRepository.findByTextDocumentIdAndDeletedAtIsNullOrderByOrderAsc(doc.getId());
         String content = ordered.stream()
                 .map(b -> b.getContent() != null ? b.getContent() : "")
                 .collect(Collectors.joining("\n"));

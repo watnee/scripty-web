@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title th:text="'Scripty - Deleted lines — ' + ${viewModel.songTitle}">Scripty - Deleted lines</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main class="text-documents-page text-documents-page--songs">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}">Project</a></li>
+                    <li><a th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}">Songs</a></li>
+                    <li><a th:href="@{/project/documents/edit(id=${viewModel.documentId})}" th:text="${viewModel.songTitle}">Song</a></li>
+                    <li aria-current="page">Deleted lines</li>
+                </ol>
+            </nav>
+        </div>
+
+        <p class="text-document-import-banner"
+           th:if="${songBlockTrashMessage != null}"
+           th:text="${songBlockTrashMessage}"
+           role="status"></p>
+
+        <section class="text-documents-section">
+            <div class="text-documents-section-header">
+                <div class="text-documents-section-intro">
+                    <span class="text-documents-section-mark" aria-hidden="true">🗑</span>
+                    <div>
+                        <div class="text-documents-heading-row">
+                            <h2 id="trash-heading">Recently deleted lines</h2>
+                        </div>
+                        <p class="muted">
+                            Lines you delete from
+                            <strong th:text="${viewModel.songTitle}">this song</strong>
+                            land here. Restore puts a line back at the end of the song, where you can drag it into place.
+                        </p>
+                    </div>
+                </div>
+                <div class="text-documents-section-actions">
+                    <a th:href="@{/project/documents/edit(id=${viewModel.documentId})}"
+                       class="project-list-action-btn project-list-action-btn--primary">Back to song</a>
+                </div>
+            </div>
+
+            <div class="text-documents-empty-state" th:if="${#lists.isEmpty(viewModel.blocks)}">
+                <p class="text-documents-empty-title">No deleted lines</p>
+                <p class="muted">
+                    Anything you delete from this song lands here first, and stays recoverable for 30 days.
+                </p>
+            </div>
+
+            <ul class="text-documents-list" th:if="${!#lists.isEmpty(viewModel.blocks)}">
+                <li th:each="block, iter : ${viewModel.blocks}"
+                    class="text-document-card"
+                    th:style="'--card-i:' + ${iter.index}">
+                    <div class="text-document-card-main">
+                        <p class="text-document-preview"
+                           th:if="${!block.blank}"
+                           th:text="${block.content}">Lyrics line</p>
+                        <p class="text-document-preview text-document-preview--empty" th:if="${block.blank}">Empty line</p>
+                        <div class="text-document-card-meta">
+                            <span th:if="${block.highlight != null}"
+                                  class="block-highlight-swatch"
+                                  th:classappend="'block-highlight-' + ${#strings.toLowerCase(block.highlight)}"
+                                  th:title="'Highlighted ' + ${#strings.toLowerCase(block.highlight)}"
+                                  aria-hidden="true"></span>
+                            <span class="muted"
+                                  th:if="${block.deletedAt != null}"
+                                  th:title="${#temporals.format(block.deletedAt, 'MMM d, yyyy, h:mm a')}">
+                                Deleted <span th:replace="~{fragments/lastEditedTime :: relativeTime(${block.deletedAt})}"></span>
+                            </span>
+                            <span class="muted"
+                                  th:if="${block.purgesAt != null}"
+                                  th:text="'Deletes permanently on ' + ${#temporals.format(block.purgesAt, 'MMM d, yyyy')}">Purge date</span>
+                        </div>
+                    </div>
+                    <div class="text-document-card-actions" th:if="${canEditScript == null or canEditScript}">
+                        <form th:action="@{/song/block/restore}" method="post" hx-boost="false">
+                            <input type="hidden" name="id" th:value="${block.id}" />
+                            <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--primary"
+                                    title="Put this line back in the song">Restore</button>
+                        </form>
+                        <form th:action="@{/song/block/purge}"
+                              method="post"
+                              hx-boost="false"
+                              class="song-block-purge-form">
+                            <input type="hidden" name="id" th:value="${block.id}" />
+                            <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn"
+                                    _="on click if not confirm('Permanently delete this line? This cannot be undone.') halt">Delete forever</button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+        </section>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

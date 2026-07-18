@@ -1,6 +1,7 @@
 package com.scripty.service;
 
 import com.scripty.dto.SongBlock;
+import com.scripty.viewmodel.song.deletedblocks.DeletedSongBlocksViewModel;
 import com.scripty.viewmodel.songblock.SongBlockViewModel;
 import java.util.List;
 
@@ -50,8 +51,32 @@ public interface SongBlockService {
     /** Sets the background tint on a block; an unknown or blank color clears it. */
     SongBlock setHighlight(Integer blockId, String highlight);
 
-    /** Deletes a block; keeps at least one (empty) block in the song. */
+    /**
+     * Soft-deletes a block, moving it to the song's "recently deleted lines"
+     * recovery list. Keeps at least one (empty) live block in the song.
+     */
     Integer deleteBlock(Integer blockId);
+
+    /**
+     * The song's soft-deleted lines, newest first, plus the breadcrumbs the
+     * recovery page needs. Null when the document does not exist.
+     */
+    DeletedSongBlocksViewModel getDeletedBlocksViewModel(Integer documentId);
+
+    /**
+     * Restores a soft-deleted block to the end of the song. Returns the parent
+     * document id, or null if the block is missing or was not trashed.
+     */
+    Integer restoreBlock(Integer blockId);
+
+    /**
+     * Permanently removes a soft-deleted block. Returns the parent document id,
+     * or null if the block is missing or is not in the trash.
+     */
+    Integer purgeBlock(Integer blockId);
+
+    /** Hard-deletes trashed lines past the retention window. Returns the count purged. */
+    int purgeExpiredBlocks();
 
     SongBlock moveUp(Integer blockId);
 

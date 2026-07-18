@@ -44,6 +44,15 @@
                title="Version history">
                 <span class="nav-dropdown-item-label">Version history</span>
             </a>
+            <!--/* A deleted line lands in a per-song trash, recoverable for 30 days. */-->
+            <a id="song-nav-deleted-lines"
+               class="nav-dropdown-item"
+               role="menuitem"
+               th:href="@{/song/block/trash(documentId=${documentId})}"
+               aria-label="Recently deleted lines"
+               title="Recently deleted lines">
+                <span class="nav-dropdown-item-label">Recently deleted lines</span>
+            </a>
         </div>
     </div>
     <div class="project-search-dropdown song-search-dropdown" id="song-search-dropdown">

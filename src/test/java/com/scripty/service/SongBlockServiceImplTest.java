@@ -58,11 +58,20 @@ class SongBlockServiceImplTest {
         when(textDocumentRepository.save(any(TextDocument.class))).thenAnswer(i -> i.getArgument(0));
         when(projectRepository.save(any(Project.class))).thenAnswer(i -> i.getArgument(0));
 
-        when(songBlockRepository.findByTextDocumentIdOrderByOrderAsc(anyInt())).thenAnswer(i -> {
+        when(songBlockRepository.findByTextDocumentIdAndDeletedAtIsNullOrderByOrderAsc(anyInt())).thenAnswer(i -> {
             Integer docId = i.getArgument(0);
             return store.values().stream()
                     .filter(b -> b.getTextDocument() != null && docId.equals(b.getTextDocument().getId()))
+                    .filter(b -> b.getDeletedAt() == null)
                     .sorted(Comparator.comparingInt(SongBlock::getOrder))
+                    .collect(Collectors.toList());
+        });
+        when(songBlockRepository.findByTextDocumentIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(anyInt())).thenAnswer(i -> {
+            Integer docId = i.getArgument(0);
+            return store.values().stream()
+                    .filter(b -> b.getTextDocument() != null && docId.equals(b.getTextDocument().getId()))
+                    .filter(b -> b.getDeletedAt() != null)
+                    .sorted(Comparator.comparing(SongBlock::getDeletedAt).reversed())
                     .collect(Collectors.toList());
         });
         when(songBlockRepository.findById(anyInt()))
@@ -101,6 +110,10 @@ class SongBlockServiceImplTest {
         return service.getBlocks(7).stream()
                 .map(SongBlockViewModel::getContent)
                 .collect(Collectors.toList());
+    }
+
+    private int deletedCount() {
+        return service.getDeletedBlocksViewModel(7).getBlocks().size();
     }
 
     @Test
@@ -153,6 +166,71 @@ class SongBlockServiceImplTest {
 
         assertEquals(List.of("a", "c"), contents());
         assertEquals("a\nc", doc.getContent());
+    }
+
+    @Test
+    void deleteSoftDeletesSoLineIsRecoverable() {
+        doc.setContent("a\nb\nc");
+        Integer middle = service.getBlocks(7).get(1).getId();
+
+        service.deleteBlock(middle);
+
+        // Dropped from the live song...
+        assertEquals(List.of("a", "c"), contents());
+        // ...but kept in the recovery list.
+        var trash = service.getDeletedBlocksViewModel(7);
+        assertEquals(1, trash.getBlocks().size());
+        assertEquals("b", trash.getBlocks().get(0).getContent());
+        assertNotNull(trash.getBlocks().get(0).getDeletedAt());
+        assertNotNull(trash.getBlocks().get(0).getPurgesAt());
+        assertEquals(1, deletedCount());
+    }
+
+    @Test
+    void restoreBringsLineBackAtEndOfSong() {
+        doc.setContent("a\nb\nc");
+        Integer middle = service.getBlocks(7).get(1).getId();
+        service.deleteBlock(middle);
+
+        Integer restoredDoc = service.restoreBlock(middle);
+
+        assertEquals(7, restoredDoc);
+        assertEquals(List.of("a", "c", "b"), contents());
+        assertEquals("a\nc\nb", doc.getContent());
+        // The recovery list is empty again.
+        assertEquals(0, deletedCount());
+    }
+
+    @Test
+    void restoreOfLiveOrMissingBlockReturnsNull() {
+        doc.setContent("a\nb");
+        Integer live = service.getBlocks(7).get(0).getId();
+
+        assertEquals(null, service.restoreBlock(live));
+        assertEquals(null, service.restoreBlock(9999));
+    }
+
+    @Test
+    void purgeRemovesTrashedLineForGood() {
+        doc.setContent("a\nb");
+        Integer second = service.getBlocks(7).get(1).getId();
+        service.deleteBlock(second);
+        assertEquals(1, deletedCount());
+
+        Integer purgedDoc = service.purgeBlock(second);
+
+        assertEquals(7, purgedDoc);
+        assertEquals(0, deletedCount());
+        assertFalse(store.containsKey(second));
+    }
+
+    @Test
+    void purgeOfLiveBlockReturnsNullAndKeepsIt() {
+        doc.setContent("a\nb");
+        Integer live = service.getBlocks(7).get(0).getId();
+
+        assertEquals(null, service.purgeBlock(live));
+        assertEquals(List.of("a", "b"), contents());
     }
 
     @Test

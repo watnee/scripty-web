@@ -12,6 +12,7 @@ const ASSETS_TO_CACHE = [
   '/js/help-center.js',
   '/js/csrf.js',
   '/js/text-size.js',
+  '/js/scroll-position.js',
   '/js/block-empty-guard.js',
   '/js/block-selection.js',
   '/js/element-type.js',

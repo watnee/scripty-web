@@ -6288,6 +6288,7 @@
             if (window.scriptyInitThemeToggle) window.scriptyInitThemeToggle();
             if (window.scriptyInitProjectDeleteConfirm) window.scriptyInitProjectDeleteConfirm();
             if (window.scriptyInitEditorPositionPersistence) window.scriptyInitEditorPositionPersistence();
+            if (window.scriptyInitScrollPositionPersistence) window.scriptyInitScrollPositionPersistence();
             if (window.scriptyInitHelpCenter) {
                 window.scriptyInitHelpCenter();
             }
@@ -6303,6 +6304,7 @@
             });
             if (window.scriptyUpdateLastEditedTimes) window.scriptyUpdateLastEditedTimes();
             if (window.scriptyRestoreEditorPosition) window.scriptyRestoreEditorPosition();
+            if (window.scriptyRestoreScrollPosition) window.scriptyRestoreScrollPosition();
             if (window.scriptySyncProjectNameDisplay) {
                 window.scriptySyncProjectNameDisplay();
             }
@@ -6423,6 +6425,7 @@
     <script th:src="@{/js/last-edited-times.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/undo-redo.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/editor-position.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/scroll-position.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/service-worker-register.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/pwa-install.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/help-center.js(v=${assetVersion})}"></script>

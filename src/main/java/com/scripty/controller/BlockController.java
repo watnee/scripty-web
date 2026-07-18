@@ -15,6 +15,7 @@ import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 import com.scripty.service.BlockCommentService;
 import com.scripty.service.BlockService;
+import com.scripty.service.BlockTrashService;
 import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
 import java.security.Principal;
@@ -35,6 +36,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Controller
@@ -43,6 +45,9 @@ public class BlockController {
 
     @Autowired
     BlockService blockService;
+
+    @Autowired
+    BlockTrashService blockTrashService;
 
     @Autowired
     ProjectVersionService projectVersionService;
@@ -114,6 +119,49 @@ public class BlockController {
         projectVersionService.autoSaveVersion(block.getProject().getId());
 
         return ResponseEntity.ok("");
+    }
+
+    @RequestMapping(value = "/trash")
+    public String trash(@RequestParam Integer projectId, Model model, Principal principal) {
+        if (!projectAccess.canAccessProject(projectId, principal)) {
+            return denyRedirect();
+        }
+        var viewModel = blockTrashService.getTrashViewModel(projectId, projectAccess.currentUser(principal));
+        if (viewModel == null) {
+            return denyRedirect();
+        }
+        model.addAttribute("viewModel", viewModel);
+        return "block/trash";
+    }
+
+    @RequestMapping(value = "/restore", method = RequestMethod.POST)
+    public String restore(@RequestParam Integer id, @RequestParam Integer projectId,
+                          Principal principal, RedirectAttributes redirectAttributes) {
+        if (denyEditProject(projectId, principal)) {
+            return denyRedirect();
+        }
+        projectUndoRedoService.recordCheckpoint(projectId);
+        Block restored = blockTrashService.restore(id, projectId, projectAccess.currentUser(principal));
+        if (restored == null) {
+            redirectAttributes.addFlashAttribute("blockTrashMessage",
+                    "That block is no longer in the trash.");
+            return "redirect:/block/trash?projectId=" + projectId;
+        }
+        projectVersionService.autoSaveVersion(projectId);
+        redirectAttributes.addFlashAttribute("blockTrashMessage", "Block restored to your script.");
+        return "redirect:/project/show?id=" + projectId;
+    }
+
+    @RequestMapping(value = "/purge", method = RequestMethod.POST)
+    public String purge(@RequestParam Integer id, @RequestParam Integer projectId,
+                        Principal principal, RedirectAttributes redirectAttributes) {
+        if (denyEditProject(projectId, principal)) {
+            return denyRedirect();
+        }
+        boolean purged = blockTrashService.purge(id, projectId, projectAccess.currentUser(principal));
+        redirectAttributes.addFlashAttribute("blockTrashMessage",
+                purged ? "Block permanently deleted." : "That block is no longer in the trash.");
+        return "redirect:/block/trash?projectId=" + projectId;
     }
 
     @RequestMapping(value = "/moveUp")

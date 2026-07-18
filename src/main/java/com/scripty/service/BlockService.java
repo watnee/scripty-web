@@ -36,6 +36,15 @@ public interface BlockService {
     Block updateCharacterName(Integer id, String name);
 
     Block deleteBlock(Integer id);
+
+    /**
+     * Re-creates a block from a trash record, inserting it at (a clamp of) the
+     * position it held when deleted. The result is a new block with a new id —
+     * see {@link com.scripty.dto.DeletedBlock} for why the original can't return.
+     * @return the restored block, or null if its edition can't be resolved
+     */
+    Block restoreBlock(com.scripty.dto.DeletedBlock record);
+
     Block moveBlockUp(Integer id);
     Block moveBlockDown(Integer id);
     Block moveBlockTo(Integer id, int newOrder);

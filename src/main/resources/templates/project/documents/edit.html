@@ -54,6 +54,7 @@
                 <th:block th:if="${!isNew}">
                     <th:block th:replace="~{fragments/songFileMenu :: menu(${commandModel.id}, ${projectId})}"></th:block>
                     <th:block th:replace="~{fragments/songEditMenu :: menu(${commandModel.id})}"></th:block>
+                    <th:block th:replace="~{fragments/songToolsMenu :: menu}"></th:block>
                 </th:block>
                 <th:block th:replace="~{fragments/textDocumentAbout :: about(${isSong})}"></th:block>
             </div>

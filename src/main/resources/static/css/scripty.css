@@ -4375,7 +4375,7 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
     font-weight: 700;
 }
 
-.view-menu-text-size {
+.tools-menu-text-size {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -4385,17 +4385,19 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
     font-weight: 500;
 }
 
-.view-menu-text-size-label {
+.tools-menu-text-size-label {
     color: var(--fg);
 }
 
-.view-menu .text-size-buttons {
+.view-menu .text-size-buttons,
+.tools-menu .text-size-buttons {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
 }
 
-.view-menu .text-size-btn {
+.view-menu .text-size-btn,
+.tools-menu .text-size-btn {
     background: var(--interactive-bg);
     border: 1px solid var(--muted-fg);
     border-radius: var(--border-radius);
@@ -4414,11 +4416,14 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
 }
 
 .view-menu .text-size-btn:hover,
-.view-menu .text-size-btn:focus {
+.view-menu .text-size-btn:focus,
+.tools-menu .text-size-btn:hover,
+.tools-menu .text-size-btn:focus {
     filter: brightness(1.1);
 }
 
-.view-menu .text-size-btn:disabled {
+.view-menu .text-size-btn:disabled,
+.tools-menu .text-size-btn:disabled {
     opacity: 0.45;
     cursor: not-allowed;
     filter: none;
@@ -7246,7 +7251,7 @@ button.song-block-menu-toggle.block-drag-menu-toggle.nav-dropdown-toggle:active 
     width: 100%;
     min-height: 1.6em;
     font-family: "Courier Prime", "Courier New", Courier, monospace;
-    font-size: 1rem;
+    font-size: calc(1rem * var(--scripty-text-scale, 1));
     line-height: 1.6;
     padding: 0.15rem 0.35rem;
     margin: 0;

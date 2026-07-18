@@ -3,7 +3,11 @@
  *
  * Each row is a lyric block persisted server-side. Content edits save on blur
  * (POST /song/block/edit, 204); structural changes (add, delete, move) return
- * the refreshed #song-blocks list which we swap in, re-focusing the marked row.
+ * the refreshed block list which we swap in, re-focusing the marked row.
+ *
+ * Every lookup is scoped to the enclosing .song-blocks-editor rather than a
+ * global id, so the songs workspace can stack one editor per song on a single
+ * page and each one edits only its own lines.
  *
  * Loaded from nav.html so it survives HTMX-boosted navigation. Uses event
  * delegation on document, so it keeps working after the list is re-rendered.
@@ -25,6 +29,15 @@
 
     function currentEditor() {
         return document.querySelector('.song-blocks-editor[data-document-id]');
+    }
+
+    function allEditors() {
+        return document.querySelectorAll('.song-blocks-editor[data-document-id]');
+    }
+
+    /** The block list belonging to `node`'s editor, not whichever one is first. */
+    function listIn(editor) {
+        return editor ? editor.querySelector('.song-blocks') : null;
     }
 
     function rowTextarea(node) {
@@ -79,16 +92,22 @@
         });
     }
 
-    function replaceList(html) {
-        var list = document.getElementById('song-blocks');
+    function replaceList(html, editor) {
+        var target = editor || currentEditor();
+        var list = listIn(target);
         if (!list) {
             return;
         }
         var tmp = document.createElement('div');
         tmp.innerHTML = html.trim();
-        var fresh = tmp.querySelector('#song-blocks') || tmp.firstElementChild;
+        var fresh = tmp.querySelector('.song-blocks') || tmp.firstElementChild;
         if (!fresh) {
             return;
+        }
+        // The server renders the fragment with the id it knows; on the stacked
+        // workspace that id must stay unique to this song's editor.
+        if (list.id) {
+            fresh.id = list.id;
         }
         list.replaceWith(fresh);
         markSaved(fresh);
@@ -108,10 +127,13 @@
         return p;
     }
 
-    function structural(url, params) {
+    function structural(url, params, editor) {
+        var target = editor || currentEditor();
         return pendingEdit.then(function () {
             return post(url, params);
-        }).then(replaceList).catch(function () { /* leave list as-is on error */ });
+        }).then(function (html) {
+            replaceList(html, target);
+        }).catch(function () { /* leave list as-is on error */ });
     }
 
     // Highlight is a pure style change on one row: paint it in place and save in
@@ -183,7 +205,7 @@
             var id = t.getAttribute('data-block-id');
             if (id) {
                 t.__lastSaved = t.value; // createBelow persists this content atomically
-                structural('/song/block/createBelow', { id: id, content: t.value });
+                structural('/song/block/createBelow', { id: id, content: t.value }, editorEl(t));
             }
         }
     });
@@ -199,14 +221,14 @@
     // menu does not pop open right after a drop.
     var dragJustEnded = false;
 
+    /** The list being dragged within — a drag never crosses song editors. */
     function blockList() {
-        return document.getElementById('song-blocks');
+        return dragRow ? listIn(editorEl(dragRow)) : null;
     }
 
     function songRow(node) {
         var row = node && node.closest ? node.closest('.song-block-row[data-block-id]') : null;
-        var list = blockList();
-        return row && list && list.contains(row) ? row : null;
+        return row && editorEl(row) ? row : null;
     }
 
     function clearDropMarkers() {
@@ -326,12 +348,13 @@
         }
         // Move the row now so the drop reads as instant; the refreshed list that
         // comes back from the server replaces it either way.
+        var editor = editorEl(dragRow);
         if (target.insertBefore) {
             target.row.parentNode.insertBefore(dragRow, target.row);
         } else {
             target.row.parentNode.insertBefore(dragRow, target.row.nextSibling);
         }
-        structural('/song/block/moveTo', { id: id, position: position });
+        structural('/song/block/moveTo', { id: id, position: position }, editor);
     });
 
     function closeMenus(except) {
@@ -368,7 +391,8 @@
         closeMenus(null);
 
         var btn = e.target.closest('[data-action]');
-        if (!btn || !editorEl(btn)) {
+        var editor = btn ? editorEl(btn) : null;
+        if (!btn || !editor) {
             return;
         }
         var action = btn.getAttribute('data-action');
@@ -381,13 +405,13 @@
             if (ta) {
                 ta.__lastSaved = ta.value;
             }
-            structural('/song/block/createBelow', { id: id, content: ta ? ta.value : '' });
+            structural('/song/block/createBelow', { id: id, content: ta ? ta.value : '' }, editor);
         } else if (action === 'delete') {
-            structural('/song/block/delete', { id: id });
+            structural('/song/block/delete', { id: id }, editor);
         } else if (action === 'up') {
-            structural('/song/block/moveUp', { id: id });
+            structural('/song/block/moveUp', { id: id }, editor);
         } else if (action === 'down') {
-            structural('/song/block/moveDown', { id: id });
+            structural('/song/block/moveDown', { id: id }, editor);
         } else if (action === 'highlight') {
             var row = btn.closest('.song-block-row[data-block-id]');
             setHighlight(row, id, btn.getAttribute('data-highlight') || '');
@@ -395,10 +419,9 @@
     });
 
     function growAll() {
-        var ed = currentEditor();
-        if (ed) {
+        allEditors().forEach(function (ed) {
             ed.querySelectorAll('.song-block-textarea').forEach(autoGrow);
-        }
+        });
     }
 
     // A brand-new song opens with a single empty line. Give that line an inviting
@@ -419,12 +442,14 @@
     }
 
     function init() {
-        var ed = currentEditor();
-        if (!ed) {
+        var editors = allEditors();
+        if (!editors.length) {
             return;
         }
-        markSaved(ed);
-        updateFirstLinePlaceholder(ed);
+        editors.forEach(function (ed) {
+            markSaved(ed);
+            updateFirstLinePlaceholder(ed);
+        });
         // Re-measure once layout has settled, in case the rows had no width yet.
         requestAnimationFrame(growAll);
     }
@@ -432,6 +457,10 @@
     // Lets the Edit menu (song-edit-menu.js) swap in the list returned by
     // undo/redo through the same re-baseline + re-measure path.
     window.scriptySongBlocksReplaceList = replaceList;
+
+    // Collapsed editors (songs workspace) have zero width, so autoGrow skips
+    // them; the workspace calls this after expanding one to size its rows.
+    window.scriptySongBlocksGrow = growAll;
 
     document.body.addEventListener('htmx:afterSettle', init);
     document.body.addEventListener('htmx:afterSwap', init);

@@ -14,11 +14,13 @@ import com.scripty.service.SongExportService;
 import com.scripty.service.SongVersionService;
 import com.scripty.service.TextDocumentService;
 import com.scripty.service.UserService;
+import com.scripty.viewmodel.textdocument.SongWorkspacePaneViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -85,6 +87,43 @@ public class TextDocumentController {
     @RequestMapping(value = "/songs")
     public String songs(@RequestParam Integer projectId, Model model, Principal principal) {
         return renderList(projectId, TextDocument.TYPE_SONG, model, principal);
+    }
+
+    /**
+     * Every song in the project on one page, each as an expandable block editor,
+     * so lyrics can be reworked across songs without bouncing back to the list.
+     * Editing goes through the same /song/block/* endpoints the single-song
+     * editor uses; this route only assembles the initial render.
+     */
+    @RequestMapping(value = "/songs/workspace")
+    public String songsWorkspace(@RequestParam Integer projectId, Model model, Principal principal) {
+        User user = currentUser(principal);
+        TextDocumentListViewModel viewModel = textDocumentService.getListViewModel(projectId, user);
+        if (viewModel == null) {
+            return "redirect:/project/list";
+        }
+        boolean canEditScript = projectAccess.canEditScript(projectId, principal);
+        List<SongWorkspacePaneViewModel> panes = new ArrayList<>();
+        for (TextDocumentViewModel song : viewModel.getSongs()) {
+            SongWorkspacePaneViewModel pane = new SongWorkspacePaneViewModel();
+            pane.setId(song.getId());
+            pane.setTitle(song.getTitle());
+            pane.setUpdatedAt(song.getUpdatedAt());
+            // Same edition rule as the single-song editor: writers see their
+            // default version, everyone else is pinned to the published one.
+            songEditionService.ensureDefaultEdition(song.getId());
+            SongEdition active = songEditionService.resolveForAccess(song.getId(), null, canEditScript);
+            Integer activeId = active != null ? active.getId() : null;
+            pane.setEditionId(activeId);
+            pane.setEditionName(active != null ? active.getName() : null);
+            pane.setBlocks(songBlockService.getBlocks(song.getId(), activeId));
+            panes.add(pane);
+        }
+        model.addAttribute("projectId", projectId);
+        model.addAttribute("projectTitle", viewModel.getProjectTitle());
+        model.addAttribute("panes", panes);
+        model.addAttribute("canEditScript", canEditScript);
+        return "project/documents/songsWorkspace";
     }
 
     @RequestMapping(value = "/notes")
@@ -294,13 +333,22 @@ public class TextDocumentController {
         return "redirect:" + listUrl(commandModel.getProjectId(), isSong);
     }
 
+    /**
+     * Dual-mode like {@link #save}: the songs workspace renames inline over fetch
+     * and only needs an ack, while the list page posts a form and wants the
+     * redirect back to itself.
+     */
     @RequestMapping(value = "/rename", method = RequestMethod.POST)
-    public String rename(@RequestParam Integer id,
+    public Object rename(@RequestParam Integer id,
                          @RequestParam Integer projectId,
                          @RequestParam(required = false) String type,
                          @RequestParam String title,
+                         @RequestHeader(value = "Accept", required = false) String acceptHeader,
                          Principal principal) {
         textDocumentService.rename(id, projectId, title, currentUser(principal));
+        if (acceptHeader != null && acceptHeader.contains("application/json")) {
+            return ResponseEntity.noContent().build();
+        }
         return "redirect:" + listUrl(projectId, TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type)));
     }
 

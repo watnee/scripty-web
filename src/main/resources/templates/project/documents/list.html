@@ -200,6 +200,10 @@
                             hidden>&times;</button>
                 </div>
                 <div class="project-list-toolbar-actions">
+                    <a th:if="${isSongList}"
+                       th:href="@{/project/documents/songs/workspace(projectId=${viewModel.projectId})}"
+                       class="project-list-action-btn project-list-action-btn--secondary"
+                       title="Open every song in this project on one page">Edit all on one page</a>
                     <label class="text-documents-select-all" th:if="${isSongList}">
                         <input type="checkbox" id="text-documents-select-all" />
                         <span>Select all</span>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title th:text="'Scripty - All Songs - ' + ${projectTitle}">Scripty - All Songs</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main class="text-documents-page song-workspace-page">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/show(id=${projectId})}" th:text="${projectTitle}">Project</a></li>
+                    <li><a th:href="@{/project/documents/songs(projectId=${projectId})}">Songs</a></li>
+                    <li aria-current="page">All songs</li>
+                </ol>
+            </nav>
+        </div>
+
+        <p class="song-workspace-intro muted">
+            Every song in this project, on one page. Open as many as you like and
+            edit them side by side &mdash; each line saves as you leave it.
+        </p>
+
+        <div class="song-workspace-toolbar" th:if="${!#lists.isEmpty(panes)}">
+            <div class="project-list-search-wrap song-workspace-search-wrap">
+                <label class="visually-hidden" for="song-workspace-search">Search songs</label>
+                <input type="search"
+                       id="song-workspace-search"
+                       class="project-list-search"
+                       placeholder="Filter songs..."
+                       autocomplete="off"
+                       enterkeyhint="search" />
+            </div>
+            <div class="song-workspace-toolbar-actions">
+                <button type="button"
+                        class="project-list-action-btn project-list-action-btn--secondary"
+                        id="song-workspace-expand-all">Expand all</button>
+                <button type="button"
+                        class="project-list-action-btn project-list-action-btn--secondary"
+                        id="song-workspace-collapse-all">Collapse all</button>
+            </div>
+        </div>
+
+        <div class="text-documents-empty-state" th:if="${#lists.isEmpty(panes)}">
+            <span class="text-documents-empty-mark" aria-hidden="true">&#9834;</span>
+            <p class="text-documents-empty-title">No songs yet</p>
+            <p class="muted">Create a song and it will show up here alongside the rest.</p>
+            <div class="text-documents-empty-actions">
+                <a th:href="@{/project/documents/create(projectId=${projectId}, type='SONG')}"
+                   class="project-list-action-btn project-list-action-btn--primary">New Song</a>
+            </div>
+        </div>
+
+        <div class="song-workspace-list"
+             id="song-workspace-list"
+             th:if="${!#lists.isEmpty(panes)}"
+             th:attr="data-project-id=${projectId},data-can-reorder=${canEditScript}">
+            <section th:each="pane : ${panes}"
+                     class="song-workspace-item"
+                     th:attr="data-song-id=${pane.id},data-song-title=${#strings.toLowerCase(pane.title)}">
+                <div class="song-workspace-item-header">
+                    <!--/* Mirrors the lyric-line drag handle so reordering songs and
+                           reordering lines read as the same gesture. Arrow keys move
+                           the song too, so ordering is reachable without a mouse. */-->
+                    <button type="button"
+                            th:if="${canEditScript}"
+                            class="song-workspace-drag-handle"
+                            draggable="true"
+                            title="Drag to reorder songs (or focus and press the up/down arrows)"
+                            th:attr="aria-label='Reorder ' + ${pane.title}">&#8942;&#8942;</button>
+                    <button type="button"
+                            class="song-workspace-toggle"
+                            aria-expanded="false"
+                            th:attr="aria-controls='song-workspace-body-' + ${pane.id},
+                                     aria-label='Show lyrics for ' + ${pane.title}">
+                        <span class="song-workspace-chevron" aria-hidden="true">&#9656;</span>
+                    </button>
+                    <label class="song-workspace-title-label">
+                        <span class="visually-hidden">Song title</span>
+                        <input type="text"
+                               class="song-workspace-title auto-grow"
+                               th:value="${pane.title}"
+                               th:attr="data-song-id=${pane.id},data-project-id=${projectId}"
+                               th:readonly="${!canEditScript}"
+                               placeholder="Song title"
+                               autocomplete="off"
+                               spellcheck="true"
+                               maxlength="200" />
+                    </label>
+                    <div class="song-workspace-item-meta">
+                        <span class="muted song-workspace-line-count">
+                            <span th:text="${pane.lineCount}">0</span>
+                            <span th:text="${pane.lineCount} == 1 ? 'line' : 'lines'">lines</span>
+                        </span>
+                        <span class="muted song-workspace-edition"
+                              th:if="${pane.editionName != null}"
+                              th:text="${pane.editionName}">Version</span>
+                        <a class="project-list-action-btn project-list-action-btn--secondary"
+                           th:href="@{/project/documents/edit(id=${pane.id})}"
+                           title="Open this song in the full editor (versions, export, undo)">Open</a>
+                    </div>
+                </div>
+                <!--/* Collapsed bodies stay in the DOM so expanding is instant; the
+                       textareas are sized on first expand, when they finally have
+                       a width to measure against. */-->
+                <div class="song-workspace-body"
+                     th:id="'song-workspace-body-' + ${pane.id}"
+                     hidden>
+                    <div class="song-blocks-editor"
+                         th:with="blocks=${pane.blocks}, focusBlockId=null, blocksDomId='song-blocks-' + ${pane.id}"
+                         th:attr="data-document-id=${pane.id},data-edition-id=${pane.editionId},data-can-edit=${canEditScript}">
+                        <div th:replace="~{songblock/blocks :: blocks}"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <p class="song-workspace-status" id="song-workspace-status" role="status" aria-live="polite"></p>
+
+        <p class="song-workspace-no-matches muted" id="song-workspace-no-matches" hidden>
+            No songs match that filter.
+        </p>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+</body>
+</html>

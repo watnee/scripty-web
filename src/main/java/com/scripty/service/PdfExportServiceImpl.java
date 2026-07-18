@@ -54,12 +54,19 @@ public class PdfExportServiceImpl implements PdfExportService {
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId) {
-        return exportProject(projectId, null);
+        return exportProject(projectId, null, CapitalizationPreferences.ALL);
     }
 
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId, Integer editionId) {
+        return exportProject(projectId, editionId, CapitalizationPreferences.ALL);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportProject(Integer projectId, Integer editionId, CapitalizationPreferences caps) {
+        CapitalizationPreferences capitalization = caps != null ? caps : CapitalizationPreferences.ALL;
         Project project = projectRepository.findById(projectId).orElse(null);
         ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
@@ -78,7 +85,7 @@ public class PdfExportServiceImpl implements PdfExportService {
             }
 
             for (Block block : blocks) {
-                if (appendBlock(document, block)) {
+                if (appendBlock(document, block, capitalization)) {
                     wroteBody = true;
                 }
             }
@@ -177,7 +184,8 @@ public class PdfExportServiceImpl implements PdfExportService {
         return true;
     }
 
-    private static boolean appendBlock(Document document, Block block) throws DocumentException {
+    private static boolean appendBlock(Document document, Block block, CapitalizationPreferences caps)
+            throws DocumentException {
         String type = block.getType();
         if (Block.TYPE_SECTION.equals(type)
                 || Block.TYPE_SYNOPSIS.equals(type)
@@ -190,7 +198,7 @@ public class PdfExportServiceImpl implements PdfExportService {
 
         switch (type) {
             case Block.TYPE_SCENE, Block.TYPE_SHOT -> {
-                Paragraph p = styledParagraph(content.trim().toUpperCase(Locale.ROOT), styleFlags(block, Font.BOLD));
+                Paragraph p = styledParagraph(caps.apply(content.trim(), type), styleFlags(block, Font.BOLD));
                 p.setSpacingBefore(ELEMENT_SPACING);
                 p.setSpacingAfter(ELEMENT_SPACING);
                 document.add(p);
@@ -207,7 +215,7 @@ public class PdfExportServiceImpl implements PdfExportService {
                 if (name == null || name.isBlank()) {
                     return false;
                 }
-                Paragraph p = styledParagraph(name.trim().toUpperCase(Locale.ROOT), styleFlags(block, Font.BOLD));
+                Paragraph p = styledParagraph(caps.apply(name.trim(), type), styleFlags(block, Font.BOLD));
                 p.setIndentationLeft(CHARACTER_INDENT);
                 p.setSpacingBefore(ELEMENT_SPACING);
                 p.setSpacingAfter(0f);
@@ -234,7 +242,7 @@ public class PdfExportServiceImpl implements PdfExportService {
                 document.add(p);
             }
             case Block.TYPE_TRANSITION -> {
-                Paragraph p = styledParagraph(content.trim().toUpperCase(Locale.ROOT), styleFlags(block, Font.NORMAL));
+                Paragraph p = styledParagraph(caps.apply(content.trim(), type), styleFlags(block, Font.NORMAL));
                 p.setAlignment(Element.ALIGN_RIGHT);
                 p.setSpacingBefore(ELEMENT_SPACING);
                 p.setSpacingAfter(ELEMENT_SPACING);

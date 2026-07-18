@@ -31,4 +31,9 @@ public interface UserService {
     User deleteUser(Integer id, String actingUsername);
 
     UserProfileViewModel getUserProfileViewModel(Integer id);
+
+    /** Falls back to {@link CapitalizationPreferences#ALL} for unknown/anonymous users. */
+    CapitalizationPreferences readCapitalizationPreferences(String username);
+
+    CapitalizationPreferences updateCapitalizationPreferences(String username, CapitalizationPreferences preferences);
 }

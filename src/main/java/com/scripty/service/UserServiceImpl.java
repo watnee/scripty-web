@@ -103,6 +103,34 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public CapitalizationPreferences readCapitalizationPreferences(String username) {
+        if (username == null || username.isBlank()) {
+            return CapitalizationPreferences.ALL;
+        }
+        return CapitalizationPreferences.from(userRepository.findByUsername(username).orElse(null));
+    }
+
+    @Override
+    @Transactional
+    public CapitalizationPreferences updateCapitalizationPreferences(String username,
+                                                                     CapitalizationPreferences preferences) {
+        if (username == null || preferences == null) {
+            return CapitalizationPreferences.ALL;
+        }
+        User existing = userRepository.findByUsername(username).orElse(null);
+        if (existing == null) {
+            return CapitalizationPreferences.ALL;
+        }
+        existing.setAutoCapsScene(preferences.scene());
+        existing.setAutoCapsCharacter(preferences.character());
+        existing.setAutoCapsTransition(preferences.transition());
+        existing.setAutoCapsShot(preferences.shot());
+        userRepository.save(existing);
+        return preferences;
+    }
+
+    @Override
     @Transactional
     public void update(User user) {
         User existing = userRepository.findById(user.getId()).orElse(null);

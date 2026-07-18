@@ -58,12 +58,19 @@ public class DocxExportServiceImpl implements DocxExportService {
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId) {
-        return exportProject(projectId, null);
+        return exportProject(projectId, null, CapitalizationPreferences.ALL);
     }
 
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId, Integer editionId) {
+        return exportProject(projectId, editionId, CapitalizationPreferences.ALL);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportProject(Integer projectId, Integer editionId, CapitalizationPreferences capsOrNull) {
+        CapitalizationPreferences caps = capsOrNull != null ? capsOrNull : CapitalizationPreferences.ALL;
         Project project = projectRepository.findById(projectId).orElse(null);
         ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
@@ -84,7 +91,7 @@ public class DocxExportServiceImpl implements DocxExportService {
             }
 
             for (Block block : blocks) {
-                if (appendBlock(document, block)) {
+                if (appendBlock(document, block, caps)) {
                     wroteBody = true;
                 }
             }
@@ -211,7 +218,7 @@ public class DocxExportServiceImpl implements DocxExportService {
         return false;
     }
 
-    private static boolean appendBlock(XWPFDocument document, Block block) {
+    private static boolean appendBlock(XWPFDocument document, Block block, CapitalizationPreferences caps) {
         String type = block.getType();
         if (Block.TYPE_SECTION.equals(type)
                 || Block.TYPE_SYNOPSIS.equals(type)
@@ -224,7 +231,7 @@ public class DocxExportServiceImpl implements DocxExportService {
         switch (type) {
             case Block.TYPE_SCENE, Block.TYPE_SHOT -> {
                 XWPFParagraph p = bodyParagraph(document);
-                addRun(p, content.trim().toUpperCase(Locale.ROOT), styleFlags(block, Font.BOLD));
+                addRun(p, caps.apply(content.trim(), type), styleFlags(block, Font.BOLD));
             }
             case Block.TYPE_ACTION, Block.TYPE_TEXT -> {
                 XWPFParagraph p = bodyParagraph(document);
@@ -242,7 +249,7 @@ public class DocxExportServiceImpl implements DocxExportService {
                 XWPFParagraph p = bodyParagraph(document);
                 p.setIndentationLeft(CHARACTER_INDENT);
                 p.setSpacingAfter(0);
-                addRun(p, name.trim().toUpperCase(Locale.ROOT), styleFlags(block, Font.BOLD));
+                addRun(p, caps.apply(name.trim(), type), styleFlags(block, Font.BOLD));
             }
             case Block.TYPE_DIALOGUE -> {
                 XWPFParagraph p = bodyParagraph(document);
@@ -266,7 +273,7 @@ public class DocxExportServiceImpl implements DocxExportService {
             case Block.TYPE_TRANSITION -> {
                 XWPFParagraph p = bodyParagraph(document);
                 p.setAlignment(ParagraphAlignment.RIGHT);
-                addRun(p, content.trim().toUpperCase(Locale.ROOT), styleFlags(block, Font.NORMAL));
+                addRun(p, caps.apply(content.trim(), type), styleFlags(block, Font.NORMAL));
             }
             case Block.TYPE_CENTERED -> {
                 XWPFParagraph p = bodyParagraph(document);

@@ -369,12 +369,30 @@
         }
     }
 
+    // A brand-new song opens with a single empty line. Give that line an inviting
+    // placeholder so the editor never reads as a blank void; drop the hint the
+    // moment the song has real content or more than one line.
+    function updateFirstLinePlaceholder(ed) {
+        var textareas = ed.querySelectorAll('.song-block-textarea');
+        var first = textareas[0];
+        if (!first) {
+            return;
+        }
+        var isPristine = textareas.length === 1 && first.value.trim() === '';
+        if (isPristine) {
+            first.setAttribute('placeholder', 'Start writing your lyrics…');
+        } else {
+            first.removeAttribute('placeholder');
+        }
+    }
+
     function init() {
         var ed = currentEditor();
         if (!ed) {
             return;
         }
         markSaved(ed);
+        updateFirstLinePlaceholder(ed);
         // Re-measure once layout has settled, in case the rows had no width yet.
         requestAnimationFrame(growAll);
     }

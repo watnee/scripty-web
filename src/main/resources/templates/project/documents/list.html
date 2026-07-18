@@ -217,6 +217,10 @@
             </div>
 
             <div class="text-documents-empty-state" th:if="${#lists.isEmpty(documents)}">
+                <span class="text-documents-empty-mark"
+                      th:classappend="${!isSongList} ? ' text-documents-empty-mark--draft'"
+                      th:text="${isSongList} ? '♪' : '¶'"
+                      aria-hidden="true">♪</span>
                 <p class="text-documents-empty-title"
                    th:text="${isSongList} ? 'No songs yet' : 'No notes yet'">Empty</p>
                 <p class="muted"

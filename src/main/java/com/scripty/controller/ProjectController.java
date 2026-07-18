@@ -147,8 +147,8 @@ public class ProjectController {
         String userTeam = null;
         Integer defaultProjectId = null;
         boolean admin = false;
+        User currentUser = principal != null ? userService.readByUsername(principal.getName()) : null;
         if (principal != null) {
-            User currentUser = userService.readByUsername(principal.getName());
             if (currentUser != null) {
                 if (!currentUser.isAdmin() && !currentUser.isDirector() && !currentUser.isProducer() && !currentUser.isWriter() && !currentUser.isActor() && !currentUser.isCrew() && !currentUser.isDirectorOfPhotography() && !currentUser.isCastingDirector()) {
                     userTeam = currentUser.getTeam();
@@ -163,8 +163,9 @@ public class ProjectController {
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("defaultProjectId", defaultProjectId);
         model.addAttribute("isAdmin", admin);
-        // Only admins can reach the trash, so non-admins see neither the link nor a count.
-        int trashedCount = admin ? projectService.getTrashedProjects().size() : 0;
+        // The badge counts only the trashed projects this user could have opened,
+        // matching what /project/trash will actually show them.
+        int trashedCount = projectService.getTrashedProjects(currentUser).size();
         model.addAttribute("hasTrashedProjects", trashedCount > 0);
         model.addAttribute("trashedCount", trashedCount);
 
@@ -409,27 +410,34 @@ public class ProjectController {
         return "redirect:/project/list";
     }
 
-    @RequestMapping(value = "/delete")
-    public String delete(@RequestParam Integer id, Principal principal) {
+    @RequestMapping(value = "/delete", method = RequestMethod.POST)
+    public String delete(@RequestParam Integer id, Principal principal, RedirectAttributes redirectAttributes) {
         if (denyProjectAccess(id, principal)) {
             return "redirect:/project/list";
         }
-        projectService.deleteProject(id);
+        Project deleted = projectService.deleteProject(id);
+        if (deleted != null) {
+            redirectAttributes.addFlashAttribute("projectTrashMessage",
+                    "Moved \"" + deleted.getTitle() + "\" to the trash.");
+        }
         return "redirect:/project/list";
     }
 
     /**
      * Trashed projects are invisible to {@link #denyProjectAccess} — the entity's
-     * @SQLRestriction hides them — so the trash routes check admin directly and
-     * resolve the project through the repository's native queries. Admin is also
-     * enforced in SecurityConfig; this is the in-controller half of that pair.
+     * @SQLRestriction hides them — so the trash routes resolve the project through
+     * the repository's native queries and re-apply the access rule themselves, via
+     * the user-scoped {@code ProjectService} trash lookups. Anything those lookups
+     * do not return is treated as not in the trash at all, so a user learns nothing
+     * about projects outside their reach.
      */
     @RequestMapping(value = "/trash")
     public String trash(Model model, Principal principal) {
-        if (!isAdmin(principal)) {
+        User currentUser = currentUser(principal);
+        if (currentUser == null) {
             return "redirect:/project/list";
         }
-        List<Project> trashed = projectService.getTrashedProjects();
+        List<Project> trashed = projectService.getTrashedProjects(currentUser);
         List<TrashedProjectViewModel> viewModels = new ArrayList<>();
         for (Project project : trashed) {
             viewModels.add(new TrashedProjectViewModel(
@@ -447,10 +455,11 @@ public class ProjectController {
 
     @RequestMapping(value = "/restore", method = RequestMethod.POST)
     public String restore(@RequestParam Integer id, Principal principal, RedirectAttributes redirectAttributes) {
-        if (!isAdmin(principal)) {
+        User currentUser = currentUser(principal);
+        if (currentUser == null) {
             return "redirect:/project/list";
         }
-        Project project = projectService.getTrashedProject(id);
+        Project project = projectService.getTrashedProject(id, currentUser);
         if (project == null || !projectService.restoreProject(id)) {
             redirectAttributes.addFlashAttribute("trashMessage",
                     "That project is no longer in the trash.");
@@ -461,12 +470,42 @@ public class ProjectController {
         return "redirect:/project/trash";
     }
 
-    private boolean isAdmin(Principal principal) {
-        if (principal == null) {
-            return false;
+    @RequestMapping(value = "/purge", method = RequestMethod.POST)
+    public String purge(@RequestParam Integer id, Principal principal, RedirectAttributes redirectAttributes) {
+        User currentUser = currentUser(principal);
+        if (currentUser == null) {
+            return "redirect:/project/list";
         }
-        User user = userService.readByUsername(principal.getName());
-        return user != null && user.isAdmin();
+        Project project = projectService.getTrashedProject(id, currentUser);
+        if (project == null || !projectService.purgeProject(id)) {
+            redirectAttributes.addFlashAttribute("trashMessage",
+                    "That project is no longer in the trash.");
+            return "redirect:/project/trash";
+        }
+        redirectAttributes.addFlashAttribute("trashMessage",
+                "Deleted \"" + project.getTitle() + "\" permanently.");
+        return "redirect:/project/trash";
+    }
+
+    @RequestMapping(value = "/empty-trash", method = RequestMethod.POST)
+    public String emptyTrash(Principal principal, RedirectAttributes redirectAttributes) {
+        User currentUser = currentUser(principal);
+        if (currentUser == null) {
+            return "redirect:/project/list";
+        }
+        int purged = projectService.emptyTrash(currentUser);
+        redirectAttributes.addFlashAttribute("trashMessage",
+                purged == 0
+                        ? "The trash is already empty."
+                        : "Deleted " + purged + " project" + (purged == 1 ? "" : "s") + " permanently.");
+        return "redirect:/project/trash";
+    }
+
+    private User currentUser(Principal principal) {
+        if (principal == null) {
+            return null;
+        }
+        return userService.readByUsername(principal.getName());
     }
 
     @RequestMapping(value = "/edit")

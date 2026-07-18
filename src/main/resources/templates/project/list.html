@@ -20,6 +20,13 @@
             <span th:text="${projectImportMessage}"></span>
         </div>
 
+        <p class="text-document-import-banner"
+           th:if="${projectTrashMessage != null}"
+           role="status">
+            <span th:text="${projectTrashMessage}">Moved to the trash.</span>
+            <a th:href="@{/project/trash}">View deleted projects</a>
+        </p>
+
         <div class="project-list-header">
             <div class="project-list-header-intro">
                 <span class="project-list-header-mark" aria-hidden="true">

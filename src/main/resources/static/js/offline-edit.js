@@ -46,7 +46,7 @@
         var text = escText(content || '');
         var body = text || '&#160;';
         if (blockType === 'SCENE') {
-            return '<h2 class="script-block-text scene-header">' + body + '</h2>';
+            return '<h2 class="script-block-text scene-header reader-visible-content">' + body + '</h2>';
         }
         if (blockType === 'SECTION') {
             return '<h3 class="script-block-text">' + body + '</h3>';

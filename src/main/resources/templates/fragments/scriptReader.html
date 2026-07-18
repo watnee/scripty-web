@@ -24,7 +24,7 @@
 <th:block th:fragment="blocks(blocks)">
     <th:block th:each="block : ${blocks}">
         <th:block th:if="${block.type == 'SCENE'}">
-            <h2 class="scene-header"
+            <h2 class="scene-header reader-visible-content"
                 th:text="${#strings.isEmpty(block.content) ? 'Untitled Scene' : block.content}">Scene</h2>
         </th:block>
         <th:block th:if="${block.type == 'SECTION'}">

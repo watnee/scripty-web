@@ -5005,6 +5005,27 @@ html.scripty-hide-block-select tr.block-controls-revealed td.block-left-controls
     pointer-events: auto;
 }
 
+/* An open menu keeps its own controls revealed. :hover drops the moment the
+   pointer moves onto the menu, and :focus-within cannot cover for it — WebKit
+   does not focus a <button> on click, so the handle never takes focus there.
+   Without this the dropdown stays .open but goes visibility: hidden.
+   Mirrors .song-block-row:has(.song-block-menu-dropdown.open). */
+html.scripty-hide-block-select .block-row:has(.block-drag-menu-dropdown.open, .create-below-menu-dropdown.open):not(.project-script-select-row) aside.block-left-controls,
+html.scripty-hide-block-select tr:has(.block-drag-menu-dropdown.open, .create-below-menu-dropdown.open) td.block-left-controls,
+html.scripty-hide-block-select .block-drag-menu-dropdown.open,
+html.scripty-hide-block-select .block-drag-menu-dropdown.open .drag-handle,
+html.scripty-hide-block-select .create-below-menu-dropdown.open,
+html.scripty-hide-block-select .create-below-menu-dropdown.open a.create-below[role="button"],
+html.scripty-hide-block-select .create-below-menu-dropdown.open button.create-below.create-below-menu-toggle {
+    visibility: visible;
+    pointer-events: auto;
+}
+
+html.scripty-hide-block-select .create-below-menu-dropdown.open a.create-below[role="button"],
+html.scripty-hide-block-select .create-below-menu-dropdown.open button.create-below.create-below-menu-toggle {
+    opacity: 1;
+}
+
 html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) a.create-below[role="button"],
 html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) tr:hover a.create-below[role="button"],
 html.scripty-hide-block-select:not(:has(.block-row:focus-within, tr[data-block-id]:focus-within, tr:focus-within)) .block-row:hover:not(.project-script-select-row) button.create-below.create-below-menu-toggle,

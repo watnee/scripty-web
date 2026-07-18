@@ -1,5 +1,6 @@
 package com.scripty.controller;
 
+import com.scripty.api.HypermediaSupport;
 import com.scripty.dto.SongBlock;
 import com.scripty.dto.SongEdition;
 import com.scripty.security.ProjectAccessSupport;
@@ -11,6 +12,7 @@ import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -283,7 +285,7 @@ public class SongBlockController {
 
     @RequestMapping(value = "/undoRedoStatus", method = RequestMethod.GET)
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> undoRedoStatus(@RequestParam Integer documentId,
+    public ResponseEntity<EntityModel<Map<String, Object>>> undoRedoStatus(@RequestParam Integer documentId,
                                                               @RequestParam(required = false) Integer editionId,
                                                               Principal principal) {
         if (!canAccessDocument(documentId, principal)) {
@@ -293,6 +295,8 @@ public class SongBlockController {
         Map<String, Object> status = new HashMap<>();
         status.put("canUndo", songUndoRedoService.canUndo(documentId, resolved));
         status.put("canRedo", songUndoRedoService.canRedo(documentId, resolved));
-        return ResponseEntity.ok(status);
+        // Links carry the resolved edition, not the caller's possibly-absent
+        // one, so following them stays on the version this answer describes.
+        return ResponseEntity.ok(HypermediaSupport.songUndoRedoStatus(status, documentId, resolved));
     }
 }

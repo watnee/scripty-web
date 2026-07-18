@@ -1,5 +1,13 @@
 package com.scripty.viewmodel.contact;
 
+import org.springframework.hateoas.server.core.Relation;
+
+/**
+ * The explicit collection relation keeps the HAL embed key stable: without it
+ * the name is derived from the class ({@code contactSuggestionViewModelList}),
+ * so renaming this type would silently break clients reading {@code _embedded}.
+ */
+@Relation(collectionRelation = "contactSuggestions")
 public class ContactSuggestionViewModel {
 
     private String name;

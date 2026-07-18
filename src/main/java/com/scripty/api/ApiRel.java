@@ -46,6 +46,9 @@ public final class ApiRel {
     public static final String VERSION = "version";
     public static final String RESTORE = "restore";
     public static final String CREATE = "create";
+    public static final String PREFERENCES = "preferences";
+    public static final String CAPITALIZATION_PREFERENCES = "capitalizationPreferences";
+    public static final String CONTACT_SUGGESTIONS = "contactSuggestions";
 
     private ApiRel() {
     }

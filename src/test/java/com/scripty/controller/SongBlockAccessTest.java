@@ -1,6 +1,7 @@
 package com.scripty.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.scripty.api.ApiRel;
 import com.scripty.dto.SongEdition;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.SongBlockService;
@@ -16,10 +18,14 @@ import com.scripty.service.SongEditionService;
 import com.scripty.service.SongUndoRedoService;
 import com.scripty.service.SongVersionService;
 import java.security.Principal;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.ui.ExtendedModelMap;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * The song editor locks its UI read-only for non-writers (nav.html keys off the
@@ -45,6 +51,11 @@ class SongBlockAccessTest {
 
     @BeforeEach
     void setUp() {
+        // undoRedoStatus builds absolute link hrefs, which needs a current
+        // request to resolve the base URI against.
+        RequestContextHolder.setRequestAttributes(
+                new ServletRequestAttributes(new MockHttpServletRequest()));
+
         controller.songBlockService = songBlockService;
         controller.songEditionService = songEditionService;
         controller.projectAccess = projectAccess;
@@ -60,6 +71,11 @@ class SongBlockAccessTest {
         edition.setId(EDITION_ID);
         when(songEditionService.requireForDocument(anyInt(), any())).thenReturn(edition);
         when(songEditionService.ensureDefaultEdition(anyInt())).thenReturn(edition);
+    }
+
+    @AfterEach
+    void tearDown() {
+        RequestContextHolder.resetRequestAttributes();
     }
 
     /** A project member who is not a writer: access yes, script edit no. */
@@ -164,8 +180,13 @@ class SongBlockAccessTest {
         var response = controller.undoRedoStatus(DOCUMENT_ID, EDITION_ID, principal);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(true, response.getBody().get("canUndo"));
-        assertEquals(false, response.getBody().get("canRedo"));
+        assertEquals(true, response.getBody().getContent().get("canUndo"));
+        assertEquals(false, response.getBody().getContent().get("canRedo"));
+        // Reading the status also hands back the transitions out of it. Rels are
+        // bare here; the curie prefix is applied when HAL is rendered.
+        assertTrue(response.getBody().getLink(ApiRel.UNDO).isPresent());
+        assertTrue(response.getBody().getLink(ApiRel.REDO).isPresent());
+        assertTrue(response.getBody().getLink(ApiRel.SONG_BLOCKS).isPresent());
     }
 
     @Test

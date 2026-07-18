@@ -3,9 +3,13 @@ package com.scripty.api;
 import com.scripty.controller.BlockController;
 import com.scripty.controller.ProjectController;
 import com.scripty.controller.ProjectRestController;
+import com.scripty.controller.SongBlockController;
+import com.scripty.controller.SongBlockRestController;
+import com.scripty.controller.TextDocumentRestController;
 import java.util.Map;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -44,6 +48,39 @@ public final class HypermediaSupport {
                 ? linkTo(methodOn(BlockController.class).togglePinnedInline(blockId, null)).withRel(ApiRel.TOGGLE_PINNED)
                 : linkTo(methodOn(BlockController.class).toggleBookmarkInline(blockId, null)).withRel(ApiRel.TOGGLE_BOOKMARK);
         return EntityModel.of(body, self, alternate);
+    }
+
+    /**
+     * The song editor's undo/redo status, given the same link set the
+     * screenplay's {@link #projectUndoRedoStatus} gets. The undo and redo
+     * targets render HTMX fragments rather than HAL, but they are still the
+     * transitions a client takes from here, so they are advertised as links.
+     */
+    public static EntityModel<Map<String, Object>> songUndoRedoStatus(Map<String, Object> body,
+                                                                      Integer documentId, Integer editionId) {
+        return EntityModel.of(body).add(
+                linkTo(methodOn(SongBlockController.class).undoRedoStatus(documentId, editionId, null)).withSelfRel(),
+                linkTo(methodOn(TextDocumentRestController.class).show(documentId, null)).withRel(ApiRel.SONG),
+                linkTo(methodOn(SongBlockRestController.class).list(documentId, editionId, null))
+                        .withRel(ApiRel.SONG_BLOCKS),
+                songAction("undo", ApiRel.UNDO, documentId, editionId),
+                songAction("redo", ApiRel.REDO, documentId, editionId));
+    }
+
+    /**
+     * Links to a song editor action by path rather than by {@code methodOn}:
+     * those handlers return a view name, and the dummy-invocation proxy cannot
+     * subclass {@code String} to record the call.
+     */
+    private static Link songAction(String path, String rel, Integer documentId, Integer editionId) {
+        UriComponentsBuilder uri = UriComponentsBuilder
+                .fromUriString(linkTo(SongBlockController.class).toUri().toString())
+                .pathSegment(path)
+                .queryParam("documentId", documentId);
+        if (editionId != null) {
+            uri = uri.queryParam("editionId", editionId);
+        }
+        return Link.of(uri.toUriString(), rel);
     }
 
     private static Link[] projectSyncLinks(Integer projectId, Long since, Integer editionId) {

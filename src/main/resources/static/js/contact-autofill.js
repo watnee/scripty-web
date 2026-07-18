@@ -134,6 +134,16 @@
             return;
         }
 
+        // The endpoint speaks HAL, so the contacts arrive under _embedded. A
+        // bare array is still accepted in case a cached response predates that.
+        function unwrap(payload) {
+            if (Array.isArray(payload)) return payload;
+            if (payload && payload._embedded && Array.isArray(payload._embedded.contactSuggestions)) {
+                return payload._embedded.contactSuggestions;
+            }
+            return [];
+        }
+
         var seq = ++entry.seq;
         fetch('/api/project/' + encodeURIComponent(projectId)
                 + '/contact-suggestions?q=' + encodeURIComponent(query), {
@@ -142,10 +152,10 @@
         }).then(function (response) {
             if (!response.ok) throw new Error('Lookup failed: ' + response.status);
             return response.json();
-        }).then(function (contacts) {
+        }).then(function (payload) {
             // A slower earlier request must not overwrite newer results.
             if (seq !== entry.seq || document.activeElement !== input) return;
-            render(input, Array.isArray(contacts) ? contacts : []);
+            render(input, unwrap(payload));
         }).catch(function () {
             // Lookup is a convenience; typing the address in full still works.
             close(input);

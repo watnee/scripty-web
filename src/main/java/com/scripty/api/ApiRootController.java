@@ -4,6 +4,7 @@ import com.scripty.controller.ActorRestController;
 import com.scripty.controller.ProjectRestController;
 import com.scripty.controller.TeamRestController;
 import com.scripty.controller.TextDocumentRestController;
+import com.scripty.controller.UserPreferenceRestController;
 import com.scripty.controller.UserRestController;
 import com.scripty.dto.TextDocument;
 import org.springframework.hateoas.MediaTypes;
@@ -34,7 +35,9 @@ public class ApiRootController {
                 linkTo(methodOn(TextDocumentRestController.class).list(null, null, null))
                         .withRel(ApiRel.DOCUMENTS),
                 linkTo(methodOn(TextDocumentRestController.class).list(null, TextDocument.TYPE_SONG, null))
-                        .withRel(ApiRel.SONGS)
+                        .withRel(ApiRel.SONGS),
+                linkTo(methodOn(UserPreferenceRestController.class).readCapitalization(null))
+                        .withRel(ApiRel.CAPITALIZATION_PREFERENCES)
         );
         return root;
     }

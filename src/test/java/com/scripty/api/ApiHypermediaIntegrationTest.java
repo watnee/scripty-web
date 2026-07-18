@@ -45,6 +45,40 @@ class ApiHypermediaIntegrationTest {
     }
 
     @Test
+    void rootDocumentAdvertisesStoredPreferences() throws Exception {
+        // Preferences used to be reachable only by a client that already knew
+        // the path; they are part of the discoverable surface now.
+        mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON).with(user("member").roles("USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._links.['scripty:capitalizationPreferences'].href",
+                        org.hamcrest.Matchers.containsString("/api/preferences/capitalization")));
+    }
+
+    @Test
+    void capitalizationPreferencesCarryLinksAndAnUpdateAffordance() throws Exception {
+        mockMvc.perform(get("/api/preferences/capitalization")
+                        .accept(MediaTypes.HAL_FORMS_JSON).with(user("member").roles("USER")))
+                .andExpect(status().isOk())
+                // The stored flags stay top-level, so existing clients reading
+                // them by name are unaffected by the HAL wrapper.
+                .andExpect(jsonPath("$.scene").exists())
+                .andExpect(jsonPath("$.character").exists())
+                .andExpect(jsonPath("$._links.self.href").exists())
+                .andExpect(jsonPath("$._links.['scripty:update'].href").exists())
+                // HAL-FORMS renders the POST affordance as a template.
+                .andExpect(jsonPath("$._templates").exists());
+    }
+
+    @Test
+    void preferencesStayBehindAuthentication() throws Exception {
+        // The controller has an anonymous defaults branch, but the security
+        // config never lets a request reach it — pinned so the affordance rules
+        // above are not quietly relaxed by a later change to either side.
+        mockMvc.perform(get("/api/preferences/capitalization").accept(MediaTypes.HAL_JSON))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void rootDocumentIsAlsoServableAsHalForms() throws Exception {
         // Proves HAL-FORMS is enabled (not Spring Boot's HAL-only default), which
         // is what lets the assemblers' affordances surface as _templates.

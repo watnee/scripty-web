@@ -20,6 +20,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -99,8 +100,12 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
     }
 
     private org.springframework.hateoas.Link[] projectLinks(int id) {
+        org.springframework.hateoas.Link self =
+                linkTo(methodOn(ProjectRestController.class).show(id, null)).withSelfRel()
+                        .andAffordance(afford(methodOn(ProjectRestController.class).update(id, null, null, null)))
+                        .andAffordance(afford(methodOn(ProjectRestController.class).delete(id, null)));
         return new org.springframework.hateoas.Link[]{
-                linkTo(methodOn(ProjectRestController.class).show(id, null)).withSelfRel(),
+                self,
                 linkTo(methodOn(ProjectRestController.class).list(null)).withRel(ApiRel.PROJECTS),
                 linkTo(methodOn(ProjectRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE),
                 linkTo(methodOn(ProjectRestController.class).delete(id, null)).withRel(ApiRel.DELETE),

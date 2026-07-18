@@ -40,7 +40,7 @@ public class PersonRestController {
     @Autowired
     ProjectAccessSupport projectAccess;
 
-    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, "application/json"})
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE, "application/json"})
     public ResponseEntity<CollectionModel<EntityModel<PersonResource>>> list(
             @RequestParam Integer projectId, Principal principal) {
         if (!projectAccess.canAccessProject(projectId, principal)) {
@@ -51,7 +51,7 @@ public class PersonRestController {
                 personResourceAssembler.toCharacterCollection(viewModel.getCharacters(), projectId));
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> create(
             @Valid @RequestBody CreatePersonCommandModel commandModel,
             BindingResult bindingResult,
@@ -69,7 +69,7 @@ public class PersonRestController {
                 .body(resource);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<PersonResource>> show(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessPerson(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -81,7 +81,7 @@ public class PersonRestController {
         return ResponseEntity.ok(personResourceAssembler.toModel(viewModel));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody EditPersonCommandModel commandModel,
@@ -98,7 +98,7 @@ public class PersonRestController {
         return ResponseEntity.ok(personResourceAssembler.toModel(person));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<PersonResource>> delete(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessPerson(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

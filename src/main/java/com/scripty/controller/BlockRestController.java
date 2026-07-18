@@ -82,7 +82,7 @@ public class BlockRestController {
         }
     }
 
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<BlockResource>>> list(
             @RequestParam Integer projectId,
             @RequestParam(required = false) Integer editionId,
@@ -102,7 +102,7 @@ public class BlockRestController {
         return ResponseEntity.ok(blockResourceAssembler.toBlockCollection(viewModels, projectId));
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> create(
             @Valid @RequestBody CreateBlockCommandModel commandModel,
             BindingResult bindingResult,
@@ -122,7 +122,7 @@ public class BlockRestController {
                 .body(resource);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<BlockResource>> show(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -136,7 +136,7 @@ public class BlockRestController {
         return ResponseEntity.ok(blockResourceAssembler.toModel(viewModel, projectId));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody EditBlockCommandModel commandModel,
@@ -155,7 +155,7 @@ public class BlockRestController {
         return ResponseEntity.ok(blockResourceAssembler.toModel(block));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<BlockResource>> delete(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -166,7 +166,7 @@ public class BlockRestController {
         return ResponseEntity.ok(blockResourceAssembler.toDeleteModel(block));
     }
 
-    @RequestMapping(value = "/{id}/bookmark", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}/bookmark", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<BlockResource>> toggleBookmark(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -175,7 +175,7 @@ public class BlockRestController {
         return ResponseEntity.ok(blockResourceAssembler.toModel(block));
     }
 
-    @RequestMapping(value = "/{id}/pinned", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}/pinned", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<BlockResource>> togglePinned(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -189,7 +189,7 @@ public class BlockRestController {
      * the web editor. Content may be blank — the caller typically inserts an
      * empty element and fills it in as the writer types.
      */
-    @RequestMapping(value = "/{id}/below", method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}/below", method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> createBelow(
             @PathVariable Integer id,
             @RequestBody CreateBlockBelowRequest request,
@@ -222,7 +222,7 @@ public class BlockRestController {
      * anything to type into, or to insert below. Returns 409 if the script
      * already has blocks — those callers want createBelow.
      */
-    @RequestMapping(value = "/initial", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/initial", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> createInitial(@RequestParam Integer projectId, Principal principal) {
         if (!projectAccess.canEditScript(projectId, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -245,7 +245,7 @@ public class BlockRestController {
      * web editor's element-type bar. Omitting content or tags keeps the stored
      * values.
      */
-    @RequestMapping(value = "/{id}/type", method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}/type", method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> setType(
             @PathVariable Integer id,
             @RequestBody SetBlockTypeRequest request,
@@ -271,7 +271,7 @@ public class BlockRestController {
      * Reorders a block to an absolute {@code position}, matching the order values
      * reported by the block collection.
      */
-    @RequestMapping(value = "/{id}/move", method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}/move", method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> move(
             @PathVariable Integer id,
             @RequestBody MoveBlockRequest request,

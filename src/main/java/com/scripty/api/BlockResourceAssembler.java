@@ -3,7 +3,6 @@ package com.scripty.api;
 import com.scripty.controller.BlockRestController;
 import com.scripty.controller.ProjectRestController;
 import com.scripty.dto.Block;
-import com.scripty.dto.User;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.viewmodel.block.BlockViewModel;
 import java.util.ArrayList;
@@ -12,10 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -123,8 +121,16 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
 
     private org.springframework.hateoas.Link[] blockLinks(int id, Integer projectId) {
         List<org.springframework.hateoas.Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(BlockRestController.class).show(id, null)).withSelfRel());
-        if (canEdit(projectId, id)) {
+        boolean canEdit = canEdit(projectId, id);
+        org.springframework.hateoas.Link self =
+                linkTo(methodOn(BlockRestController.class).show(id, null)).withSelfRel();
+        if (canEdit) {
+            self = self
+                    .andAffordance(afford(methodOn(BlockRestController.class).update(id, null, null, null)))
+                    .andAffordance(afford(methodOn(BlockRestController.class).delete(id, null)));
+        }
+        links.add(self);
+        if (canEdit) {
             links.add(linkTo(methodOn(BlockRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE));
             links.add(linkTo(methodOn(BlockRestController.class).delete(id, null)).withRel(ApiRel.DELETE));
             links.add(linkTo(methodOn(BlockRestController.class).toggleBookmark(id, null)).withRel(ApiRel.TOGGLE_BOOKMARK));
@@ -141,22 +147,12 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
     }
 
     private boolean canEditProject(Integer projectId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (projectId == null || authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        return projectAccess.canEditScript(projectId, projectAccess.currentUser(authentication));
+        return projectAccess.canEditScriptForCurrentUser(projectId);
     }
 
     private boolean canEdit(Integer projectId, int blockId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        User user = projectAccess.currentUser(authentication);
-        if (projectId != null) {
-            return projectAccess.canEditScript(projectId, user);
-        }
-        return projectAccess.canEditBlock(blockId, user);
+        return projectId != null
+                ? projectAccess.canEditScriptForCurrentUser(projectId)
+                : projectAccess.canEditBlockForCurrentUser(blockId);
     }
 }

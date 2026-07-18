@@ -58,7 +58,7 @@ public class SongVersionRestController {
     }
 
     /** Saved versions for a song, newest first. */
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<SongVersionResource>>> list(
             @RequestParam Integer documentId,
             Principal principal) {
@@ -69,7 +69,7 @@ public class SongVersionRestController {
         return ResponseEntity.ok(assembler.toCollection(viewModel));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<SongVersionResource>> show(
             @PathVariable Integer id,
             @RequestParam Integer documentId,
@@ -86,7 +86,7 @@ public class SongVersionRestController {
     }
 
     /** Captures the song's current lyrics as a new named version. */
-    @RequestMapping(method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> create(
             @RequestParam Integer documentId,
             @RequestBody(required = false) CreateSongVersionRequest request,
@@ -113,7 +113,7 @@ public class SongVersionRestController {
     }
 
     /** Restores the song to a saved version, then returns the refreshed history. */
-    @RequestMapping(value = "/{id}/restore", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}/restore", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> restore(
             @PathVariable Integer id,
             @RequestParam Integer documentId,
@@ -128,7 +128,7 @@ public class SongVersionRestController {
     }
 
     /** Deletes a saved version, then returns the refreshed history. */
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> delete(
             @PathVariable Integer id,
             @RequestParam Integer documentId,

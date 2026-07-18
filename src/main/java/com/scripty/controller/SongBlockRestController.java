@@ -73,7 +73,7 @@ public class SongBlockRestController {
     }
 
     /** The song's lyric lines, in order. */
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<SongBlockResource>>> list(
             @RequestParam Integer documentId,
             Principal principal) {
@@ -85,7 +85,7 @@ public class SongBlockRestController {
                 songBlockService.getBlocks(documentId), documentId, projectId));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<SongBlockResource>> show(@PathVariable Integer id, Principal principal) {
         Integer projectId = songBlockService.projectIdForBlock(id);
         if (projectId == null || !projectAccess.canAccessProject(projectId, principal)) {
@@ -99,7 +99,7 @@ public class SongBlockRestController {
     }
 
     /** Appends a new empty line at the end of the song. */
-    @RequestMapping(method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> append(@RequestParam Integer documentId, Principal principal) {
         if (!canEditDocument(documentId, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -119,7 +119,7 @@ public class SongBlockRestController {
      * line's — the line being split is left untouched.
      */
     @RequestMapping(value = "/{id}/below", method = RequestMethod.POST,
-            consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> createBelow(
             @PathVariable Integer id,
             @RequestBody(required = false) CreateSongBlockBelowRequest request,
@@ -147,7 +147,7 @@ public class SongBlockRestController {
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT,
-            consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @RequestBody EditSongBlockRequest request,
@@ -165,7 +165,7 @@ public class SongBlockRestController {
         return ResponseEntity.ok(assembler.toModel(block, songBlockService.projectIdForBlock(id)));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> delete(@PathVariable Integer id, Principal principal) {
         if (!canEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -183,7 +183,7 @@ public class SongBlockRestController {
 
     /** Sets the background tint on a line; an unknown or blank color clears it. */
     @RequestMapping(value = "/{id}/highlight", method = RequestMethod.POST,
-            consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> setHighlight(
             @PathVariable Integer id,
             @RequestBody(required = false) SetSongBlockHighlightRequest request,
@@ -205,7 +205,7 @@ public class SongBlockRestController {
      * reported by the block collection.
      */
     @RequestMapping(value = "/{id}/move", method = RequestMethod.POST,
-            consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> move(
             @PathVariable Integer id,
             @RequestBody MoveBlockRequest request,

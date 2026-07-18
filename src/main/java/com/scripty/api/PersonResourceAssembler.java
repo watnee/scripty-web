@@ -13,6 +13,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -97,7 +98,9 @@ public class PersonResourceAssembler implements RepresentationModelAssembler<Cha
 
     private org.springframework.hateoas.Link[] characterLinks(int id, Integer projectId, Integer actorId) {
         List<org.springframework.hateoas.Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(PersonRestController.class).show(id, null)).withSelfRel());
+        links.add(linkTo(methodOn(PersonRestController.class).show(id, null)).withSelfRel()
+                .andAffordance(afford(methodOn(PersonRestController.class).update(id, null, null, null)))
+                .andAffordance(afford(methodOn(PersonRestController.class).delete(id, null))));
         links.add(linkTo(methodOn(PersonRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE));
         links.add(linkTo(methodOn(PersonRestController.class).delete(id, null)).withRel(ApiRel.DELETE));
         if (projectId != null) {

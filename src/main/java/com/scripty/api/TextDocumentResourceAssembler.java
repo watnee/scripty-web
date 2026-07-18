@@ -11,11 +11,11 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.hateoas.Link;
 import org.springframework.stereotype.Component;
 import com.scripty.security.ProjectAccessSupport;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -52,9 +52,14 @@ public class TextDocumentResourceAssembler {
         for (TextDocumentViewModel document : documents) {
             resources.add(toSummaryModel(document));
         }
+        Link self = linkTo(methodOn(TextDocumentRestController.class).list(projectId, type, null))
+                .withSelfRel();
+        if (canEdit(projectId)) {
+            self = self.andAffordance(afford(methodOn(TextDocumentRestController.class)
+                    .importFile(null, null, null, null)));
+        }
         CollectionModel<EntityModel<TextDocumentResource>> collection = CollectionModel.of(resources)
-                .add(linkTo(methodOn(TextDocumentRestController.class).list(projectId, type, null))
-                        .withSelfRel())
+                .add(self)
                 .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null))
                         .withRel(ApiRel.PROJECT));
         if (canEdit(projectId)) {
@@ -91,9 +96,15 @@ public class TextDocumentResourceAssembler {
         return resource;
     }
 
-    private org.springframework.hateoas.Link[] documentLinks(int id, Integer projectId, String type) {
-        List<org.springframework.hateoas.Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(TextDocumentRestController.class).show(id, null)).withSelfRel());
+    private Link[] documentLinks(int id, Integer projectId, String type) {
+        List<Link> links = new ArrayList<>();
+        Link self = linkTo(methodOn(TextDocumentRestController.class).show(id, null)).withSelfRel();
+        if (canEdit(projectId)) {
+            self = self
+                    .andAffordance(afford(methodOn(TextDocumentRestController.class).update(id, null, null, null)))
+                    .andAffordance(afford(methodOn(TextDocumentRestController.class).delete(id, null, null)));
+        }
+        links.add(self);
         if (TextDocument.TYPE_SONG.equalsIgnoreCase(type)) {
             // Only songs are edited as ordered blocks and versioned; notes are
             // plain content, with no lyrics or history to navigate to.
@@ -128,10 +139,6 @@ public class TextDocumentResourceAssembler {
     }
 
     private boolean canEdit(Integer projectId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (projectId == null || authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        return projectAccess.canEditScript(projectId, projectAccess.currentUser(authentication));
+        return projectAccess.canEditScriptForCurrentUser(projectId);
     }
 }

@@ -37,13 +37,13 @@ public class UserRestController {
     @Autowired
     UserResourceAssembler userResourceAssembler;
 
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<UserResource>>> list() {
         UserListViewModel viewModel = userService.getUserListViewModel();
         return ResponseEntity.ok(userResourceAssembler.toUserCollection(viewModel.getUsers()));
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> create(
             @Valid @RequestBody CreateUserCommandModel commandModel, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -56,13 +56,13 @@ public class UserRestController {
                 .body(resource);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<UserResource>> show(@PathVariable Integer id) {
         UserProfileViewModel viewModel = userService.getUserProfileViewModel(id);
         return ResponseEntity.ok(userResourceAssembler.toModel(viewModel));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody EditUserCommandModel commandModel,
@@ -75,7 +75,7 @@ public class UserRestController {
         return ResponseEntity.ok(userResourceAssembler.toModel(user));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> delete(@PathVariable Integer id, Principal principal) {
         try {
             User user = userService.deleteUser(id, principal != null ? principal.getName() : null);

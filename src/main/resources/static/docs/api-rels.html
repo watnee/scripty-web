@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scripty API — link relations</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 60rem; margin: 0 auto; padding: 2rem 1.25rem 5rem;
+    color: #1b1b1f; background: #fff;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { color: #e6e6e9; background: #16161a; }
+    a { color: #8ab4f8; }
+    tr:target { background: #33351f; }
+    code { background: #26262c; }
+    th { border-bottom-color: #3a3a42; }
+    td { border-bottom-color: #26262c; }
+  }
+  h1 { font-size: 1.9rem; margin-bottom: .25rem; }
+  h2 { margin-top: 2.5rem; border-bottom: 2px solid currentColor; padding-bottom: .25rem; }
+  p.lead { opacity: .8; }
+  table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+  th, td { text-align: left; padding: .55rem .5rem; vertical-align: top; }
+  th { border-bottom: 2px solid #d0d0d7; white-space: nowrap; }
+  td { border-bottom: 1px solid #ececf0; }
+  td:first-child { white-space: nowrap; font-weight: 600; }
+  code { background: #f2f2f5; padding: .1rem .35rem; border-radius: .25rem; font-size: .9em; }
+  tr:target { background: #fff6cc; }
+  .method { font-size: .78rem; font-weight: 700; letter-spacing: .03em; opacity: .75; }
+</style>
+</head>
+<body>
+<h1>Scripty API — link relations</h1>
+<p class="lead">
+  Responses from <code>/api</code> use <a href="https://stateless.co/hal_specification.html">HAL</a>.
+  Standard <a href="https://www.iana.org/assignments/link-relations/link-relations.xhtml">IANA</a>
+  relations such as <code>self</code> keep their usual meaning; the project-specific relations below
+  are namespaced <code>scripty:*</code> via a HAL curie, and each links here by its name.
+  A client should follow these relations rather than hard-coding URLs — presence of a mutation
+  relation also signals that the current user is allowed to perform it. Send
+  <code>Accept: application/prs.hal-forms+json</code> to additionally receive
+  <code>_templates</code> describing each mutation's HTTP method and fields.
+</p>
+
+<h2>Navigation</h2>
+<table>
+  <thead><tr><th>Relation</th><th>Leads to</th></tr></thead>
+  <tbody>
+    <tr id="projects"><td>projects</td><td>The collection of projects.</td></tr>
+    <tr id="project"><td>project</td><td>The owning project of the current resource.</td></tr>
+    <tr id="blocks"><td>blocks</td><td>The screenplay blocks of a project.</td></tr>
+    <tr id="characters"><td>characters</td><td>The characters (people) in a project.</td></tr>
+    <tr id="actors"><td>actors</td><td>The actors, optionally scoped to a project.</td></tr>
+    <tr id="actor"><td>actor</td><td>The actor cast in a character.</td></tr>
+    <tr id="users"><td>users</td><td>The collection of users.</td></tr>
+    <tr id="teams"><td>teams</td><td>The collection of teams.</td></tr>
+    <tr id="documents"><td>documents</td><td>A project's text documents (songs and notes).</td></tr>
+    <tr id="document"><td>document</td><td>A single text document.</td></tr>
+    <tr id="songs"><td>songs</td><td>A project's song documents.</td></tr>
+    <tr id="song"><td>song</td><td>The song a block or version belongs to.</td></tr>
+    <tr id="songBlocks"><td>songBlocks</td><td>The lyric blocks of a song.</td></tr>
+    <tr id="notes"><td>notes</td><td>A project's note documents.</td></tr>
+    <tr id="versions"><td>versions</td><td>The version history of a project or song.</td></tr>
+    <tr id="version"><td>version</td><td>A single saved version.</td></tr>
+    <tr id="headshot"><td>headshot</td><td>An actor's headshot image.</td></tr>
+    <tr id="syncStatus"><td>syncStatus</td><td>Whether a project changed since a given revision.</td></tr>
+    <tr id="undoRedoStatus"><td>undoRedoStatus</td><td>Whether undo/redo is currently available.</td></tr>
+  </tbody>
+</table>
+
+<h2>Mutations</h2>
+<p class="lead">Present only when the current user may perform them.</p>
+<table>
+  <thead><tr><th>Relation</th><th>Method</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr id="create"><td>create</td><td class="method">POST</td><td>Create a new resource in a collection.</td></tr>
+    <tr id="createBelow"><td>createBelow</td><td class="method">POST</td><td>Insert a new block directly after this one.</td></tr>
+    <tr id="createInitial"><td>createInitial</td><td class="method">POST</td><td>Add the first block to an empty script.</td></tr>
+    <tr id="update"><td>update</td><td class="method">PUT</td><td>Replace the resource's editable fields.</td></tr>
+    <tr id="delete"><td>delete</td><td class="method">DELETE</td><td>Delete the resource.</td></tr>
+    <tr id="move"><td>move</td><td class="method">PUT</td><td>Reorder a block within its document.</td></tr>
+    <tr id="reorder"><td>reorder</td><td class="method">PUT</td><td>Reorder documents within a project.</td></tr>
+    <tr id="setType"><td>setType</td><td class="method">PUT</td><td>Change a block's screenplay element type.</td></tr>
+    <tr id="setHighlight"><td>setHighlight</td><td class="method">PUT</td><td>Set or clear a song block's highlight.</td></tr>
+    <tr id="toggleBookmark"><td>toggleBookmark</td><td class="method">POST</td><td>Toggle a block's bookmark.</td></tr>
+    <tr id="togglePinned"><td>togglePinned</td><td class="method">POST</td><td>Toggle whether a block is pinned.</td></tr>
+    <tr id="toggleDefault"><td>toggleDefault</td><td class="method">POST</td><td>Toggle a project as the user's default.</td></tr>
+    <tr id="insert"><td>insert</td><td class="method">POST</td><td>Insert content into a text document.</td></tr>
+    <tr id="duplicate"><td>duplicate</td><td class="method">POST</td><td>Duplicate a text document.</td></tr>
+    <tr id="changeType"><td>changeType</td><td class="method">PUT</td><td>Change a document between song and notes.</td></tr>
+    <tr id="restore"><td>restore</td><td class="method">POST</td><td>Restore a saved version as current.</td></tr>
+    <tr id="undo"><td>undo</td><td class="method">POST</td><td>Undo the last change.</td></tr>
+    <tr id="redo"><td>redo</td><td class="method">POST</td><td>Redo the last undone change.</td></tr>
+    <tr id="shareEmail"><td>shareEmail</td><td class="method">POST</td><td>Email a song to a recipient.</td></tr>
+    <tr id="importProject"><td>importProject</td><td class="method">POST</td><td>Create a project by importing a file.</td></tr>
+    <tr id="importDocument"><td>importDocument</td><td class="method">POST</td><td>Create a document by importing a file.</td></tr>
+    <tr id="export"><td>export</td><td class="method">GET</td><td>Download the script as Fountain.</td></tr>
+    <tr id="exportPdf"><td>exportPdf</td><td class="method">GET</td><td>Download the script as PDF.</td></tr>
+    <tr id="exportDocx"><td>exportDocx</td><td class="method">GET</td><td>Download the script as Word (.docx).</td></tr>
+    <tr id="exportFdx"><td>exportFdx</td><td class="method">GET</td><td>Download the script as Final Draft (.fdx).</td></tr>
+  </tbody>
+</table>
+</body>
+</html>

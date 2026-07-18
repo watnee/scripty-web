@@ -43,7 +43,7 @@ public class ProjectVersionRestController {
     ProjectVersionResourceAssembler assembler;
 
     /** Saved versions for a project, newest first. Optional {@code editionId} scopes to one script edition. */
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<ProjectVersionResource>>> list(
             @RequestParam Integer projectId,
             @RequestParam(required = false) Integer editionId,
@@ -55,7 +55,7 @@ public class ProjectVersionRestController {
         return ResponseEntity.ok(assembler.toCollection(viewModel, editionId));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<ProjectVersionResource>> show(
             @PathVariable Integer id,
             @RequestParam Integer projectId,
@@ -72,7 +72,7 @@ public class ProjectVersionRestController {
     }
 
     /** Captures the current script state as a new named version. */
-    @RequestMapping(method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> create(
             @RequestParam Integer projectId,
             @RequestParam(required = false) Integer editionId,
@@ -100,7 +100,7 @@ public class ProjectVersionRestController {
     }
 
     /** Restores the project to a saved version, then returns the refreshed history. */
-    @RequestMapping(value = "/{id}/restore", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}/restore", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> restore(
             @PathVariable Integer id,
             @RequestParam Integer projectId,
@@ -117,7 +117,7 @@ public class ProjectVersionRestController {
     }
 
     /** Deletes a saved version, then returns the refreshed history. */
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> delete(
             @PathVariable Integer id,
             @RequestParam Integer projectId,

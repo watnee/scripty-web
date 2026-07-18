@@ -10206,9 +10206,10 @@ html:not(.scripty-page-view-mode) body.focus-mode .project-script {
 .project-script .scene-header {
     grid-column: 1 / -1;
     margin: 0;
-    /* Sluglines sit flush-left with action (industry standard) and are bolded
-       so scene boundaries are easy to scan. Applies to continuous + page view;
-       the later scene-header rules re-assert the bold weight past their
+    /* Sluglines sit flush-left with action (industry standard) in every mode
+       and width — matching print, the Read Script view, and the left-aligned
+       action lines — and are bolded so scene boundaries are easy to scan.
+       The later scene-header rules re-assert the bold weight past their
        font-weight: inherit resets. */
     text-align: left;
     font-weight: 700;

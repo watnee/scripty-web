@@ -28,22 +28,33 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class DocxExportServiceImpl implements DocxExportService {
 
-    // Twips: 1440 = 1 inch
-    private static final long TWIPS_PER_INCH = 1440L;
-    private static final long PAGE_WIDTH = 12240L;   // 8.5in
-    private static final long PAGE_HEIGHT = 15840L;  // 11in
-    private static final long LEFT_MARGIN = 2160L;   // 1.5in
-    private static final long RIGHT_MARGIN = 1440L;  // 1in
-    private static final long TOP_MARGIN = 1440L;    // 1in
-    private static final long BOTTOM_MARGIN = 1440L; // 1in
+    // Geometry is shared with the PDF and FDX exporters — see ScreenplayLayout.
+    private static final long PAGE_WIDTH = ScreenplayLayout.twips(ScreenplayLayout.PAGE_WIDTH_IN);
+    private static final long PAGE_HEIGHT = ScreenplayLayout.twips(ScreenplayLayout.PAGE_HEIGHT_IN);
+    private static final long LEFT_MARGIN = ScreenplayLayout.twips(ScreenplayLayout.MARGIN_LEFT_IN);
+    private static final long RIGHT_MARGIN = ScreenplayLayout.twips(ScreenplayLayout.MARGIN_RIGHT_IN);
+    private static final long TOP_MARGIN = ScreenplayLayout.twips(ScreenplayLayout.MARGIN_TOP_IN);
+    private static final long BOTTOM_MARGIN = ScreenplayLayout.twips(ScreenplayLayout.MARGIN_BOTTOM_IN);
 
-    private static final int CHARACTER_INDENT = twips(2.2);
-    private static final int DIALOGUE_INDENT = twips(1.0);
-    private static final int DIALOGUE_RIGHT = twips(1.5);       // ~3.5in wide on 6in action area
-    private static final int PARENTHETICAL_INDENT = twips(1.5);
-    private static final int PARENTHETICAL_RIGHT = twips(2.5);  // ~2in wide
+    private static final int CHARACTER_INDENT = ScreenplayLayout.twips(ScreenplayLayout.CHARACTER_INDENT_IN);
+    private static final int DIALOGUE_INDENT = ScreenplayLayout.twips(ScreenplayLayout.DIALOGUE_INDENT_IN);
+    private static final int PARENTHETICAL_INDENT = ScreenplayLayout.twips(ScreenplayLayout.PARENTHETICAL_INDENT_IN);
 
-    private static final int FONT_SIZE_HALF_POINTS = 24; // 12pt
+    // POI takes an inset from the right margin rather than a width.
+    private static final int DIALOGUE_RIGHT = ScreenplayLayout.twips(
+            ScreenplayLayout.TEXT_WIDTH_IN - ScreenplayLayout.DIALOGUE_INDENT_IN - ScreenplayLayout.DIALOGUE_WIDTH_IN);
+    private static final int PARENTHETICAL_RIGHT = ScreenplayLayout.twips(
+            ScreenplayLayout.TEXT_WIDTH_IN - ScreenplayLayout.PARENTHETICAL_INDENT_IN
+                    - ScreenplayLayout.PARENTHETICAL_WIDTH_IN);
+
+    // setSpacingBefore/After take twips, not points — the previous 40 here was
+    // 2pt, a sixth of the intended blank line.
+    private static final int ELEMENT_SPACING = ScreenplayLayout.twipsFromPoints(ScreenplayLayout.ELEMENT_SPACING_PT);
+    private static final int SCENE_SPACING = ScreenplayLayout.twipsFromPoints(ScreenplayLayout.SCENE_SPACING_PT);
+    private static final int SPEECH_GROUP_SPACING =
+            ScreenplayLayout.twipsFromPoints(ScreenplayLayout.SPEECH_GROUP_SPACING_PT);
+
+    private static final int FONT_SIZE_POINTS = (int) ScreenplayLayout.FONT_SIZE_PT;
     private static final String FONT = "Courier New";
 
     @Autowired
@@ -70,6 +81,15 @@ public class DocxExportServiceImpl implements DocxExportService {
                 ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
                 : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
 
+        try {
+            return toDocx(project, blocks);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to export project " + projectId + " as DOCX", e);
+        }
+    }
+
+    /** Package-private seam so the layout can be asserted without a Spring context. */
+    static byte[] toDocx(Project project, List<Block> blocks) throws Exception {
         try (XWPFDocument document = new XWPFDocument();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             configurePage(document);
@@ -95,8 +115,6 @@ public class DocxExportServiceImpl implements DocxExportService {
 
             document.write(out);
             return out.toByteArray();
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to export project " + projectId + " as DOCX", e);
         }
     }
 
@@ -224,6 +242,7 @@ public class DocxExportServiceImpl implements DocxExportService {
         switch (type) {
             case Block.TYPE_SCENE, Block.TYPE_SHOT -> {
                 XWPFParagraph p = bodyParagraph(document);
+                p.setSpacingBefore(SCENE_SPACING);
                 addRun(p, content.trim().toUpperCase(Locale.ROOT), styleFlags(block, Font.BOLD));
             }
             case Block.TYPE_ACTION, Block.TYPE_TEXT -> {
@@ -241,14 +260,13 @@ public class DocxExportServiceImpl implements DocxExportService {
                 }
                 XWPFParagraph p = bodyParagraph(document);
                 p.setIndentationLeft(CHARACTER_INDENT);
-                p.setSpacingAfter(0);
                 addRun(p, name.trim().toUpperCase(Locale.ROOT), styleFlags(block, Font.BOLD));
             }
             case Block.TYPE_DIALOGUE -> {
                 XWPFParagraph p = bodyParagraph(document);
                 p.setIndentationLeft(DIALOGUE_INDENT);
                 p.setIndentationRight(DIALOGUE_RIGHT);
-                p.setSpacingBefore(0);
+                p.setSpacingBefore(SPEECH_GROUP_SPACING);
                 addMultilineRun(p, content, styleFlags(block, Font.NORMAL));
             }
             case Block.TYPE_PARENTHETICAL -> {
@@ -259,8 +277,7 @@ public class DocxExportServiceImpl implements DocxExportService {
                 XWPFParagraph p = bodyParagraph(document);
                 p.setIndentationLeft(PARENTHETICAL_INDENT);
                 p.setIndentationRight(PARENTHETICAL_RIGHT);
-                p.setSpacingBefore(0);
-                p.setSpacingAfter(0);
+                p.setSpacingBefore(SPEECH_GROUP_SPACING);
                 addRun(p, paren, styleFlags(block, Font.ITALIC));
             }
             case Block.TYPE_TRANSITION -> {
@@ -289,8 +306,8 @@ public class DocxExportServiceImpl implements DocxExportService {
     private static XWPFParagraph bodyParagraph(XWPFDocument document) {
         XWPFParagraph paragraph = document.createParagraph();
         paragraph.setAlignment(ParagraphAlignment.LEFT);
-        paragraph.setSpacingBefore(40);
-        paragraph.setSpacingAfter(40);
+        paragraph.setSpacingBefore(ELEMENT_SPACING);
+        paragraph.setSpacingAfter(0);
         paragraph.setSpacingBetween(1.0);
         return paragraph;
     }
@@ -319,7 +336,7 @@ public class DocxExportServiceImpl implements DocxExportService {
 
     private static void applyFont(XWPFRun run, int style) {
         run.setFontFamily(FONT);
-        run.setFontSize(FONT_SIZE_HALF_POINTS / 2);
+        run.setFontSize(FONT_SIZE_POINTS);
         run.setBold((style & Font.BOLD) != 0);
         run.setItalic((style & Font.ITALIC) != 0);
         run.setUnderline((style & Font.UNDERLINE) != 0
@@ -339,10 +356,6 @@ public class DocxExportServiceImpl implements DocxExportService {
             flags |= Font.UNDERLINE;
         }
         return flags;
-    }
-
-    private static int twips(double inches) {
-        return (int) Math.round(inches * TWIPS_PER_INCH);
     }
 
     private static String firstNonBlank(String a, String b) {

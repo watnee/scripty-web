@@ -202,16 +202,29 @@ public class EpubExportServiceImpl implements EpubExportService {
         return body.toString();
     }
 
+    /**
+     * EPUB is reflowable: the reading system owns page size, margins and font
+     * size, and readers legitimately scale text. So this deliberately does not
+     * pin 12pt / line-height 1 the way the PDF and DOCX exports do — that would
+     * fight the reader and hurt accessibility for no gain.
+     *
+     * <p>What it does match is the <em>proportions</em>. The indents below are
+     * the ScreenplayLayout measurements expressed as percentages of the 6in text
+     * column (2.2in / 6in = 36.667%, and so on), which is exactly how the
+     * on-screen page view states them in scripty.css. The vertical rhythm mirrors
+     * it too: a 1em gap before each element, 2em before a scene heading, and
+     * none inside a speech group.
+     */
     private static String styleCss() {
         return """
                 body { font-family: "Courier Prime", "Courier New", monospace; margin: 1em; }
-                p { margin: 0 0 1em 0; white-space: pre-wrap; }
-                .scene { font-weight: bold; text-transform: uppercase; margin-top: 1.5em; }
+                p { margin: 1em 0 0 0; white-space: pre-wrap; }
+                .scene { font-weight: bold; text-transform: uppercase; margin-top: 2em; }
                 .action { }
-                .character { margin: 0 0 0 20%; text-transform: uppercase; }
-                .dual-dialogue { margin: 0 0 0 20%; text-transform: uppercase; }
-                .parenthetical { margin: 0 0 0 15%; }
-                .dialogue { margin: 0 0 1em 10%; }
+                .character { margin-left: 36.667%; text-transform: uppercase; }
+                .dual-dialogue { margin-left: 36.667%; text-transform: uppercase; }
+                .parenthetical { margin-top: 0; margin-left: 25%; max-width: 33.333%; font-style: italic; }
+                .dialogue { margin-top: 0; margin-left: 16.667%; max-width: 58.333%; }
                 .transition { text-align: right; text-transform: uppercase; }
                 .shot { text-transform: uppercase; }
                 .lyrics { font-style: italic; margin-left: 10%; }

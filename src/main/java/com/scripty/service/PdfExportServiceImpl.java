@@ -29,27 +29,28 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PdfExportServiceImpl implements PdfExportService {
 
-    private static final float LEFT_MARGIN = 108f;   // 1.5in
-    private static final float RIGHT_MARGIN = 72f;   // 1in
-    private static final float TOP_MARGIN = 72f;     // 1in
-    private static final float BOTTOM_MARGIN = 72f;  // 1in
+    // Geometry is shared with the DOCX and FDX exporters — see ScreenplayLayout.
+    private static final float LEFT_MARGIN = ScreenplayLayout.pt(ScreenplayLayout.MARGIN_LEFT_IN);
+    private static final float RIGHT_MARGIN = ScreenplayLayout.pt(ScreenplayLayout.MARGIN_RIGHT_IN);
+    private static final float TOP_MARGIN = ScreenplayLayout.pt(ScreenplayLayout.MARGIN_TOP_IN);
+    private static final float BOTTOM_MARGIN = ScreenplayLayout.pt(ScreenplayLayout.MARGIN_BOTTOM_IN);
 
-    private static final float CHARACTER_INDENT = 158.4f;      // 2.2in
-    private static final float DIALOGUE_INDENT = 72f;          // 1in
-    private static final float DIALOGUE_RIGHT = 108f;          // keep dialogue ~3.5in wide
-    private static final float PARENTHETICAL_INDENT = 108f;    // 1.5in
-    // Text column is 432pt; 432 - 108 - 180 = 144pt = 2in wide, matching page view.
-    private static final float PARENTHETICAL_RIGHT = 180f;
+    private static final float CHARACTER_INDENT = ScreenplayLayout.pt(ScreenplayLayout.CHARACTER_INDENT_IN);
+    private static final float DIALOGUE_INDENT = ScreenplayLayout.pt(ScreenplayLayout.DIALOGUE_INDENT_IN);
+    private static final float PARENTHETICAL_INDENT = ScreenplayLayout.pt(ScreenplayLayout.PARENTHETICAL_INDENT_IN);
 
-    /**
-     * Industry vertical rhythm, matching page view (scripty.css "Page view" block):
-     * one blank line (12pt) between elements, a fuller 24pt break before a scene
-     * heading, and no gap inside a speech group (character → parenthetical →
-     * dialogue). Spacing is carried entirely by spacingBefore so it composes the
-     * same way the CSS margin-top rules do.
-     */
-    private static final float ELEMENT_SPACING = 12f;   // 1em blank line
-    private static final float SCENE_SPACING = 24f;     // 2em before a scene heading
+    // OpenPDF takes an inset from the right margin rather than a width.
+    private static final float DIALOGUE_RIGHT = ScreenplayLayout.pt(
+            ScreenplayLayout.TEXT_WIDTH_IN - ScreenplayLayout.DIALOGUE_INDENT_IN - ScreenplayLayout.DIALOGUE_WIDTH_IN);
+    private static final float PARENTHETICAL_RIGHT = ScreenplayLayout.pt(
+            ScreenplayLayout.TEXT_WIDTH_IN - ScreenplayLayout.PARENTHETICAL_INDENT_IN
+                    - ScreenplayLayout.PARENTHETICAL_WIDTH_IN);
+
+    private static final float ELEMENT_SPACING = (float) ScreenplayLayout.ELEMENT_SPACING_PT;
+    private static final float SCENE_SPACING = (float) ScreenplayLayout.SCENE_SPACING_PT;
+    private static final float SPEECH_GROUP_SPACING = (float) ScreenplayLayout.SPEECH_GROUP_SPACING_PT;
+    private static final float LEADING = (float) ScreenplayLayout.LINE_HEIGHT_PT;
+    private static final float FONT_SIZE = (float) ScreenplayLayout.FONT_SIZE_PT;
 
     @Autowired
     private BlockRepository blockRepository;
@@ -75,6 +76,15 @@ public class PdfExportServiceImpl implements PdfExportService {
                 ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
                 : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
 
+        try {
+            return toPdf(project, blocks);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to export project " + projectId + " as PDF", e);
+        }
+    }
+
+    /** Package-private seam so the layout can be asserted without a Spring context. */
+    static byte[] toPdf(Project project, List<Block> blocks) throws Exception {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.LETTER, LEFT_MARGIN, RIGHT_MARGIN, TOP_MARGIN, BOTTOM_MARGIN);
             PdfWriter.getInstance(document, out);
@@ -99,8 +109,6 @@ public class PdfExportServiceImpl implements PdfExportService {
 
             document.close();
             return out.toByteArray();
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to export project " + projectId + " as PDF", e);
         }
     }
 
@@ -226,7 +234,7 @@ public class PdfExportServiceImpl implements PdfExportService {
                 Paragraph p = styledParagraph(content, styleFlags(block, Font.NORMAL));
                 p.setIndentationLeft(DIALOGUE_INDENT);
                 p.setIndentationRight(DIALOGUE_RIGHT);
-                p.setSpacingBefore(0f);
+                p.setSpacingBefore(SPEECH_GROUP_SPACING);
                 p.setSpacingAfter(0f);
                 document.add(p);
             }
@@ -238,7 +246,7 @@ public class PdfExportServiceImpl implements PdfExportService {
                 Paragraph p = styledParagraph(paren, styleFlags(block, Font.ITALIC));
                 p.setIndentationLeft(PARENTHETICAL_INDENT);
                 p.setIndentationRight(PARENTHETICAL_RIGHT);
-                p.setSpacingBefore(0f);
+                p.setSpacingBefore(SPEECH_GROUP_SPACING);
                 p.setSpacingAfter(0f);
                 document.add(p);
             }
@@ -274,7 +282,7 @@ public class PdfExportServiceImpl implements PdfExportService {
         Font font = courier(style);
         Paragraph paragraph = new Paragraph();
         paragraph.setFont(font);
-        paragraph.setLeading(12f);
+        paragraph.setLeading(LEADING);
         if (text == null || text.isEmpty()) {
             paragraph.add(new Chunk(" ", font));
             return paragraph;
@@ -305,7 +313,7 @@ public class PdfExportServiceImpl implements PdfExportService {
     }
 
     private static Font courier(int style) {
-        return FontFactory.getFont(FontFactory.COURIER, 12f, style);
+        return FontFactory.getFont(FontFactory.COURIER, FONT_SIZE, style);
     }
 
     private static String firstNonBlank(String a, String b) {

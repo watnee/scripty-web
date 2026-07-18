@@ -23,6 +23,18 @@
         return d ? d.getAttribute('data-document-id') : null;
     }
 
+    // The active song version, so undo/redo/status hit its own stack rather
+    // than always falling back to the default version server-side.
+    function editionId() {
+        var ed = document.querySelector('.song-blocks-editor[data-edition-id]');
+        return ed ? ed.getAttribute('data-edition-id') : null;
+    }
+
+    function editionParam() {
+        var id = editionId();
+        return id ? '&editionId=' + encodeURIComponent(id) : '';
+    }
+
     function searchDropdown() {
         return document.getElementById('song-search-dropdown');
     }
@@ -60,7 +72,7 @@
         var docId = documentId();
         if (!undoBtn || !redoBtn || !docId) return;
 
-        fetch('/song/block/undoRedoStatus?documentId=' + encodeURIComponent(docId), {
+        fetch('/song/block/undoRedoStatus?documentId=' + encodeURIComponent(docId) + editionParam(), {
             cache: 'no-store',
             credentials: 'same-origin'
         })
@@ -104,7 +116,7 @@
             credentials: 'same-origin',
             cache: 'no-store',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-            body: 'documentId=' + encodeURIComponent(docId)
+            body: 'documentId=' + encodeURIComponent(docId) + editionParam()
         })
             .then(function (res) {
                 if (!res.ok) return Promise.reject(res);

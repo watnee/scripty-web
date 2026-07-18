@@ -7,8 +7,10 @@ import com.scripty.api.SetSongBlockHighlightRequest;
 import com.scripty.api.SongBlockResource;
 import com.scripty.api.SongBlockResourceAssembler;
 import com.scripty.dto.SongBlock;
+import com.scripty.dto.SongEdition;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.SongBlockService;
+import com.scripty.service.SongEditionService;
 import com.scripty.service.SongUndoRedoService;
 import com.scripty.service.SongVersionService;
 import java.security.Principal;
@@ -42,6 +44,9 @@ public class SongBlockRestController {
     SongBlockService songBlockService;
 
     @Autowired
+    SongEditionService songEditionService;
+
+    @Autowired
     ProjectAccessSupport projectAccess;
 
     @Autowired
@@ -72,17 +77,28 @@ public class SongBlockRestController {
         return projectId != null && projectAccess.canAccessProject(projectId, principal);
     }
 
+    /** Resolves a missing editionId to the song's default version (back-compat). */
+    private Integer effectiveEdition(Integer documentId, Integer editionId) {
+        SongEdition edition = songEditionService.requireForDocument(documentId, editionId);
+        if (edition == null) {
+            edition = songEditionService.ensureDefaultEdition(documentId);
+        }
+        return edition != null ? edition.getId() : editionId;
+    }
+
     /** The song's lyric lines, in order. */
     @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<SongBlockResource>>> list(
             @RequestParam Integer documentId,
+            @RequestParam(required = false) Integer editionId,
             Principal principal) {
         if (!canAccessDocument(documentId, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Integer projectId = songBlockService.projectIdForDocument(documentId);
+        Integer resolved = effectiveEdition(documentId, editionId);
         return ResponseEntity.ok(assembler.toCollection(
-                songBlockService.getBlocks(documentId), documentId, projectId));
+                songBlockService.getBlocks(documentId, resolved), documentId, projectId));
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
@@ -100,16 +116,19 @@ public class SongBlockRestController {
 
     /** Appends a new empty line at the end of the song. */
     @RequestMapping(method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
-    public ResponseEntity<?> append(@RequestParam Integer documentId, Principal principal) {
+    public ResponseEntity<?> append(@RequestParam Integer documentId,
+                                    @RequestParam(required = false) Integer editionId,
+                                    Principal principal) {
         if (!canEditDocument(documentId, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        songUndoRedoService.recordCheckpoint(documentId);
-        SongBlock created = songBlockService.appendBlock(documentId);
+        Integer resolved = effectiveEdition(documentId, editionId);
+        songUndoRedoService.recordCheckpoint(documentId, resolved);
+        SongBlock created = songBlockService.appendBlock(documentId, resolved);
         if (created == null) {
             return ResponseEntity.notFound().build();
         }
-        songVersionService.autoSaveVersion(documentId);
+        songVersionService.autoSaveVersion(documentId, resolved);
         return created(created, songBlockService.projectIdForDocument(documentId));
     }
 
@@ -142,7 +161,7 @@ public class SongBlockRestController {
             created = songBlockService.editContent(created.getId(), content);
         }
         Integer documentId = songBlockService.documentIdForBlock(id);
-        songVersionService.autoSaveVersion(documentId);
+        songVersionService.autoSaveVersion(documentId, songBlockService.editionIdForBlock(id));
         return created(created, songBlockService.projectIdForDocument(documentId));
     }
 
@@ -170,14 +189,15 @@ public class SongBlockRestController {
         if (!canEditBlock(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        // Resolve the project before the block is gone.
+        // Resolve the project and version before the block is gone.
         Integer projectId = songBlockService.projectIdForBlock(id);
+        Integer editionId = songBlockService.editionIdForBlock(id);
         songUndoRedoService.recordCheckpointForBlock(id);
         Integer documentId = songBlockService.deleteBlock(id);
         if (documentId == null) {
             return ResponseEntity.notFound().build();
         }
-        songVersionService.autoSaveVersion(documentId);
+        songVersionService.autoSaveVersion(documentId, editionId);
         return ResponseEntity.ok(assembler.toDeleteModel(documentId, projectId));
     }
 

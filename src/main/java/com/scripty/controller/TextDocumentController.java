@@ -2,12 +2,14 @@ package com.scripty.controller;
 
 import com.scripty.commandmodel.textdocument.TextDocumentCommandModel;
 import com.scripty.dto.Block;
+import com.scripty.dto.SongEdition;
 import com.scripty.dto.TextDocument;
 import com.scripty.dto.User;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.ScriptImportException;
 import com.scripty.service.SongBlockService;
+import com.scripty.service.SongEditionService;
 import com.scripty.service.SongExportService;
 import com.scripty.service.SongVersionService;
 import com.scripty.service.TextDocumentService;
@@ -58,6 +60,9 @@ public class TextDocumentController {
 
     @Autowired
     SongVersionService songVersionService;
+
+    @Autowired
+    SongEditionService songEditionService;
 
     @Autowired
     UserService userService;
@@ -139,7 +144,10 @@ public class TextDocumentController {
     }
 
     @RequestMapping(value = "/edit")
-    public String edit(@RequestParam Integer id, Model model, Principal principal) {
+    public String edit(@RequestParam Integer id,
+                       @RequestParam(required = false) Integer editionId,
+                       Model model,
+                       Principal principal) {
         User user = currentUser(principal);
         TextDocumentCommandModel commandModel = textDocumentService.getCommandModel(id, user);
         TextDocumentViewModel viewModel = textDocumentService.getViewModel(id, user);
@@ -147,6 +155,7 @@ public class TextDocumentController {
             return "redirect:/project/list";
         }
         boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(commandModel.getDocumentType());
+        boolean canEditScript = projectAccess.canEditScript(viewModel.getProjectId(), user);
         model.addAttribute("projectId", viewModel.getProjectId());
         model.addAttribute("projectTitle", viewModel.getProjectTitle());
         model.addAttribute("commandModel", commandModel);
@@ -154,11 +163,20 @@ public class TextDocumentController {
         model.addAttribute("isNew", false);
         model.addAttribute("isSong", isSong);
         if (isSong) {
-            model.addAttribute("blocks", songBlockService.getBlocks(id));
+            // Writers may browse every version; everyone else is pinned to the
+            // published one, matching the screenplay's edition access rule.
+            songEditionService.ensureDefaultEdition(id);
+            SongEdition active = songEditionService.resolveForAccess(id, editionId, canEditScript);
+            Integer activeId = active != null ? active.getId() : null;
+            model.addAttribute("blocks", songBlockService.getBlocks(id, activeId));
             model.addAttribute("focusBlockId", null);
+            model.addAttribute("editionId", activeId);
+            model.addAttribute("editionName", active != null ? active.getName() : null);
+            model.addAttribute("canBrowseEditions", canEditScript);
+            model.addAttribute("editions", songEditionService.getEditionViewModels(id, canEditScript));
         }
         model.addAttribute("listPath", listPath(isSong));
-        model.addAttribute("canEditScript", projectAccess.canEditScript(viewModel.getProjectId(), user));
+        model.addAttribute("canEditScript", canEditScript);
         return "project/documents/edit";
     }
 
@@ -255,8 +273,9 @@ public class TextDocumentController {
         }
         // The song snapshot carries the title, so a rename from the editor is a
         // change worth capturing; block edits auto-save via SongBlockController.
+        // Null edition resolves to the default version, which owns the shared title.
         if (isSong && commandModel.getId() != null) {
-            songVersionService.autoSaveVersion(saved.getId());
+            songVersionService.autoSaveVersion(saved.getId(), null);
         }
 
         if (wantsJson) {

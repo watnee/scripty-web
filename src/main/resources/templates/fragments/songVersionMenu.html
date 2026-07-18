@@ -1,0 +1,181 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="menu">
+    <!--/* Song version switcher, mirroring the screenplay's edition dropdown in
+           project/show.html. Reuses the .script-edition-* styling. Reads the
+           model attributes set by TextDocumentController.edit: editions,
+           editionId, editionName, canBrowseEditions. */-->
+    <div class="nav-dropdown script-edition-dropdown song-edition-dropdown"
+         id="song-edition-dropdown"
+         th:attr="data-document-id=${commandModel.id}, data-edition-id=${editionId}">
+        <button class="nav-dropdown-toggle script-edition-toggle"
+                id="song-edition-toggle"
+                type="button"
+                aria-haspopup="true"
+                aria-expanded="false"
+                th:attr="data-edition-name=${editionName != null ? editionName : 'Main'}"
+                th:aria-label="'Song version: ' + ${editionName != null ? editionName : 'Main'}"
+                th:title="'Song version: ' + ${editionName != null ? editionName : 'Main'}">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="6" y1="3" x2="6" y2="15"></line>
+                <circle cx="18" cy="6" r="3"></circle>
+                <circle cx="6" cy="18" r="3"></circle>
+                <path d="M18 9a9 9 0 0 1-9 9"></path>
+            </svg>
+            <span class="script-edition-toggle-label">Version</span>
+            <svg class="script-edition-toggle-caret" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </button>
+        <div class="nav-dropdown-menu script-edition-menu">
+            <div class="script-edition-menu-label">Versions</div>
+            <div th:if="${canBrowseEditions == null or canBrowseEditions}"
+                 class="script-edition-menu-hint muted"
+                 th:with="publishedEdition=${editions != null ? editions.?[published].![name] : null}">
+                <span th:if="${publishedEdition != null and !#lists.isEmpty(publishedEdition)}">
+                    Team sees: <strong th:text="${publishedEdition[0]}">Main</strong>
+                </span>
+            </div>
+            <div th:each="edition : ${editions}"
+                 class="script-edition-row"
+                 th:classappend="${editionId != null and editionId == edition.id} ? 'is-active'">
+                <a class="nav-dropdown-item script-edition-switch"
+                   th:classappend="${editionId != null and editionId == edition.id} ? 'active'"
+                   th:href="@{/project/documents/edit(id=${commandModel.id}, editionId=${edition.id})}"
+                   hx-boost="false"
+                   th:text="${edition.name}">Main</a>
+                <span class="script-edition-row-edited"
+                      th:if="${edition.lastEdited != null}"
+                      th:title="${#temporals.format(edition.lastEdited, 'MMM d, yyyy, h:mm a')}">
+                    <span th:replace="~{fragments/lastEditedTime :: relativeTime(${edition.lastEdited})}"></span>
+                </span>
+                <div class="controls-wrapper">
+                    <a class="nav-dropdown-item script-edition-history-toggle"
+                       role="menuitem"
+                       th:href="@{/song/version/list(documentId=${commandModel.id}, editionId=${edition.id})}"
+                       hx-boost="false"
+                       th:aria-label="'Snapshot history for ' + ${edition.name}"
+                       th:title="'Snapshot history for ' + ${edition.name}">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </a>
+                    <button th:if="${(canBrowseEditions == null or canBrowseEditions)}"
+                            type="button"
+                            class="script-edition-rename-toggle song-edition-rename-open"
+                            th:attr="data-edition-id=${edition.id}, data-edition-name=${edition.name}"
+                            th:aria-label="'Rename ' + ${edition.name}"
+                            th:title="'Rename version'">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+                        </svg>
+                    </button>
+                    <form th:if="${(canBrowseEditions == null or canBrowseEditions) and !edition.published}"
+                          th:action="@{/song/edition/setPublished}"
+                          method="POST"
+                          hx-boost="false"
+                          class="script-edition-publish-form">
+                        <input type="hidden" name="documentId" th:value="${commandModel.id}" />
+                        <input type="hidden" name="editionId" th:value="${edition.id}" />
+                        <button type="submit"
+                                class="script-edition-publish-toggle"
+                                th:aria-label="'Share ' + ${edition.name} + ' with the team'"
+                                th:title="'Share with team — others will see this version'">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </form>
+                    <span th:if="${edition.published}"
+                          class="script-edition-publish-toggle is-published"
+                          aria-label="Shared with team"
+                          title="Shared with team — this is the version others see">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
+                        </svg>
+                    </span>
+                    <form th:if="${(canBrowseEditions == null or canBrowseEditions) and !edition.default}"
+                          th:action="@{/song/edition/setDefault}"
+                          method="POST"
+                          hx-boost="false"
+                          class="script-edition-default-form">
+                        <input type="hidden" name="documentId" th:value="${commandModel.id}" />
+                        <input type="hidden" name="editionId" th:value="${edition.id}" />
+                        <button type="submit"
+                                class="default-project-toggle script-edition-default-toggle"
+                                th:aria-label="'Set ' + ${edition.name} + ' as default version'"
+                                th:title="'Set as default version'">
+                            <span class="icon-outline" aria-hidden="true">☆</span>
+                            <span class="icon-filled" aria-hidden="true">★</span>
+                        </button>
+                    </form>
+                    <span th:if="${edition.default}"
+                          class="default-project-toggle script-edition-default-toggle is-default"
+                          aria-label="Default version"
+                          title="Default version">
+                        <span class="icon-outline" aria-hidden="true">☆</span>
+                        <span class="icon-filled" aria-hidden="true">★</span>
+                    </span>
+                    <form th:if="${(canBrowseEditions == null or canBrowseEditions) and !edition.default and editions != null and editions.size() > 1}"
+                          th:action="@{/song/edition/delete}"
+                          method="POST"
+                          hx-boost="false"
+                          class="script-edition-delete-form"
+                          onsubmit="return confirm('Delete this song version? Its lyrics and snapshot history are permanently removed.');">
+                        <input type="hidden" name="documentId" th:value="${commandModel.id}" />
+                        <input type="hidden" name="editionId" th:value="${edition.id}" />
+                        <button type="submit"
+                                class="script-edition-delete-toggle"
+                                th:aria-label="'Delete ' + ${edition.name}"
+                                title="Delete version">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="nav-dropdown-divider" th:if="${canBrowseEditions == null or canBrowseEditions}"></div>
+            <button th:if="${canBrowseEditions == null or canBrowseEditions}"
+                    type="button"
+                    class="nav-dropdown-item script-edition-create-btn"
+                    id="song-edition-create-open">New version…</button>
+        </div>
+    </div>
+    <dialog id="song-edition-create-dialog" class="script-edition-dialog">
+        <form th:if="${canBrowseEditions == null or canBrowseEditions}"
+              th:action="@{/song/edition/create}" method="POST" hx-boost="false" class="script-edition-create-form">
+            <h2>New song version</h2>
+            <p class="muted">Creates an editable copy of the current version's lyrics. The song title stays shared.</p>
+            <input type="hidden" name="documentId" th:value="${commandModel.id}" />
+            <input type="hidden" name="copyFromEditionId" th:value="${editionId}" />
+            <label>
+                Name
+                <input type="text" name="name" required maxlength="100" placeholder="e.g. Acoustic, Radio edit" autofocus />
+            </label>
+            <div class="script-edition-dialog-actions">
+                <button type="button" class="script-edition-dialog-cancel" value="cancel">Cancel</button>
+                <button type="submit">Create version</button>
+            </div>
+        </form>
+    </dialog>
+    <dialog id="song-edition-rename-dialog" class="script-edition-dialog">
+        <form th:if="${canBrowseEditions == null or canBrowseEditions}"
+              th:action="@{/song/edition/rename}" method="POST" hx-boost="false" class="script-edition-rename-form">
+            <h2>Rename song version</h2>
+            <input type="hidden" name="documentId" th:value="${commandModel.id}" />
+            <input type="hidden" name="editionId" value="" />
+            <label>
+                Name
+                <input type="text" name="name" required maxlength="100" placeholder="Version name" />
+            </label>
+            <div class="script-edition-dialog-actions">
+                <button type="button" class="script-edition-dialog-cancel" value="cancel">Cancel</button>
+                <button type="submit">Rename</button>
+            </div>
+        </form>
+    </dialog>
+</th:block>

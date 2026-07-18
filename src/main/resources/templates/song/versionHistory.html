@@ -17,7 +17,7 @@
                     <li><a th:href="@{/project/list}">Projects</a></li>
                     <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}">Project</a></li>
                     <li><a th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}">Songs</a></li>
-                    <li><a th:href="@{/project/documents/edit(id=${viewModel.documentId})}" th:text="${viewModel.songTitle}">Song</a></li>
+                    <li><a th:href="@{/project/documents/edit(id=${viewModel.documentId}, editionId=${viewModel.editionId})}" th:text="${viewModel.songTitle}">Song</a></li>
                     <li aria-current="page">History</li>
                 </ol>
             </nav>
@@ -34,7 +34,8 @@
             <div>
                 <h1>Snapshot History</h1>
                 <p class="version-history-intro">
-                    Saved states of <strong th:text="${viewModel.songTitle}">this song</strong>.
+                    Saved states of <strong th:text="${viewModel.songTitle}">this song</strong><span
+                        th:if="${viewModel.editionName != null}">, version <strong th:text="${viewModel.editionName}">Main</strong></span>.
                     Auto-saves update in place about every 10 minutes when the lyrics change. Restoring creates a “Before restore” snapshot first.
                 </p>
             </div>
@@ -43,6 +44,7 @@
         <form th:if="${canEditScript == null or canEditScript}"
               th:action="@{/song/version/create}" method="POST" hx-boost="false" class="version-save-form">
             <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
+            <input type="hidden" name="editionId" th:value="${viewModel.editionId}" />
             <label class="version-save-label">
                 <span class="version-save-label-text">Snapshot label</span>
                 <input type="text" name="label" placeholder="e.g. Draft 2, Before rewrite…">
@@ -88,6 +90,7 @@
                             <form th:action="@{/song/version/restore}" method="POST" hx-boost="false">
                                 <input type="hidden" name="id" th:value="${version.id}" />
                                 <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
+                                <input type="hidden" name="editionId" th:value="${viewModel.editionId}" />
                                 <button type="submit" role="button"
                                         class="project-list-action-btn project-list-action-btn--secondary"
                                         _="on click if not confirm('Restore this snapshot? The current lyrics will be replaced. A “Before restore” snapshot will be saved first.') halt">Restore</button>
@@ -95,6 +98,7 @@
                             <form th:action="@{/song/version/delete}" method="POST" hx-boost="false">
                                 <input type="hidden" name="id" th:value="${version.id}" />
                                 <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
+                                <input type="hidden" name="editionId" th:value="${viewModel.editionId}" />
                                 <button type="submit" role="button"
                                         class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn"
                                         _="on click if not confirm('Delete this snapshot?') halt">Delete</button>

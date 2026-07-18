@@ -51,7 +51,7 @@ ADMIN_USERNAME: admin
 ADMIN_PASSWORD: admin
 
 app:
-  asset-version: 242
+  asset-version: 243
   headshot-max-bytes: 5242880
   base-url: http://localhost:8080
   mail-from: Scripty <noreply@localhost>

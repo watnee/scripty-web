@@ -2,6 +2,7 @@ package com.scripty.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scripty.dto.SongEdition;
 import com.scripty.dto.SongVersion;
 import com.scripty.dto.TextDocument;
 import com.scripty.repository.SongVersionRepository;
@@ -25,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SongVersionServiceImpl implements SongVersionService {
 
     private static final int AUTO_SAVE_INTERVAL_MINUTES = 10;
-    /** Newest auto-saves kept per song; manual / before-restore labels are never pruned. */
+    /** Newest auto-saves kept per song version; manual / before-restore labels are never pruned. */
     static final int MAX_AUTO_SAVES_PER_SONG = 30;
     private static final DateTimeFormatter AUTO_SAVE_LABEL_FORMAT =
             DateTimeFormatter.ofPattern("MMM d, h:mm a");
@@ -33,22 +34,25 @@ public class SongVersionServiceImpl implements SongVersionService {
     private final SongVersionRepository songVersionRepository;
     private final TextDocumentRepository textDocumentRepository;
     private final SongBlockService songBlockService;
+    private final SongEditionService songEditionService;
     private final ObjectMapper objectMapper;
 
     @Autowired
     public SongVersionServiceImpl(SongVersionRepository songVersionRepository,
                                   TextDocumentRepository textDocumentRepository,
                                   SongBlockService songBlockService,
+                                  SongEditionService songEditionService,
                                   ObjectMapper objectMapper) {
         this.songVersionRepository = songVersionRepository;
         this.textDocumentRepository = textDocumentRepository;
         this.songBlockService = songBlockService;
+        this.songEditionService = songEditionService;
         this.objectMapper = objectMapper;
     }
 
     @Override
     @Transactional
-    public SongVersionHistoryViewModel getVersionHistoryViewModel(Integer documentId) {
+    public SongVersionHistoryViewModel getVersionHistoryViewModel(Integer documentId, Integer editionId) {
         SongVersionHistoryViewModel vm = new SongVersionHistoryViewModel();
         TextDocument doc = documentId != null
                 ? textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null)
@@ -58,15 +62,25 @@ public class SongVersionServiceImpl implements SongVersionService {
             vm.setVersions(List.of());
             return vm;
         }
+        SongEdition edition = songEditionService.requireForDocument(documentId, editionId);
+        if (edition == null) {
+            edition = songEditionService.ensureDefaultEdition(documentId);
+        }
 
         vm.setDocumentId(doc.getId());
         vm.setSongTitle(doc.getTitle());
+        if (edition != null) {
+            vm.setEditionId(edition.getId());
+            vm.setEditionName(edition.getName());
+        }
         if (doc.getProject() != null) {
             vm.setProjectId(doc.getProject().getId());
             vm.setProjectTitle(doc.getProject().getTitle());
         }
 
-        List<SongVersion> versions = songVersionRepository.findByTextDocumentIdOrderByCreatedAtDesc(doc.getId());
+        List<SongVersion> versions = edition != null
+                ? songVersionRepository.findBySongEditionIdOrderByCreatedAtDesc(edition.getId())
+                : List.of();
         List<SongVersionViewModel> versionVMs = new ArrayList<>();
         for (int i = 0; i < versions.size(); i++) {
             SongVersion version = versions.get(i);
@@ -98,19 +112,21 @@ public class SongVersionServiceImpl implements SongVersionService {
 
     @Override
     @Transactional
-    public SongVersion createVersion(Integer documentId, String label) {
-        return createVersionFromSnapshot(documentId, label, buildSnapshotJson(documentId));
+    public SongVersion createVersion(Integer documentId, Integer editionId, String label) {
+        SongEdition edition = resolveEdition(documentId, editionId);
+        if (edition == null) {
+            return null;
+        }
+        return createVersionFromSnapshot(edition, label, buildSnapshotJson(documentId, edition.getId()));
     }
 
-    private SongVersion createVersionFromSnapshot(Integer documentId, String label, String snapshotJson) {
-        TextDocument doc = documentId != null
-                ? textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null)
-                : null;
-        if (doc == null || snapshotJson == null) {
+    private SongVersion createVersionFromSnapshot(SongEdition edition, String label, String snapshotJson) {
+        if (edition == null || edition.getTextDocument() == null || snapshotJson == null) {
             return null;
         }
         SongVersion version = new SongVersion();
-        version.setTextDocument(doc);
+        version.setTextDocument(edition.getTextDocument());
+        version.setSongEdition(edition);
         version.setLabel(label);
         version.setSnapshotJson(snapshotJson);
         version.setCreatedAt(LocalDateTime.now());
@@ -119,16 +135,14 @@ public class SongVersionServiceImpl implements SongVersionService {
 
     @Override
     @Transactional
-    public String buildSnapshotJson(Integer documentId) {
-        TextDocument doc = documentId != null
-                ? textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null)
-                : null;
-        if (doc == null) {
+    public String buildSnapshotJson(Integer documentId, Integer editionId) {
+        SongEdition edition = resolveEdition(documentId, editionId);
+        if (edition == null || edition.getTextDocument() == null) {
             return null;
         }
-        List<SongBlockService.LineSnapshot> lines = songBlockService.snapshotLines(documentId);
+        List<SongBlockService.LineSnapshot> lines = songBlockService.snapshotLines(documentId, edition.getId());
         Map<String, Object> snapshot = new HashMap<>();
-        snapshot.put("title", doc.getTitle());
+        snapshot.put("title", edition.getTextDocument().getTitle());
         snapshot.put("lines", lines != null ? lines : List.of());
         try {
             return objectMapper.writeValueAsString(snapshot);
@@ -139,12 +153,16 @@ public class SongVersionServiceImpl implements SongVersionService {
 
     @Override
     @Transactional
-    public void autoSaveVersion(Integer documentId) {
-        String snapshotJson = buildSnapshotJson(documentId);
+    public void autoSaveVersion(Integer documentId, Integer editionId) {
+        SongEdition edition = resolveEdition(documentId, editionId);
+        if (edition == null) {
+            return;
+        }
+        String snapshotJson = buildSnapshotJson(documentId, edition.getId());
         if (snapshotJson == null) {
             return;
         }
-        SongVersion latest = songVersionRepository.findFirstByTextDocumentIdOrderByCreatedAtDesc(documentId);
+        SongVersion latest = songVersionRepository.findFirstBySongEditionIdOrderByCreatedAtDesc(edition.getId());
         if (latest != null && snapshotJson.equals(latest.getSnapshotJson())) {
             return;
         }
@@ -157,27 +175,32 @@ public class SongVersionServiceImpl implements SongVersionService {
             latest.setLabel(label);
             songVersionRepository.save(latest);
         } else {
-            createVersionFromSnapshot(documentId, label, snapshotJson);
+            createVersionFromSnapshot(edition, label, snapshotJson);
         }
-        pruneAutoSaves(documentId);
+        pruneAutoSaves(edition.getId());
     }
 
     @Override
     @Transactional
     public void autoSaveVersionForBlock(Integer blockId) {
-        autoSaveVersion(songBlockService.documentIdForBlock(blockId));
+        Integer documentId = songBlockService.documentIdForBlock(blockId);
+        Integer editionId = songBlockService.editionIdForBlock(blockId);
+        if (documentId == null || editionId == null) {
+            return;
+        }
+        autoSaveVersion(documentId, editionId);
     }
 
     /**
-     * Keeps the newest {@link #MAX_AUTO_SAVES_PER_SONG} auto-saves for a song.
-     * Manual labels and "Before restore …" entries are never deleted here.
+     * Keeps the newest {@link #MAX_AUTO_SAVES_PER_SONG} auto-saves for a song
+     * version. Manual labels and "Before restore …" entries are never deleted here.
      */
-    void pruneAutoSaves(Integer documentId) {
-        if (documentId == null) {
+    void pruneAutoSaves(Integer editionId) {
+        if (editionId == null) {
             return;
         }
         List<SongVersion> autoSaves =
-                songVersionRepository.findAutoSavesByTextDocumentIdOrderByCreatedAtDesc(documentId);
+                songVersionRepository.findAutoSavesBySongEditionIdOrderByCreatedAtDesc(editionId);
         if (autoSaves.size() <= MAX_AUTO_SAVES_PER_SONG) {
             return;
         }
@@ -193,31 +216,41 @@ public class SongVersionServiceImpl implements SongVersionService {
 
     @Override
     @Transactional
-    public boolean restoreVersionForDocument(Integer versionId, Integer documentId) {
+    public boolean restoreVersionForDocument(Integer versionId, Integer editionId) {
         SongVersion version = versionId != null
                 ? songVersionRepository.findById(versionId).orElse(null)
                 : null;
-        if (version == null || version.getTextDocument() == null || documentId == null
-                || !documentId.equals(version.getTextDocument().getId())) {
+        if (version == null || version.getSongEdition() == null || editionId == null
+                || !editionId.equals(version.getSongEdition().getId())) {
             return false;
         }
+        SongEdition edition = version.getSongEdition();
+        TextDocument doc = edition.getTextDocument();
+        if (doc == null) {
+            return false;
+        }
+        Integer documentId = doc.getId();
         Map<String, Object> snapshot = readSnapshot(version.getSnapshotJson());
         if (snapshot == null) {
             return false;
         }
 
         String beforeLabel = "Before restore " + LocalDateTime.now().format(AUTO_SAVE_LABEL_FORMAT);
-        createVersionFromSnapshot(documentId, beforeLabel, buildSnapshotJson(documentId));
+        createVersionFromSnapshot(edition, beforeLabel, buildSnapshotJson(documentId, editionId));
 
-        // replaceLines rebuilds the document content and stamps updatedAt, so the
-        // title is saved through the same document instance it loads.
-        songBlockService.replaceLines(documentId, linesOf(snapshot));
-        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
-        if (doc != null) {
-            String title = titleOf(snapshot);
-            if (title != null && !title.isBlank()) {
-                doc.setTitle(PlainTextSanitizer.sanitizeSingleLine(title));
-                textDocumentRepository.save(doc);
+        // replaceLines rebuilds the version's content (and, when published, the
+        // document text) and stamps updatedAt.
+        songBlockService.replaceLines(documentId, editionId, linesOf(snapshot));
+        // The title lives on the shared document, so only a published version's
+        // restore may rename the song.
+        if (edition.isPublished()) {
+            TextDocument managed = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
+            if (managed != null) {
+                String title = titleOf(snapshot);
+                if (title != null && !title.isBlank()) {
+                    managed.setTitle(PlainTextSanitizer.sanitizeSingleLine(title));
+                    textDocumentRepository.save(managed);
+                }
             }
         }
         return true;
@@ -225,19 +258,27 @@ public class SongVersionServiceImpl implements SongVersionService {
 
     @Override
     @Transactional
-    public boolean deleteVersionForDocument(Integer versionId, Integer documentId) {
+    public boolean deleteVersionForDocument(Integer versionId, Integer editionId) {
         SongVersion version = versionId != null
                 ? songVersionRepository.findById(versionId).orElse(null)
                 : null;
-        if (version == null || version.getTextDocument() == null || documentId == null
-                || !documentId.equals(version.getTextDocument().getId())) {
+        if (version == null || version.getSongEdition() == null || editionId == null
+                || !editionId.equals(version.getSongEdition().getId())) {
             return false;
         }
         songVersionRepository.deleteById(versionId);
         return true;
     }
 
-    // --- snapshot helpers -------------------------------------------------
+    // --- helpers ---------------------------------------------------------
+
+    private SongEdition resolveEdition(Integer documentId, Integer editionId) {
+        SongEdition edition = songEditionService.requireForDocument(documentId, editionId);
+        if (edition == null) {
+            edition = songEditionService.ensureDefaultEdition(documentId);
+        }
+        return edition;
+    }
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> readSnapshot(String json) {

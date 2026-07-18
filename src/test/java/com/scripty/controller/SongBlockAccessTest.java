@@ -9,8 +9,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.scripty.dto.SongEdition;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.SongBlockService;
+import com.scripty.service.SongEditionService;
 import com.scripty.service.SongUndoRedoService;
 import com.scripty.service.SongVersionService;
 import java.security.Principal;
@@ -29,11 +31,13 @@ class SongBlockAccessTest {
 
     private static final Integer BLOCK_ID = 7;
     private static final Integer DOCUMENT_ID = 3;
+    private static final Integer EDITION_ID = 100;
     private static final Integer PROJECT_ID = 42;
     private static final String FORBIDDEN = "songblock/blocks :: forbidden";
 
     private final SongBlockController controller = new SongBlockController();
     private final SongBlockService songBlockService = mock(SongBlockService.class);
+    private final SongEditionService songEditionService = mock(SongEditionService.class);
     private final ProjectAccessSupport projectAccess = mock(ProjectAccessSupport.class);
     private final SongUndoRedoService songUndoRedoService = mock(SongUndoRedoService.class);
     private final SongVersionService songVersionService = mock(SongVersionService.class);
@@ -42,12 +46,20 @@ class SongBlockAccessTest {
     @BeforeEach
     void setUp() {
         controller.songBlockService = songBlockService;
+        controller.songEditionService = songEditionService;
         controller.projectAccess = projectAccess;
         controller.songUndoRedoService = songUndoRedoService;
         controller.songVersionService = songVersionService;
 
         when(songBlockService.projectIdForBlock(BLOCK_ID)).thenReturn(PROJECT_ID);
         when(songBlockService.projectIdForDocument(DOCUMENT_ID)).thenReturn(PROJECT_ID);
+
+        // Edition resolution is irrelevant to the permission gate under test, but the
+        // permitted paths resolve one, so hand back a simple version to avoid NPEs.
+        SongEdition edition = new SongEdition();
+        edition.setId(EDITION_ID);
+        when(songEditionService.requireForDocument(anyInt(), any())).thenReturn(edition);
+        when(songEditionService.ensureDefaultEdition(anyInt())).thenReturn(edition);
     }
 
     /** A project member who is not a writer: access yes, script edit no. */
@@ -82,8 +94,8 @@ class SongBlockAccessTest {
     void nonWriterCannotAppend() {
         givenNonWriterMember();
 
-        assertEquals(FORBIDDEN, controller.append(DOCUMENT_ID, model(), principal));
-        verify(songBlockService, never()).appendBlock(anyInt());
+        assertEquals(FORBIDDEN, controller.append(DOCUMENT_ID, EDITION_ID, model(), principal));
+        verify(songBlockService, never()).appendBlock(anyInt(), any());
     }
 
     @Test
@@ -130,26 +142,26 @@ class SongBlockAccessTest {
     void nonWriterCannotUndo() {
         givenNonWriterMember();
 
-        assertEquals(FORBIDDEN, controller.undo(DOCUMENT_ID, model(), principal));
-        verify(songUndoRedoService, never()).undo(anyInt());
+        assertEquals(FORBIDDEN, controller.undo(DOCUMENT_ID, EDITION_ID, model(), principal));
+        verify(songUndoRedoService, never()).undo(anyInt(), any());
     }
 
     @Test
     void nonWriterCannotRedo() {
         givenNonWriterMember();
 
-        assertEquals(FORBIDDEN, controller.redo(DOCUMENT_ID, model(), principal));
-        verify(songUndoRedoService, never()).redo(anyInt());
+        assertEquals(FORBIDDEN, controller.redo(DOCUMENT_ID, EDITION_ID, model(), principal));
+        verify(songUndoRedoService, never()).redo(anyInt(), any());
     }
 
     /** Read-only: a member may poll the Edit menu's state without write access. */
     @Test
     void nonWriterCanReadUndoRedoStatus() {
         givenNonWriterMember();
-        when(songUndoRedoService.canUndo(DOCUMENT_ID)).thenReturn(true);
-        when(songUndoRedoService.canRedo(DOCUMENT_ID)).thenReturn(false);
+        when(songUndoRedoService.canUndo(DOCUMENT_ID, EDITION_ID)).thenReturn(true);
+        when(songUndoRedoService.canRedo(DOCUMENT_ID, EDITION_ID)).thenReturn(false);
 
-        var response = controller.undoRedoStatus(DOCUMENT_ID, principal);
+        var response = controller.undoRedoStatus(DOCUMENT_ID, EDITION_ID, principal);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(true, response.getBody().get("canUndo"));
@@ -161,7 +173,7 @@ class SongBlockAccessTest {
         when(projectAccess.canAccessProject(anyInt(), any(Principal.class))).thenReturn(false);
 
         assertEquals(HttpStatus.FORBIDDEN,
-                controller.undoRedoStatus(DOCUMENT_ID, principal).getStatusCode());
+                controller.undoRedoStatus(DOCUMENT_ID, EDITION_ID, principal).getStatusCode());
     }
 
     @Test

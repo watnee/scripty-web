@@ -108,9 +108,9 @@ public class TextDocumentResourceAssembler {
         if (TextDocument.TYPE_SONG.equalsIgnoreCase(type)) {
             // Only songs are edited as ordered blocks and versioned; notes are
             // plain content, with no lyrics or history to navigate to.
-            links.add(linkTo(methodOn(SongBlockRestController.class).list(id, null))
+            links.add(linkTo(methodOn(SongBlockRestController.class).list(id, null, null))
                     .withRel(ApiRel.SONG_BLOCKS));
-            links.add(linkTo(methodOn(SongVersionRestController.class).list(id, null))
+            links.add(linkTo(methodOn(SongVersionRestController.class).list(id, null, null))
                     .withRel(ApiRel.VERSIONS));
         }
         if (projectId != null) {

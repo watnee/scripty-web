@@ -29,6 +29,11 @@ public class SongBlock {
     @JoinColumn(name = "text_document_id", nullable = false)
     private TextDocument textDocument;
 
+    /** The song version this block belongs to; see {@link SongEdition}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "song_edition_id")
+    private SongEdition songEdition;
+
     @Column(name = "`order`", nullable = false)
     private Integer order = 0;
 
@@ -68,6 +73,14 @@ public class SongBlock {
 
     public void setTextDocument(TextDocument textDocument) {
         this.textDocument = textDocument;
+    }
+
+    public SongEdition getSongEdition() {
+        return songEdition;
+    }
+
+    public void setSongEdition(SongEdition songEdition) {
+        this.songEdition = songEdition;
     }
 
     public Integer getOrder() {

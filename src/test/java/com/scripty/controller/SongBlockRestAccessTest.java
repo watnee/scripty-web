@@ -14,8 +14,10 @@ import com.scripty.api.EditSongBlockRequest;
 import com.scripty.api.MoveBlockRequest;
 import com.scripty.api.SetSongBlockHighlightRequest;
 import com.scripty.api.SongBlockResourceAssembler;
+import com.scripty.dto.SongEdition;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.SongBlockService;
+import com.scripty.service.SongEditionService;
 import com.scripty.service.SongUndoRedoService;
 import com.scripty.service.SongVersionService;
 import java.security.Principal;
@@ -33,10 +35,12 @@ class SongBlockRestAccessTest {
 
     private static final Integer BLOCK_ID = 7;
     private static final Integer DOCUMENT_ID = 3;
+    private static final Integer EDITION_ID = 100;
     private static final Integer PROJECT_ID = 42;
 
     private final SongBlockRestController controller = new SongBlockRestController();
     private final SongBlockService songBlockService = mock(SongBlockService.class);
+    private final SongEditionService songEditionService = mock(SongEditionService.class);
     private final ProjectAccessSupport projectAccess = mock(ProjectAccessSupport.class);
     private final SongUndoRedoService songUndoRedoService = mock(SongUndoRedoService.class);
     private final SongVersionService songVersionService = mock(SongVersionService.class);
@@ -45,6 +49,7 @@ class SongBlockRestAccessTest {
     @BeforeEach
     void setUp() {
         controller.songBlockService = songBlockService;
+        controller.songEditionService = songEditionService;
         controller.projectAccess = projectAccess;
         controller.songUndoRedoService = songUndoRedoService;
         controller.songVersionService = songVersionService;
@@ -54,6 +59,13 @@ class SongBlockRestAccessTest {
 
         when(songBlockService.projectIdForBlock(BLOCK_ID)).thenReturn(PROJECT_ID);
         when(songBlockService.projectIdForDocument(DOCUMENT_ID)).thenReturn(PROJECT_ID);
+
+        // The edition resolution is beside the point for the permission gate, but the
+        // permitted paths resolve one, so return a simple version to avoid NPEs.
+        SongEdition edition = new SongEdition();
+        edition.setId(EDITION_ID);
+        when(songEditionService.requireForDocument(anyInt(), any())).thenReturn(edition);
+        when(songEditionService.ensureDefaultEdition(anyInt())).thenReturn(edition);
     }
 
     /** A project member who is not a writer: access yes, script edit no. */
@@ -85,8 +97,8 @@ class SongBlockRestAccessTest {
     void nonWriterCannotAppend() {
         givenNonWriterMember();
 
-        assertEquals(HttpStatus.FORBIDDEN, controller.append(DOCUMENT_ID, principal).getStatusCode());
-        verify(songBlockService, never()).appendBlock(anyInt());
+        assertEquals(HttpStatus.FORBIDDEN, controller.append(DOCUMENT_ID, EDITION_ID, principal).getStatusCode());
+        verify(songBlockService, never()).appendBlock(anyInt(), any());
     }
 
     @Test
@@ -121,14 +133,14 @@ class SongBlockRestAccessTest {
     void nonWriterCanList() {
         givenNonWriterMember();
 
-        assertEquals(HttpStatus.OK, controller.list(DOCUMENT_ID, principal).getStatusCode());
+        assertEquals(HttpStatus.OK, controller.list(DOCUMENT_ID, EDITION_ID, principal).getStatusCode());
     }
 
     @Test
     void nonMemberCannotList() {
         when(projectAccess.canAccessProject(anyInt(), any(Principal.class))).thenReturn(false);
 
-        assertEquals(HttpStatus.FORBIDDEN, controller.list(DOCUMENT_ID, principal).getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN, controller.list(DOCUMENT_ID, EDITION_ID, principal).getStatusCode());
     }
 
     @Test
@@ -156,7 +168,7 @@ class SongBlockRestAccessTest {
         when(projectAccess.canEditScript(anyInt(), any(Principal.class))).thenReturn(true);
         when(songBlockService.projectIdForDocument(DOCUMENT_ID)).thenReturn(null);
 
-        assertEquals(HttpStatus.FORBIDDEN, controller.append(DOCUMENT_ID, principal).getStatusCode());
-        verify(songBlockService, never()).appendBlock(anyInt());
+        assertEquals(HttpStatus.FORBIDDEN, controller.append(DOCUMENT_ID, EDITION_ID, principal).getStatusCode());
+        verify(songBlockService, never()).appendBlock(anyInt(), any());
     }
 }

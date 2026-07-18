@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.scripty.dto.Project;
 import com.scripty.dto.SongBlock;
+import com.scripty.dto.SongEdition;
 import com.scripty.dto.TextDocument;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.SongBlockRepository;
@@ -27,15 +28,19 @@ import org.junit.jupiter.api.Test;
 
 class SongBlockServiceImplTest {
 
+    private static final Integer EDITION_ID = 100;
+
     private final Map<Integer, SongBlock> store = new HashMap<>();
     private int nextId = 1;
 
     private SongBlockRepository songBlockRepository;
     private TextDocumentRepository textDocumentRepository;
     private ProjectRepository projectRepository;
+    private SongEditionService songEditionService;
     private SongBlockServiceImpl service;
 
     private TextDocument doc;
+    private SongEdition edition;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -45,6 +50,7 @@ class SongBlockServiceImplTest {
         songBlockRepository = mock(SongBlockRepository.class);
         textDocumentRepository = mock(TextDocumentRepository.class);
         projectRepository = mock(ProjectRepository.class);
+        songEditionService = mock(SongEditionService.class);
 
         Project project = new Project();
         project.setId(42);
@@ -54,18 +60,34 @@ class SongBlockServiceImplTest {
         doc.setDocumentType(TextDocument.TYPE_SONG);
         doc.setContent("");
 
+        // The active version of this song: default and published, so the impl
+        // mirrors its blocks onto the document content just like the old 1-arg API.
+        edition = new SongEdition();
+        edition.setId(EDITION_ID);
+        edition.setName("Main");
+        edition.setDefault(true);
+        edition.setPublished(true);
+        edition.setTextDocument(doc);
+
         when(textDocumentRepository.findByIdAndDeletedAtIsNull(7)).thenReturn(Optional.of(doc));
         when(textDocumentRepository.save(any(TextDocument.class))).thenAnswer(i -> i.getArgument(0));
         when(projectRepository.save(any(Project.class))).thenAnswer(i -> i.getArgument(0));
 
-        when(songBlockRepository.findByTextDocumentIdAndDeletedAtIsNullOrderByOrderAsc(anyInt())).thenAnswer(i -> {
-            Integer docId = i.getArgument(0);
+        when(songEditionService.requireForDocument(anyInt(), any())).thenReturn(edition);
+        when(songEditionService.ensureDefaultEdition(anyInt())).thenReturn(edition);
+
+        // A version's live lines: scoped to the edition and excluding the
+        // soft-deleted (trashed) ones, matching how newBlock stamps each block.
+        when(songBlockRepository.findBySongEditionIdAndDeletedAtIsNullOrderByOrderAsc(anyInt())).thenAnswer(i -> {
+            Integer editionId = i.getArgument(0);
             return store.values().stream()
-                    .filter(b -> b.getTextDocument() != null && docId.equals(b.getTextDocument().getId()))
+                    .filter(b -> b.getSongEdition() != null && editionId.equals(b.getSongEdition().getId()))
                     .filter(b -> b.getDeletedAt() == null)
                     .sorted(Comparator.comparingInt(SongBlock::getOrder))
                     .collect(Collectors.toList());
         });
+        // Recovery stays document-scoped: trashed lines from every version of
+        // the song surface in the "recently deleted lines" list.
         when(songBlockRepository.findByTextDocumentIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(anyInt())).thenAnswer(i -> {
             Integer docId = i.getArgument(0);
             return store.values().stream()
@@ -103,11 +125,12 @@ class SongBlockServiceImplTest {
             return null;
         }).when(songBlockRepository).delete(any(SongBlock.class));
 
-        service = new SongBlockServiceImpl(songBlockRepository, textDocumentRepository, projectRepository);
+        service = new SongBlockServiceImpl(
+                songBlockRepository, textDocumentRepository, projectRepository, songEditionService);
     }
 
     private List<String> contents() {
-        return service.getBlocks(7).stream()
+        return service.getBlocks(7, EDITION_ID).stream()
                 .map(SongBlockViewModel::getContent)
                 .collect(Collectors.toList());
     }
@@ -133,7 +156,7 @@ class SongBlockServiceImplTest {
     @Test
     void createBelowInsertsAfterOriginAndSavesOriginContent() {
         doc.setContent("a\nb");
-        List<SongBlockViewModel> blocks = service.getBlocks(7);
+        List<SongBlockViewModel> blocks = service.getBlocks(7, EDITION_ID);
         Integer firstId = blocks.get(0).getId();
 
         SongBlock created = service.createBelow(firstId, "a-edited");
@@ -146,7 +169,7 @@ class SongBlockServiceImplTest {
     @Test
     void deleteKeepsAtLeastOneBlock() {
         doc.setContent("only line");
-        Integer id = service.getBlocks(7).get(0).getId();
+        Integer id = service.getBlocks(7, EDITION_ID).get(0).getId();
 
         service.deleteBlock(id);
 
@@ -159,7 +182,7 @@ class SongBlockServiceImplTest {
     @Test
     void deleteRemovesTargetAndRenumbers() {
         doc.setContent("a\nb\nc");
-        List<SongBlockViewModel> blocks = service.getBlocks(7);
+        List<SongBlockViewModel> blocks = service.getBlocks(7, EDITION_ID);
         Integer middle = blocks.get(1).getId();
 
         service.deleteBlock(middle);
@@ -171,7 +194,7 @@ class SongBlockServiceImplTest {
     @Test
     void deleteSoftDeletesSoLineIsRecoverable() {
         doc.setContent("a\nb\nc");
-        Integer middle = service.getBlocks(7).get(1).getId();
+        Integer middle = service.getBlocks(7, EDITION_ID).get(1).getId();
 
         service.deleteBlock(middle);
 
@@ -189,7 +212,7 @@ class SongBlockServiceImplTest {
     @Test
     void restoreBringsLineBackAtEndOfSong() {
         doc.setContent("a\nb\nc");
-        Integer middle = service.getBlocks(7).get(1).getId();
+        Integer middle = service.getBlocks(7, EDITION_ID).get(1).getId();
         service.deleteBlock(middle);
 
         Integer restoredDoc = service.restoreBlock(middle);
@@ -204,7 +227,7 @@ class SongBlockServiceImplTest {
     @Test
     void restoreOfLiveOrMissingBlockReturnsNull() {
         doc.setContent("a\nb");
-        Integer live = service.getBlocks(7).get(0).getId();
+        Integer live = service.getBlocks(7, EDITION_ID).get(0).getId();
 
         assertEquals(null, service.restoreBlock(live));
         assertEquals(null, service.restoreBlock(9999));
@@ -213,7 +236,7 @@ class SongBlockServiceImplTest {
     @Test
     void purgeRemovesTrashedLineForGood() {
         doc.setContent("a\nb");
-        Integer second = service.getBlocks(7).get(1).getId();
+        Integer second = service.getBlocks(7, EDITION_ID).get(1).getId();
         service.deleteBlock(second);
         assertEquals(1, deletedCount());
 
@@ -227,7 +250,7 @@ class SongBlockServiceImplTest {
     @Test
     void purgeOfLiveBlockReturnsNullAndKeepsIt() {
         doc.setContent("a\nb");
-        Integer live = service.getBlocks(7).get(0).getId();
+        Integer live = service.getBlocks(7, EDITION_ID).get(0).getId();
 
         assertEquals(null, service.purgeBlock(live));
         assertEquals(List.of("a", "b"), contents());
@@ -236,7 +259,7 @@ class SongBlockServiceImplTest {
     @Test
     void moveDownReordersBlocks() {
         doc.setContent("a\nb\nc");
-        List<SongBlockViewModel> blocks = service.getBlocks(7);
+        List<SongBlockViewModel> blocks = service.getBlocks(7, EDITION_ID);
         Integer first = blocks.get(0).getId();
 
         service.moveDown(first);
@@ -247,7 +270,7 @@ class SongBlockServiceImplTest {
     @Test
     void moveUpAtTopIsNoOp() {
         doc.setContent("a\nb");
-        Integer first = service.getBlocks(7).get(0).getId();
+        Integer first = service.getBlocks(7, EDITION_ID).get(0).getId();
 
         service.moveUp(first);
 
@@ -257,7 +280,7 @@ class SongBlockServiceImplTest {
     @Test
     void moveToDropsBlockAtRequestedIndex() {
         doc.setContent("a\nb\nc\nd");
-        Integer first = service.getBlocks(7).get(0).getId();
+        Integer first = service.getBlocks(7, EDITION_ID).get(0).getId();
 
         service.moveTo(first, 2);
 
@@ -268,7 +291,7 @@ class SongBlockServiceImplTest {
     @Test
     void moveToDragsBlockUpwards() {
         doc.setContent("a\nb\nc");
-        Integer last = service.getBlocks(7).get(2).getId();
+        Integer last = service.getBlocks(7, EDITION_ID).get(2).getId();
 
         service.moveTo(last, 0);
 
@@ -278,7 +301,7 @@ class SongBlockServiceImplTest {
     @Test
     void moveToClampsOutOfRangePosition() {
         doc.setContent("a\nb\nc");
-        Integer first = service.getBlocks(7).get(0).getId();
+        Integer first = service.getBlocks(7, EDITION_ID).get(0).getId();
 
         service.moveTo(first, 99);
 
@@ -288,7 +311,7 @@ class SongBlockServiceImplTest {
     @Test
     void moveToSamePositionIsNoOp() {
         doc.setContent("a\nb\nc");
-        Integer middle = service.getBlocks(7).get(1).getId();
+        Integer middle = service.getBlocks(7, EDITION_ID).get(1).getId();
 
         service.moveTo(middle, 1);
 
@@ -298,7 +321,7 @@ class SongBlockServiceImplTest {
     @Test
     void editContentUpdatesDocumentJoin() {
         doc.setContent("a\nb");
-        Integer second = service.getBlocks(7).get(1).getId();
+        Integer second = service.getBlocks(7, EDITION_ID).get(1).getId();
 
         service.editContent(second, "b-new");
 
@@ -309,14 +332,14 @@ class SongBlockServiceImplTest {
     @Test
     void appendAddsEmptyBlockAtEnd() {
         doc.setContent("a");
-        service.appendBlock(7);
+        service.appendBlock(7, EDITION_ID);
 
         assertEquals(List.of("a", ""), contents());
     }
 
     @Test
     void projectAndDocumentLookupsResolve() {
-        Integer id = service.getBlocks(7).get(0).getId();
+        Integer id = service.getBlocks(7, EDITION_ID).get(0).getId();
         assertEquals(42, service.projectIdForBlock(id));
         assertEquals(42, service.projectIdForDocument(7));
         assertEquals(7, service.documentIdForBlock(id));

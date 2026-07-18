@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v119';
+const CACHE_NAME = 'scripty-cache-v120';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/offline-project.html',

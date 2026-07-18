@@ -42,11 +42,14 @@ public class SongVersionController {
     }
 
     @RequestMapping(value = "/list")
-    public String list(@RequestParam Integer documentId, Model model, Principal principal) {
+    public String list(@RequestParam Integer documentId,
+                       @RequestParam(required = false) Integer editionId,
+                       Model model,
+                       Principal principal) {
         if (!canAccessDocument(documentId, principal)) {
             return "redirect:/project/list";
         }
-        SongVersionHistoryViewModel viewModel = songVersionService.getVersionHistoryViewModel(documentId);
+        SongVersionHistoryViewModel viewModel = songVersionService.getVersionHistoryViewModel(documentId, editionId);
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("canEditScript", canEditDocument(documentId, principal));
         return "song/versionHistory";
@@ -54,6 +57,7 @@ public class SongVersionController {
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public String create(@RequestParam Integer documentId,
+                         @RequestParam(required = false) Integer editionId,
                          @RequestParam(defaultValue = "") String label,
                          Principal principal) {
         if (!canEditDocument(documentId, principal)) {
@@ -62,19 +66,23 @@ public class SongVersionController {
         if (label == null || label.isBlank()) {
             label = "Version";
         }
-        songVersionService.createVersion(documentId, label);
-        return "redirect:/song/version/list?documentId=" + documentId;
+        songVersionService.createVersion(documentId, editionId, label);
+        return listRedirect(documentId, editionId);
     }
 
     @RequestMapping(value = "/restore", method = RequestMethod.POST)
     public String restore(@RequestParam Integer id,
                           @RequestParam Integer documentId,
+                          @RequestParam(required = false) Integer editionId,
                           Principal principal) {
         if (!canEditDocument(documentId, principal)) {
             return "redirect:/project/list";
         }
-        if (!songVersionService.restoreVersionForDocument(id, documentId)) {
-            return "redirect:/song/version/list?documentId=" + documentId;
+        if (!songVersionService.restoreVersionForDocument(id, editionId)) {
+            return listRedirect(documentId, editionId);
+        }
+        if (editionId != null) {
+            return "redirect:/project/documents/edit?id=" + documentId + "&editionId=" + editionId;
         }
         return "redirect:/project/documents/edit?id=" + documentId;
     }
@@ -82,11 +90,19 @@ public class SongVersionController {
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public String delete(@RequestParam Integer id,
                          @RequestParam Integer documentId,
+                         @RequestParam(required = false) Integer editionId,
                          Principal principal) {
         if (!canEditDocument(documentId, principal)) {
             return "redirect:/project/list";
         }
-        songVersionService.deleteVersionForDocument(id, documentId);
+        songVersionService.deleteVersionForDocument(id, editionId);
+        return listRedirect(documentId, editionId);
+    }
+
+    private String listRedirect(Integer documentId, Integer editionId) {
+        if (editionId != null) {
+            return "redirect:/song/version/list?documentId=" + documentId + "&editionId=" + editionId;
+        }
         return "redirect:/song/version/list?documentId=" + documentId;
     }
 }

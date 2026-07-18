@@ -17,6 +17,7 @@ import java.security.Principal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.ExtendedModelMap;
 
@@ -47,7 +48,9 @@ class SongVersionAccessTest {
         restController.songVersionService = songVersionService;
         restController.songBlockService = songBlockService;
         restController.projectAccess = projectAccess;
-        restController.assembler = new SongVersionResourceAssembler();
+        SongVersionResourceAssembler assembler = new SongVersionResourceAssembler();
+        ReflectionTestUtils.setField(assembler, "projectAccess", projectAccess);
+        restController.assembler = assembler;
 
         when(songBlockService.projectIdForDocument(DOCUMENT_ID)).thenReturn(PROJECT_ID);
         when(songVersionService.getVersionHistoryViewModel(DOCUMENT_ID))

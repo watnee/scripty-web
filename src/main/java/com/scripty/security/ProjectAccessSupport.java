@@ -10,6 +10,8 @@ import com.scripty.service.UserService;
 import java.security.Principal;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
@@ -39,6 +41,46 @@ public class ProjectAccessSupport {
             return null;
         }
         return userService.readByUsername(principal.getName());
+    }
+
+    /**
+     * The authenticated user taken from the security context, or {@code null}
+     * when the request is anonymous. Resource assemblers build HAL links outside
+     * a controller method, so they have no {@link Principal} to pass in — they
+     * read it here instead of each re-implementing the same context lookup.
+     */
+    public User currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        return currentUser(authentication);
+    }
+
+    /**
+     * Whether the current (context) user may edit the given project's script.
+     * The assembler counterpart of {@link #canEditScript(Integer, User)}, so a
+     * gated mutation link is emitted only when the client could actually use it.
+     */
+    public boolean canEditScriptForCurrentUser(Integer projectId) {
+        if (projectId == null) {
+            return false;
+        }
+        User user = currentUser();
+        return user != null && canEditScript(projectId, user);
+    }
+
+    /**
+     * Whether the current (context) user may edit the given block, used when a
+     * block resource has no owning project id to hand (see
+     * {@link #canEditBlock(Integer, User)}).
+     */
+    public boolean canEditBlockForCurrentUser(Integer blockId) {
+        if (blockId == null) {
+            return false;
+        }
+        User user = currentUser();
+        return user != null && canEditBlock(blockId, user);
     }
 
     public boolean canAccessProject(Integer projectId, User user) {

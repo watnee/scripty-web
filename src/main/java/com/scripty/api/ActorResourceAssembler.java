@@ -15,6 +15,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -107,7 +108,9 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
 
     private org.springframework.hateoas.Link[] actorLinks(int id, Integer projectId, Boolean hasHeadshot) {
         List<org.springframework.hateoas.Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(ActorRestController.class).show(id, null)).withSelfRel());
+        links.add(linkTo(methodOn(ActorRestController.class).show(id, null)).withSelfRel()
+                .andAffordance(afford(methodOn(ActorRestController.class).update(id, null, null, null)))
+                .andAffordance(afford(methodOn(ActorRestController.class).delete(id, null))));
         links.add(linkTo(methodOn(ActorRestController.class).list(projectId, null)).withRel(ApiRel.ACTORS));
         links.add(linkTo(methodOn(ActorRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE));
         links.add(linkTo(methodOn(ActorRestController.class).delete(id, null)).withRel(ApiRel.DELETE));

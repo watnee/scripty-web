@@ -32,12 +32,12 @@ public class TeamRestController {
     @Autowired
     TeamResourceAssembler teamResourceAssembler;
 
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<TeamResource>>> list() {
         return ResponseEntity.ok(teamResourceAssembler.toTeamCollection(teamService.list()));
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> create(
             @Valid @RequestBody TeamCommandModel commandModel, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -54,7 +54,7 @@ public class TeamRestController {
         }
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<TeamResource>> show(@PathVariable Integer id) {
         Team team = teamService.read(id);
         if (team == null) {
@@ -63,7 +63,7 @@ public class TeamRestController {
         return ResponseEntity.ok(teamResourceAssembler.toModel(team));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody TeamCommandModel commandModel,
@@ -84,7 +84,7 @@ public class TeamRestController {
         }
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<TeamResource>> delete(@PathVariable Integer id) {
         Team team = teamService.read(id);
         if (team == null) {

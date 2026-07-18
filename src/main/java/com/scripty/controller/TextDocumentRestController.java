@@ -60,7 +60,7 @@ public class TextDocumentRestController {
     TextDocumentResourceAssembler assembler;
 
     /** Songs and notes for a project. Optional {@code type} filters to SONG or NOTES. */
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<TextDocumentResource>>> list(
             @RequestParam Integer projectId,
             @RequestParam(required = false) String type,
@@ -83,7 +83,7 @@ public class TextDocumentRestController {
         return ResponseEntity.ok(assembler.toCollection(documents, projectId, type));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<TextDocumentResource>> show(@PathVariable Integer id, Principal principal) {
         TextDocumentViewModel viewModel = textDocumentService.getViewModel(id, currentUser(principal));
         if (viewModel == null) {
@@ -92,7 +92,7 @@ public class TextDocumentRestController {
         return ResponseEntity.ok(assembler.toModel(viewModel));
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> create(
             @Valid @RequestBody TextDocumentCommandModel commandModel,
             BindingResult bindingResult,
@@ -107,7 +107,7 @@ public class TextDocumentRestController {
         return saveAndRespond(commandModel, currentUser(principal), true);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody TextDocumentCommandModel commandModel,
@@ -143,7 +143,7 @@ public class TextDocumentRestController {
         return ResponseEntity.ok(resource);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> delete(
             @PathVariable Integer id,
             @RequestParam(required = false) Integer projectId,
@@ -163,7 +163,7 @@ public class TextDocumentRestController {
 
     /** Reassigns the sort order of a project's songs/notes to the supplied order. */
     @RequestMapping(value = "/reorder", method = RequestMethod.POST,
-            consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> reorder(
             @RequestParam Integer projectId,
             @RequestBody(required = false) ReorderRequest request,
@@ -187,7 +187,7 @@ public class TextDocumentRestController {
     }
 
     /** Copies a song or note into a new document titled "… (copy)". */
-    @RequestMapping(value = "/{id}/duplicate", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}/duplicate", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> duplicate(
             @PathVariable Integer id,
             @RequestParam(required = false) Integer projectId,
@@ -214,7 +214,7 @@ public class TextDocumentRestController {
 
     /** Switches a document between song and note (SONG or NOTES). */
     @RequestMapping(value = "/{id}/change-type", method = RequestMethod.POST,
-            consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> changeType(
             @PathVariable Integer id,
             @RequestBody(required = false) ChangeTypeRequest request,
@@ -241,7 +241,7 @@ public class TextDocumentRestController {
     }
 
     /** Inserts a document's content into the screenplay as blocks. */
-    @RequestMapping(value = "/{id}/insert", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}/insert", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> insert(
             @PathVariable Integer id,
             @RequestBody(required = false) InsertDocumentRequest request,
@@ -269,7 +269,7 @@ public class TextDocumentRestController {
 
     /** Emails a song's lyrics to a recipient (songs only). */
     @RequestMapping(value = "/{id}/share-email", method = RequestMethod.POST,
-            consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> shareEmail(
             @PathVariable Integer id,
             @RequestBody ShareEmailRequest request,
@@ -292,7 +292,7 @@ public class TextDocumentRestController {
     }
 
     /** Imports an uploaded file as a new song or note. */
-    @RequestMapping(value = "/import", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/import", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> importFile(
             @RequestParam Integer projectId,
             @RequestParam(defaultValue = "SONG") String type,

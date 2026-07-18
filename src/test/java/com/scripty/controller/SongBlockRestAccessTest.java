@@ -22,6 +22,7 @@ import java.security.Principal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * The REST song editor is a second door onto the same lyrics, so it has to
@@ -47,7 +48,9 @@ class SongBlockRestAccessTest {
         controller.projectAccess = projectAccess;
         controller.songUndoRedoService = songUndoRedoService;
         controller.songVersionService = songVersionService;
-        controller.assembler = new SongBlockResourceAssembler();
+        SongBlockResourceAssembler assembler = new SongBlockResourceAssembler();
+        ReflectionTestUtils.setField(assembler, "projectAccess", projectAccess);
+        controller.assembler = assembler;
 
         when(songBlockService.projectIdForBlock(BLOCK_ID)).thenReturn(PROJECT_ID);
         when(songBlockService.projectIdForDocument(DOCUMENT_ID)).thenReturn(PROJECT_ID);

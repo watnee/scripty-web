@@ -13,10 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -51,9 +50,14 @@ public class SongVersionResourceAssembler {
                 resources.add(toModel(version, documentId, projectId));
             }
         }
+        Link self = linkTo(methodOn(SongVersionRestController.class).list(documentId, null))
+                .withSelfRel();
+        if (canEdit(projectId)) {
+            self = self.andAffordance(afford(methodOn(SongVersionRestController.class)
+                    .create(documentId, null, null)));
+        }
         CollectionModel<EntityModel<SongVersionResource>> collection = CollectionModel.of(resources)
-                .add(linkTo(methodOn(SongVersionRestController.class).list(documentId, null))
-                        .withSelfRel())
+                .add(self)
                 .add(linkTo(methodOn(TextDocumentRestController.class).show(documentId, null))
                         .withRel(ApiRel.SONG))
                 .add(linkTo(methodOn(SongBlockRestController.class).list(documentId, null))
@@ -81,8 +85,14 @@ public class SongVersionResourceAssembler {
 
     private Link[] versionLinks(int id, int documentId, int projectId) {
         List<Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(SongVersionRestController.class).show(id, documentId, null))
-                .withSelfRel());
+        Link self = linkTo(methodOn(SongVersionRestController.class).show(id, documentId, null))
+                .withSelfRel();
+        if (canEdit(projectId)) {
+            self = self
+                    .andAffordance(afford(methodOn(SongVersionRestController.class).restore(id, documentId, null)))
+                    .andAffordance(afford(methodOn(SongVersionRestController.class).delete(id, documentId, null)));
+        }
+        links.add(self);
         links.add(linkTo(methodOn(SongVersionRestController.class).list(documentId, null))
                 .withRel(ApiRel.VERSIONS));
         if (canEdit(projectId)) {
@@ -101,10 +111,6 @@ public class SongVersionResourceAssembler {
     }
 
     private boolean canEdit(Integer projectId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (projectId == null || authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        return projectAccess.canEditScript(projectId, projectAccess.currentUser(authentication));
+        return projectAccess.canEditScriptForCurrentUser(projectId);
     }
 }

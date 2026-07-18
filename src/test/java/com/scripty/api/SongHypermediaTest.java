@@ -64,7 +64,7 @@ class SongHypermediaTest {
     }
 
     private void givenCanEdit(boolean canEdit) {
-        when(projectAccess.canEditScript(eq(PROJECT_ID), any(User.class))).thenReturn(canEdit);
+        when(projectAccess.canEditScriptForCurrentUser(PROJECT_ID)).thenReturn(canEdit);
     }
 
     private SongVersionHistoryViewModel versionHistory() {
@@ -150,6 +150,34 @@ class SongHypermediaTest {
         assertTrue(hasLink(block, ApiRel.SONG));
         assertTrue(hasLink(block, ApiRel.VERSIONS));
         assertTrue(hasLink(block, ApiRel.PROJECT));
+    }
+
+    /**
+     * A method-derived self link always carries one implicit affordance (its own
+     * GET), so gating is measured by the writer's self link exposing strictly
+     * more — the update/delete (item) and append (collection) HAL-FORMS
+     * templates that a read-only member never sees.
+     */
+    @Test
+    void writerSelfLinksExposeMoreAffordancesThanReadOnly() {
+        givenCanEdit(false);
+        CollectionModel<EntityModel<SongBlockResource>> readOnly =
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+        int readOnlyBlockAffordances = readOnly.getContent().iterator().next()
+                .getRequiredLink(IanaLinkRelations.SELF).getAffordances().size();
+        int readOnlyCollectionAffordances =
+                readOnly.getRequiredLink(IanaLinkRelations.SELF).getAffordances().size();
+
+        givenCanEdit(true);
+        CollectionModel<EntityModel<SongBlockResource>> writer =
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+        int writerBlockAffordances = writer.getContent().iterator().next()
+                .getRequiredLink(IanaLinkRelations.SELF).getAffordances().size();
+        int writerCollectionAffordances =
+                writer.getRequiredLink(IanaLinkRelations.SELF).getAffordances().size();
+
+        assertTrue(writerBlockAffordances > readOnlyBlockAffordances);
+        assertTrue(writerCollectionAffordances > readOnlyCollectionAffordances);
     }
 
     @Test

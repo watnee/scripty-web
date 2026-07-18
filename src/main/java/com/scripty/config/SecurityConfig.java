@@ -124,6 +124,8 @@ public class SecurityConfig {
                         "/favicon.ico",
                         "/css/**",
                         "/js/**",
+                        // Static API link-relation docs pointed at by HAL curies.
+                        "/docs/**",
                         "/dictionaries/**",
                         "/fonts/**",
                         "/login",

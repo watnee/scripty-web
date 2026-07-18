@@ -13,10 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -64,8 +63,12 @@ public class SongBlockResourceAssembler {
         for (SongBlockViewModel block : blocks) {
             resources.add(toModel(block, projectId));
         }
+        Link self = linkTo(methodOn(SongBlockRestController.class).list(documentId, null)).withSelfRel();
+        if (canEdit(projectId)) {
+            self = self.andAffordance(afford(methodOn(SongBlockRestController.class).append(documentId, null)));
+        }
         CollectionModel<EntityModel<SongBlockResource>> collection = CollectionModel.of(resources)
-                .add(linkTo(methodOn(SongBlockRestController.class).list(documentId, null)).withSelfRel())
+                .add(self)
                 .add(documentLinks(documentId, projectId, false));
         if (canEdit(projectId)) {
             collection.add(linkTo(methodOn(SongBlockRestController.class).append(documentId, null))
@@ -98,7 +101,14 @@ public class SongBlockResourceAssembler {
 
     private Link[] blockLinks(Integer id, Integer documentId, Integer projectId) {
         List<Link> links = new ArrayList<>();
-        links.add(linkTo(methodOn(SongBlockRestController.class).show(id, null)).withSelfRel());
+        Link self = linkTo(methodOn(SongBlockRestController.class).show(id, null)).withSelfRel();
+        if (canEdit(projectId)) {
+            // HAL-FORMS clients read the how (method + fields) off the self link.
+            self = self
+                    .andAffordance(afford(methodOn(SongBlockRestController.class).update(id, null, null)))
+                    .andAffordance(afford(methodOn(SongBlockRestController.class).delete(id, null)));
+        }
+        links.add(self);
         if (canEdit(projectId)) {
             links.add(linkTo(methodOn(SongBlockRestController.class).update(id, null, null))
                     .withRel(ApiRel.UPDATE));
@@ -140,10 +150,6 @@ public class SongBlockResourceAssembler {
     }
 
     private boolean canEdit(Integer projectId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (projectId == null || authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        return projectAccess.canEditScript(projectId, projectAccess.currentUser(authentication));
+        return projectAccess.canEditScriptForCurrentUser(projectId);
     }
 }

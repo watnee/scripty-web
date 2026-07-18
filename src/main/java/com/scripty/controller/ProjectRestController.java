@@ -51,7 +51,7 @@ public class ProjectRestController {
     @Autowired
     ProjectArchiveService projectArchiveService;
 
-    @RequestMapping(method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> list(Principal principal) {
         User user = projectAccess.currentUser(principal);
         ProjectListViewModel viewModel;
@@ -73,7 +73,7 @@ public class ProjectRestController {
      * list's star). Returns the refreshed project collection so the caller
      * sees the updated default flags.
      */
-    @RequestMapping(value = "/{id}/toggleDefault", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}/toggleDefault", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> toggleDefault(
             @PathVariable Integer id, Principal principal) {
         User user = projectAccess.currentUser(principal);
@@ -91,7 +91,7 @@ public class ProjectRestController {
         return list(principal);
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> create(
             @Valid @RequestBody CreateProjectCommandModel commandModel, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -108,7 +108,7 @@ public class ProjectRestController {
      * Imports a project from a .scripty.json archive (mirrors the web list's
      * Import button). The uploaded file is the "file" multipart part.
      */
-    @RequestMapping(value = "/import", method = RequestMethod.POST, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/import", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> importProject(@RequestPart("file") MultipartFile file) {
         try {
             Project project = projectArchiveService.importProject(file);
@@ -121,7 +121,7 @@ public class ProjectRestController {
         }
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<ProjectResource>> show(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessProject(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -133,7 +133,7 @@ public class ProjectRestController {
         return ResponseEntity.ok(projectResourceAssembler.toModel(viewModel));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody EditProjectCommandModel commandModel,
@@ -150,7 +150,7 @@ public class ProjectRestController {
         return ResponseEntity.ok(projectResourceAssembler.toModel(project));
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaTypes.HAL_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<ProjectResource>> delete(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessProject(id, principal)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

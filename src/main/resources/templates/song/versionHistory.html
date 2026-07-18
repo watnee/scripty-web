@@ -10,35 +10,52 @@
 </head>
 <body hx-boost="true">
     <div th:replace="~{fragments/nav :: nav('')}"></div>
-    <main>
-        <nav aria-label="Breadcrumb">
-            <ol>
-                <li><a th:href="@{/project/list}">Projects</a></li>
-                <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}">Project</a></li>
-                <li><a th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}">Songs</a></li>
-                <li><a th:href="@{/project/documents/edit(id=${viewModel.documentId})}" th:text="${viewModel.songTitle}">Song</a></li>
-                <li aria-current="page">Snapshot History</li>
-            </ol>
-        </nav>
-        <h1>Snapshot History</h1>
-        <p class="version-history-intro">
-            Snapshots of <strong th:text="${viewModel.songTitle}">this song</strong>.
-            Auto-saves update in place about every 10 minutes when the lyrics change. Restoring creates a “Before restore” snapshot first.
-        </p>
+    <main class="text-documents-page">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/show(id=${viewModel.projectId})}" th:text="${viewModel.projectTitle}">Project</a></li>
+                    <li><a th:href="@{/project/documents/songs(projectId=${viewModel.projectId})}">Songs</a></li>
+                    <li><a th:href="@{/project/documents/edit(id=${viewModel.documentId})}" th:text="${viewModel.songTitle}">Song</a></li>
+                    <li aria-current="page">History</li>
+                </ol>
+            </nav>
+        </div>
+
+        <header class="version-history-header">
+            <span class="version-history-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 3v5h5"></path>
+                    <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
+                    <path d="M12 7v5l3 2"></path>
+                </svg>
+            </span>
+            <div>
+                <h1>Snapshot History</h1>
+                <p class="version-history-intro">
+                    Saved states of <strong th:text="${viewModel.songTitle}">this song</strong>.
+                    Auto-saves update in place about every 10 minutes when the lyrics change. Restoring creates a “Before restore” snapshot first.
+                </p>
+            </div>
+        </header>
+
         <form th:if="${canEditScript == null or canEditScript}"
               th:action="@{/song/version/create}" method="POST" hx-boost="false" class="version-save-form">
             <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
-            <label>
-                Label
-                <input type="text" name="label" placeholder="e.g. Draft 2, Before rewrite..." style="min-width: 300px">
+            <label class="version-save-label">
+                <span class="version-save-label-text">Snapshot label</span>
+                <input type="text" name="label" placeholder="e.g. Draft 2, Before rewrite…">
             </label>
-            <button type="submit">Save Current Snapshot</button>
+            <button type="submit" class="project-list-action-btn project-list-action-btn--primary">Save current snapshot</button>
         </form>
-        <th:block th:if="${#lists.isEmpty(viewModel.versions)}">
-            <p th:if="${canEditScript == null or canEditScript}">No versions saved yet. Save a version to create a snapshot you can restore later.</p>
-            <p th:unless="${canEditScript == null or canEditScript}">No versions saved yet.</p>
-        </th:block>
-        <table th:if="${not #lists.isEmpty(viewModel.versions)}" class="version-history-table">
+        <div class="version-history-empty" th:if="${#lists.isEmpty(viewModel.versions)}">
+            <p class="version-history-empty-title">No snapshots yet</p>
+            <p class="muted" th:if="${canEditScript == null or canEditScript}">Save a snapshot above to capture the lyrics as they are now — you can restore it any time.</p>
+            <p class="muted" th:unless="${canEditScript == null or canEditScript}">No snapshots have been saved for this song.</p>
+        </div>
+        <div class="version-history-table-wrap" th:if="${not #lists.isEmpty(viewModel.versions)}">
+        <table class="version-history-table">
             <thead>
                 <tr>
                     <th>Label</th>
@@ -51,8 +68,8 @@
             </thead>
             <tbody>
                 <tr th:each="version : ${viewModel.versions}" th:classappend="${version.autoSave} ? 'version-row-autosave'">
-                    <td>
-                        <span th:text="${version.label}"></span>
+                    <td class="version-label-cell">
+                        <span class="version-label-text" th:text="${version.label}"></span>
                         <span th:if="${version.autoSave}" class="version-badge">auto</span>
                     </td>
                     <td class="nowrap" th:text="${#temporals.format(version.createdAt, 'MMM d, yyyy h:mm a')}"></td>
@@ -66,22 +83,29 @@
                     </td>
                     <td th:text="${version.title}"></td>
                     <td th:text="${version.lineCount}"></td>
-                    <td class="nowrap" th:if="${canEditScript == null or canEditScript}">
-                        <form th:action="@{/song/version/restore}" method="POST" hx-boost="false" style="display: inline">
-                            <input type="hidden" name="id" th:value="${version.id}" />
-                            <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
-                            <button type="submit" role="button" _="on click if not confirm('Restore this snapshot? The current lyrics will be replaced. A “Before restore” snapshot will be saved first.') halt">Restore</button>
-                        </form>
-                        <form th:action="@{/song/version/delete}" method="POST" hx-boost="false" style="display: inline">
-                            <input type="hidden" name="id" th:value="${version.id}" />
-                            <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
-                            <button type="submit" role="button" _="on click if not confirm('Delete this snapshot?') halt">Delete</button>
-                        </form>
+                    <td class="nowrap version-actions-cell" th:if="${canEditScript == null or canEditScript}">
+                        <div class="version-actions">
+                            <form th:action="@{/song/version/restore}" method="POST" hx-boost="false">
+                                <input type="hidden" name="id" th:value="${version.id}" />
+                                <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
+                                <button type="submit" role="button"
+                                        class="project-list-action-btn project-list-action-btn--secondary"
+                                        _="on click if not confirm('Restore this snapshot? The current lyrics will be replaced. A “Before restore” snapshot will be saved first.') halt">Restore</button>
+                            </form>
+                            <form th:action="@{/song/version/delete}" method="POST" hx-boost="false">
+                                <input type="hidden" name="id" th:value="${version.id}" />
+                                <input type="hidden" name="documentId" th:value="${viewModel.documentId}" />
+                                <button type="submit" role="button"
+                                        class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn"
+                                        _="on click if not confirm('Delete this snapshot?') halt">Delete</button>
+                            </form>
+                        </div>
                     </td>
                     <td class="nowrap" th:unless="${canEditScript == null or canEditScript}"></td>
                 </tr>
             </tbody>
         </table>
+        </div>
     </main>
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>

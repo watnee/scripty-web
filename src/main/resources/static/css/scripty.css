@@ -2617,14 +2617,6 @@ button.script-edition-publish-toggle:focus-visible {
     margin-top: 1rem;
 }
 
-.version-save-form {
-    margin-bottom: 2rem;
-    display: flex;
-    gap: 0.5rem;
-    align-items: end;
-    flex-wrap: wrap;
-}
-
 .version-changes {
     min-width: 14rem;
     max-width: 28rem;
@@ -2663,6 +2655,152 @@ button.script-edition-publish-toggle:focus-visible {
     border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
     border-radius: 0.25rem;
     vertical-align: middle;
+}
+
+/* --- Snapshot history page ---------------------------------------------- */
+.version-history-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    margin: 0.35rem 0 1.5rem;
+}
+
+.version-history-mark {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    margin-top: 0.15rem;
+    border-radius: 0.85rem;
+    color: var(--td-song, #0f766e);
+    background: color-mix(in srgb, var(--td-song, #0f766e) 14%, transparent);
+}
+
+.version-history-header h1 {
+    margin: 0 0 0.35rem;
+    line-height: 1.15;
+}
+
+.version-history-header .version-history-intro {
+    margin: 0;
+    max-width: 42rem;
+}
+
+.version-save-form {
+    margin: 0 0 1.75rem;
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--td-line, #cbd5e1);
+    border-radius: calc(var(--border-radius, 0.5rem) + 2px);
+    background: var(--td-surface, color-mix(in srgb, var(--box-bg, #fff) 88%, var(--accent, #475569) 12%));
+}
+
+.version-save-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1 1 18rem;
+    min-width: 0;
+    margin: 0;
+}
+
+.version-save-label-text {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--muted-fg, #64748b);
+}
+
+.version-save-form input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+.version-history-empty {
+    margin: 0.35rem 0 0;
+    padding: 1.6rem 1.25rem;
+    border: 1px dashed var(--td-line, #cbd5e1);
+    border-radius: calc(var(--border-radius, 0.5rem) + 2px);
+    background: color-mix(in srgb, var(--box-bg, #fff) 92%, var(--accent, #475569) 8%);
+    text-align: center;
+}
+
+.version-history-empty-title {
+    margin: 0 0 0.35rem;
+    font-weight: 600;
+}
+
+.version-history-empty .muted {
+    margin: 0 auto;
+    max-width: 30rem;
+}
+
+.version-history-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.version-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    font-size: 0.92rem;
+}
+
+.version-history-table thead th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-fg, #64748b);
+    border-bottom: 2px solid var(--td-line, #cbd5e1);
+    white-space: nowrap;
+}
+
+.version-history-table tbody td {
+    padding: 0.7rem 0.75rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--td-line, #cbd5e1) 60%, transparent);
+    vertical-align: top;
+}
+
+.version-history-table tbody tr:hover td {
+    background: color-mix(in srgb, var(--accent, #475569) 5%, transparent);
+}
+
+.version-label-cell {
+    min-width: 8rem;
+}
+
+.version-label-text {
+    font-weight: 600;
+}
+
+.version-row-autosave .version-label-text {
+    font-weight: 500;
+}
+
+.version-actions-cell {
+    text-align: right;
+}
+
+.version-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    justify-content: flex-end;
+}
+
+.version-actions form {
+    display: inline;
+    margin: 0;
 }
 
 h1 > small a[role="button"]:focus,
@@ -6398,6 +6536,25 @@ body:has(main.text-documents-page) > main.text-documents-page {
     text-align: center;
 }
 
+.text-documents-empty-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: 0 auto 0.85rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--td-song) 14%, transparent);
+    color: var(--td-song);
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.text-documents-empty-mark--draft {
+    background: color-mix(in srgb, var(--td-draft) 14%, transparent);
+    color: var(--td-draft);
+}
+
 .text-documents-empty-title {
     margin: 0 0 0.35rem;
     font-weight: 600;
@@ -7040,6 +7197,15 @@ button.song-block-menu-toggle.block-drag-menu-toggle.nav-dropdown-toggle:active 
     outline: none !important;
     box-shadow: none !important;
     background: transparent;
+}
+
+.song-block-textarea::placeholder {
+    color: var(--muted-fg, #64748b);
+    opacity: 0.7;
+    font-style: italic;
+    /* missing.css sets `::placeholder { text-align: end }`; !important is needed
+       to keep the lyric hint at the left, where typed lyrics actually appear. */
+    text-align: left !important;
 }
 
 /* No focus tint: a block is highlighted only when it is selected (see the block
@@ -8932,6 +9098,9 @@ kbd {
     }
     form[action*="/version/create"] label {
         width: 100%;
+        /* Reset the row-layout flex-basis (18rem) so it is not applied as a
+           288px height once the form stacks into a column. */
+        flex: 0 0 auto !important;
     }
     form[action*="/version/create"] input {
         min-width: 0 !important;

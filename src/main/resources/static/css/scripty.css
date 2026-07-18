@@ -12002,7 +12002,10 @@ html.scripty-page-view-mode .project-script .block-row[data-block-type="PAGE_BRE
 html.scripty-page-view-mode .project-script .block-content .script-character-name,
 html.scripty-page-view-mode .project-script .block-content.block-type-character .script-block-text,
 html.scripty-page-view-mode .project-script .block-content.block-type-character .reader-visible-text,
-html.scripty-page-view-mode .project-script .block-content.block-type-character .block-input-textarea {
+html.scripty-page-view-mode .project-script .block-content.block-type-character .block-input-textarea,
+html.scripty-page-view-mode .project-script .block-content.block-type-dual_dialogue .script-block-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-dual_dialogue .reader-visible-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-dual_dialogue .block-input-textarea {
     display: block;
     text-align: left;
     text-transform: uppercase;
@@ -12038,6 +12041,14 @@ html.scripty-page-view-mode .project-script .block-content.block-type-parentheti
     width: auto;
     text-align: left;
     font-style: italic;
+}
+
+/* The " ^" dual-dialogue marker is an editing affordance, not script text —
+   the page sheet is a proof of the printed page, so drop it here just as
+   print CSS and the PDF export do. */
+html.scripty-page-view-mode .project-script .block-content.block-type-dual_dialogue .script-block-text:not(textarea)::after,
+html.scripty-page-view-mode .project-script .block-content.block-type-dual_dialogue .reader-visible-text::after {
+    content: none;
 }
 
 html.scripty-page-view-mode .project-script .block-content.block-type-transition,
@@ -12730,13 +12741,17 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     font-style: italic;
 }
 
-.block-content.block-type-parenthetical .script-block-text:not(textarea)::before,
-.block-content.block-type-parenthetical .reader-visible-text::before {
+/* Parentheticals are stored bare and get their "(" / ")" here. Blocks whose
+   content already carries literal parens are tagged data-has-parens="true" by
+   parenthetical-parens.js and skipped, so the screen matches what the PDF and
+   other exports emit instead of doubling up. */
+.block-content.block-type-parenthetical:not([data-has-parens="true"]) .script-block-text:not(textarea)::before,
+.block-content.block-type-parenthetical:not([data-has-parens="true"]) .reader-visible-text::before {
     content: "(";
 }
 
-.block-content.block-type-parenthetical .script-block-text:not(textarea)::after,
-.block-content.block-type-parenthetical .reader-visible-text::after {
+.block-content.block-type-parenthetical:not([data-has-parens="true"]) .script-block-text:not(textarea)::after,
+.block-content.block-type-parenthetical:not([data-has-parens="true"]) .reader-visible-text::after {
     content: ")";
 }
 
@@ -13962,7 +13977,9 @@ body.focus-mode #project-lists-dropdown {
         display: block !important;
         width: var(--screenplay-action-width) !important;
         max-width: var(--screenplay-action-width) !important;
-        margin: 0 0 0.05in !important;
+        /* Rhythm is carried by margin-top below, matching page view and the
+           PDF export: one blank line between elements. */
+        margin: 1em 0 0 !important;
         padding: 0 !important;
         font-family: "Courier New", Courier, monospace !important;
         font-size: 12pt !important;
@@ -14069,6 +14086,17 @@ body.focus-mode #project-lists-dropdown {
     .block-content.block-type-dual_dialogue .script-block-text:not(textarea)::after,
     .block-content.block-type-dual_dialogue .reader-visible-text::after {
         content: none !important;
+    }
+
+    /* Vertical rhythm, mirroring page view: dialogue and parentheticals hug the
+       character cue above them, and scene headings get a fuller break. */
+    .block-content.block-type-dialogue,
+    .block-content.block-type-parenthetical {
+        margin-top: 0 !important;
+    }
+
+    .block-content.block-type-scene {
+        margin-top: 2em !important;
     }
 
     .block-content.block-type-dialogue {

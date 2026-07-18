@@ -188,7 +188,9 @@ public class FdxExportServiceImpl implements FdxExportService {
                 return true;
             }
             case Block.TYPE_LYRICS -> {
-                appendParagraph(xml, "Action", block, false, content, startsNewPage);
+                // FDX has no lyrics element, so lyrics ride along as Action —
+                // but italic, matching every other exporter.
+                appendParagraph(xml, "Action", block, false, content, startsNewPage, true);
                 return true;
             }
             case Block.TYPE_CHARACTER -> {
@@ -359,6 +361,12 @@ public class FdxExportServiceImpl implements FdxExportService {
 
     private static void appendParagraph(StringBuilder xml, String fdxType, Block block,
                                         boolean centered, String content, boolean startsNewPage) {
+        appendParagraph(xml, fdxType, block, centered, content, startsNewPage, false);
+    }
+
+    private static void appendParagraph(StringBuilder xml, String fdxType, Block block,
+                                        boolean centered, String content, boolean startsNewPage,
+                                        boolean baseItalic) {
         xml.append("    <Paragraph Type=\"").append(fdxType).append("\"");
         if (centered) {
             xml.append(" Alignment=\"Center\"");
@@ -367,12 +375,17 @@ public class FdxExportServiceImpl implements FdxExportService {
             xml.append(" StartsNewPage=\"Yes\"");
         }
         xml.append(">\n");
-        appendTextRuns(xml, content == null ? "" : content, block, "      ");
+        appendTextRuns(xml, content == null ? "" : content, block, "      ", baseItalic);
         xml.append("    </Paragraph>\n");
     }
 
     private static void appendTextRuns(StringBuilder xml, String content, Block block, String indent) {
-        String style = styleAttribute(block);
+        appendTextRuns(xml, content, block, indent, false);
+    }
+
+    private static void appendTextRuns(StringBuilder xml, String content, Block block, String indent,
+                                       boolean baseItalic) {
+        String style = styleAttribute(block, baseItalic);
         String normalized = content == null ? "" : content.replace("\r\n", "\n").replace('\r', '\n');
         xml.append(indent).append("<Text");
         if (!style.isEmpty()) {
@@ -382,14 +395,18 @@ public class FdxExportServiceImpl implements FdxExportService {
     }
 
     private static String styleAttribute(Block block) {
+        return styleAttribute(block, false);
+    }
+
+    private static String styleAttribute(Block block, boolean baseItalic) {
         if (block == null) {
-            return "";
+            return baseItalic ? "Italic" : "";
         }
         StringBuilder style = new StringBuilder();
         if (block.isTextBold()) {
             style.append("Bold");
         }
-        if (block.isTextItalic()) {
+        if (baseItalic || block.isTextItalic()) {
             if (!style.isEmpty()) {
                 style.append('+');
             }
@@ -405,28 +422,56 @@ public class FdxExportServiceImpl implements FdxExportService {
     }
 
     private static void appendElementSettings(StringBuilder xml) {
-        // Minimal ElementSettings so Final Draft recognizes standard element types.
-        appendElementSetting(xml, "General", "Left", "1.25", "7.25", "");
-        appendElementSetting(xml, "Scene Heading", "Left", "1.25", "7.25", "AllCaps");
-        appendElementSetting(xml, "Action", "Left", "1.25", "7.25", "");
-        appendElementSetting(xml, "Character", "Left", "3.75", "7.25", "AllCaps");
-        appendElementSetting(xml, "Parenthetical", "Left", "3.25", "5.25", "");
-        appendElementSetting(xml, "Dialogue", "Left", "2.56", "6.25", "");
-        appendElementSetting(xml, "Transition", "Right", "5.25", "6.75", "AllCaps");
-        appendElementSetting(xml, "Shot", "Left", "1.25", "7.25", "AllCaps");
+        // ElementSettings so Final Draft recognizes standard element types and
+        // lays them out like the PDF/DOCX exports. FDX indents are measured from
+        // the page's left edge, not from the margin, so they run through
+        // ScreenplayLayout.fromPageEdge(). These previously implied 1.25in
+        // symmetric margins, shifting the whole body a quarter inch left of the
+        // 1.5in gutter every other surface uses.
+        double textLeft = ScreenplayLayout.fromPageEdge(ScreenplayLayout.ACTION_INDENT_IN);
+        double textRight = ScreenplayLayout.rightTextEdgeFromPageEdge();
+        double characterLeft = ScreenplayLayout.fromPageEdge(ScreenplayLayout.CHARACTER_INDENT_IN);
+        double parenLeft = ScreenplayLayout.fromPageEdge(ScreenplayLayout.PARENTHETICAL_INDENT_IN);
+        double dialogueLeft = ScreenplayLayout.fromPageEdge(ScreenplayLayout.DIALOGUE_INDENT_IN);
+
+        double element = ScreenplayLayout.ELEMENT_SPACING_PT;
+        double scene = ScreenplayLayout.SCENE_SPACING_PT;
+        double speechGroup = ScreenplayLayout.SPEECH_GROUP_SPACING_PT;
+
+        appendElementSetting(xml, "General", "Left", textLeft, textRight, "", element);
+        appendElementSetting(xml, "Scene Heading", "Left", textLeft, textRight, "AllCaps", scene);
+        appendElementSetting(xml, "Action", "Left", textLeft, textRight, "", element);
+        appendElementSetting(xml, "Character", "Left", characterLeft, textRight, "AllCaps", element);
+        appendElementSetting(xml, "Parenthetical", "Left", parenLeft,
+                parenLeft + ScreenplayLayout.PARENTHETICAL_WIDTH_IN, "", speechGroup);
+        appendElementSetting(xml, "Dialogue", "Left", dialogueLeft,
+                dialogueLeft + ScreenplayLayout.DIALOGUE_WIDTH_IN, "", speechGroup);
+        appendElementSetting(xml, "Transition", "Right", textLeft, textRight, "AllCaps", element);
+        appendElementSetting(xml, "Shot", "Left", textLeft, textRight, "AllCaps", element);
     }
 
     private static void appendElementSetting(StringBuilder xml, String type, String alignment,
-                                             String left, String right, String fontStyle) {
+                                             double left, double right, String fontStyle,
+                                             double spaceBefore) {
         xml.append("  <ElementSettings Type=\"").append(type).append("\">\n");
-        xml.append("    <FontSpec Font=\"Courier Final Draft\" Size=\"12\" Style=\"")
+        xml.append("    <FontSpec Font=\"Courier Final Draft\" Size=\"")
+                .append(trimNumber(ScreenplayLayout.FONT_SIZE_PT)).append("\" Style=\"")
                 .append(fontStyle).append("\"/>\n");
         xml.append("    <ParagraphSpec Alignment=\"").append(alignment)
-                .append("\" LeftIndent=\"").append(left)
-                .append("\" RightIndent=\"").append(right)
-                .append("\" SpaceBefore=\"12\" Spacing=\"1\" StartsNewPage=\"No\"/>\n");
+                .append("\" LeftIndent=\"").append(trimNumber(left))
+                .append("\" RightIndent=\"").append(trimNumber(right))
+                .append("\" SpaceBefore=\"").append(trimNumber(spaceBefore))
+                .append("\" Spacing=\"1\" StartsNewPage=\"No\"/>\n");
         xml.append("    <Behavior PaginateAs=\"").append(type).append("\"/>\n");
         xml.append("  </ElementSettings>\n");
+    }
+
+    /** Formats a measurement without a trailing ".0", which Final Draft dislikes. */
+    private static String trimNumber(double value) {
+        if (value == Math.rint(value)) {
+            return Integer.toString((int) Math.rint(value));
+        }
+        return String.valueOf(Math.round(value * 100.0) / 100.0);
     }
 
     private static String escapeXml(String text) {

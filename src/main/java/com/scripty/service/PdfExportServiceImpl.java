@@ -29,18 +29,28 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PdfExportServiceImpl implements PdfExportService {
 
-    private static final float LEFT_MARGIN = 108f;   // 1.5in
-    private static final float RIGHT_MARGIN = 72f;   // 1in
-    private static final float TOP_MARGIN = 72f;     // 1in
-    private static final float BOTTOM_MARGIN = 72f;  // 1in
+    // Geometry is shared with the DOCX and FDX exporters — see ScreenplayLayout.
+    private static final float LEFT_MARGIN = ScreenplayLayout.pt(ScreenplayLayout.MARGIN_LEFT_IN);
+    private static final float RIGHT_MARGIN = ScreenplayLayout.pt(ScreenplayLayout.MARGIN_RIGHT_IN);
+    private static final float TOP_MARGIN = ScreenplayLayout.pt(ScreenplayLayout.MARGIN_TOP_IN);
+    private static final float BOTTOM_MARGIN = ScreenplayLayout.pt(ScreenplayLayout.MARGIN_BOTTOM_IN);
 
-    private static final float CHARACTER_INDENT = 158.4f;      // 2.2in
-    private static final float DIALOGUE_INDENT = 72f;          // 1in
-    private static final float DIALOGUE_RIGHT = 108f;          // keep dialogue ~3.5in wide
-    private static final float PARENTHETICAL_INDENT = 108f;    // 1.5in
-    private static final float PARENTHETICAL_RIGHT = 216f;     // ~2in wide
+    private static final float CHARACTER_INDENT = ScreenplayLayout.pt(ScreenplayLayout.CHARACTER_INDENT_IN);
+    private static final float DIALOGUE_INDENT = ScreenplayLayout.pt(ScreenplayLayout.DIALOGUE_INDENT_IN);
+    private static final float PARENTHETICAL_INDENT = ScreenplayLayout.pt(ScreenplayLayout.PARENTHETICAL_INDENT_IN);
 
-    private static final float ELEMENT_SPACING = 3.6f; // ~0.05in
+    // OpenPDF takes an inset from the right margin rather than a width.
+    private static final float DIALOGUE_RIGHT = ScreenplayLayout.pt(
+            ScreenplayLayout.TEXT_WIDTH_IN - ScreenplayLayout.DIALOGUE_INDENT_IN - ScreenplayLayout.DIALOGUE_WIDTH_IN);
+    private static final float PARENTHETICAL_RIGHT = ScreenplayLayout.pt(
+            ScreenplayLayout.TEXT_WIDTH_IN - ScreenplayLayout.PARENTHETICAL_INDENT_IN
+                    - ScreenplayLayout.PARENTHETICAL_WIDTH_IN);
+
+    private static final float ELEMENT_SPACING = (float) ScreenplayLayout.ELEMENT_SPACING_PT;
+    private static final float SCENE_SPACING = (float) ScreenplayLayout.SCENE_SPACING_PT;
+    private static final float SPEECH_GROUP_SPACING = (float) ScreenplayLayout.SPEECH_GROUP_SPACING_PT;
+    private static final float LEADING = (float) ScreenplayLayout.LINE_HEIGHT_PT;
+    private static final float FONT_SIZE = (float) ScreenplayLayout.FONT_SIZE_PT;
 
     @Autowired
     private BlockRepository blockRepository;
@@ -73,6 +83,15 @@ public class PdfExportServiceImpl implements PdfExportService {
                 ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
                 : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
 
+        try {
+            return toPdf(project, blocks);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to export project " + projectId + " as PDF", e);
+        }
+    }
+
+    /** Package-private seam so the layout can be asserted without a Spring context. */
+    static byte[] toPdf(Project project, List<Block> blocks) throws Exception {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.LETTER, LEFT_MARGIN, RIGHT_MARGIN, TOP_MARGIN, BOTTOM_MARGIN);
             PdfWriter.getInstance(document, out);
@@ -97,8 +116,6 @@ public class PdfExportServiceImpl implements PdfExportService {
 
             document.close();
             return out.toByteArray();
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to export project " + projectId + " as PDF", e);
         }
     }
 
@@ -199,15 +216,15 @@ public class PdfExportServiceImpl implements PdfExportService {
         switch (type) {
             case Block.TYPE_SCENE, Block.TYPE_SHOT -> {
                 Paragraph p = styledParagraph(caps.apply(content.trim(), type), styleFlags(block, Font.BOLD));
-                p.setSpacingBefore(ELEMENT_SPACING);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingBefore(SCENE_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
             case Block.TYPE_ACTION, Block.TYPE_TEXT, Block.TYPE_LYRICS -> {
                 int flags = styleFlags(block, Block.TYPE_LYRICS.equals(type) ? Font.ITALIC : Font.NORMAL);
                 Paragraph p = styledParagraph(content, flags);
                 p.setSpacingBefore(ELEMENT_SPACING);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
             case Block.TYPE_CHARACTER, Block.TYPE_DUAL_DIALOGUE -> {
@@ -225,8 +242,8 @@ public class PdfExportServiceImpl implements PdfExportService {
                 Paragraph p = styledParagraph(content, styleFlags(block, Font.NORMAL));
                 p.setIndentationLeft(DIALOGUE_INDENT);
                 p.setIndentationRight(DIALOGUE_RIGHT);
-                p.setSpacingBefore(0f);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingBefore(SPEECH_GROUP_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
             case Block.TYPE_PARENTHETICAL -> {
@@ -237,7 +254,7 @@ public class PdfExportServiceImpl implements PdfExportService {
                 Paragraph p = styledParagraph(paren, styleFlags(block, Font.ITALIC));
                 p.setIndentationLeft(PARENTHETICAL_INDENT);
                 p.setIndentationRight(PARENTHETICAL_RIGHT);
-                p.setSpacingBefore(0f);
+                p.setSpacingBefore(SPEECH_GROUP_SPACING);
                 p.setSpacingAfter(0f);
                 document.add(p);
             }
@@ -245,14 +262,14 @@ public class PdfExportServiceImpl implements PdfExportService {
                 Paragraph p = styledParagraph(caps.apply(content.trim(), type), styleFlags(block, Font.NORMAL));
                 p.setAlignment(Element.ALIGN_RIGHT);
                 p.setSpacingBefore(ELEMENT_SPACING);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
             case Block.TYPE_CENTERED -> {
                 Paragraph p = styledParagraph(content, styleFlags(block, Font.NORMAL));
                 p.setAlignment(Element.ALIGN_CENTER);
                 p.setSpacingBefore(ELEMENT_SPACING);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
             case Block.TYPE_PAGE_BREAK -> {
@@ -262,7 +279,7 @@ public class PdfExportServiceImpl implements PdfExportService {
             default -> {
                 Paragraph p = styledParagraph(content, styleFlags(block, Font.NORMAL));
                 p.setSpacingBefore(ELEMENT_SPACING);
-                p.setSpacingAfter(ELEMENT_SPACING);
+                p.setSpacingAfter(0f);
                 document.add(p);
             }
         }
@@ -273,7 +290,7 @@ public class PdfExportServiceImpl implements PdfExportService {
         Font font = courier(style);
         Paragraph paragraph = new Paragraph();
         paragraph.setFont(font);
-        paragraph.setLeading(12f);
+        paragraph.setLeading(LEADING);
         if (text == null || text.isEmpty()) {
             paragraph.add(new Chunk(" ", font));
             return paragraph;
@@ -304,7 +321,7 @@ public class PdfExportServiceImpl implements PdfExportService {
     }
 
     private static Font courier(int style) {
-        return FontFactory.getFont(FontFactory.COURIER, 12f, style);
+        return FontFactory.getFont(FontFactory.COURIER, FONT_SIZE, style);
     }
 
     private static String firstNonBlank(String a, String b) {

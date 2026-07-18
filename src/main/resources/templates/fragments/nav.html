@@ -4075,11 +4075,116 @@
                 form.submit();
             }
 
+            // Format changes only paint CSS classes onto .block-content, so we can
+            // apply them in the DOM and save quietly instead of reloading the whole
+            // page — the full navigation is what made the toolbar flicker on every
+            // align / bold / font / highlight pick.
+            var FMT_ALIGN = {
+                LEFT: 'block-text-align-left',
+                CENTER: 'block-text-align-center',
+                RIGHT: 'block-text-align-right'
+            };
+            var FMT_FONT = {
+                COURIER_PRIME: 'block-font-courier-prime',
+                ARIAL: 'block-font-arial',
+                TIMES_NEW_ROMAN: 'block-font-times-new-roman'
+            };
+            var FMT_STYLE = {
+                BOLD: 'block-text-bold',
+                ITALIC: 'block-text-italic',
+                UNDERLINE: 'block-text-underline'
+            };
+            var FMT_HIGHLIGHTS = ['YELLOW', 'GREEN', 'BLUE', 'RED', 'GRAY'];
+
+            function bulkTargetContents(ids) {
+                var contents = [];
+                String(ids || '').split(',').forEach(function(rawId) {
+                    var id = rawId.trim();
+                    if (!id) return;
+                    var row = document.querySelector(
+                        '.block-row[data-block-id="' + id + '"], tr[data-block-id="' + id + '"]'
+                    );
+                    var content = row ? row.querySelector('.block-content') : null;
+                    if (content) contents.push(content);
+                });
+                return contents;
+            }
+
+            function replaceClassFromMap(content, map, value) {
+                Object.keys(map).forEach(function(key) {
+                    content.classList.remove(map[key]);
+                });
+                var cls = map[String(value || '').toUpperCase()];
+                if (cls) content.classList.add(cls);
+            }
+
+            // Paint a format change onto the target blocks. Returns true when the
+            // action is a pure style change we can mirror (so runBulkAction can skip
+            // the reload); false leaves structural actions on the navigation path.
+            function applyFormatOptimistic(action, fields) {
+                var contents = bulkTargetContents(fields.ids);
+                if (contents.length === 0) return false;
+                if (action === '/block/bulkSetAlign') {
+                    contents.forEach(function(c) { replaceClassFromMap(c, FMT_ALIGN, fields.align); });
+                    return true;
+                }
+                if (action === '/block/bulkSetFont') {
+                    contents.forEach(function(c) { replaceClassFromMap(c, FMT_FONT, fields.font); });
+                    return true;
+                }
+                if (action === '/block/bulkSetHighlight') {
+                    var hl = String(fields.highlight || '').toUpperCase();
+                    contents.forEach(function(c) {
+                        FMT_HIGHLIGHTS.forEach(function(h) {
+                            c.classList.remove('block-highlight-' + h.toLowerCase());
+                        });
+                        if (hl) c.classList.add('block-highlight-' + hl.toLowerCase());
+                    });
+                    return true;
+                }
+                if (action === '/block/bulkToggleStyle') {
+                    var styleCls = FMT_STYLE[String(fields.style || '').toUpperCase()];
+                    if (!styleCls) return false;
+                    // Mirror the server's per-block toggle: flip each block on its own.
+                    contents.forEach(function(c) { c.classList.toggle(styleCls); });
+                    return true;
+                }
+                return false;
+            }
+
+            function backgroundBulkPost(action, fields) {
+                var body = new URLSearchParams();
+                Object.keys(fields).forEach(function(name) { body.append(name, fields[name]); });
+                // window.fetch is CSRF-patched in csrf.js. redirect:'manual' keeps us
+                // from downloading the whole /project/show page the endpoint 302s to —
+                // the opaque redirect is the success signal.
+                return fetch(action, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                    body: body.toString(),
+                    credentials: 'same-origin',
+                    redirect: 'manual'
+                }).then(function(res) {
+                    if (res.type === 'opaqueredirect' || res.ok) return;
+                    throw new Error('bulk format save failed: ' + res.status);
+                });
+            }
+
             function runBulkAction(fieldsByAction) {
                 runWhenHtmxIdle(function() {
                     flushOpenBlockEdits(function() {
                         runWhenHtmxIdle(function() {
-                            submitBulkPostForm(fieldsByAction.action, fieldsByAction.fields);
+                            var action = fieldsByAction.action;
+                            var fields = fieldsByAction.fields;
+                            if (window.fetch && applyFormatOptimistic(action, fields)) {
+                                backgroundBulkPost(action, fields).catch(function() {
+                                    // Save failed: fall back to the full navigation so the
+                                    // user is never left with an unpersisted optimistic change.
+                                    submitBulkPostForm(action, fields);
+                                });
+                                return;
+                            }
+                            submitBulkPostForm(action, fields);
                         });
                     }, fieldsByAction.flushBlockIds || null);
                 });

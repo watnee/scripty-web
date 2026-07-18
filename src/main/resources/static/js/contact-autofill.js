@@ -134,14 +134,17 @@
             return;
         }
 
-        // The endpoint speaks HAL, so the contacts arrive under _embedded. A
-        // bare array is still accepted in case a cached response predates that.
+        // The endpoint speaks HAL, so the contacts arrive under _embedded. The
+        // curie provider namespaces embedded rels the same way it namespaces
+        // links, so the key is prefixed; the bare key is read as a fallback for
+        // a cached response from before the API spoke HAL, or if the curie is
+        // ever dropped.
         function unwrap(payload) {
             if (Array.isArray(payload)) return payload;
-            if (payload && payload._embedded && Array.isArray(payload._embedded.contactSuggestions)) {
-                return payload._embedded.contactSuggestions;
-            }
-            return [];
+            var embedded = payload && payload._embedded;
+            if (!embedded) return [];
+            var contacts = embedded['scripty:contactSuggestions'] || embedded.contactSuggestions;
+            return Array.isArray(contacts) ? contacts : [];
         }
 
         var seq = ++entry.seq;

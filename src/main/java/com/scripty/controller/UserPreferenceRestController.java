@@ -52,13 +52,17 @@ public class UserPreferenceRestController {
             @RequestBody CapitalizationPreferencesPayload body,
             Principal principal) {
         CapitalizationPreferences current = userService.readCapitalizationPreferences(principal.getName());
-        // Partial updates: an absent key keeps its stored value, so the toggle
-        // can post just the type the user clicked.
+        // Partial updates: an absent field keeps its stored value, so the toggle
+        // can post just the type the user clicked. An empty body is the limiting
+        // case of that — every field absent — so it reads as a no-op rather than
+        // needing a null check per field.
+        CapitalizationPreferencesPayload posted =
+                body != null ? body : new CapitalizationPreferencesPayload();
         CapitalizationPreferences next = new CapitalizationPreferences(
-                flag(body == null ? null : body.getScene(), current.scene()),
-                flag(body == null ? null : body.getCharacter(), current.character()),
-                flag(body == null ? null : body.getTransition(), current.transition()),
-                flag(body == null ? null : body.getShot(), current.shot()));
+                flag(posted.getScene(), current.scene()),
+                flag(posted.getCharacter(), current.character()),
+                flag(posted.getTransition(), current.transition()),
+                flag(posted.getShot(), current.shot()));
         return ResponseEntity.ok(capitalizationModel(
                 userService.updateCapitalizationPreferences(principal.getName(), next)));
     }

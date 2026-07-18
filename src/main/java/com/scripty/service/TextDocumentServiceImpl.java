@@ -820,10 +820,33 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         return project;
     }
 
-    private List<CreateBlockBelowCommandModel> splitContentIntoBlocks(TextDocument doc, String blockType) {
+    /**
+     * Matches the plain-text list and heading prefixes the notes editor inserts:
+     * a bullet, an ordered marker, or one to six hashes, plus any indent.
+     */
+    private static final java.util.regex.Pattern NOTE_PREFIX =
+            java.util.regex.Pattern.compile("^\\s*(?:[-*]\\s+|\\d+\\.\\s+|#{1,6}\\s+)");
+
+    /**
+     * Drops a note's list/heading prefix. Those markers are an editing
+     * affordance rather than content, so carrying them into a script block
+     * would print the bullet on the page.
+     */
+    private String stripNotePrefix(String line) {
+        if (line == null || line.isEmpty()) {
+            return line;
+        }
+        return NOTE_PREFIX.matcher(line).replaceFirst("");
+    }
+
+    // Package-private for test access.
+    List<CreateBlockBelowCommandModel> splitContentIntoBlocks(TextDocument doc, String blockType) {
         List<CreateBlockBelowCommandModel> blocks = new ArrayList<>();
         String content = doc.getContent() != null ? doc.getContent() : "";
         String[] lines = content.split("\\R", -1);
+        // Songs never get the notes editor's prefix affordances, so a dash at the
+        // start of a lyric is the author's own and must survive.
+        boolean stripPrefixes = !TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType());
 
         boolean hasNonEmpty = false;
         for (String line : lines) {
@@ -840,7 +863,8 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         for (String line : lines) {
             // Skip trailing empty lines only; keep blank lines in the middle as empty lyric/action rows.
             CreateBlockBelowCommandModel cmd = new CreateBlockBelowCommandModel();
-            cmd.setContent(line != null ? line : "");
+            String text = line != null ? line : "";
+            cmd.setContent(stripPrefixes ? stripNotePrefix(text) : text);
             cmd.setType(blockType);
             if (doc.getId() != null) {
                 cmd.setSourceDocumentId(doc.getId());

@@ -10852,6 +10852,36 @@ html.safari-reader-view .block-content .reader-visible-text {
     color: var(--accent, #475569);
 }
 
+.script-reader-header {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 1.25rem 1.25rem 0;
+    font-family: system-ui, sans-serif;
+    font-size: 0.9rem;
+}
+
+.script-reader-header .script-reader-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--accent, #475569);
+    text-decoration: none;
+}
+
+.script-reader-header .script-reader-back:hover {
+    text-decoration: underline;
+}
+
+.script-reader-page main {
+    padding-top: 1rem;
+}
+
+@media print {
+    .script-reader-header {
+        display: none;
+    }
+}
+
 .project-create-scene {
     text-align: center;
     width: 100%;

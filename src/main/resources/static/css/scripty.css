@@ -6903,6 +6903,7 @@ body:has(main.text-documents-page) > main.text-documents-page {
 }
 
 .text-document-card {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -6932,6 +6933,84 @@ body:has(main.text-documents-page) > main.text-documents-page {
     border-left: 3px solid color-mix(in srgb, var(--td-draft) 65%, var(--td-line));
 }
 
+/* Drag handle + export checkbox share one explicit inline-flex row: missing.css
+   will not line up bare inline-blocks against the card title on its own. */
+.text-document-card-lead {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    vertical-align: middle;
+    flex: 0 0 auto;
+    padding-top: 0.15rem;
+}
+
+/* Deliberately NOT the shared .drag-handle class: html.scripty-hide-block-select
+   hides that, and every rule that reveals it again is scoped to .block-row / tr,
+   so a song card would lose its handle for good. */
+.text-document-drag-handle {
+    user-select: none;
+    -webkit-user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    color: color-mix(in srgb, var(--fg, #000) 40%, transparent);
+    font-size: 0.95rem;
+    line-height: 1;
+    letter-spacing: -2px;
+    cursor: grab;
+    opacity: 0.55;
+    transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.text-document-card:hover .text-document-drag-handle,
+.text-document-drag-handle:focus-visible {
+    opacity: 1;
+    color: var(--fg, #000);
+    background: color-mix(in srgb, var(--fg, #000) 7%, transparent);
+}
+
+.text-document-drag-handle:active {
+    cursor: grabbing;
+}
+
+.text-document-card.dragging {
+    opacity: 0.4;
+}
+
+/* Drop indicator, matching the song-block and screenplay-block drags. */
+.text-document-card.drop-before::before,
+.text-document-card.drop-after::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent, #475569);
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px var(--box-bg, #ffffff), 0 0 0 3px color-mix(in srgb, var(--accent, #475569) 25%, transparent);
+    pointer-events: none;
+    z-index: 3;
+}
+
+.text-document-card.drop-before::before {
+    top: -3px;
+}
+
+.text-document-card.drop-after::after {
+    bottom: -3px;
+}
+
+.text-documents-list--saving .text-document-drag-handle {
+    cursor: progress;
+    opacity: 0.35;
+}
+
 /* Export selection checkbox. Explicit inline-flex so the box lines up with the
    card title rather than sitting on the text baseline. */
 .text-document-select {
@@ -6941,6 +7020,12 @@ body:has(main.text-documents-page) > main.text-documents-page {
     vertical-align: middle;
     flex: 0 0 auto;
     padding-top: 0.15rem;
+}
+
+/* Inside the lead row the wrapper already handles alignment; the standalone
+   padding would push the checkbox off the handle's centre line. */
+.text-document-card-lead .text-document-select {
+    padding-top: 0;
 }
 
 .text-document-select-checkbox {

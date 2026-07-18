@@ -40,6 +40,7 @@
         var showPins = localStorage.getItem('scripty-show-block-pins-project-' + projectId);
         var showSelect = localStorage.getItem('scripty-show-block-select-project-' + projectId);
         var showElementLabels = localStorage.getItem('scripty-show-block-element-labels-project-' + projectId);
+        var showNotes = localStorage.getItem('scripty-show-block-notes-project-' + projectId);
         var blockEditLockedKey = editionId
             ? 'scripty-block-edit-locked-edition-' + editionId
             : 'scripty-block-edit-locked-project-' + projectId;
@@ -52,12 +53,14 @@
         showPins = showPins === null ? false : showPins !== 'false';
         showSelect = showSelect === null ? false : showSelect !== 'false';
         showElementLabels = showElementLabels === null ? false : showElementLabels !== 'false';
+        showNotes = showNotes === null ? true : showNotes !== 'false';
         window.scriptyBlockEditLocked = blockEditLocked;
         var root = document.documentElement;
         root.classList.toggle('scripty-hide-block-bookmarks', !showBookmarks);
         root.classList.toggle('scripty-hide-block-pins', !showPins);
         root.classList.toggle('scripty-hide-block-select', !showSelect);
         root.classList.toggle('scripty-hide-block-element-labels', !showElementLabels);
+        root.classList.toggle('scripty-hide-block-notes', !showNotes);
         root.classList.toggle('scripty-block-edit-locked', blockEditLocked);
         root.classList.toggle('scripty-script-readonly', !canEditScript);
         try { localStorage.removeItem('scripty-toolbar-hidden'); } catch (e) {}
@@ -390,6 +393,19 @@
                             title="Show element labels in blocks">
                         <span th:replace="~{fragments/elementLabelIcon :: toolbarIcon}"></span>
                         <span>Element labels</span>
+                    </button>
+                    <button id="nav-notes-toggle"
+                            type="button"
+                            class="nav-dropdown-item notes-filter-toggle"
+                            role="menuitemcheckbox"
+                            aria-pressed="false"
+                            aria-checked="true"
+                            aria-label="Hide comments"
+                            title="Hide comments">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <span>Comments</span>
                     </button>
                     <div class="nav-dropdown-divider" role="separator"></div>
                     <a class="nav-dropdown-item"

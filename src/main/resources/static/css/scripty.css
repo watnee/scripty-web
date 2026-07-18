@@ -10855,6 +10855,16 @@ html.scripty-page-view-mode .project-script .block-content.block-type-transition
     text-transform: uppercase;
 }
 
+/* Scene headings (sluglines) are flush-left in screenplay format — override the
+   centered house style used in continuous mode (.project-script .scene-header). */
+html.scripty-page-view-mode .project-script .block-content.block-type-scene,
+html.scripty-page-view-mode .project-script .block-content.block-type-scene .scene-header,
+html.scripty-page-view-mode .project-script .block-content.block-type-scene .script-block-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-scene .reader-visible-text,
+html.scripty-page-view-mode .project-script .block-content.block-type-scene .block-input-textarea {
+    text-align: left;
+}
+
 html.scripty-page-view-mode body.focus-mode .project-script {
     max-width: none;
 }

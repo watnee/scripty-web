@@ -59,11 +59,9 @@
                     </button>
                     <a th:if="${hasTrashedProjects}"
                        th:href="@{/project/trash}"
-                       role="button"
-                       title="Restore a recently deleted project">Deleted Projects<span
-                            th:if="${trashedCount > 0}"
-                            class="project-list-trash-count"
-                            th:text="${trashedCount}">0</span></a>
+                       class="project-list-action-btn project-list-action-btn--secondary"
+                       title="Restore a recently deleted project"
+                       th:text="${trashedCount > 0} ? 'Trash (' + ${trashedCount} + ')' : 'Trash'">Trash</a>
                     <a th:href="@{/project/create}" role="button" class="project-list-create-btn">
                         <span class="project-list-create-icon" aria-hidden="true">+</span>
                         New Project

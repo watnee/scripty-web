@@ -3773,24 +3773,6 @@ tr.filtered-out,
     flex-shrink: 0;
 }
 
-/* Count of recoverable projects, shown on the Deleted Projects link. */
-.project-list-trash-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.15rem;
-    height: 1.15rem;
-    margin-left: 0.4rem;
-    padding: 0 0.35rem;
-    border-radius: 999px;
-    background: rgba(100, 116, 139, 0.18);
-    color: inherit;
-    font-size: 0.72rem;
-    font-weight: 700;
-    line-height: 1;
-    vertical-align: middle;
-}
-
 .project-list-import-hint {
     max-width: 22rem;
     text-align: right;

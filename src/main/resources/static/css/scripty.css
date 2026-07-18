@@ -7101,6 +7101,7 @@ body:has(main.text-documents-page) > main.text-documents-page {
     display: flex;
     flex-direction: column;
     gap: 0.1rem;
+    padding-top: 1.5rem;
     /* Number the lyric lines. A pure-CSS counter renumbers itself when the
        list is swapped by HTMX or reordered by drag, with no server or JS help. */
     counter-reset: song-line;

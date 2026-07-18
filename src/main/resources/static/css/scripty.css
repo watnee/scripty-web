@@ -4078,6 +4078,14 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
 }
 
 /* Styling for nested Lists dropdown inside View dropdown */
+
+/* missing.css applies `overflow: clip` to every [role="menu"], which clips the
+   nested Lists submenu that flies out to the right, past the View menu's box.
+   Let the View menu overflow so its submenu is painted and clickable. */
+.project-tools-group .view-dropdown .nav-dropdown-menu.view-menu {
+    overflow: visible;
+}
+
 .project-tools-group .view-menu .lists-dropdown {
     position: relative;
     width: 100%;

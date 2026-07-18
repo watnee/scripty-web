@@ -89,7 +89,7 @@ public class DocxExportServiceImpl implements DocxExportService {
                 : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
 
         try {
-            return toDocx(project, blocks);
+            return toDocx(project, blocks, caps);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to export project " + projectId + " as DOCX", e);
         }
@@ -97,6 +97,10 @@ public class DocxExportServiceImpl implements DocxExportService {
 
     /** Package-private seam so the layout can be asserted without a Spring context. */
     static byte[] toDocx(Project project, List<Block> blocks) throws Exception {
+        return toDocx(project, blocks, CapitalizationPreferences.ALL);
+    }
+
+    static byte[] toDocx(Project project, List<Block> blocks, CapitalizationPreferences caps) throws Exception {
         try (XWPFDocument document = new XWPFDocument();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             configurePage(document);

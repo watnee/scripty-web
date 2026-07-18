@@ -57,9 +57,10 @@ class ExportCapitalizationTest {
 
         String css = stylesheet(epub);
 
-        // Scene loses its transform; character keeps it.
-        assertTrue(css.contains(".scene { font-weight: bold; margin-top: 1.5em; }"), css);
-        assertTrue(css.contains(".character { margin: 0 0 0 20%; text-transform: uppercase; }"), css);
+        // Scene loses its transform; character keeps it. The geometry here is the
+        // shared ScreenplayLayout proportions (see EpubExportServiceImpl#styleCss).
+        assertTrue(css.contains(".scene { font-weight: bold; margin-top: 2em; }"), css);
+        assertTrue(css.contains(".character { margin-left: 36.667%; text-transform: uppercase; }"), css);
     }
 
     /** Returns the first .css entry in the EPUB zip. */

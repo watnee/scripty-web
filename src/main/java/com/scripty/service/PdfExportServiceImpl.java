@@ -84,7 +84,7 @@ public class PdfExportServiceImpl implements PdfExportService {
                 : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
 
         try {
-            return toPdf(project, blocks);
+            return toPdf(project, blocks, capitalization);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to export project " + projectId + " as PDF", e);
         }
@@ -92,6 +92,11 @@ public class PdfExportServiceImpl implements PdfExportService {
 
     /** Package-private seam so the layout can be asserted without a Spring context. */
     static byte[] toPdf(Project project, List<Block> blocks) throws Exception {
+        return toPdf(project, blocks, CapitalizationPreferences.ALL);
+    }
+
+    static byte[] toPdf(Project project, List<Block> blocks, CapitalizationPreferences capitalization)
+            throws Exception {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.LETTER, LEFT_MARGIN, RIGHT_MARGIN, TOP_MARGIN, BOTTOM_MARGIN);
             PdfWriter.getInstance(document, out);

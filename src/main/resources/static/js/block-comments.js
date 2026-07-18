@@ -270,6 +270,35 @@
         });
     }
 
+    function lastEditedBlockId() {
+        var editable = window.scriptyLastFocusedEditable;
+        if (!editable || !editable.isConnected) return null;
+        var row = window.scriptyFindBlockRow
+            ? window.scriptyFindBlockRow(editable)
+            : (editable.closest && editable.closest('[data-block-id]'));
+        return row ? row.getAttribute('data-block-id') : null;
+    }
+
+    // Toggle comments for whatever block the writer is on (keyboard shortcut / Tools menu).
+    // Returns true when it acted, so callers can decide whether to swallow the key event.
+    function toggleForActiveBlock(triggerEl) {
+        var blockId = window.scriptyGetActiveBlockId
+            ? window.scriptyGetActiveBlockId(triggerEl || null)
+            : null;
+        // Opening a toolbar dropdown blurs the block, and the menu is not "format chrome"
+        // that scriptyGetActiveBlockId recovers from — fall back to the last edited block.
+        if (!blockId) blockId = lastEditedBlockId();
+        if (!blockId) return false;
+        if (popover && !popover.hidden && String(popover.dataset.blockId) === String(blockId)) {
+            closePopover();
+            return true;
+        }
+        var row = document.querySelector('[data-block-id="' + blockId + '"]');
+        if (!row) return false;
+        openForRow(row);
+        return true;
+    }
+
     function submitComment() {
         if (!popover || popover.hidden || !activeBlockId) return;
         var input = popover.querySelector('.block-comments-input');
@@ -351,7 +380,8 @@
     document.addEventListener('click', function (e) {
         if (!popover || popover.hidden) return;
         if (popover.contains(e.target)) return;
-        if (e.target.closest && e.target.closest('.block-comment-indicator')) return;
+        // The click that opened the popover keeps bubbling to here; ignore known triggers.
+        if (e.target.closest && e.target.closest('.block-comment-indicator, [data-scripty-comments-trigger]')) return;
         closePopover();
     });
     document.addEventListener('keydown', function (e) {
@@ -372,6 +402,7 @@
     });
 
     window.scriptyOpenBlockComments = openForRow;
+    window.scriptyToggleBlockComments = toggleForActiveBlock;
     window.scriptyRefreshBlockCommentCounts = refreshCounts;
 
     if (document.readyState === 'loading') {

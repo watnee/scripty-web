@@ -198,10 +198,12 @@ public class BlockServiceImpl implements BlockService {
             }
         }
 
-        int order = (edition != null
-                ? blockRepository.countByScriptEditionId(edition.getId())
-                : blockRepository.countByProjectId(project.getId())) + 1;
-        block.setOrder(order);
+        // Append after the highest existing order. Counting rows instead would
+        // collide with a live block whenever orders are not a dense 1..N run.
+        Integer maxOrder = edition != null
+                ? blockRepository.findMaxOrderByScriptEditionId(edition.getId())
+                : blockRepository.findMaxOrderByProjectId(project.getId());
+        block.setOrder((maxOrder != null ? maxOrder : 0) + 1);
         Block saved = blockRepository.save(block);
         recordScriptEdited(project, edition);
         return saved;
@@ -352,7 +354,7 @@ public class BlockServiceImpl implements BlockService {
         if (projectId == null || sourceDocumentId == null) {
             return false;
         }
-        List<Block> linked = blockRepository.findBySourceDocumentIdOrderByOrderAsc(sourceDocumentId);
+        List<Block> linked = blockRepository.findBySourceDocumentIdOrderByOrderAscIdAsc(sourceDocumentId);
         if (linked.isEmpty()) {
             return false;
         }
@@ -680,36 +682,54 @@ public class BlockServiceImpl implements BlockService {
     @Override
     @Transactional
     public Block moveBlockUp(Integer id) {
-        Block block = blockRepository.findById(id).orElse(null);
-        Block blockAbove = blockRepository
-            .findByScriptEditionIdAndOrder(editionId(block), block.getOrder() - 1)
-            .orElse(null);
-        if (blockAbove != null) {
-            int tempOrder = blockAbove.getOrder();
-            blockAbove.setOrder(block.getOrder());
-            block.setOrder(tempOrder);
-            blockRepository.save(blockAbove);
-            blockRepository.save(block);
-            recordScriptEdited(block.getProject(), resolveEdition(block));
-        }
-        return block;
+        return swapWithNeighbour(id, -1);
     }
 
     @Override
     @Transactional
     public Block moveBlockDown(Integer id) {
+        return swapWithNeighbour(id, 1);
+    }
+
+    /**
+     * Swaps a block with its neighbour by position in the ordered list rather
+     * than by {@code order ± 1}. Looking the neighbour up by order assumed a
+     * dense, unique 1..N run: a gap made the move silently do nothing, and a
+     * duplicate order made the single-result lookup throw.
+     */
+    private Block swapWithNeighbour(Integer id, int offset) {
         Block block = blockRepository.findById(id).orElse(null);
-        Block blockBelow = blockRepository
-            .findByScriptEditionIdAndOrder(editionId(block), block.getOrder() + 1)
-            .orElse(null);
-        if (blockBelow != null) {
-            int tempOrder = blockBelow.getOrder();
-            blockBelow.setOrder(block.getOrder());
-            block.setOrder(tempOrder);
-            blockRepository.save(blockBelow);
-            blockRepository.save(block);
-            recordScriptEdited(block.getProject(), resolveEdition(block));
+        if (block == null) {
+            return null;
         }
+        Integer editionId = editionId(block);
+        List<Block> ordered = editionId != null
+                ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(editionId)
+                : blockRepository.findByProjectIdOrderByOrderAscIdAsc(block.getProject().getId());
+
+        int index = -1;
+        for (int i = 0; i < ordered.size(); i++) {
+            if (ordered.get(i).getId().equals(block.getId())) {
+                index = i;
+                break;
+            }
+        }
+        int neighbourIndex = index + offset;
+        if (index < 0 || neighbourIndex < 0 || neighbourIndex >= ordered.size()) {
+            return block;
+        }
+
+        // Renumber the whole edition so the swap also repairs any pre-existing
+        // duplicate or gapped orders instead of propagating them.
+        Block neighbour = ordered.get(neighbourIndex);
+        ordered.set(index, neighbour);
+        ordered.set(neighbourIndex, block);
+        int order = 1;
+        for (Block b : ordered) {
+            b.setOrder(order++);
+        }
+        blockRepository.saveAll(ordered);
+        recordScriptEdited(block.getProject(), resolveEdition(block));
         return block;
     }
 
@@ -1143,7 +1163,7 @@ public class BlockServiceImpl implements BlockService {
         }
         blockRepository.deleteAllById(ids);
         for (Integer editionId : editionIds) {
-            List<Block> remainingBlocks = blockRepository.findByScriptEditionIdOrderByOrderAsc(editionId);
+            List<Block> remainingBlocks = blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(editionId);
             int order = 1;
             for (Block b : remainingBlocks) {
                 b.setOrder(order++);

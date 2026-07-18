@@ -63,8 +63,8 @@ public class PdfExportServiceImpl implements PdfExportService {
         Project project = projectRepository.findById(projectId).orElse(null);
         ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
-                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
-                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+                ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.LETTER, LEFT_MARGIN, RIGHT_MARGIN, TOP_MARGIN, BOTTOM_MARGIN);

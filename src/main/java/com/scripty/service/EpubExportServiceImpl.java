@@ -44,8 +44,8 @@ public class EpubExportServiceImpl implements EpubExportService {
         Project project = projectRepository.findById(projectId).orElse(null);
         ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
-                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
-                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+                ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
         try {
             return toEpub(project, blocks, projectId);
         } catch (IOException e) {

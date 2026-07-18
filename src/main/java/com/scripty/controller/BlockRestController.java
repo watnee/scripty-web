@@ -93,8 +93,8 @@ public class BlockRestController {
         boolean canBrowseEditions = projectAccess.canEditScript(projectId, principal);
         ScriptEdition edition = scriptEditionService.resolveForAccess(projectId, editionId, canBrowseEditions);
         List<Block> blocks = edition != null
-                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
-                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+                ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
         List<BlockViewModel> viewModels = new ArrayList<>();
         for (Block block : blocks) {
             viewModels.add(blockService.getBlockViewModel(block.getId()));

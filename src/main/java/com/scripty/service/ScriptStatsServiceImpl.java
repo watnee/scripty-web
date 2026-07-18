@@ -55,8 +55,8 @@ public class ScriptStatsServiceImpl implements ScriptStatsService {
         }
         ScriptEdition edition = scriptEditionService.resolveForAccess(projectId, editionId, canBrowseEditions);
         List<Block> blocks = edition != null
-                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
-                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+                ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
 
         ScriptStatsViewModel stats = new ScriptStatsViewModel();
         stats.setProjectId(projectId);

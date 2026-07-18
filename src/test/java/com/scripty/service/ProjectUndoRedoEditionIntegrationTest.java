@@ -84,7 +84,7 @@ class ProjectUndoRedoEditionIntegrationTest {
         // then hard-delete the block.
         undoRedoService.recordCheckpoint(projectId);
         blockRepository.deleteById(blockId);
-        assertTrue(blockRepository.findByScriptEditionIdOrderByOrderAsc(editionId).isEmpty());
+        assertTrue(blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(editionId).isEmpty());
 
         // The web editor asks with the concrete default-edition id, not null.
         assertTrue(undoRedoService.canUndo(projectId, editionId),
@@ -94,7 +94,7 @@ class ProjectUndoRedoEditionIntegrationTest {
                 undoRedoService.undoWithDetails(projectId, editionId);
         assertTrue(result.success(), "undo must succeed for the deleted block");
 
-        List<Block> restored = blockRepository.findByScriptEditionIdOrderByOrderAsc(editionId);
+        List<Block> restored = blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(editionId);
         assertEquals(1, restored.size(), "the deleted block must be restored");
         assertEquals("RESTORE ME", restored.get(0).getContent());
     }

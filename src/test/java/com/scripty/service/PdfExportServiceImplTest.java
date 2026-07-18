@@ -75,7 +75,7 @@ class PdfExportServiceImplTest {
 
         when(projectRepository.findById(1)).thenReturn(Optional.of(project));
         when(scriptEditionService.requireForProject(1, null)).thenReturn(null);
-        when(blockRepository.findByProjectIdOrderByOrderAsc(1)).thenReturn(blocks);
+        when(blockRepository.findByProjectIdOrderByOrderAscIdAsc(1)).thenReturn(blocks);
 
         PdfExportServiceImpl service = new PdfExportServiceImpl();
         ReflectionTestUtils.setField(service, "projectRepository", projectRepository);

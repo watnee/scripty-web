@@ -162,8 +162,8 @@ public class FountainImportServiceImpl implements FountainImportService {
             edition = scriptEditionService.ensureDefaultEdition(projectId);
         }
         List<Block> existing = edition != null
-                ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
-                : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
+                ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
         if (!existing.isEmpty()) {
             blockRepository.deleteAll(existing);
         }

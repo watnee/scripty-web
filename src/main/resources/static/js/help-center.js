@@ -18,7 +18,7 @@
         { id: 'fountain-features', title: 'Fountain Power Features', keywords: 'tab element autocomplete outline page view import export pdf fountain paste shortcut keyboard' },
         { id: 'songs-drafts', title: 'Songs & Notes', keywords: 'lyrics notes music documents' },
         { id: 'drag-drop', title: 'Drag & Drop Reordering', keywords: 'move reorder handle' },
-        { id: 'bookmarks-pins', title: 'Bookmarks & Pinned Blocks', keywords: 'star pin favorite outline' },
+        { id: 'bookmarks-pins', title: 'Bookmarks & Pinned Blocks', keywords: 'star pin favorite outline bookmark list panel' },
         { id: 'bulk-actions', title: 'Bulk Tagging & Deletions', keywords: 'select checkbox tags delete' },
         { id: 'reader-view', title: 'Safari Reader & Read Script', keywords: 'reader read-only distraction free' },
         { id: 'text-size', title: 'Text Size Controls', keywords: 'font zoom larger smaller' },

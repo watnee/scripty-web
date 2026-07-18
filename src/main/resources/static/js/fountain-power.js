@@ -21,7 +21,7 @@
     if (window._scriptyFountainPowerInit) return;
     window._scriptyFountainPowerInit = true;
 
-    var OUTLINE_TABS = ['combined', 'scenes', 'bookmarks'];
+    var OUTLINE_TABS = ['combined', 'scenes'];
     var OUTLINE_TAB_STORAGE = 'scripty-fountain-outline-tab';
     var OUTLINE_BOOKMARK_MARK =
         '<span class="fountain-outline-bookmark-mark" aria-hidden="true" title="Bookmarked">' +
@@ -95,6 +95,7 @@
     var characterListEl = null;
     var locationListEl = null;
     var songListEl = null;
+    var bookmarkListEl = null;
 
     function projectId() {
         if (typeof window.scriptyResolveProjectId === 'function') {
@@ -1244,7 +1245,6 @@
             '<div class="fountain-outline-tabs" role="tablist" aria-label="Outline views">' +
             '<button type="button" class="fountain-outline-tab" role="tab" data-outline-tab="combined" aria-selected="true">Combined</button>' +
             '<button type="button" class="fountain-outline-tab" role="tab" data-outline-tab="scenes" aria-selected="false">Scenes</button>' +
-            '<button type="button" class="fountain-outline-tab" role="tab" data-outline-tab="bookmarks" aria-selected="false">Bookmarks</button>' +
             '</div>' +
             '<ol class="fountain-outline-list"></ol>' +
             '<p class="fountain-outline-empty muted">No scenes, sections, synopses, or bookmarks yet.</p>';
@@ -1283,10 +1283,6 @@
     function refreshOutline() {
         if (!outlineEl || outlineEl.hidden) return;
         var tab = normalizeOutlineTab(outlineActiveTab);
-        if (tab === 'bookmarks') {
-            renderOutlineItems(collectBookmarkItems(), 'No bookmarks yet.');
-            return;
-        }
         if (tab === 'scenes') {
             renderOutlineItems(collectOutlineItems(), 'No scenes, sections, or synopses yet.');
             return;
@@ -1372,7 +1368,8 @@
             (outlineEl && !outlineEl.hidden) ||
             (characterListEl && !characterListEl.hidden) ||
             (locationListEl && !locationListEl.hidden) ||
-            (songListEl && !songListEl.hidden);
+            (songListEl && !songListEl.hidden) ||
+            (bookmarkListEl && !bookmarkListEl.hidden);
         listsBtn.classList.toggle('is-active', !!anyOpen);
         listsBtn.setAttribute('aria-pressed', anyOpen ? 'true' : 'false');
     }
@@ -1414,6 +1411,7 @@
             if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
             if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
             if (songListEl && !songListEl.hidden) setSongListOpen(false);
+            if (bookmarkListEl && !bookmarkListEl.hidden) setBookmarkListOpen(false);
             syncOutlineTabs();
             refreshOutline();
         }
@@ -1514,6 +1512,7 @@
             if (outlineEl && !outlineEl.hidden) setOutlineOpen(false);
             if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
             if (songListEl && !songListEl.hidden) setSongListOpen(false);
+            if (bookmarkListEl && !bookmarkListEl.hidden) setBookmarkListOpen(false);
             refreshCharacterList();
         }
         syncListsToolbarActive();
@@ -1654,6 +1653,7 @@
             if (outlineEl && !outlineEl.hidden) setOutlineOpen(false);
             if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
             if (songListEl && !songListEl.hidden) setSongListOpen(false);
+            if (bookmarkListEl && !bookmarkListEl.hidden) setBookmarkListOpen(false);
             refreshLocationList();
         }
         syncListsToolbarActive();
@@ -1791,6 +1791,7 @@
             if (outlineEl && !outlineEl.hidden) setOutlineOpen(false);
             if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
             if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
+            if (bookmarkListEl && !bookmarkListEl.hidden) setBookmarkListOpen(false);
             refreshSongList();
         }
         syncListsToolbarActive();
@@ -1808,6 +1809,107 @@
         setSongListOpen(!!el.hidden);
     }
     window.scriptyToggleFountainSongList = toggleSongList;
+
+    // --- Bookmark list sidebar (blocks flagged with the bookmark star) ---
+
+    function ensureBookmarkList() {
+        if (bookmarkListEl) return bookmarkListEl;
+        bookmarkListEl = document.createElement('aside');
+        bookmarkListEl.id = 'fountain-bookmark-list';
+        bookmarkListEl.className = 'fountain-bookmark-list hide-in-reader-view sidebar menu';
+        bookmarkListEl.setAttribute('aria-label', 'Bookmark list');
+        bookmarkListEl.innerHTML =
+            '<div class="fountain-bookmark-list-header">' +
+            '<strong>Bookmarks</strong>' +
+            '<button type="button" class="fountain-bookmark-list-close" aria-label="Close bookmark list" title="Close bookmark list">×</button>' +
+            '</div>' +
+            '<ol class="fountain-bookmark-list-items"></ol>' +
+            '<p class="fountain-bookmark-list-empty muted">No bookmarks yet.</p>';
+        document.body.appendChild(bookmarkListEl);
+
+        bookmarkListEl.querySelector('.fountain-bookmark-list-close').addEventListener('click', function() {
+            setBookmarkListOpen(false);
+        });
+        bookmarkListEl.addEventListener('click', function(e) {
+            var link = e.target.closest('[data-bookmark-block-id]');
+            if (!link || !bookmarkListEl.contains(link)) return;
+            e.preventDefault();
+            var id = link.getAttribute('data-bookmark-block-id');
+            var row = document.querySelector('.block-row[data-block-id="' + id + '"]');
+            if (!row) return;
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.classList.add('fountain-outline-flash');
+            setTimeout(function() {
+                row.classList.remove('fountain-outline-flash');
+            }, 1200);
+            var content = row.querySelector('.block-content');
+            if (content && !window.scriptyBlockEditLocked) {
+                content.click();
+            }
+        });
+        return bookmarkListEl;
+    }
+
+    function bookmarkListItemHtml(item, index) {
+        return '<li class="fountain-bookmark-list-item">' +
+            '<a href="#block-' + escapeHtml(String(item.id)) + '" data-bookmark-block-id="' +
+            escapeHtml(String(item.id)) + '">' +
+            '<span class="fountain-outline-num">' + (index + 1) + '.</span>' +
+            '<span class="fountain-bookmark-list-name">' + escapeHtml(item.text) + '</span>' +
+            '<span class="fountain-outline-type">' + escapeHtml(typeLabel(item.type)) + '</span>' +
+            OUTLINE_BOOKMARK_MARK +
+            '</a></li>';
+    }
+
+    function refreshBookmarkList() {
+        if (!bookmarkListEl || bookmarkListEl.hidden) return;
+        var list = bookmarkListEl.querySelector('.fountain-bookmark-list-items');
+        var empty = bookmarkListEl.querySelector('.fountain-bookmark-list-empty');
+        var entries = collectBookmarkItems();
+        if (!entries.length) {
+            list.innerHTML = '';
+            empty.hidden = false;
+            return;
+        }
+        empty.hidden = true;
+        list.innerHTML = entries.map(bookmarkListItemHtml).join('');
+    }
+    window.scriptyRefreshFountainBookmarkList = refreshBookmarkList;
+
+    function setBookmarkListOpen(open) {
+        var el = ensureBookmarkList();
+        el.hidden = !open;
+        document.documentElement.classList.toggle('fountain-bookmark-list-open', open);
+        var btn = document.getElementById('nav-bookmark-list-toggle');
+        if (btn) {
+            btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+            btn.classList.toggle('is-active', open);
+        }
+        try {
+            localStorage.setItem('scripty-fountain-bookmark-list', open ? 'true' : 'false');
+        } catch (err) { /* ignore */ }
+        if (open) {
+            if (outlineEl && !outlineEl.hidden) setOutlineOpen(false);
+            if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
+            if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
+            if (songListEl && !songListEl.hidden) setSongListOpen(false);
+            refreshBookmarkList();
+        }
+        syncListsToolbarActive();
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                if (typeof window.scriptyRepositionBlockCaretPreview === 'function') {
+                    window.scriptyRepositionBlockCaretPreview();
+                }
+            });
+        });
+    }
+
+    function toggleBookmarkList() {
+        var el = ensureBookmarkList();
+        setBookmarkListOpen(!!el.hidden);
+    }
+    window.scriptyToggleFountainBookmarkList = toggleBookmarkList;
 
     /** Words the custom spellchecker should not flag (cast names, locations, scene tokens). */
     window.scriptyGetSpellAllowlist = function() {
@@ -2026,6 +2128,7 @@
             refreshCharacterList();
             refreshLocationList();
             refreshSongList();
+            refreshBookmarkList();
         }
         if (needsStats) {
             scheduleScriptStatsRefresh();
@@ -2143,12 +2246,33 @@
         else ensureSongList().hidden = true;
     }
 
+    function initBookmarkListButton() {
+        var btn = document.getElementById('nav-bookmark-list-toggle');
+        if (!btn || btn.dataset.fountainBookmarkListInit === 'true') return;
+        btn.dataset.fountainBookmarkListInit = 'true';
+        btn.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+        });
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleBookmarkList();
+        });
+        var preferOpen = false;
+        try {
+            preferOpen = localStorage.getItem('scripty-fountain-bookmark-list') === 'true';
+        } catch (err) { /* ignore */ }
+        if (preferOpen) setBookmarkListOpen(true);
+        else ensureBookmarkList().hidden = true;
+    }
+
     function initFountainPowerUi() {
         startObserver();
         initOutlineButton();
         initCharacterListButton();
         initLocationListButton();
         initSongListButton();
+        initBookmarkListButton();
         loadCharacters(true);
         refreshScriptStats();
     }
@@ -2174,6 +2298,7 @@
         refreshCharacterList();
         refreshLocationList();
         refreshSongList();
+        refreshBookmarkList();
         refreshScriptStats();
         applyPendingCreateType();
     });

@@ -12970,11 +12970,12 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
     color: var(--accent, #145591);
 }
 
-/* Fountain power-user: scene outline + character / location / song lists */
+/* Fountain power-user: scene outline + character / location / song / bookmark lists */
 .fountain-outline,
 .fountain-character-list,
 .fountain-location-list,
-.fountain-song-list {
+.fountain-song-list,
+.fountain-bookmark-list {
     position: fixed;
     top: 5.5rem;
     right: 0.75rem;
@@ -12993,14 +12994,16 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-outline[hidden],
 .fountain-character-list[hidden],
 .fountain-location-list[hidden],
-.fountain-song-list[hidden] {
+.fountain-song-list[hidden],
+.fountain-bookmark-list[hidden] {
     display: none !important;
 }
 
 .fountain-outline-header,
 .fountain-character-list-header,
 .fountain-location-list-header,
-.fountain-song-list-header {
+.fountain-song-list-header,
+.fountain-bookmark-list-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -13014,7 +13017,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-outline-close,
 .fountain-character-list-close,
 .fountain-location-list-close,
-.fountain-song-list-close {
+.fountain-song-list-close,
+.fountain-bookmark-list-close {
     border: none;
     background: transparent;
     color: inherit;
@@ -13028,7 +13032,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-outline-close:hover,
 .fountain-character-list-close:hover,
 .fountain-location-list-close:hover,
-.fountain-song-list-close:hover {
+.fountain-song-list-close:hover,
+.fountain-bookmark-list-close:hover {
     opacity: 1;
 }
 
@@ -13069,7 +13074,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-outline-list,
 .fountain-character-list-items,
 .fountain-location-list-items,
-.fountain-song-list-items {
+.fountain-song-list-items,
+.fountain-bookmark-list-items {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -13080,7 +13086,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-outline-item a,
 .fountain-character-list-item a,
 .fountain-location-list-item a,
-.fountain-song-list-item a {
+.fountain-song-list-item a,
+.fountain-bookmark-list-item a {
     display: flex;
     align-items: baseline;
     gap: 0.35rem;
@@ -13095,7 +13102,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-outline-item a:hover,
 .fountain-character-list-item a:hover,
 .fountain-location-list-item a:hover,
-.fountain-song-list-item a:hover {
+.fountain-song-list-item a:hover,
+.fountain-bookmark-list-item a:hover {
     background: color-mix(in srgb, var(--accent, #145591) 12%, transparent);
     color: var(--accent, #145591);
 }
@@ -13111,7 +13119,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 
 .fountain-character-list-name,
 .fountain-location-list-name,
-.fountain-song-list-name {
+.fountain-song-list-name,
+.fountain-bookmark-list-name {
     min-width: 0;
     flex: 1;
     overflow: hidden;
@@ -13193,7 +13202,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-outline-empty,
 .fountain-character-list-empty,
 .fountain-location-list-empty,
-.fountain-song-list-empty {
+.fountain-song-list-empty,
+.fountain-bookmark-list-empty {
     font-size: 0.8rem;
     margin: 0.5rem 0 0;
 }
@@ -13211,10 +13221,12 @@ html.fountain-outline-open .project-script,
 html.fountain-character-list-open .project-script,
 html.fountain-location-list-open .project-script,
 html.fountain-song-list-open .project-script,
+html.fountain-bookmark-list-open .project-script,
 html.fountain-outline-open .project-script-toolbar,
 html.fountain-character-list-open .project-script-toolbar,
 html.fountain-location-list-open .project-script-toolbar,
-html.fountain-song-list-open .project-script-toolbar {
+html.fountain-song-list-open .project-script-toolbar,
+html.fountain-bookmark-list-open .project-script-toolbar {
     padding-right: min(17rem, 44vw);
 }
 
@@ -13222,7 +13234,8 @@ html.fountain-song-list-open .project-script-toolbar {
     .fountain-outline,
     .fountain-character-list,
     .fountain-location-list,
-    .fountain-song-list {
+    .fountain-song-list,
+    .fountain-bookmark-list {
         top: auto;
         left: 0.5rem;
         right: 0.5rem;
@@ -13235,10 +13248,12 @@ html.fountain-song-list-open .project-script-toolbar {
     html.fountain-character-list-open .project-script,
     html.fountain-location-list-open .project-script,
     html.fountain-song-list-open .project-script,
+    html.fountain-bookmark-list-open .project-script,
     html.fountain-outline-open .project-script-toolbar,
     html.fountain-character-list-open .project-script-toolbar,
     html.fountain-location-list-open .project-script-toolbar,
-    html.fountain-song-list-open .project-script-toolbar {
+    html.fountain-song-list-open .project-script-toolbar,
+    html.fountain-bookmark-list-open .project-script-toolbar {
         padding-right: 0;
     }
 }
@@ -13247,6 +13262,7 @@ body.focus-mode .fountain-outline,
 body.focus-mode .fountain-character-list,
 body.focus-mode .fountain-location-list,
 body.focus-mode .fountain-song-list,
+body.focus-mode .fountain-bookmark-list,
 body.focus-mode #project-lists-dropdown {
     display: none !important;
 }
@@ -13276,6 +13292,7 @@ body.focus-mode #project-lists-dropdown {
     .fountain-character-list,
     .fountain-location-list,
     .fountain-song-list,
+    .fountain-bookmark-list,
     .fountain-char-autocomplete,
     .hide-in-reader-view,
     .project-script-header,
@@ -13295,10 +13312,12 @@ body.focus-mode #project-lists-dropdown {
     html.fountain-character-list-open .project-script,
     html.fountain-location-list-open .project-script,
     html.fountain-song-list-open .project-script,
+    html.fountain-bookmark-list-open .project-script,
     html.fountain-outline-open .project-script-toolbar,
     html.fountain-character-list-open .project-script-toolbar,
     html.fountain-location-list-open .project-script-toolbar,
-    html.fountain-song-list-open .project-script-toolbar {
+    html.fountain-song-list-open .project-script-toolbar,
+    html.fountain-bookmark-list-open .project-script-toolbar {
         padding-right: 0 !important;
     }
 

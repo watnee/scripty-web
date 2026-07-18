@@ -370,6 +370,7 @@ public class ProjectController {
         Map<String, Object> status = new HashMap<>();
         status.put("success", result.success());
         status.put("moveOnly", result.moveOnly());
+        status.put("blockDelta", result.blockDelta());
         status.put("canUndo", projectUndoRedoService.canUndo(projectId, editionId));
         status.put("canRedo", projectUndoRedoService.canRedo(projectId, editionId));
         return status;

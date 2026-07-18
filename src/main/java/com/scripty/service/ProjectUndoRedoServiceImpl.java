@@ -216,10 +216,12 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
             }
 
             state.redoStack.push(projectVersionService.buildSnapshotJson(projectId, editionId));
+            int before = countBlocks(projectId, editionId);
             projectVersionService.applySnapshotJson(projectId, editionId, entry);
+            int blockDelta = countBlocks(projectId, editionId) - before;
             saveState(projectId, editionId, state);
             recordUndoRedo(projectId, true);
-            return UndoRedoResult.snapshotSuccess();
+            return UndoRedoResult.snapshotSuccess(blockDelta);
         } finally {
             suppressRecording.set(false);
         }
@@ -253,13 +255,27 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
             }
 
             state.undoStack.push(projectVersionService.buildSnapshotJson(projectId, editionId));
+            int before = countBlocks(projectId, editionId);
             projectVersionService.applySnapshotJson(projectId, editionId, entry);
+            int blockDelta = countBlocks(projectId, editionId) - before;
             saveState(projectId, editionId, state);
             recordUndoRedo(projectId, false);
-            return UndoRedoResult.snapshotSuccess();
+            return UndoRedoResult.snapshotSuccess(blockDelta);
         } finally {
             suppressRecording.set(false);
         }
+    }
+
+    /**
+     * Current block count for the project/edition, used to detect recovered
+     * blocks. Counts the same way before and after a snapshot is applied, so the
+     * delta is accurate even when {@code editionId} is null (a snapshot only
+     * rewrites one edition, so the project-wide count moves by the same amount).
+     */
+    private int countBlocks(Integer projectId, Integer editionId) {
+        return editionId != null
+                ? blockRepository.countByScriptEditionId(editionId)
+                : blockRepository.countByProjectId(projectId);
     }
 
     private void recordUndoRedo(Integer projectId, boolean undo) {

@@ -2034,6 +2034,11 @@
                         savedRow = newRow;
                     }
                 });
+                // Rows injected here bypass the page-load init, so their drag
+                // handles would have no menu until the next full render.
+                if (typeof window.scriptyInitBlockDragMenus === 'function') {
+                    window.scriptyInitBlockDragMenus(afterRow.parentNode);
+                }
                 return savedRow;
             }
 
@@ -3124,6 +3129,69 @@
                     e.preventDefault();
                 }
             }, true);
+
+            // Whole-block clipboard, used by the block drag menu. Unlike the
+            // selection clipboard above these take a whole row, not a range.
+            function buildRowClipboardBlock(row) {
+                const blockContent = row.querySelector('.block-content');
+                return {
+                    type: getBlockRowType(row),
+                    content: getBlockContentText(blockContent),
+                    personId: getBlockPersonId(blockContent) || '',
+                    characterName: getBlockCharacterName(blockContent),
+                    tags: row.getAttribute('data-tags') || ''
+                };
+            }
+
+            function blockClipboardPlainText(blocks) {
+                return blocks.map(function(block) {
+                    return block.characterName
+                        ? block.characterName + '\n' + block.content
+                        : block.content;
+                }).join('\n');
+            }
+
+            window.scriptyCopyBlockRows = function(rows) {
+                const list = (rows || []).filter(function(row) {
+                    return row && row.hasAttribute('data-block-id');
+                });
+                if (!list.length) return Promise.resolve(false);
+                const blocks = list.map(buildRowClipboardBlock);
+                return Promise.resolve(writeTextToClipboard(blockClipboardPlainText(blocks), blocks))
+                    .then(function() {
+                        return true;
+                    })
+                    .catch(function() {
+                        return false;
+                    });
+            };
+
+            window.scriptyPasteBlocksAfterRow = function(row) {
+                if (!row || !row.hasAttribute('data-block-id')) return Promise.resolve(false);
+                return readTextFromClipboard().then(function(payload) {
+                    const normalized = normalizeClipboardPayload(payload, null);
+                    let blocks = normalized.blocks;
+                    if (!blocks || !blocks.length) {
+                        blocks = blocksFromExternalPasteText(normalized.text);
+                    }
+                    if ((!blocks || !blocks.length) && normalized.text) {
+                        blocks = [{
+                            type: getBlockRowType(row),
+                            content: normalized.text,
+                            personId: '',
+                            characterName: '',
+                            tags: ''
+                        }];
+                    }
+                    if (!blocks || !blocks.length) return false;
+                    return createTypedBlocksBelowChain(row, blocks).then(function() {
+                        window.scriptyUpdateUndoRedoButtons(resolveProjectId());
+                        return true;
+                    });
+                }).catch(function() {
+                    return false;
+                });
+            };
         }
 
         function shouldDeferBlockEditForClick() {
@@ -4944,13 +5012,17 @@
             var highlightSubmenu = menu.querySelector('.block-drag-menu-highlight');
             var commentsBtn = menu.querySelector('.block-drag-menu-comments');
             if (!row || !row.hasAttribute('data-block-id')) {
-                // Unsaved create rows cannot be bookmarked, pinned, highlighted or commented on.
+                // Unsaved create rows cannot be bookmarked, pinned, highlighted,
+                // commented on, or used as a clipboard source/target.
                 var savedDivider = menu.querySelector('.block-drag-menu-saved-divider');
                 if (savedDivider) savedDivider.remove();
                 if (bookmarkBtn) bookmarkBtn.remove();
                 if (pinBtn) pinBtn.remove();
                 if (highlightSubmenu) highlightSubmenu.remove();
                 if (commentsBtn) commentsBtn.remove();
+                menu.querySelectorAll(
+                    '.block-drag-menu-clipboard-divider, .block-drag-menu-cut, .block-drag-menu-copy, .block-drag-menu-paste'
+                ).forEach(function(btn) { btn.remove(); });
             } else {
                 if (commentsBtn) {
                     var commentLabel = commentsBtn.querySelector('.block-drag-menu-comments-label');
@@ -5444,7 +5516,7 @@
         }
         window.scriptyEnsureEmptyCreateRow = ensureEmptyCreateRow;
 
-        function deleteBlockFromDragMenu(row, container) {
+        function deleteBlockFromDragMenu(row, container, options) {
             if (!row) return;
 
             if (!row.hasAttribute('data-block-id')) {
@@ -5453,7 +5525,9 @@
             }
 
             if (row.dataset.deleting === 'true') return;
-            if (!confirm('Are you sure you want to delete this block?')) return;
+            // Cut already removes the block on purpose, so it skips the prompt.
+            if (!(options && options.skipConfirm) &&
+                !confirm('Are you sure you want to delete this block?')) return;
 
             var sceneContainer = container || row.closest('.scene-blocks, #table-blocks, tbody');
             row.dataset.deleting = 'true';
@@ -5685,6 +5759,45 @@
                 });
             }
 
+            var copyBtn = menu.querySelector('[data-block-drag-action="copy"]');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeAllBlockDragMenus();
+                    var row = findBlockRow(dropdown);
+                    if (!row || typeof window.scriptyCopyBlockRows !== 'function') return;
+                    window.scriptyCopyBlockRows([row]);
+                });
+            }
+
+            var cutBtn = menu.querySelector('[data-block-drag-action="cut"]');
+            if (cutBtn) {
+                cutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeAllBlockDragMenus();
+                    var row = findBlockRow(dropdown);
+                    if (!row || typeof window.scriptyCopyBlockRows !== 'function') return;
+                    // Only drop the block once the clipboard write succeeded.
+                    window.scriptyCopyBlockRows([row]).then(function(copied) {
+                        if (copied) deleteBlockFromDragMenu(row, null, { skipConfirm: true });
+                    });
+                });
+            }
+
+            var pasteBtn = menu.querySelector('[data-block-drag-action="paste"]');
+            if (pasteBtn) {
+                pasteBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeAllBlockDragMenus();
+                    var row = findBlockRow(dropdown);
+                    if (!row || typeof window.scriptyPasteBlocksAfterRow !== 'function') return;
+                    window.scriptyPasteBlocksAfterRow(row);
+                });
+            }
+
             var deleteBtn = menu.querySelector('[data-block-drag-action="delete"]');
             if (deleteBtn) {
                 deleteBtn.addEventListener('click', function(e) {
@@ -5752,6 +5865,8 @@
                 });
             }
         }
+
+        window.scriptyInitBlockDragMenus = initBlockDragMenus;
 
         window.scriptyInitBlockDragDrop = function(container, options) {
             if (!container) return;

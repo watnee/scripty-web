@@ -1,7 +1,9 @@
 package com.scripty.api;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -71,10 +74,16 @@ class ApiHypermediaIntegrationTest {
 
     @Test
     void preferencesStayBehindAuthentication() throws Exception {
-        // The controller has an anonymous defaults branch, but the security
-        // config never lets a request reach it — pinned so the affordance rules
-        // above are not quietly relaxed by a later change to either side.
+        // Both handlers dereference the principal without a null check, so this
+        // rule is load-bearing rather than belt-and-braces: if the security
+        // config ever let an anonymous request through, they would NPE.
         mockMvc.perform(get("/api/preferences/capitalization").accept(MediaTypes.HAL_JSON))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/preferences/capitalization").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"scene\":false}")
+                        .accept(MediaTypes.HAL_JSON))
                 .andExpect(status().isUnauthorized());
     }
 

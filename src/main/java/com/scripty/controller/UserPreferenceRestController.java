@@ -26,6 +26,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * Editor preferences that must outlive a browser profile, unlike the
  * localStorage-only view toggles. Capitalization qualifies because exports
  * bake it in server-side.
+ *
+ * <p>Every endpoint here requires authentication: the security config rejects
+ * anonymous callers before they reach a handler (pinned by
+ * {@code ApiHypermediaIntegrationTest}), so {@code principal} is non-null.
+ * Preferences are per-account, and there is no useful anonymous answer.
  */
 @RestController
 @RequestMapping(value = "/api/preferences")
@@ -37,12 +42,6 @@ public class UserPreferenceRestController {
     @RequestMapping(value = "/capitalization", method = RequestMethod.GET,
             produces = { MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE })
     public ResponseEntity<EntityModel<Map<String, Boolean>>> readCapitalization(Principal principal) {
-        if (principal == null) {
-            // Anonymous callers see the defaults, and no update affordance:
-            // there is no account to store the change against.
-            return ResponseEntity.ok(EntityModel.of(toMap(CapitalizationPreferences.ALL))
-                    .add(capitalizationSelf()));
-        }
         return ResponseEntity.ok(capitalizationModel(
                 userService.readCapitalizationPreferences(principal.getName())));
     }
@@ -52,9 +51,6 @@ public class UserPreferenceRestController {
     public ResponseEntity<EntityModel<Map<String, Boolean>>> updateCapitalization(
             @RequestBody CapitalizationPreferencesPayload body,
             Principal principal) {
-        if (principal == null) {
-            return ResponseEntity.status(401).build();
-        }
         CapitalizationPreferences current = userService.readCapitalizationPreferences(principal.getName());
         // Partial updates: an absent key keeps its stored value, so the toggle
         // can post just the type the user clicked.

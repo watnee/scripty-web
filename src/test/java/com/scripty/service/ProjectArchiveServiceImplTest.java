@@ -1,5 +1,6 @@
 package com.scripty.service;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -114,10 +115,70 @@ class ProjectArchiveServiceImplTest {
     }
 
     @Test
+    void exportProjectsBundleRoundTripsThroughImport() {
+        Project first = new Project();
+        first.setId(7);
+        first.setTitle("My Musical");
+        Project second = new Project();
+        second.setId(8);
+        second.setTitle("Second Show");
+
+        when(projectRepository.findById(7)).thenReturn(Optional.of(first));
+        when(projectRepository.findById(8)).thenReturn(Optional.of(second));
+        // Missing projects are skipped rather than failing the whole download.
+        when(projectRepository.findById(99)).thenReturn(Optional.empty());
+        when(projectRepository.save(any(Project.class))).thenAnswer(inv -> {
+            Project p = inv.getArgument(0);
+            if (p.getId() == null) {
+                p.setId(idSequence.incrementAndGet());
+            }
+            return p;
+        });
+
+        byte[] bundle = service.exportProjectsBundle(List.of(7, 99, 8));
+        String json = new String(bundle, StandardCharsets.UTF_8);
+        assertTrue(json.contains("\"format\" : \"scripty-projects\""));
+        assertTrue(json.contains("\"My Musical\""));
+        assertTrue(json.contains("\"Second Show\""));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "scripty-projects-2.scripty.json", "application/json", bundle);
+        List<Project> imported = assertDoesNotThrow(() -> service.importProjects(file));
+
+        assertEquals(2, imported.size());
+        assertEquals("My Musical", imported.get(0).getTitle());
+        assertEquals("Second Show", imported.get(1).getTitle());
+    }
+
+    @Test
+    void exportProjectsBundleReturnsNullWhenNoProjectResolves() {
+        when(projectRepository.findById(99)).thenReturn(Optional.empty());
+        assertNull(service.exportProjectsBundle(List.of(99)));
+    }
+
+    @Test
+    void importProjectsRejectsBundlesFromNewerFormatVersions() {
+        String json = "{\"format\":\"scripty-projects\",\"formatVersion\":99,\"projects\":[]}";
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "p.scripty.json", "application/json", json.getBytes(StandardCharsets.UTF_8));
+        ScriptImportException e = assertThrows(ScriptImportException.class, () -> service.importProjects(file));
+        assertTrue(e.getUserMessage().contains("newer version"));
+    }
+
+    @Test
+    void importProjectsRejectsEmptyBundles() {
+        String json = "{\"format\":\"scripty-projects\",\"formatVersion\":1,\"projects\":[]}";
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "p.scripty.json", "application/json", json.getBytes(StandardCharsets.UTF_8));
+        ScriptImportException e = assertThrows(ScriptImportException.class, () -> service.importProjects(file));
+        assertTrue(e.getUserMessage().contains("doesn't contain any projects"));
+    }
+
+    @Test
     void importProjectRejectsNonScriptyFiles() {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "notes.json", "application/json", "{\"foo\":1}".getBytes(StandardCharsets.UTF_8));
-        ScriptImportException e = assertThrows(ScriptImportException.class, () -> service.importProject(file));
+        ScriptImportException e = assertThrows(ScriptImportException.class, () -> service.importProjects(file));
         assertTrue(e.getUserMessage().contains("isn't a Scripty project file"));
     }
 
@@ -126,7 +187,7 @@ class ProjectArchiveServiceImplTest {
         String json = "{\"format\":\"scripty-project\",\"formatVersion\":99}";
         MockMultipartFile file = new MockMultipartFile(
                 "file", "p.scripty.json", "application/json", json.getBytes(StandardCharsets.UTF_8));
-        ScriptImportException e = assertThrows(ScriptImportException.class, () -> service.importProject(file));
+        ScriptImportException e = assertThrows(ScriptImportException.class, () -> service.importProjects(file));
         assertTrue(e.getUserMessage().contains("newer version"));
     }
 
@@ -184,7 +245,7 @@ class ProjectArchiveServiceImplTest {
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "p.scripty.json", "application/json", json.getBytes(StandardCharsets.UTF_8));
-        Project imported = service.importProject(file);
+        Project imported = service.importProjects(file).get(0);
 
         assertEquals("My Musical", imported.getTitle());
         assertEquals("MY MUSICAL", imported.getScreenplayTitle());

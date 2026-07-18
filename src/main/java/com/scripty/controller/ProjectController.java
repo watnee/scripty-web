@@ -846,15 +846,15 @@ public class ProjectController {
                     .body(archive);
         }
 
-        byte[] zip = projectArchiveService.exportProjectsZip(resolved);
-        if (zip == null) {
+        byte[] bundle = projectArchiveService.exportProjectsBundle(resolved);
+        if (bundle == null) {
             return ResponseEntity.notFound().build();
         }
-        String filename = "scripty-projects-" + resolved.size() + ".zip";
+        String filename = "scripty-projects-" + resolved.size() + ".scripty.json";
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/zip"))
+                .contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                .body(zip);
+                .body(bundle);
     }
 
     private List<Integer> accessibleProjectIds(Principal principal) {
@@ -915,7 +915,7 @@ public class ProjectController {
                     continue;
                 }
                 try {
-                    imported.add(projectArchiveService.importProject(file));
+                    imported.addAll(projectArchiveService.importProjects(file));
                 } catch (ScriptImportException e) {
                     String name = file.getOriginalFilename();
                     failures.add((name != null && !name.isBlank() ? name + ": " : "") + e.getUserMessage());

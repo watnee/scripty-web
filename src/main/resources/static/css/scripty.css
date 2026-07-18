@@ -6178,7 +6178,8 @@ body:has(main.text-documents-page) > main.text-documents-page {
     padding: 0.65rem 0.75rem;
     border: 1px solid var(--td-line, var(--border, #cbd5e1));
     border-radius: var(--border-radius, 0.5rem);
-    background: #fff;
+    background: var(--box-bg, #fff);
+    color: var(--muted-fg, #64748b);
     box-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.35);
     max-width: none;
 }

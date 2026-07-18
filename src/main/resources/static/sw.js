@@ -9,6 +9,7 @@ const ASSETS_TO_CACHE = [
   '/js/_hyperscript.min.js',
   '/js/shortcuts.js',
   '/js/song-export-select.js',
+  '/js/song-order.js',
   '/js/project-export-select.js',
   '/js/help-center.js',
   '/js/csrf.js',

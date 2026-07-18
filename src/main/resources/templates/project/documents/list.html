@@ -211,6 +211,7 @@
                                 th:attr="aria-label=${isSongList} ? 'Sort songs' : 'Sort notes'">
                             <option value="last-edited" selected>Last edited</option>
                             <option value="title">Name A&ndash;Z</option>
+                            <option value="custom">Custom order</option>
                         </select>
                     </label>
                 </div>
@@ -238,17 +239,28 @@
                 </div>
             </div>
 
-            <ul class="text-documents-list" id="text-documents-list" th:if="${!#lists.isEmpty(documents)}">
+            <ul class="text-documents-list" id="text-documents-list"
+                th:if="${!#lists.isEmpty(documents)}"
+                th:attr="data-project-id=${viewModel.projectId}, data-can-reorder=${canEditScript} ? 'true' : 'false'">
                 <li th:each="doc, iter : ${documents}"
                     class="text-document-card"
                     th:classappend="${isSongList} ? ' text-document-card--song' : ' text-document-card--draft'"
                     th:style="'--card-i:' + ${iter.index}"
-                    th:attr="data-doc-title=${#strings.toLowerCase(doc.title)}, data-sort-edited=${doc.updatedAt != null ? #temporals.format(doc.updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}">
-                    <span class="text-document-select" th:if="${isSongList}">
-                        <input type="checkbox"
-                               class="text-document-select-checkbox"
-                               th:value="${doc.id}"
-                               th:attr="aria-label='Select ' + ${doc.title}" />
+                    th:attr="data-doc-id=${doc.id}, data-doc-title=${#strings.toLowerCase(doc.title)}, data-sort-edited=${doc.updatedAt != null ? #temporals.format(doc.updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}">
+                    <span class="text-document-card-lead" th:if="${canEditScript or isSongList}">
+                        <button type="button"
+                                th:if="${canEditScript}"
+                                class="text-document-drag-handle"
+                                draggable="true"
+                                tabindex="0"
+                                th:attr="aria-label='Reorder ' + ${doc.title} + '. Press the up or down arrow key to move it.'"
+                                th:title="${isSongList} ? 'Drag to reorder this song' : 'Drag to reorder this note'">&#8942;&#8942;</button>
+                        <span class="text-document-select" th:if="${isSongList}">
+                            <input type="checkbox"
+                                   class="text-document-select-checkbox"
+                                   th:value="${doc.id}"
+                                   th:attr="aria-label='Select ' + ${doc.title}" />
+                        </span>
                     </span>
                     <div class="text-document-card-main">
                         <a class="text-document-card-title"
@@ -336,6 +348,7 @@
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:src="@{/js/song-export-select.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/song-order.js(v=${assetVersion})}" defer></script>
     <script>
         (function() {
             var btn = document.getElementById('import-doc-btn');
@@ -427,11 +440,23 @@
             var sortSelect = document.getElementById('text-documents-sort');
             if (!searchInput || !listEl) return;
 
+            // The server renders the list in saved sort_order, so the initial DOM
+            // order *is* the custom order. Stamp it now: the client-side sorts
+            // below shuffle the nodes, and "Custom order" has to get back to this.
+            Array.prototype.forEach.call(
+                listEl.querySelectorAll('.text-document-card'),
+                function(card, i) { card.setAttribute('data-sort-custom', i); }
+            );
+
             function sortDocuments(skipRiseAnimation) {
                 if (!sortSelect) return;
                 var mode = sortSelect.value;
                 var cards = Array.prototype.slice.call(listEl.querySelectorAll('.text-document-card'));
                 cards.sort(function(a, b) {
+                    if (mode === 'custom') {
+                        return (parseInt(a.getAttribute('data-sort-custom'), 10) || 0)
+                             - (parseInt(b.getAttribute('data-sort-custom'), 10) || 0);
+                    }
                     if (mode === 'last-edited') {
                         var aTime = Date.parse(a.getAttribute('data-sort-edited') || '') || 0;
                         var bTime = Date.parse(b.getAttribute('data-sort-edited') || '') || 0;
@@ -511,6 +536,17 @@
                     sortDocuments(true);
                 });
                 sortDocuments();
+
+                // song-order.js calls this after a drop so the list stays in the
+                // order the user just dragged instead of snapping back to the
+                // active sort on the next render.
+                window.scriptyDocumentSort = {
+                    setMode: function(mode) {
+                        if (sortSelect.value === mode) return;
+                        sortSelect.value = mode;
+                        sessionStorage.setItem(sortStorageKey, mode);
+                    }
+                };
             }
         })();
     </script>

@@ -12,7 +12,7 @@ public class WebModelAdvice {
     private final String assetVersion;
     private final boolean serviceWorkerEnabled;
 
-    public WebModelAdvice(FeatureFlags featureFlags, @Value("${app.asset-version:240}") String assetVersion) {
+    public WebModelAdvice(FeatureFlags featureFlags, @Value("${app.asset-version:244}") String assetVersion) {
         this.assetVersion = assetVersion;
         this.serviceWorkerEnabled = featureFlags.isEnabled(FeatureFlag.SERVICE_WORKER);
     }

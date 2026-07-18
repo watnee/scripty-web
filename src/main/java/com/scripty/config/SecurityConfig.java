@@ -157,10 +157,7 @@ public class SecurityConfig {
                         "/team/**",
                         "/api/team/**",
                         "/api/account/**",
-                        "/account/**",
-                        // Must precede the /project/** USER rule below.
-                        "/project/trash",
-                        "/project/restore")
+                        "/account/**")
                     .hasRole("ADMIN")
                 .requestMatchers(
                         "/v3/api-docs/**",

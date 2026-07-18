@@ -41,6 +41,15 @@
                 <div class="text-documents-section-actions">
                     <a th:href="@{/project/list}"
                        class="project-list-action-btn project-list-action-btn--primary">Back to Projects</a>
+                    <form th:if="${!#lists.isEmpty(projects)}"
+                          th:action="@{/project/empty-trash}"
+                          method="post"
+                          hx-boost="false"
+                          id="project-empty-trash-form"
+                          th:attr="data-project-count=${#lists.size(projects)}">
+                        <button type="submit"
+                                class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn">Empty trash</button>
+                    </form>
                 </div>
             </div>
 
@@ -77,10 +86,48 @@
                                     class="project-list-action-btn project-list-action-btn--primary"
                                     title="Put this project back in the list">Restore</button>
                         </form>
+                        <form th:action="@{/project/purge}"
+                              method="post"
+                              hx-boost="false"
+                              class="project-purge-form"
+                              th:attr="data-project-title=${project.title}">
+                            <input type="hidden" name="id" th:value="${project.id}">
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn">Delete forever</button>
+                        </form>
                     </div>
                 </li>
             </ul>
         </section>
     </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script>
+        (function() {
+            document.querySelectorAll('.project-purge-form').forEach(function(purgeForm) {
+                purgeForm.addEventListener('submit', function(e) {
+                    var title = purgeForm.getAttribute('data-project-title') || 'this project';
+                    var message = 'Permanently delete "' + title + '"?\n\n'
+                        + 'Its songs, notes and screenplay go with it. This cannot be undone.';
+                    if (!window.confirm(message)) {
+                        e.preventDefault();
+                    }
+                });
+            });
+
+            var emptyForm = document.getElementById('project-empty-trash-form');
+            if (emptyForm) {
+                emptyForm.addEventListener('submit', function(e) {
+                    var count = parseInt(emptyForm.getAttribute('data-project-count'), 10) || 0;
+                    var noun = count === 1 ? 'project' : 'projects';
+                    var message = 'Permanently delete all ' + count + ' ' + noun + ' in the trash?\n\n'
+                        + 'Their songs, notes and screenplays go with them. This cannot be undone.';
+                    if (!window.confirm(message)) {
+                        e.preventDefault();
+                    }
+                });
+            }
+        })();
+    </script>
 </body>
 </html>

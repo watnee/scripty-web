@@ -48,14 +48,38 @@ public interface ProjectService {
      */
     Project deleteProject(Integer id);
 
-    /** Trashed projects, most recently deleted first. Admin-only. */
+    /** Every trashed project, most recently deleted first. Not access-scoped. */
     List<Project> getTrashedProjects();
 
-    /** A single trashed project, or null if it is not in the trash. Admin-only. */
+    /**
+     * Trashed projects the user is allowed to see, most recently deleted first.
+     * Applies the same team rule as the live project list, so a user never sees
+     * the title of a project they could not have opened.
+     */
+    List<Project> getTrashedProjects(User user);
+
+    /** A single trashed project, or null if it is not in the trash. Not access-scoped. */
     Project getTrashedProject(Integer id);
+
+    /**
+     * A trashed project the user is allowed to act on, or null if it is not in
+     * the trash or is out of their reach.
+     */
+    Project getTrashedProject(Integer id, User user);
 
     /** Returns false if the project is not in the trash (already restored, or purged). */
     boolean restoreProject(Integer id);
+
+    /**
+     * Hard-deletes a trashed project and everything under it. Returns false if
+     * the project is not in the trash. Cannot be undone.
+     */
+    boolean purgeProject(Integer id);
+
+    /**
+     * Hard-deletes every trashed project the user can see. Returns how many went.
+     */
+    int emptyTrash(User user);
 
     void setProjectTeams(Integer projectId, java.util.List<Integer> teamIds);
 

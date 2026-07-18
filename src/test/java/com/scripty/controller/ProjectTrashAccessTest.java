@@ -14,9 +14,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * Recovering a deleted project is admin-only. The rest of /project/** is open to
- * ROLE_USER, so these pin that the narrower trash rules sit ahead of it in
- * SecurityConfig and do not get swallowed by the broader matcher.
+ * The trash is open to any signed-in user, but scoped: the controller resolves
+ * the caller's user row and only ever shows or acts on projects that row could
+ * have opened. These pin that a principal without a user row gets nothing, and
+ * that anonymous callers are bounced.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -27,40 +28,53 @@ class ProjectTrashAccessTest {
     private MockMvc mockMvc;
 
     @Test
-    void trashPageRequiresAdmin() throws Exception {
+    void trashPageRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/project/trash"))
                 .andExpect(status().is3xxRedirection());
+    }
 
-        mockMvc.perform(get("/project/trash").with(user("member").roles("USER")))
-                .andExpect(status().isForbidden());
-
-        // The bootstrapped admin: the controller's own check reads the admin flag
-        // from the user row, so a role alone is not enough.
-        mockMvc.perform(get("/project/trash").with(user("admin").roles("ADMIN")))
+    @Test
+    void trashPageOpensForSignedInUsers() throws Exception {
+        mockMvc.perform(get("/project/trash").with(user("admin").roles("USER", "ADMIN")))
                 .andExpect(status().isOk());
     }
 
     /**
-     * ROLE_ADMIN on a principal with no matching user row must not open the trash
-     * — the controller resolves the admin flag from the database.
+     * A principal with no matching user row cannot be scoped to anything, so the
+     * controller bounces it rather than falling back to an unscoped listing.
      */
     @Test
-    void trashPageRejectsAdminRoleWithoutAdminUserRecord() throws Exception {
-        mockMvc.perform(get("/project/trash").with(user("ghost").roles("ADMIN")))
+    void trashPageRejectsPrincipalWithoutUserRecord() throws Exception {
+        mockMvc.perform(get("/project/trash").with(user("ghost").roles("USER", "ADMIN")))
                 .andExpect(status().is3xxRedirection());
     }
 
     @Test
-    void restoreRequiresAdmin() throws Exception {
+    void restoreRequiresAuthentication() throws Exception {
         mockMvc.perform(post("/project/restore").param("id", "1").with(csrf()))
                 .andExpect(status().is3xxRedirection());
-
-        mockMvc.perform(post("/project/restore").param("id", "1")
-                        .with(user("member").roles("USER")).with(csrf()))
-                .andExpect(status().isForbidden());
     }
 
-    /** A writer can still delete; only recovery is held back to admins. */
+    @Test
+    void purgeRequiresAuthentication() throws Exception {
+        mockMvc.perform(post("/project/purge").param("id", "1").with(csrf()))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    void emptyTrashRequiresAuthentication() throws Exception {
+        mockMvc.perform(post("/project/empty-trash").with(csrf()))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    /** Purging a project the caller cannot see reports it as simply not there. */
+    @Test
+    void purgeOfUnknownProjectRedirectsToTrash() throws Exception {
+        mockMvc.perform(post("/project/purge").param("id", "999999")
+                        .with(user("admin").roles("USER", "ADMIN")).with(csrf()))
+                .andExpect(status().is3xxRedirection());
+    }
+
     @Test
     void deleteRemainsOpenToOrdinaryUsers() throws Exception {
         mockMvc.perform(get("/project/delete").param("id", "999999")

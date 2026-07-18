@@ -30,6 +30,26 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
             nativeQuery = true)
     List<Project> findTrashed();
 
+    /**
+     * Trashed projects visible to a member of {@code team}: the ones assigned to
+     * that team, plus the unassigned ones everybody can see. Mirrors the team
+     * check {@code ProjectServiceImpl} applies to the live project list.
+     */
+    @Query(value = "SELECT * FROM project p WHERE p.deleted_at IS NOT NULL"
+            + " AND (NOT EXISTS (SELECT 1 FROM project_team pt WHERE pt.project_id = p.id)"
+            + " OR EXISTS (SELECT 1 FROM project_team pt JOIN team t ON t.id = pt.team_id"
+            + " WHERE pt.project_id = p.id AND t.name = :team))"
+            + " ORDER BY p.deleted_at DESC",
+            nativeQuery = true)
+    List<Project> findTrashedForTeam(@Param("team") String team);
+
+    /** Trashed projects with no team assigned — what a user without a team sees. */
+    @Query(value = "SELECT * FROM project p WHERE p.deleted_at IS NOT NULL"
+            + " AND NOT EXISTS (SELECT 1 FROM project_team pt WHERE pt.project_id = p.id)"
+            + " ORDER BY p.deleted_at DESC",
+            nativeQuery = true)
+    List<Project> findTrashedWithoutTeam();
+
     @Query(value = "SELECT * FROM project WHERE id = :id AND deleted_at IS NOT NULL",
             nativeQuery = true)
     Optional<Project> findTrashedById(@Param("id") Integer id);
@@ -38,6 +58,17 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
     @Query(value = "UPDATE project SET deleted_at = NULL WHERE id = :id AND deleted_at IS NOT NULL",
             nativeQuery = true)
     int restoreById(@Param("id") Integer id);
+
+    /**
+     * Hard-deletes one trashed project on request, without waiting for the
+     * recovery window. Cascades exactly like {@link #purgeTrashedBefore}. The
+     * {@code deleted_at IS NOT NULL} guard keeps a live project safe even if a
+     * stale id reaches this query.
+     */
+    @Modifying
+    @Query(value = "DELETE FROM project WHERE id = :id AND deleted_at IS NOT NULL",
+            nativeQuery = true)
+    int purgeById(@Param("id") Integer id);
 
     /**
      * Hard-deletes trashed projects past the recovery window. Every table

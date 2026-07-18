@@ -127,7 +127,7 @@ public class ProjectServiceImpl implements ProjectService {
         if (project == null || user == null || !user.isEnabled()) {
             return false;
         }
-        if (user.isAdmin() || user.isDirector() || user.isProducer() || user.isWriter() || user.isActor() || user.isCrew() || user.isDirectorOfPhotography() || user.isCastingDirector()) {
+        if (hasProjectWideAccess(user)) {
             return true;
         }
         String userTeam = user.getTeam();
@@ -135,6 +135,13 @@ public class ProjectServiceImpl implements ProjectService {
             return project.getTeams() == null || project.getTeams().isEmpty();
         }
         return canUserAccessProjectByTeam(project, userTeam);
+    }
+
+    /** Roles that see every project regardless of team assignment. */
+    private boolean hasProjectWideAccess(User user) {
+        return user.isAdmin() || user.isDirector() || user.isProducer() || user.isWriter()
+                || user.isActor() || user.isCrew() || user.isDirectorOfPhotography()
+                || user.isCastingDirector();
     }
 
     private boolean canUserAccessProjectByTeam(Project project, String userTeam) {
@@ -554,14 +561,61 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    public List<Project> getTrashedProjects(User user) {
+        if (user == null || !user.isEnabled()) {
+            return List.of();
+        }
+        if (hasProjectWideAccess(user)) {
+            return projectRepository.findTrashed();
+        }
+        String userTeam = user.getTeam();
+        if (userTeam == null || userTeam.isEmpty()) {
+            return projectRepository.findTrashedWithoutTeam();
+        }
+        return projectRepository.findTrashedForTeam(userTeam);
+    }
+
+    @Override
     public Project getTrashedProject(Integer id) {
         return id == null ? null : projectRepository.findTrashedById(id).orElse(null);
+    }
+
+    @Override
+    public Project getTrashedProject(Integer id, User user) {
+        if (id == null || user == null) {
+            return null;
+        }
+        // Filtering the scoped list keeps one definition of "can see this",
+        // rather than re-deriving the team rule against a lazily-loaded
+        // teams collection on a natively-loaded (trashed) project.
+        for (Project project : getTrashedProjects(user)) {
+            if (id.equals(project.getId())) {
+                return project;
+            }
+        }
+        return null;
     }
 
     @Override
     @Transactional
     public boolean restoreProject(Integer id) {
         return id != null && projectRepository.restoreById(id) > 0;
+    }
+
+    @Override
+    @Transactional
+    public boolean purgeProject(Integer id) {
+        return id != null && projectRepository.purgeById(id) > 0;
+    }
+
+    @Override
+    @Transactional
+    public int emptyTrash(User user) {
+        int purged = 0;
+        for (Project project : getTrashedProjects(user)) {
+            purged += projectRepository.purgeById(project.getId());
+        }
+        return purged;
     }
 
     @Override

@@ -11,6 +11,7 @@ import com.scripty.dto.User;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.UserRepository;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -166,5 +167,66 @@ class ProjectTrashIntegrationTest {
 
         assertNotNull(projectService.read(projectId));
         assertEquals(1, blockCount(projectId));
+    }
+
+    /** "Delete forever" does not wait for the recovery window. */
+    @Test
+    void purgeProjectRemovesItImmediatelyAndCascadesToContent() {
+        Integer projectId = createProjectWithBlock("Gone On Request");
+        projectService.deleteProject(projectId);
+
+        assertTrue(projectService.purgeProject(projectId));
+
+        assertNull(projectService.getTrashedProject(projectId));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM project WHERE id = ?", Integer.class, projectId));
+        assertEquals(0, blockCount(projectId));
+    }
+
+    /** The deleted_at guard keeps a live project safe from a stale purge id. */
+    @Test
+    void purgeProjectRefusesLiveAndUnknownProjects() {
+        Integer projectId = createProjectWithBlock("Not In The Trash");
+
+        assertFalse(projectService.purgeProject(projectId));
+        assertFalse(projectService.purgeProject(999999));
+        assertNotNull(projectService.read(projectId));
+        assertEquals(1, blockCount(projectId));
+    }
+
+    /**
+     * A user only sees trashed projects they could have opened. A project
+     * assigned to a team the user is not on stays out of their trash entirely,
+     * so its title never leaks — and emptying the trash cannot touch it.
+     */
+    @Test
+    void trashIsScopedToProjectsTheUserCouldOpen() {
+        Integer unassignedId = createProjectWithBlock("Open To Everyone");
+        Integer otherTeamId = createProjectWithBlock("Someone Else's Team");
+        jdbcTemplate.update("INSERT INTO team (name) VALUES ('trash-scope-team')");
+        Integer teamId = jdbcTemplate.queryForObject(
+                "SELECT id FROM team WHERE name = 'trash-scope-team'", Integer.class);
+        jdbcTemplate.update("INSERT INTO project_team (project_id, team_id) VALUES (?, ?)",
+                otherTeamId, teamId);
+
+        projectService.deleteProject(unassignedId);
+        projectService.deleteProject(otherTeamId);
+
+        User outsider = new User();
+        outsider.setEnabled(true);
+        outsider.setTeam("some-other-team");
+
+        List<Integer> visible = projectService.getTrashedProjects(outsider).stream()
+                .map(Project::getId)
+                .toList();
+        assertTrue(visible.contains(unassignedId));
+        assertFalse(visible.contains(otherTeamId));
+        assertNull(projectService.getTrashedProject(otherTeamId, outsider));
+        assertNotNull(projectService.getTrashedProject(unassignedId, outsider));
+
+        projectService.emptyTrash(outsider);
+
+        assertNull(projectService.getTrashedProject(unassignedId));
+        assertNotNull(projectService.getTrashedProject(otherTeamId));
     }
 }

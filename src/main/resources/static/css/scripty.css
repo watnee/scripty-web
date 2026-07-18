@@ -11655,8 +11655,14 @@ html.scripty-page-view-mode .project-script,
 html.scripty-page-view-mode .script-content.entry-content {
     /* Canvas zoom is a true zoom: the type scales with the sheet, so a page
        holds exactly the same lines at 60% as it does at 150% and the page
-       count never shifts underneath the writer. */
-    --scripty-text-scale: calc(var(--scripty-base-text-scale, 1) * var(--scripty-page-zoom, 1));
+       count never shifts underneath the writer.
+
+       The zoom must NOT be multiplied in here. Every font-size inside the sheet
+       is expressed in cqw against the sheet's own width, so it already tracks
+       the zoom; folding the factor in again squared it — 60% gave 99 chars/line
+       and 150% gave 39, against the 60 a real page holds, so the on-screen
+       pagination stopped matching print at any zoom but 100%. */
+    --scripty-text-scale: var(--scripty-base-text-scale, 1);
     --screenplay-action-width: 100%;
     --screenplay-dialogue-width: 58.333%;
     --screenplay-character-indent: 36.667%;
@@ -12162,7 +12168,10 @@ html.scripty-page-view-mode .project-script .screenplay-page-body {
 html.scripty-page-view-mode .project-script .screenplay-cont-marker {
     display: block;
     font-family: 'Courier New', Courier, monospace;
-    font-size: calc(12pt * var(--scripty-text-scale, 1));
+    /* Same cqw expression as .screenplay-page-body — a fixed 12pt here rendered
+       the markers smaller than the body text they sit in, because the on-screen
+       sheet is 10.5in wide rather than 8.5in. */
+    font-size: calc(1.9608cqw * var(--scripty-text-scale, 1));
     line-height: 1;
     color: inherit;
     pointer-events: none;
@@ -12550,7 +12559,8 @@ html.scripty-screenplay-full-width.scripty-page-view-mode .project-script::after
        Margin ratios (1 / 1 / 1 / 1.5) are inherited from the page-body rule and
        stay uncompressed. */
     html.scripty-page-view-mode .project-script .screenplay-page-body,
-    html.scripty-page-view-mode .project-script .screenplay-page-number {
+    html.scripty-page-view-mode .project-script .screenplay-page-number,
+    html.scripty-page-view-mode .project-script .screenplay-cont-marker {
         font-size: calc(max(9px, 1.9608cqw) * var(--scripty-text-scale, 1));
     }
 
@@ -12608,6 +12618,12 @@ html.scripty-screenplay-full-width.scripty-page-view-mode .project-script::after
         /* @page supplies the margins and the printable column is already 6in,
            so drop the screen padding and pin type to a true 12pt. */
         padding: 0;
+        font-size: calc(12pt * var(--scripty-text-scale, 1));
+    }
+
+    /* cqw has no container to resolve against once the sheet is unsized, so the
+       markers get the same true 12pt as the body they belong to. */
+    html.scripty-page-view-mode .project-script .screenplay-cont-marker {
         font-size: calc(12pt * var(--scripty-text-scale, 1));
     }
 }

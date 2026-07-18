@@ -10,6 +10,9 @@ app:
     service-worker: ${FEATURE_SERVICE_WORKER:true}
 
 spring:
+  # Names the service in traces (OTLP service.name) and in the log correlation pattern.
+  application:
+    name: scripty
   profiles:
     include:
       - native
@@ -48,3 +51,17 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
+        # Domain timers (exports, imports, email) get histograms too, so Grafana can
+        # chart p95/p99 per format rather than just a running mean.
+        scripty.export: true
+        scripty.import: true
+  tracing:
+    # Off unless explicitly turned on: with tracing enabled but no reachable collector
+    # the OTLP exporter retries against localhost:4318 and floods the logs.
+    enabled: ${TRACING_ENABLED:false}
+    sampling:
+      # 10% keeps Grafana Cloud trace ingest cheap while still catching slow requests.
+      probability: ${TRACING_SAMPLE_RATE:0.1}
+  otlp:
+    tracing:
+      endpoint: ${OTLP_TRACING_ENDPOINT:http://localhost:4318/v1/traces}

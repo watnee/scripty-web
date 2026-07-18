@@ -153,6 +153,21 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
+        <!-- Enables the @Timed/@Counted aspects used to instrument exports and imports. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <!-- Tracing. Spans only leave the process when MANAGEMENT_OTLP_TRACING_ENDPOINT
+             is set (Grafana Cloud Tempo), so an unconfigured deploy pays sampling cost only. -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
 
         <!-- OpenAPI / Swagger -->
         <dependency>

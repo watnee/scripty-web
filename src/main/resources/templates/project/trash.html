@@ -24,33 +24,68 @@
                 <p class="muted" th:if="${#lists.isEmpty(projects)}">Nothing has been deleted.</p>
             </div>
             <div class="project-list-header-actions">
-                <a th:href="@{/project/list}" role="button">Back to Projects</a>
+                <a th:href="@{/project/list}"
+                   class="project-list-action-btn project-list-action-btn--secondary"
+                   title="Back to your projects">Back to Projects</a>
             </div>
         </div>
 
-        <table th:if="${!#lists.isEmpty(projects)}">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Deleted</th>
-                    <th>Permanently removed</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="project : ${projects}">
-                    <td th:text="${project.title}"></td>
-                    <td th:text="${project.deletedAt != null ? #temporals.format(project.deletedAt, 'MMM d, yyyy, h:mm a') : ''}"></td>
-                    <td th:text="${project.purgeAt != null ? #temporals.format(project.purgeAt, 'MMM d, yyyy') : ''}"></td>
-                    <td>
-                        <form th:action="@{/project/restore}" method="post">
-                            <input type="hidden" name="id" th:value="${project.id}">
-                            <button type="submit">Restore</button>
-                        </form>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="project-list-panel" th:if="${!#lists.isEmpty(projects)}">
+            <table class="project-list-table">
+                <tbody>
+                    <tr th:each="project : ${projects}" class="project-list-row">
+                        <td class="project-list-main-cell">
+                            <div class="project-title-container">
+                                <div class="project-list-title-wrap">
+                                    <div class="project-list-title-row">
+                                        <span class="project-list-title" th:text="${project.title}"></span>
+                                    </div>
+                                    <div class="project-list-meta">
+                                        <span class="project-list-last-edited"
+                                              th:if="${project.deletedAt != null}"
+                                              th:title="${#temporals.format(project.deletedAt, 'MMM d, yyyy, h:mm a')}">
+                                            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9"></circle>
+                                                <polyline points="12 7 12 12 15 14"></polyline>
+                                            </svg>
+                                            Deleted <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.deletedAt})}"></span>
+                                        </span>
+                                        <th:block th:if="${project.purgeAt != null}">
+                                            <span class="project-list-meta-sep" aria-hidden="true" th:if="${project.deletedAt != null}"></span>
+                                            <span class="project-list-last-edited"
+                                                  th:text="|Removed on ${#temporals.format(project.purgeAt, 'MMM d, yyyy')}|"></span>
+                                        </th:block>
+                                    </div>
+                                </div>
+                                <div class="project-list-actions">
+                                    <form th:action="@{/project/restore}" method="post" class="project-list-star-form">
+                                        <input type="hidden" name="id" th:value="${project.id}">
+                                        <button type="submit"
+                                                class="project-list-action-btn project-list-action-btn--primary"
+                                                title="Restore this project">Restore</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="project-list-empty" th:if="${#lists.isEmpty(projects)}">
+            <div class="project-list-empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                    <path d="M10 11v6"></path>
+                    <path d="M14 11v6"></path>
+                    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </div>
+            <p class="project-list-empty-title">Nothing has been deleted</p>
+            <p class="muted">Deleted projects land here and stay recoverable before they're permanently removed.</p>
+            <a th:href="@{/project/list}" role="button" class="project-list-create-btn">Back to Projects</a>
+        </div>
     </main>
 </body>
 </html>

@@ -40,12 +40,19 @@ public class FountainExportServiceImpl implements FountainExportService {
     @Override
     @Transactional(readOnly = true)
     public String exportProject(Integer projectId) {
-        return exportProject(projectId, null);
+        return exportProject(projectId, null, CapitalizationPreferences.ALL);
     }
 
     @Override
     @Transactional(readOnly = true)
     public String exportProject(Integer projectId, Integer editionId) {
+        return exportProject(projectId, editionId, CapitalizationPreferences.ALL);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String exportProject(Integer projectId, Integer editionId, CapitalizationPreferences capsOrNull) {
+        CapitalizationPreferences caps = capsOrNull != null ? capsOrNull : CapitalizationPreferences.ALL;
         Project project = projectRepository.findById(projectId).orElse(null);
         ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
@@ -83,7 +90,7 @@ public class FountainExportServiceImpl implements FountainExportService {
                     String characterName = block.getPerson() != null ? block.getPerson().getName() : content;
                     if (characterName != null && !characterName.isBlank()) {
                         appendBlankLine(sb);
-                        appendCharacterCue(sb, characterName, false, block);
+                        appendCharacterCue(sb, characterName, false, block, caps);
                         activeCharacter = characterName;
                     }
                 }
@@ -91,7 +98,7 @@ public class FountainExportServiceImpl implements FountainExportService {
                     String characterName = block.getPerson() != null ? block.getPerson().getName() : content;
                     if (characterName != null && !characterName.isBlank()) {
                         appendBlankLine(sb);
-                        appendCharacterCue(sb, characterName, true, block);
+                        appendCharacterCue(sb, characterName, true, block, caps);
                         activeCharacter = characterName;
                     }
                 }
@@ -99,7 +106,7 @@ public class FountainExportServiceImpl implements FountainExportService {
                     String characterName = block.getPerson() != null ? block.getPerson().getName() : activeCharacter;
                     if (characterName != null && !characterName.equalsIgnoreCase(activeCharacter)) {
                         appendBlankLine(sb);
-                        appendCharacterCue(sb, characterName, false, null);
+                        appendCharacterCue(sb, characterName, false, null, caps);
                         activeCharacter = characterName;
                     } else if (activeCharacter == null) {
                         appendBlankLine(sb);
@@ -123,7 +130,7 @@ public class FountainExportServiceImpl implements FountainExportService {
                 case Block.TYPE_SHOT -> {
                     activeCharacter = null;
                     appendBlankLine(sb);
-                    appendShot(sb, content, block);
+                    appendShot(sb, content, block, caps);
                 }
                 case Block.TYPE_LYRICS -> {
                     activeCharacter = null;
@@ -285,9 +292,13 @@ public class FountainExportServiceImpl implements FountainExportService {
         return looksLikeCharacterCue(trimmed);
     }
 
-    private static void appendCharacterCue(StringBuilder sb, String characterName, boolean dual, Block block) {
+    private static void appendCharacterCue(StringBuilder sb, String characterName, boolean dual, Block block,
+                                           CapitalizationPreferences caps) {
         String name = characterName.trim();
-        String exported = name.toUpperCase(Locale.ROOT);
+        // With character caps off the cue keeps its typed case, which no longer
+        // matches Fountain's all-caps cue heuristic — needsForcedCharacter then
+        // adds the @ marker so the element still round-trips as a character.
+        String exported = caps.apply(name, Block.TYPE_CHARACTER);
         if (needsForcedCharacter(exported)) {
             exported = "@" + exported;
         }
@@ -338,14 +349,16 @@ public class FountainExportServiceImpl implements FountainExportService {
         }
     }
 
-    private static void appendShot(StringBuilder sb, String content, Block block) {
+    private static void appendShot(StringBuilder sb, String content, Block block, CapitalizationPreferences caps) {
         String trimmed = content.trim();
         if (trimmed.isEmpty()) {
             appendLine(sb, "CLOSE ON");
             return;
         }
-        // Fountain has no forced-shot marker; export as uppercase so it reads as a shot.
-        appendLine(sb, applyEmphasis(trimmed.toUpperCase(Locale.ROOT), block));
+        // Fountain has no forced-shot marker, so uppercase is the only signal that
+        // this is a shot. With shot caps off it re-imports as action — the cost of
+        // honoring the preference, and what the user asked for.
+        appendLine(sb, applyEmphasis(caps.apply(trimmed, Block.TYPE_SHOT), block));
     }
 
     /**

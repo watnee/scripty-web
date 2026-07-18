@@ -43,6 +43,18 @@ public class User {
     @Column(name = "password_change_required", nullable = false)
     private boolean passwordChangeRequired;
 
+    @Column(name = "auto_caps_scene", nullable = false)
+    private boolean autoCapsScene = true;
+
+    @Column(name = "auto_caps_character", nullable = false)
+    private boolean autoCapsCharacter = true;
+
+    @Column(name = "auto_caps_transition", nullable = false)
+    private boolean autoCapsTransition = true;
+
+    @Column(name = "auto_caps_shot", nullable = false)
+    private boolean autoCapsShot = true;
+
     @Transient
     private boolean admin;
 
@@ -215,6 +227,38 @@ public class User {
 
     public void setPasswordChangeRequired(boolean passwordChangeRequired) {
         this.passwordChangeRequired = passwordChangeRequired;
+    }
+
+    public boolean isAutoCapsScene() {
+        return autoCapsScene;
+    }
+
+    public void setAutoCapsScene(boolean autoCapsScene) {
+        this.autoCapsScene = autoCapsScene;
+    }
+
+    public boolean isAutoCapsCharacter() {
+        return autoCapsCharacter;
+    }
+
+    public void setAutoCapsCharacter(boolean autoCapsCharacter) {
+        this.autoCapsCharacter = autoCapsCharacter;
+    }
+
+    public boolean isAutoCapsTransition() {
+        return autoCapsTransition;
+    }
+
+    public void setAutoCapsTransition(boolean autoCapsTransition) {
+        this.autoCapsTransition = autoCapsTransition;
+    }
+
+    public boolean isAutoCapsShot() {
+        return autoCapsShot;
+    }
+
+    public void setAutoCapsShot(boolean autoCapsShot) {
+        this.autoCapsShot = autoCapsShot;
     }
 
     public Integer getDefaultProjectId() {

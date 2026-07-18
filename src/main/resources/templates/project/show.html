@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
-      th:class="${(canEditScript == null or canEditScript) ? 'scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select scripty-hide-block-element-labels' : 'scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select scripty-hide-block-element-labels scripty-script-readonly scripty-block-edit-locked'}">
+      th:class="${((canEditScript == null or canEditScript) ? 'scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select scripty-hide-block-element-labels' : 'scripty-hide-block-bookmarks scripty-hide-block-pins scripty-hide-block-select scripty-hide-block-element-labels scripty-script-readonly scripty-block-edit-locked') + (autoCaps != null and !#strings.isEmpty(autoCaps.htmlClasses()) ? ' ' + autoCaps.htmlClasses() : '')}">
 <head>
     <script th:inline="javascript">
     (function() {
@@ -10,6 +10,14 @@
         window.scriptyCanEditScript = canEditScript;
         window.scriptyProjectId = projectId || null;
         window.scriptyEditionId = editionId || null;
+        // Authoritative copy of the stored capitalization preference; the toggle
+        // script prefers this over its localStorage mirror.
+        window.scriptyAutoCaps = {
+            scene: /*[[${autoCaps == null or autoCaps.scene()}]]*/ true,
+            character: /*[[${autoCaps == null or autoCaps.character()}]]*/ true,
+            transition: /*[[${autoCaps == null or autoCaps.transition()}]]*/ true,
+            shot: /*[[${autoCaps == null or autoCaps.shot()}]]*/ true
+        };
         if (projectId) {
             try {
                 var params = new URLSearchParams(window.location.search);
@@ -309,6 +317,54 @@
                         </svg>
                         <span>Page view</span>
                     </button>
+                    <div class="nav-dropdown lists-dropdown auto-caps-dropdown" id="project-auto-caps-dropdown">
+                        <button id="nav-auto-caps"
+                                type="button"
+                                class="nav-dropdown-item auto-caps-toolbar-btn nav-dropdown-toggle"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                aria-label="Choose which elements are auto-capitalized"
+                                title="Choose which elements are auto-capitalized">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 18 8.5 6l5.5 12"></path>
+                                <line x1="5" y1="14" x2="12" y2="14"></line>
+                                <path d="M21 18v-5.5a2.5 2.5 0 0 0-5 0"></path>
+                                <path d="M16 15.5a2.5 2.5 0 0 0 5 0"></path>
+                            </svg>
+                            <span>Auto-capitalize</span>
+                            <span class="lists-submenu-caret" aria-hidden="true">›</span>
+                        </button>
+                        <div class="nav-dropdown-menu lists-menu" role="menu" aria-label="Auto-capitalize elements">
+                            <button type="button"
+                                    class="nav-dropdown-item auto-caps-item"
+                                    role="menuitemcheckbox"
+                                    data-auto-caps="scene"
+                                    aria-checked="true"
+                                    aria-label="Auto-capitalize scene headings"
+                                    title="Auto-capitalize scene headings"><span>Scene headings</span></button>
+                            <button type="button"
+                                    class="nav-dropdown-item auto-caps-item"
+                                    role="menuitemcheckbox"
+                                    data-auto-caps="character"
+                                    aria-checked="true"
+                                    aria-label="Auto-capitalize character cues"
+                                    title="Auto-capitalize character cues"><span>Character cues</span></button>
+                            <button type="button"
+                                    class="nav-dropdown-item auto-caps-item"
+                                    role="menuitemcheckbox"
+                                    data-auto-caps="transition"
+                                    aria-checked="true"
+                                    aria-label="Auto-capitalize transitions"
+                                    title="Auto-capitalize transitions"><span>Transitions</span></button>
+                            <button type="button"
+                                    class="nav-dropdown-item auto-caps-item"
+                                    role="menuitemcheckbox"
+                                    data-auto-caps="shot"
+                                    aria-checked="true"
+                                    aria-label="Auto-capitalize shots"
+                                    title="Auto-capitalize shots"><span>Shots</span></button>
+                        </div>
+                    </div>
                     <div class="nav-dropdown lists-dropdown" id="project-lists-dropdown">
                         <button id="nav-lists"
                                 type="button"

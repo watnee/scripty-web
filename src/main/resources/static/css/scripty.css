@@ -14010,3 +14010,53 @@ html.scripty-block-selecting .song-block-row ::selection {
     opacity: 0.6;
     cursor: default;
 }
+
+/* ---------------------------------------------------------------------------
+   Auto-capitalization opt-out (per-user, see UserPreferenceRestController).
+
+   Uppercasing is presentational everywhere in the editor, so opting out is a
+   matter of undoing text-transform rather than touching stored text. These live
+   at the end of the file and use !important deliberately: they have to beat the
+   print block's !important rules, the page-view-mode rules, and the inline
+   style on the character-name input.
+   --------------------------------------------------------------------------- */
+html.scripty-no-caps-scene .block-content.block-type-scene,
+html.scripty-no-caps-scene .block-content.block-type-scene .script-block-text,
+html.scripty-no-caps-scene .block-content.block-type-scene .reader-visible-text,
+html.scripty-no-caps-scene .block-content.block-type-scene .block-input-textarea,
+html.scripty-no-caps-scene .block-content.block-type-scene .scene-header,
+html.scripty-no-caps-scene .block-content.block-type-scene textarea {
+    text-transform: none !important;
+}
+
+html.scripty-no-caps-character .block-content.block-type-character,
+html.scripty-no-caps-character .block-content.block-type-character .script-block-text,
+html.scripty-no-caps-character .block-content.block-type-character .reader-visible-text,
+html.scripty-no-caps-character .block-content.block-type-character .block-input-textarea,
+html.scripty-no-caps-character .block-content.block-type-character textarea,
+html.scripty-no-caps-character .block-content.block-type-dual_dialogue,
+html.scripty-no-caps-character .block-content.block-type-dual_dialogue .script-block-text,
+html.scripty-no-caps-character .block-content.block-type-dual_dialogue .reader-visible-text,
+html.scripty-no-caps-character .block-content.block-type-dual_dialogue .block-input-textarea,
+html.scripty-no-caps-character .block-content.block-type-dual_dialogue textarea,
+html.scripty-no-caps-character .script-character-name,
+html.scripty-no-caps-character .reader-visible-character-name,
+html.scripty-no-caps-character .character-name-input {
+    text-transform: none !important;
+}
+
+html.scripty-no-caps-transition .block-content.block-type-transition,
+html.scripty-no-caps-transition .block-content.block-type-transition .script-block-text,
+html.scripty-no-caps-transition .block-content.block-type-transition .reader-visible-text,
+html.scripty-no-caps-transition .block-content.block-type-transition .block-input-textarea,
+html.scripty-no-caps-transition .block-content.block-type-transition textarea {
+    text-transform: none !important;
+}
+
+html.scripty-no-caps-shot .block-content.block-type-shot,
+html.scripty-no-caps-shot .block-content.block-type-shot .script-block-text,
+html.scripty-no-caps-shot .block-content.block-type-shot .reader-visible-text,
+html.scripty-no-caps-shot .block-content.block-type-shot .block-input-textarea,
+html.scripty-no-caps-shot .block-content.block-type-shot textarea {
+    text-transform: none !important;
+}

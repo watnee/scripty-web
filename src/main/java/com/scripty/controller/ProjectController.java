@@ -35,6 +35,7 @@ import com.scripty.service.ProjectActivityService;
 import com.scripty.service.ScriptEditionService;
 import com.scripty.service.TeamService;
 import com.scripty.service.TextDocumentService;
+import com.scripty.service.CapitalizationPreferences;
 import com.scripty.service.UserService;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
@@ -759,6 +760,12 @@ public class ProjectController {
         ScriptEdition edition = scriptEditionService.resolveForAccess(id, editionId, canBrowseEditions);
         Integer resolvedEditionId = edition != null ? edition.getId() : editionId;
 
+        // Exports bake capitalization into the file, so they follow the
+        // exporting user's per-element preference rather than a fixed all-caps rule.
+        CapitalizationPreferences caps = principal != null
+                ? userService.readCapitalizationPreferences(principal.getName())
+                : CapitalizationPreferences.ALL;
+
         String normalized = format == null ? "fountain" : format.trim().toLowerCase();
         if ("scripty".equals(normalized) || "json".equals(normalized) || "project".equals(normalized)) {
             byte[] archive = projectArchiveService.exportProject(id);
@@ -772,7 +779,7 @@ public class ProjectController {
                     .body(archive);
         }
         if ("pdf".equals(normalized)) {
-            byte[] pdf = pdfExportService.exportProject(id, resolvedEditionId);
+            byte[] pdf = pdfExportService.exportProject(id, resolvedEditionId, caps);
             String filename = exportFilename(project, "pdf");
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)
@@ -780,7 +787,7 @@ public class ProjectController {
                     .body(pdf);
         }
         if ("docx".equals(normalized) || "word".equals(normalized)) {
-            byte[] docx = docxExportService.exportProject(id, resolvedEditionId);
+            byte[] docx = docxExportService.exportProject(id, resolvedEditionId, caps);
             String filename = exportFilename(project, "docx");
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(
@@ -789,7 +796,7 @@ public class ProjectController {
                     .body(docx);
         }
         if ("epub".equals(normalized) || "ebook".equals(normalized)) {
-            byte[] epub = epubExportService.exportProject(id, resolvedEditionId);
+            byte[] epub = epubExportService.exportProject(id, resolvedEditionId, caps);
             String filename = exportFilename(project, "epub");
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/epub+zip"))
@@ -797,7 +804,7 @@ public class ProjectController {
                     .body(epub);
         }
         if ("fdx".equals(normalized) || "finaldraft".equals(normalized) || "final-draft".equals(normalized)) {
-            byte[] fdx = fdxExportService.exportProject(id, resolvedEditionId);
+            byte[] fdx = fdxExportService.exportProject(id, resolvedEditionId, caps);
             String filename = exportFilename(project, "fdx");
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType("application/x-fdx"))
@@ -805,7 +812,7 @@ public class ProjectController {
                     .body(fdx);
         }
 
-        String fountain = fountainExportService.exportProject(id, resolvedEditionId);
+        String fountain = fountainExportService.exportProject(id, resolvedEditionId, caps);
         String filename = exportFilename(project, "fountain");
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/plain; charset=UTF-8"))

@@ -6,15 +6,34 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import com.scripty.service.CapitalizationPreferences;
+import com.scripty.service.UserService;
+
 @ControllerAdvice
 public class WebModelAdvice {
 
     private final String assetVersion;
     private final boolean serviceWorkerEnabled;
+    private final UserService userService;
 
-    public WebModelAdvice(FeatureFlags featureFlags, @Value("${app.asset-version:240}") String assetVersion) {
+    public WebModelAdvice(FeatureFlags featureFlags,
+                          UserService userService,
+                          @Value("${app.asset-version:240}") String assetVersion) {
         this.assetVersion = assetVersion;
+        this.userService = userService;
         this.serviceWorkerEnabled = featureFlags.isEnabled(FeatureFlag.SERVICE_WORKER);
+    }
+
+    /**
+     * Rendered onto {@code <html>} so the first paint already matches the user's
+     * preference — waiting for auto-caps-toggle.js would flash uppercase first.
+     */
+    @ModelAttribute("autoCaps")
+    public CapitalizationPreferences autoCaps() {
+        String username = currentUserId();
+        return username == null
+                ? CapitalizationPreferences.ALL
+                : userService.readCapitalizationPreferences(username);
     }
 
     @ModelAttribute("assetVersion")

@@ -35,19 +35,25 @@ public class EpubExportServiceImpl implements EpubExportService {
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId) {
-        return exportProject(projectId, null);
+        return exportProject(projectId, null, CapitalizationPreferences.ALL);
     }
 
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId, Integer editionId) {
+        return exportProject(projectId, editionId, CapitalizationPreferences.ALL);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportProject(Integer projectId, Integer editionId, CapitalizationPreferences caps) {
         Project project = projectRepository.findById(projectId).orElse(null);
         ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
                 ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
                 : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
         try {
-            return toEpub(project, blocks, projectId);
+            return toEpub(project, blocks, projectId, caps != null ? caps : CapitalizationPreferences.ALL);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to export project " + projectId + " as EPUB", e);
         }
@@ -59,6 +65,12 @@ public class EpubExportServiceImpl implements EpubExportService {
 
     /** Package-visible for unit tests. */
     static byte[] toEpub(Project project, List<Block> blocks, Integer projectId) throws IOException {
+        return toEpub(project, blocks, projectId, CapitalizationPreferences.ALL);
+    }
+
+    /** Package-visible for unit tests. */
+    static byte[] toEpub(Project project, List<Block> blocks, Integer projectId, CapitalizationPreferences caps)
+            throws IOException {
         String title = bookTitle(project);
         List<Chapter> chapters = splitIntoChapters(blocks);
 
@@ -70,12 +82,12 @@ public class EpubExportServiceImpl implements EpubExportService {
         for (int i = 0; i < chapters.size(); i++) {
             Chapter chapter = chapters.get(i);
             documents.add(new EpubPackage.Document(
-                    "chapter-" + (i + 1), chapter.href(), chapter.title(), chapterBody(chapter)));
+                    "chapter-" + (i + 1), chapter.href(), chapter.title(), chapterBody(chapter, caps)));
         }
 
         return EpubPackage.zip(
                 new EpubPackage.Metadata(title, bookAuthor(project), "scripty-project-" + projectId),
-                styleCss(),
+                styleCss(caps),
                 documents);
     }
 
@@ -111,10 +123,10 @@ public class EpubExportServiceImpl implements EpubExportService {
         return new Chapter(label, "chapter-" + (index + 1) + ".xhtml", List.copyOf(blocks));
     }
 
-    private static String chapterBody(Chapter chapter) {
+    private static String chapterBody(Chapter chapter, CapitalizationPreferences caps) {
         StringBuilder body = new StringBuilder();
         for (Block block : chapter.blocks()) {
-            appendBlock(body, block);
+            appendBlock(body, block, caps);
         }
         if (body.isEmpty()) {
             body.append("    <p class=\"action\"></p>\n");
@@ -122,7 +134,7 @@ public class EpubExportServiceImpl implements EpubExportService {
         return "    <section epub:type=\"chapter\">\n" + body + "    </section>\n";
     }
 
-    private static void appendBlock(StringBuilder body, Block block) {
+    private static void appendBlock(StringBuilder body, Block block, CapitalizationPreferences caps) {
         String type = block.getType() != null ? block.getType() : Block.TYPE_ACTION;
 
         if (Block.TYPE_PAGE_BREAK.equals(type)) {
@@ -142,7 +154,7 @@ public class EpubExportServiceImpl implements EpubExportService {
             if (name == null || name.isBlank()) {
                 return;
             }
-            content = name.trim().toUpperCase(Locale.ROOT);
+            content = caps.apply(name.trim(), type);
         }
         if (Block.TYPE_PARENTHETICAL.equals(type)) {
             String paren = content.trim();
@@ -202,19 +214,26 @@ public class EpubExportServiceImpl implements EpubExportService {
         return body.toString();
     }
 
-    private static String styleCss() {
+    private static String styleCss(CapitalizationPreferences caps) {
+        // Character cues are already uppercased in the markup above when enabled,
+        // so their rule only needs the transform as a belt-and-braces measure;
+        // scene/transition/shot rely on it entirely.
+        String sceneCaps = caps.scene() ? " text-transform: uppercase;" : "";
+        String characterCaps = caps.character() ? " text-transform: uppercase;" : "";
+        String transitionCaps = caps.transition() ? " text-transform: uppercase;" : "";
+        String shotCaps = caps.shot() ? " text-transform: uppercase;" : "";
         return """
                 body { font-family: "Courier Prime", "Courier New", monospace; margin: 1em; }
                 p { margin: 0 0 1em 0; white-space: pre-wrap; }
-                .scene { font-weight: bold; text-transform: uppercase; margin-top: 1.5em; }
+                .scene { font-weight: bold;%s margin-top: 1.5em; }
                 .action { }
-                .character { margin: 0 0 0 20%; text-transform: uppercase; }
-                .dual-dialogue { margin: 0 0 0 20%; text-transform: uppercase; }
-                .parenthetical { margin: 0 0 0 15%; }
-                .dialogue { margin: 0 0 1em 10%; }
-                .transition { text-align: right; text-transform: uppercase; }
-                .shot { text-transform: uppercase; }
-                .lyrics { font-style: italic; margin-left: 10%; }
+                .character { margin: 0 0 0 20%%;%s }
+                .dual-dialogue { margin: 0 0 0 20%%;%s }
+                .parenthetical { margin: 0 0 0 15%%; }
+                .dialogue { margin: 0 0 1em 10%%; }
+                .transition { text-align: right;%s }
+                .shot {%s }
+                .lyrics { font-style: italic; margin-left: 10%%; }
                 .centered { text-align: center; }
                 .section { font-weight: bold; }
                 .synopsis { font-style: italic; color: #555; }
@@ -223,10 +242,10 @@ public class EpubExportServiceImpl implements EpubExportService {
                 .bold { font-weight: bold; }
                 .italic { font-style: italic; }
                 .underline { text-decoration: underline; }
-                .title-page { text-align: center; margin-top: 25%; }
+                .title-page { text-align: center; margin-top: 25%%; }
                 .title-page .screenplay-title { text-transform: uppercase; }
                 .title-page .contact { margin-top: 2em; }
-                """;
+                """.formatted(sceneCaps, characterCaps, characterCaps, transitionCaps, shotCaps);
     }
 
     private static String bookTitle(Project project) {

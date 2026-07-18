@@ -294,9 +294,14 @@
             var dual = /\^\s*$/.test(firstLine);
             // Character cues are a single line; keep any body lines as-is so
             // Enter does not wipe dialogue typed under the cue in one block.
+            // The only place the editor rewrites typed text, so it has to honor
+            // the character auto-caps preference too — everywhere else is CSS.
+            var capsOn = typeof window.scriptyGetAutoCaps !== 'function'
+                || window.scriptyGetAutoCaps().character;
+            var exportedCue = capsOn ? cue.toUpperCase() : cue;
             var cueContent = singleLine
-                ? cue.toUpperCase()
-                : (cue.toUpperCase() + trimmed.slice(trimmed.indexOf('\n')));
+                ? exportedCue
+                : (exportedCue + trimmed.slice(trimmed.indexOf('\n')));
             return {
                 type: dual ? 'DUAL_DIALOGUE' : 'CHARACTER',
                 content: cueContent

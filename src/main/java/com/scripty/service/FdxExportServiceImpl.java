@@ -35,22 +35,34 @@ public class FdxExportServiceImpl implements FdxExportService {
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId) {
-        return exportProject(projectId, null);
+        return exportProject(projectId, null, CapitalizationPreferences.ALL);
     }
 
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId, Integer editionId) {
+        return exportProject(projectId, editionId, CapitalizationPreferences.ALL);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportProject(Integer projectId, Integer editionId, CapitalizationPreferences capsOrNull) {
+        CapitalizationPreferences caps = capsOrNull != null ? capsOrNull : CapitalizationPreferences.ALL;
         Project project = projectRepository.findById(projectId).orElse(null);
         ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
                 ? blockRepository.findByScriptEditionIdOrderByOrderAsc(edition.getId())
                 : blockRepository.findByProjectIdOrderByOrderAsc(projectId);
-        return toFdx(project, blocks).getBytes(StandardCharsets.UTF_8);
+        return toFdx(project, blocks, caps).getBytes(StandardCharsets.UTF_8);
     }
 
     /** Package-visible for unit tests. */
     static String toFdx(Project project, List<Block> blocks) {
+        return toFdx(project, blocks, CapitalizationPreferences.ALL);
+    }
+
+    /** Package-visible for unit tests. */
+    static String toFdx(Project project, List<Block> blocks, CapitalizationPreferences caps) {
         StringBuilder xml = new StringBuilder();
         xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n");
         xml.append("<FinalDraft DocumentType=\"Script\" Template=\"No\" Version=\"3\">\n");
@@ -71,7 +83,7 @@ public class FdxExportServiceImpl implements FdxExportService {
                     || Block.TYPE_SYNOPSIS.equals(block.getType())) {
                 continue;
             }
-            if (appendBlock(xml, blocks, i, nextStartsNewPage)) {
+            if (appendBlock(xml, blocks, i, nextStartsNewPage, caps)) {
                 wroteBody = true;
                 nextStartsNewPage = false;
             }
@@ -156,19 +168,19 @@ public class FdxExportServiceImpl implements FdxExportService {
      * @return true if a paragraph was written
      */
     private static boolean appendBlock(StringBuilder xml, List<Block> blocks, int index,
-                                       boolean startsNewPage) {
+                                       boolean startsNewPage, CapitalizationPreferences caps) {
         Block block = blocks.get(index);
         String type = block.getType();
         String content = block.getContent() != null ? block.getContent() : "";
 
         if (Block.TYPE_CHARACTER.equals(type) && isDualDialogueStart(blocks, index)) {
-            return appendDualDialogue(xml, blocks, index);
+            return appendDualDialogue(xml, blocks, index, caps);
         }
 
         switch (type) {
             case Block.TYPE_SCENE -> {
                 appendParagraph(xml, "Scene Heading", block, false,
-                        content.trim().toUpperCase(Locale.ROOT), startsNewPage);
+                        caps.apply(content.trim(), type), startsNewPage);
                 return true;
             }
             case Block.TYPE_ACTION, Block.TYPE_TEXT -> {
@@ -185,7 +197,7 @@ public class FdxExportServiceImpl implements FdxExportService {
                     return false;
                 }
                 appendParagraph(xml, "Character", block, false,
-                        name.trim().toUpperCase(Locale.ROOT), startsNewPage);
+                        caps.apply(name.trim(), type), startsNewPage);
                 return true;
             }
             case Block.TYPE_DUAL_DIALOGUE -> {
@@ -194,7 +206,7 @@ public class FdxExportServiceImpl implements FdxExportService {
                     return false;
                 }
                 appendParagraph(xml, "Character", block, false,
-                        name.trim().toUpperCase(Locale.ROOT), startsNewPage);
+                        caps.apply(name.trim(), type), startsNewPage);
                 return true;
             }
             case Block.TYPE_DIALOGUE -> {
@@ -211,12 +223,12 @@ public class FdxExportServiceImpl implements FdxExportService {
             }
             case Block.TYPE_TRANSITION -> {
                 appendParagraph(xml, "Transition", block, false,
-                        content.trim().toUpperCase(Locale.ROOT), startsNewPage);
+                        caps.apply(content.trim(), type), startsNewPage);
                 return true;
             }
             case Block.TYPE_SHOT -> {
                 appendParagraph(xml, "Shot", block, false,
-                        content.trim().toUpperCase(Locale.ROOT), startsNewPage);
+                        caps.apply(content.trim(), type), startsNewPage);
                 return true;
             }
             case Block.TYPE_CENTERED -> {
@@ -268,19 +280,20 @@ public class FdxExportServiceImpl implements FdxExportService {
         return i - 1; // caller increments
     }
 
-    private static boolean appendDualDialogue(StringBuilder xml, List<Block> blocks, int characterIndex) {
+    private static boolean appendDualDialogue(StringBuilder xml, List<Block> blocks, int characterIndex,
+                                              CapitalizationPreferences caps) {
         xml.append("    <Paragraph>\n");
 
         // Side 1: CHARACTER + following paren/dialogue until DUAL_DIALOGUE
         xml.append("      <DualDialogue>\n");
-        appendSideParagraph(xml, "Character", blocks.get(characterIndex));
+        appendSideParagraph(xml, "Character", blocks.get(characterIndex), caps);
         int i = characterIndex + 1;
         while (i < blocks.size()
                 && (Block.TYPE_PARENTHETICAL.equals(blocks.get(i).getType())
                 || Block.TYPE_DIALOGUE.equals(blocks.get(i).getType()))) {
             String type = Block.TYPE_PARENTHETICAL.equals(blocks.get(i).getType())
                     ? "Parenthetical" : "Dialogue";
-            appendSideParagraph(xml, type, blocks.get(i));
+            appendSideParagraph(xml, type, blocks.get(i), caps);
             i++;
         }
         xml.append("      </DualDialogue>\n");
@@ -288,14 +301,14 @@ public class FdxExportServiceImpl implements FdxExportService {
         // Side 2: DUAL_DIALOGUE + following paren/dialogue
         if (i < blocks.size() && Block.TYPE_DUAL_DIALOGUE.equals(blocks.get(i).getType())) {
             xml.append("      <DualDialogue>\n");
-            appendSideParagraph(xml, "Character", blocks.get(i));
+            appendSideParagraph(xml, "Character", blocks.get(i), caps);
             i++;
             while (i < blocks.size()
                     && (Block.TYPE_PARENTHETICAL.equals(blocks.get(i).getType())
                     || Block.TYPE_DIALOGUE.equals(blocks.get(i).getType()))) {
                 String type = Block.TYPE_PARENTHETICAL.equals(blocks.get(i).getType())
                         ? "Parenthetical" : "Dialogue";
-                appendSideParagraph(xml, type, blocks.get(i));
+                appendSideParagraph(xml, type, blocks.get(i), caps);
                 i++;
             }
             xml.append("      </DualDialogue>\n");
@@ -305,18 +318,19 @@ public class FdxExportServiceImpl implements FdxExportService {
         return true;
     }
 
-    private static void appendSideParagraph(StringBuilder xml, String fdxType, Block block) {
-        String content = blockContentForType(block, fdxType);
+    private static void appendSideParagraph(StringBuilder xml, String fdxType, Block block,
+                                            CapitalizationPreferences caps) {
+        String content = blockContentForType(block, fdxType, caps);
         xml.append("        <Paragraph Type=\"").append(fdxType).append("\">\n");
         appendTextRuns(xml, content, block, "          ");
         xml.append("        </Paragraph>\n");
     }
 
-    private static String blockContentForType(Block block, String fdxType) {
+    private static String blockContentForType(Block block, String fdxType, CapitalizationPreferences caps) {
         String content = block.getContent() != null ? block.getContent() : "";
         if ("Character".equals(fdxType)) {
             String name = block.getPerson() != null ? block.getPerson().getName() : content;
-            return name == null ? "" : name.trim().toUpperCase(Locale.ROOT);
+            return name == null ? "" : caps.apply(name.trim(), Block.TYPE_CHARACTER);
         }
         if ("Parenthetical".equals(fdxType)) {
             String paren = content.trim();

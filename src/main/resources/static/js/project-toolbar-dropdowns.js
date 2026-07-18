@@ -13,6 +13,7 @@
     var DROPDOWNS = [
         { id: 'project-file-dropdown', toggle: '.file-toolbar-btn' },
         { id: 'project-lists-dropdown', toggle: '.lists-toolbar-btn' },
+        { id: 'project-auto-caps-dropdown', toggle: '.auto-caps-toolbar-btn', keepOpenOnItemClick: true },
         { id: 'project-element-type-dropdown', toggle: '.element-type-toolbar-btn' },
         { id: 'project-view-dropdown', toggle: '.view-toolbar-btn', keepOpenOnItemClick: true },
         { id: 'project-tools-dropdown', toggle: '.tools-toolbar-btn', keepOpenOnItemClick: true },

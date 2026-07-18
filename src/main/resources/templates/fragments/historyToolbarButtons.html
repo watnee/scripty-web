@@ -29,6 +29,16 @@
                 <span class="nav-dropdown-item-label">Search</span>
                 <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
             </button>
+            <button th:if="${canEditScript == null or canEditScript}"
+                    id="nav-find-replace"
+                    type="button"
+                    class="nav-dropdown-item"
+                    role="menuitem"
+                    aria-label="Find and replace"
+                    title="Find and replace">
+                <span class="nav-dropdown-item-label">Find &amp; Replace</span>
+                <span class="nav-dropdown-shortcut" aria-hidden="true"></span>
+            </button>
         </div>
     </div>
 </th:block>

@@ -4917,6 +4917,173 @@ html.scripty-screenplay-full-width .view-menu .full-width-toolbar-btn .full-widt
     display: none;
 }
 
+/* --- Find & replace ---------------------------------------------------- */
+
+/* Replace mode stacks find / replace / options, so the strip becomes a column. */
+.project-search-dropdown[data-mode="replace"].is-open {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+    flex: 1 1 20rem;
+    max-width: min(26rem, calc(100% - 8rem));
+}
+
+.project-search-dropdown[data-mode="replace"] .project-search-wrap {
+    max-width: none;
+}
+
+.project-search-count {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0 0.4rem;
+    color: var(--muted-fg, #64748b);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.project-search-count[hidden],
+.project-search-nav[hidden],
+.project-replace-wrap[hidden],
+.project-replace-options[hidden] {
+    display: none;
+}
+
+.project-search-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+.project-search-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted-fg, #64748b);
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.project-search-nav-btn:hover,
+.project-search-nav-btn:focus-visible {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    color: var(--fg, inherit);
+}
+
+.project-replace-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+    min-height: 2.25rem;
+    border-radius: 8px;
+    border: 1px solid var(--border, #cbd5e1);
+    background: var(--box-bg, #ffffff);
+}
+
+.project-replace-wrap:focus-within {
+    border-color: var(--accent, #475569);
+    box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.12);
+}
+
+.project-replace-input {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0.5rem 0.55rem 0.5rem 0.75rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    font-size: 0.9rem;
+    line-height: 1.2;
+}
+
+.project-replace-input:focus,
+.project-replace-input:focus-visible {
+    outline: none;
+    border: none;
+    box-shadow: none;
+}
+
+.project-replace-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+}
+
+.project-replace-btn {
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--fg, inherit);
+    font-size: 0.78rem;
+    line-height: 1.4;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.project-replace-btn:hover,
+.project-replace-btn:focus-visible {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    border-color: var(--accent, #475569);
+}
+
+.project-replace-options {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.15rem 0.75rem;
+    padding: 0 0.2rem;
+}
+
+.project-replace-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0;
+    color: var(--muted-fg, #64748b);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    white-space: nowrap;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.project-replace-option input[type="checkbox"] {
+    width: 0.85rem;
+    height: 0.85rem;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+mark.project-search-hit {
+    padding: 0 1px;
+    border-radius: 2px;
+    background: var(--search-hit-bg, #fde68a);
+    /* Fixed dark ink: the highlight stays amber in both themes, so inheriting a
+       light foreground would make the hit unreadable in dark mode. */
+    color: #1f2937;
+}
+
+mark.project-search-hit.is-current {
+    background: var(--search-hit-current-bg, #fb923c);
+    box-shadow: 0 0 0 2px var(--search-hit-current-bg, #fb923c);
+}
+
 html.scripty-hide-block-bookmarks .block-action-bookmark {
     display: none !important;
 }
@@ -6493,6 +6660,45 @@ body:has(main.text-documents-page) > main.text-documents-page {
     gap: 0.75rem;
     margin-bottom: 0.35rem;
     min-height: 2.25rem;
+}
+
+/* Notes formatting controls. Explicit inline-flex so the buttons align as a
+   group regardless of missing.css inline-block defaults. */
+.note-format-toolbar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    vertical-align: middle;
+}
+
+.note-format-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 1.85rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--fg, inherit);
+    font-size: 0.78rem;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.note-format-btn:hover,
+.note-format-btn:focus-visible {
+    background: var(--accent-bg, rgba(0, 0, 0, 0.05));
+    border-color: var(--accent, #475569);
+}
+
+.note-format-divider {
+    width: 1px;
+    height: 1.1rem;
+    margin: 0 0.2rem;
+    background: var(--border, #cbd5e1);
 }
 
 /* "Last edited" / save status riding the toolbar row rather than sitting under

@@ -779,6 +779,53 @@ public class BlockController {
         return redirectAfterBulkAction(projectId, blockIds);
     }
 
+    /** Replaces one occurrence in one block; swaps like saveEditInline so find state survives. */
+    @RequestMapping(value = "/replaceOne", method = RequestMethod.POST)
+    public String replaceOne(@RequestParam Integer id,
+                             @RequestParam String find,
+                             @RequestParam(required = false, defaultValue = "") String replace,
+                             @RequestParam(required = false, defaultValue = "false") boolean matchCase,
+                             @RequestParam(required = false, defaultValue = "false") boolean wholeWord,
+                             @RequestParam(required = false, defaultValue = "0") int occurrence,
+                             Model model,
+                             Principal principal) {
+        if (denyEditBlock(id, principal)) {
+            return denyRedirect();
+        }
+        projectUndoRedoService.recordCheckpointForBlock(id);
+        Block block = blockService.replaceOccurrenceInBlock(id, find, replace, matchCase, wholeWord, occurrence);
+        if (block != null) {
+            projectVersionService.autoSaveVersionForBlock(block.getId());
+        }
+        model.addAttribute("block", blockService.getBlockViewModel(id));
+        return "block/showInline";
+    }
+
+    @RequestMapping(value = "/bulkReplace", method = RequestMethod.POST)
+    public String bulkReplace(@RequestParam String ids,
+                              @RequestParam String find,
+                              @RequestParam(required = false, defaultValue = "") String replace,
+                              @RequestParam(required = false, defaultValue = "false") boolean matchCase,
+                              @RequestParam(required = false, defaultValue = "false") boolean wholeWord,
+                              @RequestParam(required = false, defaultValue = "false") boolean includeCharacterCues,
+                              @RequestParam(required = false) Integer projectId,
+                              Principal principal) {
+        List<Integer> blockIds = parseBlockIds(ids);
+        if (blockIds.isEmpty() || find == null || find.isEmpty() || denyBulk(blockIds, projectId, principal)) {
+            return denyRedirect();
+        }
+        Integer resolvedProjectId = resolveProjectId(projectId, blockIds);
+        // One checkpoint for the whole replace, so the user undoes it in a single step.
+        if (resolvedProjectId != null) {
+            projectUndoRedoService.recordCheckpoint(resolvedProjectId);
+        }
+        blockService.replaceInBlocks(blockIds, find, replace, matchCase, wholeWord, includeCharacterCues);
+        if (resolvedProjectId != null) {
+            projectVersionService.autoSaveVersion(resolvedProjectId);
+        }
+        return redirectAfterBulkAction(projectId, blockIds);
+    }
+
     @RequestMapping(value = "/bulkDelete", method = RequestMethod.POST)
     public String bulkDelete(@RequestParam String ids, @RequestParam(required = false) Integer projectId,
                              Principal principal) {

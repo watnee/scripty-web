@@ -71,6 +71,26 @@
             </div>
         </div>
 
+        <!--/* Notes get a formatting row in the same slot. The prefixes it inserts
+               are plain text — nothing here is parsed or rendered as markup. */-->
+        <div class="text-document-toolbar-row" th:unless="${isSong}">
+            <div class="text-document-top-bar-actions">
+                <div class="note-format-toolbar" role="group" aria-label="Formatting">
+                    <button type="button" class="note-format-btn" data-note-format="bullet"
+                            title="Bullet list" aria-label="Bullet list">&bull;&nbsp;List</button>
+                    <button type="button" class="note-format-btn" data-note-format="ordered"
+                            title="Numbered list" aria-label="Numbered list">1.&nbsp;List</button>
+                    <span class="note-format-divider" aria-hidden="true"></span>
+                    <button type="button" class="note-format-btn" data-note-format="h1"
+                            title="Heading 1" aria-label="Heading 1">H1</button>
+                    <button type="button" class="note-format-btn" data-note-format="h2"
+                            title="Heading 2" aria-label="Heading 2">H2</button>
+                    <button type="button" class="note-format-btn" data-note-format="h3"
+                            title="Heading 3" aria-label="Heading 3">H3</button>
+                </div>
+            </div>
+        </div>
+
         <p class="text-document-import-banner"
            th:if="${documentImportMessage != null}"
            th:text="${documentImportMessage}"

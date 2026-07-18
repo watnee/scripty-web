@@ -60,4 +60,21 @@ public interface BlockService {
     /** Sets the background tint on the given blocks; an unknown or blank color clears it. */
     void setBlockHighlights(java.util.List<Integer> ids, String highlight);
     void toggleBlockTextStyles(java.util.List<Integer> ids, String style);
+
+    /**
+     * Replaces every literal occurrence of {@code find} with {@code replace} in the content of the
+     * given blocks. Character cue blocks are skipped unless {@code includeCharacterCues} is set,
+     * since their content is kept in sync with the block's person. Returns the number of blocks
+     * whose content actually changed.
+     */
+    int replaceInBlocks(java.util.List<Integer> ids, String find, String replace,
+                        boolean matchCase, boolean wholeWord, boolean includeCharacterCues);
+
+    /**
+     * Replaces a single occurrence — the one at {@code occurrence} (0-based) within the block's
+     * content — leaving the rest untouched. Returns the block, or null if it does not exist or has
+     * no such occurrence.
+     */
+    Block replaceOccurrenceInBlock(Integer id, String find, String replace,
+                                   boolean matchCase, boolean wholeWord, int occurrence);
 }

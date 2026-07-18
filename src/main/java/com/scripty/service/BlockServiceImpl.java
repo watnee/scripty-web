@@ -1120,6 +1120,97 @@ public class BlockServiceImpl implements BlockService {
         }
     }
 
+    /**
+     * Compiles the find term as a literal — regex search is deliberately not exposed to users.
+     */
+    private java.util.regex.Pattern buildFindPattern(String find, boolean matchCase, boolean wholeWord) {
+        String quoted = java.util.regex.Pattern.quote(find);
+        if (wholeWord) {
+            quoted = "\\b" + quoted + "\\b";
+        }
+        int flags = matchCase ? 0
+                : (java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.UNICODE_CASE);
+        return java.util.regex.Pattern.compile(quoted, flags);
+    }
+
+    @Override
+    @Transactional
+    public Block replaceOccurrenceInBlock(Integer id, String find, String replace,
+                                          boolean matchCase, boolean wholeWord, int occurrence) {
+        if (id == null || find == null || find.isEmpty() || occurrence < 0) {
+            return null;
+        }
+        Block block = blockRepository.findById(id).orElse(null);
+        if (block == null) {
+            return null;
+        }
+        String original = block.getContent();
+        if (original == null || original.isEmpty()) {
+            return null;
+        }
+        java.util.regex.Matcher matcher = buildFindPattern(find, matchCase, wholeWord).matcher(original);
+        int index = 0;
+        while (matcher.find()) {
+            if (index == occurrence) {
+                String updated = PlainTextSanitizer.sanitize(
+                        original.substring(0, matcher.start())
+                                + (replace != null ? replace : "")
+                                + original.substring(matcher.end()));
+                if (updated == null || updated.equals(original)) {
+                    return block;
+                }
+                block.setContent(updated);
+                blockRepository.save(block);
+                recordScriptEdited(block.getProject(), resolveEdition(block));
+                return block;
+            }
+            index++;
+        }
+        return null;
+    }
+
+    @Override
+    @Transactional
+    public int replaceInBlocks(List<Integer> ids, String find, String replace,
+                               boolean matchCase, boolean wholeWord, boolean includeCharacterCues) {
+        if (ids == null || ids.isEmpty() || find == null || find.isEmpty()) {
+            return 0;
+        }
+        java.util.regex.Pattern pattern = buildFindPattern(find, matchCase, wholeWord);
+        String replacement = java.util.regex.Matcher.quoteReplacement(replace != null ? replace : "");
+
+        java.util.Set<Integer> touchedProjectIds = new java.util.HashSet<>();
+        int changed = 0;
+        for (Integer id : ids) {
+            Block block = blockRepository.findById(id).orElse(null);
+            if (block == null) {
+                continue;
+            }
+            // Cue content mirrors the block's person; rewriting it here would desync the two.
+            if (!includeCharacterCues && Block.isCharacterCueType(block.getType())) {
+                continue;
+            }
+            String original = block.getContent();
+            if (original == null || original.isEmpty()) {
+                continue;
+            }
+            String updated = PlainTextSanitizer.sanitize(pattern.matcher(original).replaceAll(replacement));
+            if (updated == null || updated.equals(original)) {
+                continue;
+            }
+            block.setContent(updated);
+            blockRepository.save(block);
+            changed++;
+            if (block.getProject() != null) {
+                touchedProjectIds.add(block.getProject().getId());
+            }
+        }
+        for (Integer projectId : touchedProjectIds) {
+            projectRepository.findById(projectId).ifPresent(this::recordScriptEdited);
+        }
+        return changed;
+    }
+
     @Override
     @Transactional
     public void deleteBlocks(List<Integer> ids) {

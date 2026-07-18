@@ -10939,6 +10939,40 @@ html.safari-reader-view .block-content .reader-visible-text {
     color: var(--accent, #475569);
 }
 
+.script-reader-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg, #fff);
+    border-bottom: 1px solid var(--graphical-fg, #e5e7eb);
+    /* Aligns the link with the 40rem text column (which carries 1.25rem of side padding). */
+    padding: 0.75rem max(1.25rem, calc((100% - 42.5rem) / 2 + 1.25rem));
+    font-family: system-ui, sans-serif;
+    font-size: 0.9rem;
+}
+
+.script-reader-header .script-reader-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--accent, #475569);
+    text-decoration: none;
+}
+
+.script-reader-header .script-reader-back:hover {
+    text-decoration: underline;
+}
+
+.script-reader-page main {
+    padding-top: 1.5rem;
+}
+
+@media print {
+    .script-reader-header {
+        display: none;
+    }
+}
+
 .project-create-scene {
     text-align: center;
     width: 100%;

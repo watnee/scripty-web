@@ -16,6 +16,7 @@ import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import jakarta.validation.Valid;
 import java.security.Principal;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -105,17 +106,25 @@ public class ProjectRestController {
     }
 
     /**
-     * Imports a project from a .scripty.json archive (mirrors the web list's
-     * Import button). The uploaded file is the "file" multipart part.
+     * Imports one or more projects from a .scripty.json archive (mirrors the web
+     * list's Import button). The uploaded file is the "file" multipart part. A
+     * multi-project bundle returns a collection instead of a single resource,
+     * since there is no one Location to point at.
      */
     @RequestMapping(value = "/import", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> importProject(@RequestPart("file") MultipartFile file) {
         try {
-            Project project = projectArchiveService.importProject(file);
-            EntityModel<ProjectResource> resource = projectResourceAssembler.toModel(project);
-            return ResponseEntity
-                    .created(resource.getRequiredLink(IanaLinkRelations.SELF).toUri())
-                    .body(resource);
+            List<Project> projects = projectArchiveService.importProjects(file);
+            if (projects.size() == 1) {
+                EntityModel<ProjectResource> resource = projectResourceAssembler.toModel(projects.get(0));
+                return ResponseEntity
+                        .created(resource.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                        .body(resource);
+            }
+            List<EntityModel<ProjectResource>> resources = projects.stream()
+                    .map(projectResourceAssembler::toModel)
+                    .toList();
+            return ResponseEntity.status(HttpStatus.CREATED).body(CollectionModel.of(resources));
         } catch (ScriptImportException e) {
             return new ResponseEntity<>(java.util.Map.of("file", e.getUserMessage()), HttpStatus.BAD_REQUEST);
         }

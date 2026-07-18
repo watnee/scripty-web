@@ -4,8 +4,8 @@
  * Selecting nothing downloads every project the user can see, so a plain click
  * still works for anyone who never touches the checkboxes. Selection follows
  * the search filter: a hidden row is not part of "all", and cannot be picked by
- * "Select all". A single project downloads as one .scripty.json; multiple
- * download as one .zip (handled server-side).
+ * "Select all". One or many, the download is always a single .scripty.json the
+ * Import button can read back (the multi-project bundle is built server-side).
  */
 (function () {
     'use strict';
@@ -59,7 +59,7 @@
                     : 'Download';
                 downloadBtn.title = chosen.length
                     ? 'Download ' + plural(chosen.length, 'selected project')
-                    : 'Download every project as .scripty.json files';
+                    : 'Download every project as one .scripty.json file';
                 // Nothing visible means "all projects" resolves to nothing.
                 downloadBtn.classList.toggle('is-disabled', visible.length === 0);
                 downloadBtn.setAttribute('aria-disabled', visible.length === 0 ? 'true' : 'false');

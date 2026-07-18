@@ -1,6 +1,8 @@
 package com.scripty.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scripty.dto.Block;
 import com.scripty.dto.Person;
@@ -14,20 +16,15 @@ import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.ScriptEditionRepository;
 import com.scripty.repository.TextDocumentRepository;
 import com.scripty.util.PlainTextSanitizer;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,6 +66,18 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId) {
+        ProjectArchive archive = buildArchive(projectId);
+        if (archive == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(archive);
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not serialize project " + projectId, e);
+        }
+    }
+
+    private ProjectArchive buildArchive(Integer projectId) {
         Project project = projectRepository.findById(projectId).orElse(null);
         if (project == null) {
             return null;
@@ -136,106 +145,107 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
             archive.blocks.add(entry);
         }
 
-        try {
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(archive);
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not serialize project " + projectId, e);
-        }
+        return archive;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public byte[] exportProjectsZip(List<Integer> projectIds) {
+    public byte[] exportProjectsBundle(List<Integer> projectIds) {
         if (projectIds == null || projectIds.isEmpty()) {
             return null;
         }
 
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        Set<String> usedNames = new HashSet<>();
-        boolean wroteAny = false;
-        try (ZipOutputStream zip = new ZipOutputStream(buffer)) {
-            for (Integer projectId : projectIds) {
-                if (projectId == null) {
-                    continue;
-                }
-                Project project = projectRepository.findById(projectId).orElse(null);
-                if (project == null) {
-                    continue;
-                }
-                byte[] archive = exportProject(projectId);
-                if (archive == null) {
-                    continue;
-                }
-                zip.putNextEntry(new ZipEntry(uniqueEntryName(project, projectId, usedNames)));
-                zip.write(archive);
-                zip.closeEntry();
-                wroteAny = true;
+        ProjectArchiveBundle bundle = new ProjectArchiveBundle();
+        bundle.format = ProjectArchiveBundle.FORMAT;
+        bundle.formatVersion = ProjectArchiveBundle.CURRENT_VERSION;
+        bundle.exportedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        for (Integer projectId : projectIds) {
+            if (projectId == null) {
+                continue;
             }
+            ProjectArchive archive = buildArchive(projectId);
+            if (archive != null) {
+                bundle.projects.add(archive);
+            }
+        }
+        if (bundle.projects.isEmpty()) {
+            return null;
+        }
+
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(bundle);
         } catch (IOException e) {
-            throw new IllegalStateException("Could not build project archive ZIP", e);
+            throw new IllegalStateException("Could not serialize project bundle", e);
         }
-        return wroteAny ? buffer.toByteArray() : null;
-    }
-
-    private static String uniqueEntryName(Project project, Integer projectId, Set<String> usedNames) {
-        String base = archiveBaseName(project, projectId);
-        String candidate = base + ".scripty.json";
-        int suffix = 2;
-        while (!usedNames.add(candidate)) {
-            candidate = base + "-" + suffix++ + ".scripty.json";
-        }
-        return candidate;
-    }
-
-    private static String archiveBaseName(Project project, Integer projectId) {
-        String source = null;
-        if (project.getScreenplayTitle() != null && !project.getScreenplayTitle().isBlank()) {
-            source = project.getScreenplayTitle();
-        } else if (project.getTitle() != null && !project.getTitle().isBlank()) {
-            source = project.getTitle();
-        }
-        if (source == null) {
-            return "project-" + projectId;
-        }
-        String sanitized = source.trim()
-                .replaceAll("[\\\\/:*?\"<>|]+", "-")
-                .replaceAll("\\s+", "-")
-                .replaceAll("[^a-zA-Z0-9._-]+", "-")
-                .replaceAll("-{2,}", "-")
-                .replaceAll("^[.-]+|[.-]+$", "");
-        if (sanitized.isBlank()) {
-            return "project-" + projectId;
-        }
-        if (sanitized.length() > 80) {
-            sanitized = sanitized.substring(0, 80).replaceAll("[.-]+$", "");
-        }
-        return sanitized;
     }
 
     @Override
     @Transactional
-    public Project importProject(MultipartFile file) throws ScriptImportException {
+    public List<Project> importProjects(MultipartFile file) throws ScriptImportException {
         if (file == null || file.isEmpty()) {
             throw new ScriptImportException("No file selected. Choose a .scripty.json file exported from Scripty.");
         }
 
-        ProjectArchive archive;
+        JsonNode root;
         try {
-            archive = objectMapper.readValue(file.getBytes(), ProjectArchive.class);
+            root = objectMapper.readTree(file.getBytes());
         } catch (IOException e) {
             throw new ScriptImportException(BAD_FILE_MESSAGE, e);
         }
-        if (archive == null || !ProjectArchive.FORMAT.equals(archive.format)) {
+        if (root == null || !root.isObject()) {
             throw new ScriptImportException(BAD_FILE_MESSAGE);
         }
-        if (archive.formatVersion < 1) {
+
+        String format = root.path("format").asText(null);
+        if (ProjectArchiveBundle.FORMAT.equals(format)) {
+            ProjectArchiveBundle bundle = convert(root, ProjectArchiveBundle.class);
+            checkVersion(bundle.formatVersion, ProjectArchiveBundle.CURRENT_VERSION);
+            List<Project> imported = new ArrayList<>();
+            if (bundle.projects != null) {
+                for (ProjectArchive archive : bundle.projects) {
+                    if (archive == null) {
+                        continue;
+                    }
+                    // A bundle vouches for its entries, so tolerate entries that
+                    // omit the per-project format marker.
+                    checkVersion(archive.formatVersion > 0 ? archive.formatVersion : 1,
+                            ProjectArchive.CURRENT_VERSION);
+                    imported.add(importArchive(archive));
+                }
+            }
+            if (imported.isEmpty()) {
+                throw new ScriptImportException("That project file doesn't contain any projects.");
+            }
+            return imported;
+        }
+
+        if (!ProjectArchive.FORMAT.equals(format)) {
             throw new ScriptImportException(BAD_FILE_MESSAGE);
         }
-        if (archive.formatVersion > ProjectArchive.CURRENT_VERSION) {
+        ProjectArchive archive = convert(root, ProjectArchive.class);
+        checkVersion(archive.formatVersion, ProjectArchive.CURRENT_VERSION);
+        return List.of(importArchive(archive));
+    }
+
+    private <T> T convert(JsonNode root, Class<T> type) throws ScriptImportException {
+        try {
+            return objectMapper.treeToValue(root, type);
+        } catch (JsonProcessingException e) {
+            throw new ScriptImportException(BAD_FILE_MESSAGE, e);
+        }
+    }
+
+    private static void checkVersion(int formatVersion, int currentVersion) throws ScriptImportException {
+        if (formatVersion < 1) {
+            throw new ScriptImportException(BAD_FILE_MESSAGE);
+        }
+        if (formatVersion > currentVersion) {
             throw new ScriptImportException(
                     "That project file was exported by a newer version of Scripty and can't be imported here.");
         }
+    }
 
+    private Project importArchive(ProjectArchive archive) {
         LocalDateTime now = LocalDateTime.now();
         Project project = new Project();
         ProjectArchive.Info info = archive.project != null ? archive.project : new ProjectArchive.Info();

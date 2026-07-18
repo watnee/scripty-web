@@ -14,17 +14,19 @@ public interface ProjectArchiveService {
     byte[] exportProject(Integer projectId);
 
     /**
-     * Bundle several projects' .scripty.json archives into a single ZIP so a
-     * "select all" download returns one file. Unknown or missing projects are
-     * skipped; returns {@code null} when none of the ids resolve to a project.
+     * Bundle several projects into a single .scripty.json file so a "select all"
+     * download returns one file that {@link #importProjects} can read back.
+     * Unknown or missing projects are skipped; returns {@code null} when none of
+     * the ids resolve to a project.
      */
-    byte[] exportProjectsZip(List<Integer> projectIds);
+    byte[] exportProjectsBundle(List<Integer> projectIds);
 
     /**
-     * Create a brand-new project from an archive file.
+     * Create brand-new projects from an archive file — one project for a
+     * single-project file, several for a bundle. Never returns an empty list.
      *
      * @throws ScriptImportException with a user-facing message when the file is
      *         missing, not a Scripty project file, or from a newer format version.
      */
-    Project importProject(MultipartFile file) throws ScriptImportException;
+    List<Project> importProjects(MultipartFile file) throws ScriptImportException;
 }

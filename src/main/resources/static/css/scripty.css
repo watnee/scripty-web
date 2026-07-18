@@ -3854,6 +3854,69 @@ tr.filtered-out,
     margin-left: auto;
 }
 
+.project-list-bulkbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.project-list-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    vertical-align: middle;
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted-fg, #64748b);
+    cursor: pointer;
+    user-select: none;
+}
+
+.project-list-select-all input[type="checkbox"] {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent, #475569);
+}
+
+.project-list-download-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0.45rem 0.95rem;
+    border-radius: 8px;
+    border: 1px solid var(--border, #cbd5e1);
+    background: transparent;
+    color: inherit !important;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none !important;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.project-list-download-btn:hover,
+.project-list-download-btn:focus-visible {
+    border-color: var(--accent, #475569);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+    text-decoration: none !important;
+}
+
+.project-list-download-btn.is-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    transform: none;
+    box-shadow: none;
+}
+
 .project-list-sort-label {
     margin: 0;
 }
@@ -5074,6 +5137,19 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
     .project-list-card {
         animation: none !important;
     }
+}
+
+/* Selection checkbox sits at the head of each card row (see the bulk-download
+   bar). Table-cell wrappers from the original table layout are dropped — the
+   card is a flex row, so the checkbox aligns itself. */
+.project-list-select-checkbox {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent, #475569);
+    flex: 0 0 auto;
+    align-self: center;
 }
 
 .project-list-star {

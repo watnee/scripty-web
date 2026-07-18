@@ -14,15 +14,20 @@ import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.ScriptEditionRepository;
 import com.scripty.repository.TextDocumentRepository;
 import com.scripty.util.PlainTextSanitizer;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -136,6 +141,75 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
         } catch (IOException e) {
             throw new IllegalStateException("Could not serialize project " + projectId, e);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportProjectsZip(List<Integer> projectIds) {
+        if (projectIds == null || projectIds.isEmpty()) {
+            return null;
+        }
+
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        Set<String> usedNames = new HashSet<>();
+        boolean wroteAny = false;
+        try (ZipOutputStream zip = new ZipOutputStream(buffer)) {
+            for (Integer projectId : projectIds) {
+                if (projectId == null) {
+                    continue;
+                }
+                Project project = projectRepository.findById(projectId).orElse(null);
+                if (project == null) {
+                    continue;
+                }
+                byte[] archive = exportProject(projectId);
+                if (archive == null) {
+                    continue;
+                }
+                zip.putNextEntry(new ZipEntry(uniqueEntryName(project, projectId, usedNames)));
+                zip.write(archive);
+                zip.closeEntry();
+                wroteAny = true;
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not build project archive ZIP", e);
+        }
+        return wroteAny ? buffer.toByteArray() : null;
+    }
+
+    private static String uniqueEntryName(Project project, Integer projectId, Set<String> usedNames) {
+        String base = archiveBaseName(project, projectId);
+        String candidate = base + ".scripty.json";
+        int suffix = 2;
+        while (!usedNames.add(candidate)) {
+            candidate = base + "-" + suffix++ + ".scripty.json";
+        }
+        return candidate;
+    }
+
+    private static String archiveBaseName(Project project, Integer projectId) {
+        String source = null;
+        if (project.getScreenplayTitle() != null && !project.getScreenplayTitle().isBlank()) {
+            source = project.getScreenplayTitle();
+        } else if (project.getTitle() != null && !project.getTitle().isBlank()) {
+            source = project.getTitle();
+        }
+        if (source == null) {
+            return "project-" + projectId;
+        }
+        String sanitized = source.trim()
+                .replaceAll("[\\\\/:*?\"<>|]+", "-")
+                .replaceAll("\\s+", "-")
+                .replaceAll("[^a-zA-Z0-9._-]+", "-")
+                .replaceAll("-{2,}", "-")
+                .replaceAll("^[.-]+|[.-]+$", "");
+        if (sanitized.isBlank()) {
+            return "project-" + projectId;
+        }
+        if (sanitized.length() > 80) {
+            sanitized = sanitized.substring(0, 80).replaceAll("[.-]+$", "");
+        }
+        return sanitized;
     }
 
     @Override

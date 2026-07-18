@@ -30,6 +30,11 @@ public class DeletedBlockListViewModel {
         return retentionDays;
     }
 
+    /** True when deleted blocks are kept until someone deletes them for good. */
+    public boolean isRetentionUnlimited() {
+        return retentionDays <= 0;
+    }
+
     public List<DeletedBlockViewModel> getBlocks() {
         return blocks;
     }

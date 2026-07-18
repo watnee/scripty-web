@@ -182,4 +182,13 @@ class BlockTrashServiceImplTest {
         assertEquals(2, service.purgeExpired());
         verify(deletedBlockRepository).deleteAll(expired);
     }
+
+    @Test
+    void purgeExpiredKeepsEverythingWhenRetentionIsUnlimited() {
+        ReflectionTestUtils.setField(service, "retentionDays", 0);
+
+        assertEquals(0, service.purgeExpired());
+        verify(deletedBlockRepository, never()).findByDeletedAtBefore(any());
+        verify(deletedBlockRepository, never()).deleteAll(any());
+    }
 }

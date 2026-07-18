@@ -9850,7 +9850,12 @@ html:not(.scripty-page-view-mode) body.focus-mode .project-script {
 .project-script .scene-header {
     grid-column: 1 / -1;
     margin: 0;
-    text-align: center;
+    /* Sluglines sit flush-left with action (industry standard) and are bolded
+       so scene boundaries are easy to scan. Applies to continuous + page view;
+       the later scene-header rules re-assert the bold weight past their
+       font-weight: inherit resets. */
+    text-align: left;
+    font-weight: 700;
 }
 
 .project-script .scene-header-row .scene-header-edit {
@@ -10096,7 +10101,7 @@ html.scripty-block-text-selecting .block-actions-controls {
 .project-script .scene-header {
     margin: 0;
     font-size: inherit;
-    font-weight: inherit;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
@@ -10116,11 +10121,20 @@ html.scripty-block-text-selecting .block-actions-controls {
 .project-script h2.script-block-text.scene-header {
     margin: 0;
     font-size: inherit;
-    font-weight: inherit;
+    font-weight: 700;
     font-family: inherit;
     line-height: inherit;
     text-transform: uppercase;
     letter-spacing: 0.03em;
+}
+
+/* Keep the bold slug weight while the SCENE block is being edited (the edit
+   textarea/mirror carry .script-block-text, not .scene-header) so it doesn't
+   flip to normal weight on focus. Alignment is already flush-left by default. */
+.project-script .block-content.block-type-scene .script-block-text,
+.project-script .block-content.block-type-scene .reader-visible-text,
+.project-script .block-content.block-type-scene .block-input-textarea {
+    font-weight: 700;
 }
 
 .project-script h3.script-block-text {

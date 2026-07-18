@@ -15,7 +15,7 @@
         { id: 'inline-editing', title: 'Inline Editing & Auto-Save', keywords: 'edit block save typing' },
         { id: 'offline-editing', title: 'Offline Editing', keywords: 'offline sync cache airplane' },
         { id: 'adding-blocks', title: 'Adding Blocks', keywords: 'insert create plus enter' },
-        { id: 'fountain-features', title: 'Fountain Power Features', keywords: 'tab element autocomplete outline page view import export pdf fountain paste shortcut keyboard' },
+        { id: 'fountain-features', title: 'Fountain Power Features', keywords: 'tab element autocomplete outline scene list page view import export pdf fountain paste shortcut keyboard' },
         { id: 'songs-drafts', title: 'Songs & Notes', keywords: 'lyrics notes music documents' },
         { id: 'drag-drop', title: 'Drag & Drop Reordering', keywords: 'move reorder handle' },
         { id: 'bookmarks-pins', title: 'Bookmarks & Pinned Blocks', keywords: 'star pin favorite outline bookmark list panel' },

@@ -21,8 +21,6 @@
     if (window._scriptyFountainPowerInit) return;
     window._scriptyFountainPowerInit = true;
 
-    var OUTLINE_TABS = ['combined', 'scenes'];
-    var OUTLINE_TAB_STORAGE = 'scripty-fountain-outline-tab';
     var OUTLINE_BOOKMARK_MARK =
         '<span class="fountain-outline-bookmark-mark" aria-hidden="true" title="Bookmarked">' +
         '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round">' +
@@ -96,6 +94,7 @@
     var locationListEl = null;
     var songListEl = null;
     var bookmarkListEl = null;
+    var sceneListEl = null;
 
     function projectId() {
         if (typeof window.scriptyResolveProjectId === 'function') {
@@ -1079,8 +1078,6 @@
 
     // --- Outline navigator ---
 
-    var outlineActiveTab = 'combined';
-
     function blockRowText(row) {
         var textEl = row.querySelector('.script-block-text, textarea[name="content"]');
         var text = textEl
@@ -1088,24 +1085,6 @@
             : '';
         text = String(text || '').replace(/\u00a0/g, ' ').trim() || '(Untitled)';
         return text.length > 80 ? text.slice(0, 77) + '…' : text;
-    }
-
-    function normalizeOutlineTab(tab) {
-        return OUTLINE_TABS.indexOf(tab) >= 0 ? tab : 'combined';
-    }
-
-    function readOutlineTab() {
-        try {
-            return normalizeOutlineTab(localStorage.getItem(OUTLINE_TAB_STORAGE));
-        } catch (err) {
-            return 'combined';
-        }
-    }
-
-    function persistOutlineTab(tab) {
-        try {
-            localStorage.setItem(OUTLINE_TAB_STORAGE, tab);
-        } catch (err) { /* ignore */ }
     }
 
     function isOutlineStructuralType(type) {
@@ -1193,9 +1172,7 @@
             '</a></li>';
     }
 
-    function renderOutlineItems(items, emptyMessage) {
-        var list = outlineEl.querySelector('.fountain-outline-list');
-        var empty = outlineEl.querySelector('.fountain-outline-empty');
+    function renderOutlineItemsInto(list, empty, items, emptyMessage) {
         if (!items.length) {
             list.innerHTML = '';
             empty.textContent = emptyMessage;
@@ -1214,25 +1191,17 @@
         }).join('');
     }
 
-    function syncOutlineTabs() {
-        if (!outlineEl) return;
-        outlineEl.querySelectorAll('[data-outline-tab]').forEach(function(btn) {
-            var active = btn.getAttribute('data-outline-tab') === outlineActiveTab;
-            btn.classList.toggle('is-active', active);
-            btn.setAttribute('aria-selected', active ? 'true' : 'false');
-        });
-    }
-
-    function setOutlineTab(tab) {
-        outlineActiveTab = normalizeOutlineTab(tab);
-        persistOutlineTab(outlineActiveTab);
-        syncOutlineTabs();
-        refreshOutline();
+    function renderOutlineItems(items, emptyMessage) {
+        renderOutlineItemsInto(
+            outlineEl.querySelector('.fountain-outline-list'),
+            outlineEl.querySelector('.fountain-outline-empty'),
+            items,
+            emptyMessage
+        );
     }
 
     function ensureOutline() {
         if (outlineEl) return outlineEl;
-        outlineActiveTab = readOutlineTab();
         outlineEl = document.createElement('aside');
         outlineEl.id = 'fountain-outline';
         outlineEl.className = 'fountain-outline hide-in-reader-view sidebar menu';
@@ -1242,10 +1211,6 @@
             '<strong>Outline</strong>' +
             '<button type="button" class="fountain-outline-close" aria-label="Close outline" title="Close outline">×</button>' +
             '</div>' +
-            '<div class="fountain-outline-tabs" role="tablist" aria-label="Outline views">' +
-            '<button type="button" class="fountain-outline-tab" role="tab" data-outline-tab="combined" aria-selected="true">Combined</button>' +
-            '<button type="button" class="fountain-outline-tab" role="tab" data-outline-tab="scenes" aria-selected="false">Scenes</button>' +
-            '</div>' +
             '<ol class="fountain-outline-list"></ol>' +
             '<p class="fountain-outline-empty muted">No scenes, sections, synopses, or bookmarks yet.</p>';
         document.body.appendChild(outlineEl);
@@ -1254,12 +1219,6 @@
             setOutlineOpen(false);
         });
         outlineEl.addEventListener('click', function(e) {
-            var tabBtn = e.target.closest('[data-outline-tab]');
-            if (tabBtn && outlineEl.contains(tabBtn)) {
-                e.preventDefault();
-                setOutlineTab(tabBtn.getAttribute('data-outline-tab'));
-                return;
-            }
             var link = e.target.closest('[data-outline-block-id]');
             if (!link) return;
             e.preventDefault();
@@ -1276,17 +1235,11 @@
                 content.click();
             }
         });
-        syncOutlineTabs();
         return outlineEl;
     }
 
     function refreshOutline() {
         if (!outlineEl || outlineEl.hidden) return;
-        var tab = normalizeOutlineTab(outlineActiveTab);
-        if (tab === 'scenes') {
-            renderOutlineItems(collectOutlineItems(), 'No scenes, sections, or synopses yet.');
-            return;
-        }
         renderOutlineItems(collectCombinedItems(), 'No scenes, sections, synopses, or bookmarks yet.');
     }
     window.scriptyRefreshFountainOutline = refreshOutline;
@@ -1369,7 +1322,8 @@
             (characterListEl && !characterListEl.hidden) ||
             (locationListEl && !locationListEl.hidden) ||
             (songListEl && !songListEl.hidden) ||
-            (bookmarkListEl && !bookmarkListEl.hidden);
+            (bookmarkListEl && !bookmarkListEl.hidden) ||
+            (sceneListEl && !sceneListEl.hidden);
         listsBtn.classList.toggle('is-active', !!anyOpen);
         listsBtn.setAttribute('aria-pressed', anyOpen ? 'true' : 'false');
     }
@@ -1412,7 +1366,7 @@
             if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
             if (songListEl && !songListEl.hidden) setSongListOpen(false);
             if (bookmarkListEl && !bookmarkListEl.hidden) setBookmarkListOpen(false);
-            syncOutlineTabs();
+            if (sceneListEl && !sceneListEl.hidden) setSceneListOpen(false);
             refreshOutline();
         }
         syncListsToolbarActive();
@@ -1513,6 +1467,7 @@
             if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
             if (songListEl && !songListEl.hidden) setSongListOpen(false);
             if (bookmarkListEl && !bookmarkListEl.hidden) setBookmarkListOpen(false);
+            if (sceneListEl && !sceneListEl.hidden) setSceneListOpen(false);
             refreshCharacterList();
         }
         syncListsToolbarActive();
@@ -1654,6 +1609,7 @@
             if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
             if (songListEl && !songListEl.hidden) setSongListOpen(false);
             if (bookmarkListEl && !bookmarkListEl.hidden) setBookmarkListOpen(false);
+            if (sceneListEl && !sceneListEl.hidden) setSceneListOpen(false);
             refreshLocationList();
         }
         syncListsToolbarActive();
@@ -1792,6 +1748,7 @@
             if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
             if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
             if (bookmarkListEl && !bookmarkListEl.hidden) setBookmarkListOpen(false);
+            if (sceneListEl && !sceneListEl.hidden) setSceneListOpen(false);
             refreshSongList();
         }
         syncListsToolbarActive();
@@ -1893,6 +1850,7 @@
             if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
             if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
             if (songListEl && !songListEl.hidden) setSongListOpen(false);
+            if (sceneListEl && !sceneListEl.hidden) setSceneListOpen(false);
             refreshBookmarkList();
         }
         syncListsToolbarActive();
@@ -2129,6 +2087,7 @@
             refreshLocationList();
             refreshSongList();
             refreshBookmarkList();
+            refreshSceneList();
         }
         if (needsStats) {
             scheduleScriptStatsRefresh();
@@ -2246,6 +2205,93 @@
         else ensureSongList().hidden = true;
     }
 
+    // --- Scene list sidebar (scenes, sections, synopses) ---
+
+    function ensureSceneList() {
+        if (sceneListEl) return sceneListEl;
+        sceneListEl = document.createElement('aside');
+        sceneListEl.id = 'fountain-scene-list';
+        sceneListEl.className = 'fountain-scene-list hide-in-reader-view sidebar menu';
+        sceneListEl.setAttribute('aria-label', 'Scene list');
+        sceneListEl.innerHTML =
+            '<div class="fountain-scene-list-header">' +
+            '<strong>Scenes</strong>' +
+            '<button type="button" class="fountain-scene-list-close" aria-label="Close scene list" title="Close scene list">\u00d7</button>' +
+            '</div>' +
+            '<ol class="fountain-scene-list-items"></ol>' +
+            '<p class="fountain-scene-list-empty muted">No scenes, sections, or synopses yet.</p>';
+        document.body.appendChild(sceneListEl);
+
+        sceneListEl.querySelector('.fountain-scene-list-close').addEventListener('click', function() {
+            setSceneListOpen(false);
+        });
+        sceneListEl.addEventListener('click', function(e) {
+            var link = e.target.closest('[data-outline-block-id]');
+            if (!link || !sceneListEl.contains(link)) return;
+            e.preventDefault();
+            var id = link.getAttribute('data-outline-block-id');
+            var row = document.querySelector('.block-row[data-block-id="' + id + '"]');
+            if (!row) return;
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.classList.add('fountain-outline-flash');
+            setTimeout(function() {
+                row.classList.remove('fountain-outline-flash');
+            }, 1200);
+            var content = row.querySelector('.block-content');
+            if (content && !window.scriptyBlockEditLocked) {
+                content.click();
+            }
+        });
+        return sceneListEl;
+    }
+
+    function refreshSceneList() {
+        if (!sceneListEl || sceneListEl.hidden) return;
+        renderOutlineItemsInto(
+            sceneListEl.querySelector('.fountain-scene-list-items'),
+            sceneListEl.querySelector('.fountain-scene-list-empty'),
+            collectOutlineItems(),
+            'No scenes, sections, or synopses yet.'
+        );
+    }
+    window.scriptyRefreshFountainSceneList = refreshSceneList;
+
+    function setSceneListOpen(open) {
+        var el = ensureSceneList();
+        el.hidden = !open;
+        document.documentElement.classList.toggle('fountain-scene-list-open', open);
+        var btn = document.getElementById('nav-scene-list-toggle');
+        if (btn) {
+            btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+            btn.classList.toggle('is-active', open);
+        }
+        try {
+            localStorage.setItem('scripty-fountain-scene-list', open ? 'true' : 'false');
+        } catch (err) { /* ignore */ }
+        if (open) {
+            if (outlineEl && !outlineEl.hidden) setOutlineOpen(false);
+            if (characterListEl && !characterListEl.hidden) setCharacterListOpen(false);
+            if (locationListEl && !locationListEl.hidden) setLocationListOpen(false);
+            if (songListEl && !songListEl.hidden) setSongListOpen(false);
+            if (bookmarkListEl && !bookmarkListEl.hidden) setBookmarkListOpen(false);
+            refreshSceneList();
+        }
+        syncListsToolbarActive();
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                if (typeof window.scriptyRepositionBlockCaretPreview === 'function') {
+                    window.scriptyRepositionBlockCaretPreview();
+                }
+            });
+        });
+    }
+
+    function toggleSceneList() {
+        var el = ensureSceneList();
+        setSceneListOpen(!!el.hidden);
+    }
+    window.scriptyToggleFountainSceneList = toggleSceneList;
+
     function initBookmarkListButton() {
         var btn = document.getElementById('nav-bookmark-list-toggle');
         if (!btn || btn.dataset.fountainBookmarkListInit === 'true') return;
@@ -2266,6 +2312,26 @@
         else ensureBookmarkList().hidden = true;
     }
 
+    function initSceneListButton() {
+        var btn = document.getElementById('nav-scene-list-toggle');
+        if (!btn || btn.dataset.fountainSceneListInit === 'true') return;
+        btn.dataset.fountainSceneListInit = 'true';
+        btn.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+        });
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleSceneList();
+        });
+        var preferOpen = false;
+        try {
+            preferOpen = localStorage.getItem('scripty-fountain-scene-list') === 'true';
+        } catch (err) { /* ignore */ }
+        if (preferOpen) setSceneListOpen(true);
+        else ensureSceneList().hidden = true;
+    }
+
     function initFountainPowerUi() {
         startObserver();
         initOutlineButton();
@@ -2273,6 +2339,7 @@
         initLocationListButton();
         initSongListButton();
         initBookmarkListButton();
+        initSceneListButton();
         loadCharacters(true);
         refreshScriptStats();
     }
@@ -2299,6 +2366,7 @@
         refreshLocationList();
         refreshSongList();
         refreshBookmarkList();
+        refreshSceneList();
         refreshScriptStats();
         applyPendingCreateType();
     });

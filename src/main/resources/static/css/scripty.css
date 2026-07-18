@@ -12970,12 +12970,13 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
     color: var(--accent, #145591);
 }
 
-/* Fountain power-user: scene outline + character / location / song / bookmark lists */
+/* Fountain power-user: outline + scene / character / location / song / bookmark lists */
 .fountain-outline,
 .fountain-character-list,
 .fountain-location-list,
 .fountain-song-list,
-.fountain-bookmark-list {
+.fountain-bookmark-list,
+.fountain-scene-list {
     position: fixed;
     top: 5.5rem;
     right: 0.75rem;
@@ -12995,7 +12996,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-character-list[hidden],
 .fountain-location-list[hidden],
 .fountain-song-list[hidden],
-.fountain-bookmark-list[hidden] {
+.fountain-bookmark-list[hidden],
+.fountain-scene-list[hidden] {
     display: none !important;
 }
 
@@ -13003,7 +13005,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-character-list-header,
 .fountain-location-list-header,
 .fountain-song-list-header,
-.fountain-bookmark-list-header {
+.fountain-bookmark-list-header,
+.fountain-scene-list-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -13018,7 +13021,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-character-list-close,
 .fountain-location-list-close,
 .fountain-song-list-close,
-.fountain-bookmark-list-close {
+.fountain-bookmark-list-close,
+.fountain-scene-list-close {
     border: none;
     background: transparent;
     color: inherit;
@@ -13033,49 +13037,17 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-character-list-close:hover,
 .fountain-location-list-close:hover,
 .fountain-song-list-close:hover,
-.fountain-bookmark-list-close:hover {
+.fountain-bookmark-list-close:hover,
+.fountain-scene-list-close:hover {
     opacity: 1;
-}
-
-.fountain-outline-tabs {
-    display: flex;
-    gap: 0.15rem;
-    margin-bottom: 0.65rem;
-    border-bottom: 1px solid color-mix(in srgb, var(--fg, #111) 12%, transparent);
-    padding-bottom: 0.35rem;
-}
-
-.fountain-outline-tab {
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-    font: inherit;
-    font-size: 0.72rem;
-    letter-spacing: 0.02em;
-    padding: 0.3rem 0.2rem;
-    border-radius: 2px;
-    opacity: 0.65;
-}
-
-.fountain-outline-tab:hover {
-    opacity: 1;
-    background: color-mix(in srgb, var(--accent, #145591) 8%, transparent);
-}
-
-.fountain-outline-tab.is-active {
-    opacity: 1;
-    color: var(--accent, #145591);
-    background: color-mix(in srgb, var(--accent, #145591) 12%, transparent);
-    font-weight: 600;
 }
 
 .fountain-outline-list,
 .fountain-character-list-items,
 .fountain-location-list-items,
 .fountain-song-list-items,
-.fountain-bookmark-list-items {
+.fountain-bookmark-list-items,
+.fountain-scene-list-items {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -13087,7 +13059,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-character-list-item a,
 .fountain-location-list-item a,
 .fountain-song-list-item a,
-.fountain-bookmark-list-item a {
+.fountain-bookmark-list-item a,
+.fountain-scene-list-item a {
     display: flex;
     align-items: baseline;
     gap: 0.35rem;
@@ -13103,7 +13076,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-character-list-item a:hover,
 .fountain-location-list-item a:hover,
 .fountain-song-list-item a:hover,
-.fountain-bookmark-list-item a:hover {
+.fountain-bookmark-list-item a:hover,
+.fountain-scene-list-item a:hover {
     background: color-mix(in srgb, var(--accent, #145591) 12%, transparent);
     color: var(--accent, #145591);
 }
@@ -13203,7 +13177,8 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 .fountain-character-list-empty,
 .fountain-location-list-empty,
 .fountain-song-list-empty,
-.fountain-bookmark-list-empty {
+.fountain-bookmark-list-empty,
+.fountain-scene-list-empty {
     font-size: 0.8rem;
     margin: 0.5rem 0 0;
 }
@@ -13222,11 +13197,13 @@ html.fountain-character-list-open .project-script,
 html.fountain-location-list-open .project-script,
 html.fountain-song-list-open .project-script,
 html.fountain-bookmark-list-open .project-script,
+html.fountain-scene-list-open .project-script,
 html.fountain-outline-open .project-script-toolbar,
 html.fountain-character-list-open .project-script-toolbar,
 html.fountain-location-list-open .project-script-toolbar,
 html.fountain-song-list-open .project-script-toolbar,
-html.fountain-bookmark-list-open .project-script-toolbar {
+html.fountain-bookmark-list-open .project-script-toolbar,
+html.fountain-scene-list-open .project-script-toolbar {
     padding-right: min(17rem, 44vw);
 }
 
@@ -13235,7 +13212,8 @@ html.fountain-bookmark-list-open .project-script-toolbar {
     .fountain-character-list,
     .fountain-location-list,
     .fountain-song-list,
-    .fountain-bookmark-list {
+    .fountain-bookmark-list,
+    .fountain-scene-list {
         top: auto;
         left: 0.5rem;
         right: 0.5rem;
@@ -13249,11 +13227,13 @@ html.fountain-bookmark-list-open .project-script-toolbar {
     html.fountain-location-list-open .project-script,
     html.fountain-song-list-open .project-script,
     html.fountain-bookmark-list-open .project-script,
+    html.fountain-scene-list-open .project-script,
     html.fountain-outline-open .project-script-toolbar,
     html.fountain-character-list-open .project-script-toolbar,
     html.fountain-location-list-open .project-script-toolbar,
     html.fountain-song-list-open .project-script-toolbar,
-    html.fountain-bookmark-list-open .project-script-toolbar {
+    html.fountain-bookmark-list-open .project-script-toolbar,
+    html.fountain-scene-list-open .project-script-toolbar {
         padding-right: 0;
     }
 }
@@ -13263,6 +13243,7 @@ body.focus-mode .fountain-character-list,
 body.focus-mode .fountain-location-list,
 body.focus-mode .fountain-song-list,
 body.focus-mode .fountain-bookmark-list,
+body.focus-mode .fountain-scene-list,
 body.focus-mode #project-lists-dropdown {
     display: none !important;
 }
@@ -13293,6 +13274,7 @@ body.focus-mode #project-lists-dropdown {
     .fountain-location-list,
     .fountain-song-list,
     .fountain-bookmark-list,
+    .fountain-scene-list,
     .fountain-char-autocomplete,
     .hide-in-reader-view,
     .project-script-header,
@@ -13313,11 +13295,13 @@ body.focus-mode #project-lists-dropdown {
     html.fountain-location-list-open .project-script,
     html.fountain-song-list-open .project-script,
     html.fountain-bookmark-list-open .project-script,
+    html.fountain-scene-list-open .project-script,
     html.fountain-outline-open .project-script-toolbar,
     html.fountain-character-list-open .project-script-toolbar,
     html.fountain-location-list-open .project-script-toolbar,
     html.fountain-song-list-open .project-script-toolbar,
-    html.fountain-bookmark-list-open .project-script-toolbar {
+    html.fountain-bookmark-list-open .project-script-toolbar,
+    html.fountain-scene-list-open .project-script-toolbar {
         padding-right: 0 !important;
     }
 

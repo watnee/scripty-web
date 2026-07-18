@@ -163,7 +163,10 @@ public class ProjectController {
         model.addAttribute("viewModel", viewModel);
         model.addAttribute("defaultProjectId", defaultProjectId);
         model.addAttribute("isAdmin", admin);
-        model.addAttribute("hasTrashedProjects", admin && !projectService.getTrashedProjects().isEmpty());
+        // Only admins can reach the trash, so non-admins see neither the link nor a count.
+        int trashedCount = admin ? projectService.getTrashedProjects().size() : 0;
+        model.addAttribute("hasTrashedProjects", trashedCount > 0);
+        model.addAttribute("trashedCount", trashedCount);
 
         return "project/list";
     }

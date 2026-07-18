@@ -359,6 +359,48 @@
         return null;
     }
 
+    // Small inline glyphs for the action rows. Kept as SVG (not an icon font)
+    // so the popup has no asset dependency and inherits currentColor.
+    function actionIcon(name) {
+        if (name === 'ignore-once') {
+            // eye with a slash — skip this one occurrence
+            return '<svg class="scripty-spell-ico" viewBox="0 0 16 16" width="14" height="14" ' +
+                'aria-hidden="true" focusable="false">' +
+                '<path d="M2 8s2.4-3.8 6-3.8 6 3.8 6 3.8-2.4 3.8-6 3.8S2 8 2 8z" fill="none" ' +
+                'stroke="currentColor" stroke-width="1.3"/>' +
+                '<circle cx="8" cy="8" r="1.7" fill="none" stroke="currentColor" stroke-width="1.3"/>' +
+                '<path d="M3 13 13 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+        }
+        if (name === 'ignore-all') {
+            // plus-in-circle — add the flagged word to your dictionary for good
+            return '<svg class="scripty-spell-ico" viewBox="0 0 16 16" width="14" height="14" ' +
+                'aria-hidden="true" focusable="false">' +
+                '<circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.4"/>' +
+                '<path d="M8 5.2v5.6M5.2 8h5.6" fill="none" stroke="currentColor" ' +
+                'stroke-width="1.4" stroke-linecap="round"/></svg>';
+        }
+        // trash can — delete the flagged word
+        return '<svg class="scripty-spell-ico" viewBox="0 0 16 16" width="14" height="14" ' +
+            'aria-hidden="true" focusable="false">' +
+            '<path d="M3 4.4h10M6.4 4.4V3.1a.8.8 0 0 1 .8-.8h1.6a.8.8 0 0 1 .8.8v1.3' +
+            'M4.9 4.4l.5 8a1 1 0 0 0 1 .95h3.2a1 1 0 0 0 1-.95l.5-8" fill="none" ' +
+            'stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+
+    // Nudge the popup back inside the viewport if positioning ran it off an edge.
+    function clampPopup(el) {
+        var rect = el.getBoundingClientRect();
+        var vw = document.documentElement.clientWidth;
+        var vh = document.documentElement.clientHeight;
+        var dx = 0, dy = 0;
+        if (rect.right > vw - 8) dx = (vw - 8) - rect.right;
+        if (rect.left + dx < 8) dx = 8 - rect.left;
+        if (rect.bottom > vh - 8) dy = (vh - 8) - rect.bottom;
+        if (rect.top + dy < 8) dy = 8 - rect.top;
+        if (dx) el.style.left = Math.round((parseFloat(el.style.left) || 0) + dx) + 'px';
+        if (dy) el.style.top = Math.round((parseFloat(el.style.top) || 0) + dy) + 'px';
+    }
+
     function ensurePopup() {
         if (popupEl) return popupEl;
         popupEl = document.createElement('ul');
@@ -440,26 +482,51 @@
         popupRange = { start: token.start, end: token.end, word: token.word };
         popupIndex = suggestions.length ? 0 : -1;
 
-        var items = suggestions.map(function(s, i) {
-            return '<li role="option" data-suggestion="' + escapeHtml(s) + '" data-index="' + i + '"' +
-                (i === popupIndex ? ' aria-selected="true" class="is-active"' : '') +
-                '>' + escapeHtml(s) + '</li>';
-        });
-        items.push(
-            '<li role="option" class="scripty-spell-ignore" data-action="ignore-once" data-index="' +
-            suggestions.length + '">Ignore Once</li>'
+        var parts = [];
+        // Header — echoes the flagged word (wavy-underlined) for context.
+        parts.push(
+            '<li class="scripty-spell-header" role="presentation" aria-hidden="true">' +
+            '<span class="scripty-spell-header-word">' + escapeHtml(token.word) + '</span></li>'
         );
-        items.push(
-            '<li role="option" class="scripty-spell-ignore-all" data-action="ignore-all" data-index="' +
-            (suggestions.length + 1) + '">Ignore All</li>'
+
+        if (suggestions.length) {
+            suggestions.forEach(function(s, i) {
+                parts.push(
+                    '<li role="option" class="scripty-spell-suggestion' +
+                    (i === popupIndex ? ' is-active" aria-selected="true"' : '"') +
+                    ' data-suggestion="' + escapeHtml(s) + '" data-index="' + i + '">' +
+                    '<span class="scripty-spell-word">' + escapeHtml(s) + '</span></li>'
+                );
+            });
+        } else {
+            parts.push('<li class="scripty-spell-empty" role="presentation" aria-hidden="true">No suggestions</li>');
+        }
+
+        // Separator (non-actionable — excluded from keyboard navigation).
+        parts.push('<li class="scripty-spell-sep" role="presentation" aria-hidden="true"></li>');
+
+        // Action rows. "Ignore Once" suppresses just this occurrence; "Ignore
+        // All" adds the word to the dictionary for good; "Delete" removes it.
+        parts.push(
+            '<li role="option" class="scripty-spell-action scripty-spell-ignore" data-action="ignore-once" data-index="' +
+            suggestions.length + '">' + actionIcon('ignore-once') +
+            '<span class="scripty-spell-action-label">Ignore Once</span></li>'
         );
-        items.push(
-            '<li role="option" class="scripty-spell-delete" data-action="delete" data-index="' +
-            (suggestions.length + 2) + '">Delete &ldquo;' + escapeHtml(token.word) + '&rdquo;</li>'
+        parts.push(
+            '<li role="option" class="scripty-spell-action scripty-spell-ignore-all" data-action="ignore-all" data-index="' +
+            (suggestions.length + 1) + '">' + actionIcon('ignore-all') +
+            '<span class="scripty-spell-action-label">Ignore All</span></li>'
         );
-        el.innerHTML = items.join('');
+        parts.push(
+            '<li role="option" class="scripty-spell-action scripty-spell-delete" data-action="delete" data-index="' +
+            (suggestions.length + 2) + '">' + actionIcon('delete') +
+            '<span class="scripty-spell-action-label">Delete word</span></li>'
+        );
+
+        el.innerHTML = parts.join('');
         positionPopup(textarea, token.start, token.end);
         el.hidden = false;
+        clampPopup(el);
         window._spellcheckPopupOpenedAt = Date.now();
     }
 
@@ -646,7 +713,9 @@
 
         // Suggestion list navigation
         if (popupEl && !popupEl.hidden) {
-            var options = popupEl.querySelectorAll('li');
+            // Only suggestions and action rows are navigable; the header,
+            // separator and empty-state rows carry neither attribute.
+            var options = popupEl.querySelectorAll('li[data-suggestion], li[data-action]');
             if (e.key === 'Escape') {
                 e.preventDefault();
                 hidePopup();

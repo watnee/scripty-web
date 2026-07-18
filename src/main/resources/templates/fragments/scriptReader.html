@@ -16,10 +16,10 @@
         .script-reader-byline { color: #666; font-style: italic; margin: -1rem 0 1.5rem; }
         footer { max-width: 40rem; margin: 0 auto; padding: 0 1.25rem 2rem; font-family: system-ui, sans-serif; font-size: 0.9rem; }
         footer a { color: #475569; }
-        .script-reader-header { max-width: 40rem; margin: 0 auto; padding: 1.25rem 1.25rem 0; font-family: system-ui, sans-serif; font-size: 0.9rem; }
+        .script-reader-header { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0.75rem max(1.25rem, calc((100% - 42.5rem) / 2 + 1.25rem)); font-family: system-ui, sans-serif; font-size: 0.9rem; }
         .script-reader-header .script-reader-back { display: inline-flex; align-items: center; gap: 0.4rem; color: #475569; text-decoration: none; }
         .script-reader-header .script-reader-back:hover { text-decoration: underline; }
-        .script-reader-page main { padding-top: 1rem; }
+        .script-reader-page main { padding-top: 1.5rem; }
         @media print { .script-reader-header { display: none; } }
     </style>
     <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">

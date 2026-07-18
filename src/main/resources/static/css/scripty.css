@@ -11174,8 +11174,13 @@ html.scripty-page-view-mode .project-script .screenplay-page {
     max-width: 100%;
     height: auto;
     aspect-ratio: 8.5 / 11;
-    /* % of page width so margins stay proportional when the sheet shrinks */
-    padding: 11.7647% 11.7647% 11.7647% 17.647%;
+    /* Margins and type live on .screenplay-page-body in cqw, not here: a %
+       padding on the sheet resolves against its PARENT's width, not its own,
+       so it drifted with the viewport and never lined up with the page number
+       (whose % offsets do resolve against the sheet). cqw fixes both to the
+       sheet itself. */
+    padding: 0;
+    container-type: inline-size;
     background: var(--screenplay-paper, #ffffff);
     color: var(--screenplay-ink, #1a1a1a);
     border: 1px solid var(--screenplay-edge, rgba(0, 0, 0, 0.12));
@@ -11187,6 +11192,8 @@ html.scripty-page-view-mode .project-script .screenplay-page {
         0 28px 56px rgba(0, 0, 0, 0.08);
     overflow: hidden;
     font-family: 'Courier New', Courier, monospace;
+    /* Fallback only — the live size is set on the children so cqw resolves
+       against this page (a container's own cqw would use its ancestor). */
     font-size: calc(12pt * var(--scripty-text-scale, 1));
     line-height: 1;
     transition: box-shadow 160ms ease, border-color 160ms ease;
@@ -11292,9 +11299,17 @@ html.scripty-page-view-mode .project-script .screenplay-page.screenplay-page--me
 
 html.scripty-page-view-mode .project-script .screenplay-page-body {
     display: block;
+    box-sizing: border-box;
     width: 100%;
     height: 100%;
     overflow: hidden;
+    /* Industry margins 1in / 1in / 1in / 1.5in as % of an 8.5in sheet.
+       cqw resolves against .screenplay-page, so these hold at any sheet width. */
+    padding: 11.7647cqw 11.7647cqw 11.7647cqw 17.647cqw;
+    /* 12pt Courier at Letter scale: 12pt = 1/6in = 1.9608% of an 8.5in sheet.
+       Keeps 60 chars/line and ~54 lines/page whatever width the sheet renders at. */
+    font-size: calc(1.9608cqw * var(--scripty-text-scale, 1));
+    line-height: 1;
 }
 
 html.scripty-page-view-mode .project-script .screenplay-page-number {
@@ -11302,13 +11317,25 @@ html.scripty-page-view-mode .project-script .screenplay-page-number {
     top: 5.3%;
     right: 11.76%;
     font-family: 'Courier New', Courier, monospace;
-    font-size: calc(12pt * var(--scripty-text-scale, 1));
+    font-size: calc(1.9608cqw * var(--scripty-text-scale, 1));
     line-height: 1;
     color: inherit;
     pointer-events: none;
     user-select: none;
     opacity: 0.85;
     letter-spacing: 0.02em;
+}
+
+/* Everything inside the sheet takes the sheet-scaled type. Block content
+   otherwise lands on a fixed 16px, which is what stopped the page from
+   scaling with its own width (60 chars/line became ~84). */
+html.scripty-page-view-mode .project-script .screenplay-page-body .block-content,
+html.scripty-page-view-mode .project-script .screenplay-page-body .script-block-text,
+html.scripty-page-view-mode .project-script .screenplay-page-body .reader-visible-text,
+html.scripty-page-view-mode .project-script .screenplay-page-body .block-input-textarea,
+html.scripty-page-view-mode .project-script .screenplay-page-body .scene-header {
+    font-size: inherit;
+    line-height: inherit;
 }
 
 /* Industry convention: no page number on page 1 */
@@ -11606,15 +11633,19 @@ html.scripty-screenplay-full-width.scripty-page-view-mode .project-script::after
         height: auto;
         min-height: calc(100vw * 11 / 8.5);
         aspect-ratio: 8.5 / 11;
-        /* Keep industry margin ratios (1 / 1 / 1 / 1.5) instead of compressing left */
-        padding: 11.7647% 11.7647% 11.7647% 17.647%;
-        font-size: calc(clamp(9px, 2.6vw, 12pt) * var(--scripty-text-scale, 1));
+    }
+
+    /* Below a ~460px sheet, true Letter scale drops under 9px — legibility wins
+       over fidelity there, so those pages hold fewer lines than a real page.
+       Margin ratios (1 / 1 / 1 / 1.5) are inherited and stay uncompressed. */
+    html.scripty-page-view-mode .project-script .screenplay-page-body,
+    html.scripty-page-view-mode .project-script .screenplay-page-number {
+        font-size: calc(max(9px, 1.9608cqw) * var(--scripty-text-scale, 1));
     }
 
     html.scripty-page-view-mode .project-script .screenplay-page-number {
         top: 5.3%;
         right: 11.76%;
-        font-size: inherit;
     }
 }
 
@@ -11663,6 +11694,10 @@ html.scripty-screenplay-full-width.scripty-page-view-mode .project-script::after
     html.scripty-page-view-mode .project-script .screenplay-page-body {
         height: auto;
         overflow: visible;
+        /* @page supplies the margins and the printable column is already 6in,
+           so drop the screen padding and pin type to a true 12pt. */
+        padding: 0;
+        font-size: calc(12pt * var(--scripty-text-scale, 1));
     }
 }
 

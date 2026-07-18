@@ -160,6 +160,8 @@ up` those; Railway builds them from the repo when their watch patterns match.
 
 ## Related docs
 
+- [FEATURE_FLAGS.md](FEATURE_FLAGS.md) — turning behaviour on/off from a
+  Railway variable (`FEATURE_*`), and adding a new flag
 - [CLOUDFLARE.md](CLOUDFLARE.md) — Worker/Containers details, token
   provisioning, secret sync internals
 - [BACKUP.md](BACKUP.md) — volume snapshots + nightly R2 `mysqldump`

@@ -1,6 +1,7 @@
 package com.scripty.config;
 
 import java.net.URI;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -17,9 +18,12 @@ public class PasskeySettings {
     private final String rpId;
     private final String origin;
 
-    public PasskeySettings(
-            @Value("${app.passkeys-enabled:true}") boolean enabled,
-            @Value("${app.base-url:}") String baseUrl) {
+    @Autowired
+    public PasskeySettings(FeatureFlags featureFlags, @Value("${app.base-url:}") String baseUrl) {
+        this(featureFlags.isEnabled(FeatureFlag.PASSKEYS), baseUrl);
+    }
+
+    public PasskeySettings(boolean enabled, String baseUrl) {
         String host = null;
         String parsedOrigin = null;
         if (baseUrl != null && !baseUrl.isBlank()) {

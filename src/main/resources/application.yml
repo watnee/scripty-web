@@ -1,6 +1,14 @@
 server:
   port: ${PORT:8080}
 
+app:
+  # Feature flags, one line per FeatureFlag constant. Resolved at startup, so
+  # changing a FEATURE_* variable on Railway restarts the service. Values must
+  # be true or false — anything else fails the boot rather than reading as off.
+  features:
+    passkeys: ${FEATURE_PASSKEYS:true}
+    service-worker: ${FEATURE_SERVICE_WORKER:true}
+
 spring:
   profiles:
     include:

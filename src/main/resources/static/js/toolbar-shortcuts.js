@@ -97,6 +97,17 @@
             }
         }
 
+        // Sync Comments (works while typing, so it lives on ⌘⌥M rather than the ⌘⇧ family)
+        var commentsBtn = document.getElementById('nav-comments-open');
+        if (commentsBtn) {
+            var commentsHint = isMacPlatform ? '⌘⌥M' : 'Ctrl+Alt+M';
+            commentsBtn.title = 'Comments on the block you are editing (' + commentsHint + ')';
+            commentsBtn.setAttribute('aria-label', 'Comments on current block (' + commentsHint + ')');
+            if (typeof window.scriptySetMenuShortcut === 'function') {
+                window.scriptySetMenuShortcut(commentsBtn, commentsHint);
+            }
+        }
+
         // Sync Import
         var importBtn = document.getElementById('nav-import');
         if (importBtn) {
@@ -534,6 +545,18 @@
 
         var key = (e.key || '').toLowerCase();
         if (!handleViewOrListShortcut(key)) return;
+        e.preventDefault();
+    });
+
+    // Comments: ⌘⌥M / Ctrl+Alt+M on the block under the caret. Deliberately allowed while
+    // typing — commenting on the line you are writing is the main use case.
+    document.addEventListener('keydown', function (e) {
+        if (!(e.metaKey || e.ctrlKey) || !e.altKey || e.shiftKey) return;
+        if (!isProjectPage()) return;
+        // Option remaps e.key on macOS (⌥M yields "µ"); match the physical key first.
+        if (e.code !== 'KeyM' && (e.key || '').toLowerCase() !== 'm') return;
+        if (typeof window.scriptyToggleBlockComments !== 'function') return;
+        if (!window.scriptyToggleBlockComments(document.activeElement)) return;
         e.preventDefault();
     });
 

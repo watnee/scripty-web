@@ -32,6 +32,8 @@
     var checkTimers = new WeakMap();
     var lastErrors = new WeakMap();
     var ignoredWords = Object.create(null);
+    // Per-textarea "ignore once" occurrences: transient, not persisted.
+    var ignoredOnce = new WeakMap();
 
     function isEnabled() {
         if (typeof window.scriptyIsSpellcheckEnabled === 'function') {
@@ -328,6 +330,14 @@
         loadDictionary().then(function() {
             if (!isEnabled() || document.body.contains(textarea) === false) return;
             var errors = findErrors(textarea.value || '');
+            var once = ignoredOnce.get(textarea);
+            if (once && once.length) {
+                errors = errors.filter(function(err) {
+                    return !once.some(function(o) {
+                        return o.start === err.start && o.word === err.word;
+                    });
+                });
+            }
             renderOverlay(textarea, errors);
         }).catch(function() {
             /* dictionary unavailable — leave browser spellcheck alone */
@@ -363,11 +373,16 @@
             e.stopPropagation();
             var li = e.target.closest('li[data-suggestion], li[data-action]');
             if (!li) return;
-            if (li.getAttribute('data-action') === 'ignore') {
-                ignoreCurrentWord();
+            var action = li.getAttribute('data-action');
+            if (action === 'ignore-once') {
+                ignoreOnceCurrentWord();
                 return;
             }
-            if (li.getAttribute('data-action') === 'delete') {
+            if (action === 'ignore-all') {
+                ignoreAllCurrentWord();
+                return;
+            }
+            if (action === 'delete') {
                 deleteCurrentWord();
                 return;
             }
@@ -431,12 +446,16 @@
                 '>' + escapeHtml(s) + '</li>';
         });
         items.push(
-            '<li role="option" class="scripty-spell-ignore" data-action="ignore" data-index="' +
-            suggestions.length + '">Ignore &ldquo;' + escapeHtml(token.word) + '&rdquo;</li>'
+            '<li role="option" class="scripty-spell-ignore" data-action="ignore-once" data-index="' +
+            suggestions.length + '">Ignore Once</li>'
+        );
+        items.push(
+            '<li role="option" class="scripty-spell-ignore-all" data-action="ignore-all" data-index="' +
+            (suggestions.length + 1) + '">Ignore All</li>'
         );
         items.push(
             '<li role="option" class="scripty-spell-delete" data-action="delete" data-index="' +
-            (suggestions.length + 1) + '">Delete &ldquo;' + escapeHtml(token.word) + '&rdquo;</li>'
+            (suggestions.length + 2) + '">Delete &ldquo;' + escapeHtml(token.word) + '&rdquo;</li>'
         );
         el.innerHTML = items.join('');
         positionPopup(textarea, token.start, token.end);
@@ -461,7 +480,23 @@
         runCheck(textarea);
     }
 
-    function ignoreCurrentWord() {
+    // Ignore just this occurrence — suppress its mark until the text changes.
+    function ignoreOnceCurrentWord() {
+        var range = popupRange;
+        var textarea = popupTarget;
+        hidePopup();
+        if (!range || !range.word || !textarea) return;
+        var list = ignoredOnce.get(textarea);
+        if (!list) {
+            list = [];
+            ignoredOnce.set(textarea, list);
+        }
+        list.push({ word: range.word, start: range.start });
+        runCheck(textarea);
+    }
+
+    // Ignore everywhere — add to the persistent per-browser allowlist.
+    function ignoreAllCurrentWord() {
         var range = popupRange;
         var textarea = popupTarget;
         hidePopup();
@@ -639,9 +674,12 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 var chosen = options[popupIndex];
-                if (chosen.getAttribute('data-action') === 'ignore') {
-                    ignoreCurrentWord();
-                } else if (chosen.getAttribute('data-action') === 'delete') {
+                var chosenAction = chosen.getAttribute('data-action');
+                if (chosenAction === 'ignore-once') {
+                    ignoreOnceCurrentWord();
+                } else if (chosenAction === 'ignore-all') {
+                    ignoreAllCurrentWord();
+                } else if (chosenAction === 'delete') {
                     deleteCurrentWord();
                 } else {
                     applySuggestion(chosen.getAttribute('data-suggestion'));

@@ -12578,13 +12578,20 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
 }
 
 .scripty-spell-suggestions li.scripty-spell-ignore,
+.scripty-spell-suggestions li.scripty-spell-ignore-all,
 .scripty-spell-suggestions li.scripty-spell-delete {
-    border-top: 1px solid color-mix(in srgb, var(--fg, #111) 12%, transparent);
-    margin-top: 0.15rem;
     font-size: 0.8rem;
     color: color-mix(in srgb, var(--fg, #111) 70%, transparent);
     text-transform: none;
     letter-spacing: normal;
+}
+
+/* Divider above the ignore group and above the delete item; the two ignore
+   items sit together with no divider between them. */
+.scripty-spell-suggestions li.scripty-spell-ignore,
+.scripty-spell-suggestions li.scripty-spell-delete {
+    border-top: 1px solid color-mix(in srgb, var(--fg, #111) 12%, transparent);
+    margin-top: 0.15rem;
 }
 
 /* Fountain power-user: character autocomplete */

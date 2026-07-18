@@ -699,6 +699,8 @@
         var textarea = e.target.closest && e.target.closest('textarea');
         if (!isSpellTarget(textarea)) return;
         if (!dictionary || !dictionary.loaded) return;
+        // Highlighted text belongs to the Cut/Copy/Paste menu, not suggestions.
+        if (textarea.selectionStart !== textarea.selectionEnd) return;
 
         var token = wordAtOffset(textarea.value || '', textarea.selectionStart);
         var allow = buildAllowlist();

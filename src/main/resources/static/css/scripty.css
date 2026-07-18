@@ -12927,6 +12927,22 @@ body.has-toolbar-brand:has(.scripty-offline-banner:not([hidden])) .header-action
     opacity: 1;
 }
 
+/* Cut/Copy/Paste menu on right-click over highlighted text. Shares the
+   spellcheck popup chrome; only the disabled state is specific to it. */
+.scripty-selection-menu {
+    min-width: 9rem;
+}
+
+.scripty-selection-menu li.is-disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.scripty-selection-menu li.is-disabled:hover {
+    background: none;
+    color: inherit;
+}
+
 /* Delete is destructive — tint its hover/active red */
 .scripty-spell-suggestions li.scripty-spell-delete:hover,
 .scripty-spell-suggestions li.scripty-spell-delete.is-active {

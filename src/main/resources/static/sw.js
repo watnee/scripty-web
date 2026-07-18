@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v120';
+const CACHE_NAME = 'scripty-cache-v121';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/offline-project.html',
@@ -29,6 +29,7 @@ const ASSETS_TO_CACHE = [
   '/js/fountain-power.js',
   '/js/vendor/typo.js',
   '/js/spellcheck.js',
+  '/js/text-selection-menu.js',
   '/js/offline-store.js',
   '/js/offline.js',
   '/js/offline-edit.js',

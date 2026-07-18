@@ -61,7 +61,7 @@
     </button>
     <button type="button"
             class="project-list-action-btn project-list-action-btn--icon project-list-delete-btn"
-            th:attr="data-delete-url=@{/project/delete(id=${project.id})}"
+            th:attr="data-delete-id=${project.id}"
             aria-label="Delete project"
             title="Delete project">
         <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

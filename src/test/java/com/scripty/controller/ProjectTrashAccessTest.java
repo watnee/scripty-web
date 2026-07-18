@@ -4,6 +4,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -77,8 +78,29 @@ class ProjectTrashAccessTest {
 
     @Test
     void deleteRemainsOpenToOrdinaryUsers() throws Exception {
+        mockMvc.perform(post("/project/delete").param("id", "999999")
+                        .with(user("member").roles("USER")).with(csrf()))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    /** Deleting mutates, so it is POST-only and CSRF-protected. */
+    @Test
+    void deleteRejectsGet() throws Exception {
         mockMvc.perform(get("/project/delete").param("id", "999999")
                         .with(user("member").roles("USER")))
-                .andExpect(status().is3xxRedirection());
+                .andExpect(status().isMethodNotAllowed());
+    }
+
+    /**
+     * A missing token is not a silent no-op: CsrfAccessDeniedHandler bounces the
+     * post to sign-in, so the redirect target is what distinguishes a rejected
+     * delete from an accepted one (both are 302).
+     */
+    @Test
+    void deleteRejectsPostWithoutCsrf() throws Exception {
+        mockMvc.perform(post("/project/delete").param("id", "999999")
+                        .with(user("member").roles("USER")))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login?csrf_error=1"));
     }
 }

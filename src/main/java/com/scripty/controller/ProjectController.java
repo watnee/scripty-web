@@ -410,7 +410,7 @@ public class ProjectController {
         return "redirect:/project/list";
     }
 
-    @RequestMapping(value = "/delete")
+    @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public String delete(@RequestParam Integer id, Principal principal, RedirectAttributes redirectAttributes) {
         if (denyProjectAccess(id, principal)) {
             return "redirect:/project/list";

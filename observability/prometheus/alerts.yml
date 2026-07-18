@@ -1,0 +1,165 @@
+# Scripty alert rules.
+#
+# Prometheus rule format, which the local stack loads directly (rule_files in
+# prometheus.yml) and Grafana Cloud accepts as Mimir-managed rules:
+#
+#   mimirtool rules load observability/prometheus/alerts.yml \
+#     --address=https://prometheus-prod-XX-prod-YY.grafana.net \
+#     --id=<your Grafana Cloud instance id> --key=<access policy token>
+#
+# Keeping one file for both means a rule tested locally is the same rule that
+# pages you in production. See docs/OBSERVABILITY.md for the notification setup.
+#
+# Thresholds are starting points sized for a small app with modest traffic.
+# Tune them once you have a few weeks of baseline rather than trusting them blind.
+
+groups:
+  - name: scripty-availability
+    rules:
+      - alert: ScriptyDown
+        expr: up{job="scripty"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Scripty is not responding to scrapes"
+          description: >-
+            Prometheus has failed to scrape {{ $labels.instance }} for 2 minutes.
+            Either the app is down or METRICS_TOKEN no longer matches. Check the
+            Railway deploy logs and `npm run obs:doctor`.
+
+      - alert: ScriptyHighErrorRate
+        # Ratio of 5xx to all responses. The `> 0.05` floor plus the 5m window keeps
+        # a single stray error on a quiet night from paging anyone.
+        expr: |
+          sum(rate(http_server_requests_seconds_count{job="scripty",status=~"5.."}[5m]))
+            /
+          sum(rate(http_server_requests_seconds_count{job="scripty"}[5m]))
+            > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Over 5% of requests are failing"
+          description: >-
+            5xx rate is {{ $value | humanizePercentage }} over the last 5 minutes.
+            Search Railway logs for `@log.level:ERROR` and group by the
+            scripty_errors_unhandled_total exception label to find the type.
+
+      - alert: ScriptySlowRequests
+        # p99 across all endpoints. Exports are legitimately slow, so this is
+        # deliberately loose — ScriptyExportsFailing covers export health directly.
+        expr: |
+          histogram_quantile(0.99,
+            sum by (le) (rate(http_server_requests_seconds_bucket{job="scripty"}[5m]))
+          ) > 3
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p99 request latency above 3s"
+          description: >-
+            p99 is {{ $value | humanizeDuration }}. If tracing is enabled, the
+            slowest traces in Tempo will show whether the time is in the DB or the app.
+
+  - name: scripty-resources
+    rules:
+      - alert: ScriptyDatabasePoolExhausted
+        # Threads waiting for a connection means requests are already queueing;
+        # this usually precedes a latency alert and is the more actionable signal.
+        expr: hikaricp_connections_pending{job="scripty"} > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Requests are waiting for a database connection"
+          description: >-
+            {{ $value }} thread(s) pending on the Hikari pool for 5 minutes.
+            Look for a slow query or a leaked connection (open-in-view is off, so a
+            leak means a service holding a transaction open).
+
+      - alert: ScriptyHeapPressure
+        expr: |
+          sum(jvm_memory_used_bytes{job="scripty",area="heap"})
+            /
+          sum(jvm_memory_max_bytes{job="scripty",area="heap"})
+            > 0.90
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM heap over 90% for 15 minutes"
+          description: >-
+            Heap is {{ $value | humanizePercentage }} full. Sustained (not spiky)
+            pressure here usually means an export holding a whole document in memory.
+
+      - alert: ScriptyDiskSpaceLow
+        expr: disk_free_bytes{job="scripty"} / disk_total_bytes{job="scripty"} < 0.10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Less than 10% disk free"
+          description: "{{ $value | humanizePercentage }} free on {{ $labels.instance }}."
+
+  - name: scripty-domain
+    rules:
+      - alert: ScriptyExportsFailing
+        # Exports are the product's payload — a user who cannot get a PDF out is
+        # blocked even while every HTTP check stays green.
+        expr: |
+          sum(rate(scripty_export_seconds_count{job="scripty",outcome="failure"}[15m]))
+            /
+          sum(rate(scripty_export_seconds_count{job="scripty"}[15m]))
+            > 0.10
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Over 10% of exports are failing"
+          description: >-
+            Export failure rate is {{ $value | humanizePercentage }}. Break down by
+            the `format` label to see whether it is one exporter or all of them.
+
+      - alert: ScriptyEmailFailing
+        # Password resets and invitations both ride this path, so a silent failure
+        # locks people out of their accounts with no other visible symptom.
+        expr: |
+          sum(rate(scripty_email_sent_total{job="scripty",outcome="failure"}[15m])) > 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Outbound email is failing"
+          description: >-
+            Emails are failing on the {{ $labels.transport }} transport. If it is
+            cloudflare_worker, check the Worker logs and EMAIL_WORKER_SECRET.
+
+      - alert: ScriptyUnhandledErrorSpike
+        expr: |
+          sum(rate(scripty_errors_unhandled_total{job="scripty",status="500"}[5m])) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Unhandled server errors are elevated"
+          description: >-
+            {{ $value | humanize }} 500s/sec. The `exception` label names the class;
+            find the matching log line by request_id for the full stack trace.
+
+      - alert: ScriptyLoginFailureSpike
+        # Not a correctness alert — a sustained failure ratio this high on a small
+        # app is more likely credential stuffing than users forgetting passwords.
+        expr: |
+          sum(rate(scripty_auth_events_total{job="scripty",event="failure"}[10m]))
+            /
+          clamp_min(sum(rate(scripty_auth_events_total{job="scripty"}[10m])), 0.001)
+            > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Most login attempts are failing"
+          description: >-
+            {{ $value | humanizePercentage }} of sign-in attempts failed over 10
+            minutes. Check Cloudflare for a spike in requests to /login.

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import com.scripty.observability.ScriptyMetrics;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -24,11 +25,17 @@ public class EmailServiceImpl implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
 
+    /** Transport tag values for {@link ScriptyMetrics#emailSent}. */
+    private static final String TRANSPORT_WORKER = "cloudflare_worker";
+    private static final String TRANSPORT_SMTP = "smtp";
+    private static final String TRANSPORT_NONE = "disabled";
+
     private final JavaMailSender mailSender;
     private final String mailFrom;
     private final String emailWorkerUrl;
     private final String emailWorkerSecret;
     private final boolean smtpEnabled;
+    private final ScriptyMetrics metrics;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -40,7 +47,9 @@ public class EmailServiceImpl implements EmailService {
                             @Value("${app.mail-enabled:false}") boolean mailEnabled,
                             @Value("${spring.mail.host:}") String mailHost,
                             @Value("${app.email-worker-url:}") String emailWorkerUrl,
-                            @Value("${app.email-worker-secret:}") String emailWorkerSecret) {
+                            @Value("${app.email-worker-secret:}") String emailWorkerSecret,
+                            ScriptyMetrics metrics) {
+        this.metrics = metrics;
         this.mailSender = mailSender;
         this.mailFrom = mailFrom;
         this.emailWorkerUrl = emailWorkerUrl == null ? "" : emailWorkerUrl.trim();
@@ -53,15 +62,29 @@ public class EmailServiceImpl implements EmailService {
         // The Cloudflare email Worker is an explicit opt-in: it takes precedence
         // over SMTP because Railway restricts outbound SMTP ports.
         if (StringUtils.hasText(emailWorkerUrl) && StringUtils.hasText(emailWorkerSecret)) {
-            sendViaEmailWorker(to, subject, htmlBody, attachment);
+            send(TRANSPORT_WORKER, () -> sendViaEmailWorker(to, subject, htmlBody, attachment));
             return;
         }
         if (!smtpEnabled) {
             // Never log the body — invitation emails contain one-time accept tokens.
             log.info("Mail disabled. Skipped email to={} subject={}", to, subject);
+            // Counted separately from a failure: nothing is broken, but a deploy that
+            // silently drops password resets should still be visible on a dashboard.
+            metrics.emailSent(TRANSPORT_NONE, ScriptyMetrics.OUTCOME_SUCCESS);
             return;
         }
-        sendViaSmtp(to, subject, htmlBody, attachment);
+        send(TRANSPORT_SMTP, () -> sendViaSmtp(to, subject, htmlBody, attachment));
+    }
+
+    /** Records the outcome of one delivery attempt without swallowing the failure. */
+    private void send(String transport, Runnable delivery) {
+        try {
+            delivery.run();
+            metrics.emailSent(transport, ScriptyMetrics.OUTCOME_SUCCESS);
+        } catch (RuntimeException e) {
+            metrics.emailSent(transport, ScriptyMetrics.OUTCOME_FAILURE);
+            throw e;
+        }
     }
 
     private void sendViaEmailWorker(String to, String subject, String htmlBody,

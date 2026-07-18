@@ -8,9 +8,12 @@ import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.pdf.PdfWriter;
 import com.scripty.dto.Project;
+import com.scripty.dto.SongBlock;
+import com.scripty.dto.SongEdition;
 import com.scripty.dto.TextDocument;
 import com.scripty.dto.User;
 import com.scripty.repository.ProjectRepository;
+import com.scripty.repository.SongBlockRepository;
 import com.scripty.repository.TextDocumentRepository;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.poi.xwpf.usermodel.BreakType;
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -65,6 +69,12 @@ public class SongExportServiceImpl implements SongExportService {
 
     @Autowired
     private ProjectService projectService;
+
+    @Autowired
+    private SongEditionService songEditionService;
+
+    @Autowired
+    private SongBlockRepository songBlockRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -267,7 +277,7 @@ public class SongExportServiceImpl implements SongExportService {
         }
     }
 
-    private static String songBody(TextDocument song) {
+    private String songBody(TextDocument song) {
         StringBuilder body = new StringBuilder();
         body.append("    <section epub:type=\"chapter\" class=\"song\">\n");
         body.append("      <h1 class=\"song-title\">").append(EpubPackage.escape(title(song))).append("</h1>\n");
@@ -305,7 +315,25 @@ public class SongExportServiceImpl implements SongExportService {
         return song.getTitle() != null && !song.getTitle().isBlank() ? song.getTitle().trim() : UNTITLED;
     }
 
-    private static String lyrics(TextDocument song) {
+    /**
+     * Renders the song version the user is actually working in, matching how
+     * script export resolves the active edition. The cached
+     * {@link TextDocument#getContent()} is only rebuilt for the published
+     * version, so reading it exported stale lyrics — silently, and with no way
+     * to tell from the file — whenever the active version was not the published
+     * one. Falls back to the cached content for legacy songs that have no blocks.
+     */
+    private String lyrics(TextDocument song) {
+        SongEdition edition = songEditionService.getDefaultForDocument(song.getId());
+        if (edition != null) {
+            List<SongBlock> blocks = songBlockRepository
+                    .findBySongEditionIdAndDeletedAtIsNullOrderByOrderAsc(edition.getId());
+            if (!blocks.isEmpty()) {
+                return blocks.stream()
+                        .map(b -> b.getContent() != null ? b.getContent() : "")
+                        .collect(Collectors.joining("\n"));
+            }
+        }
         return song.getContent() == null ? "" : song.getContent();
     }
 

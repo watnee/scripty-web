@@ -1353,7 +1353,12 @@
         var wordsEl = el.querySelector('[data-stat="words"]');
         var pagesEl = el.querySelector('[data-stat="pages"]');
         if (wordsEl) wordsEl.textContent = formatWordCount(words);
-        if (pagesEl) pagesEl.textContent = formatPageEstimate(words);
+        // Page view publishes the real paginated count, so leave it alone while
+        // that mode is on — otherwise this debounced refresh races each reflow
+        // and the count flickers between the estimate and the true page total.
+        var pageViewOwnsCount = typeof window.scriptyIsPageViewMode === 'function'
+            && window.scriptyIsPageViewMode();
+        if (pagesEl && !pageViewOwnsCount) pagesEl.textContent = formatPageEstimate(words);
     }
     window.scriptyRefreshScriptStats = refreshScriptStats;
 

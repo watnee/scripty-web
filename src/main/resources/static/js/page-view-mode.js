@@ -19,8 +19,22 @@
     var PAGE_BODY_CLASS = 'screenplay-page-body';
     var PAGE_NUMBER_CLASS = 'screenplay-page-number';
     var reflowTimer = null;
+    var reflowDeadline = 0;
     var measuring = false;
     var enterAnimPending = false;
+    var composing = false;
+    var reflowPendingAfterCompose = false;
+
+    // A debounce that restarts on every keystroke never fires while someone is
+    // typing steadily, so an overfull page visibly spills past its bottom edge
+    // until the typist pauses. Cap how long a pending reflow can be deferred.
+    var REFLOW_MAX_WAIT = 700;
+
+    // Top margins from the .screenplay-page-body > .block-row rules in
+    // scripty.css, in em. Used only to seed the very first pagination, before
+    // any row sits in a page body to measure a live value from.
+    var MARGIN_EM_BY_TYPE = { SCENE: 2, DIALOGUE: 0, PARENTHETICAL: 0 };
+    var DEFAULT_MARGIN_EM = 1;
 
     function isOn() {
         return localStorage.getItem(STORAGE_KEY) === '1';
@@ -164,16 +178,6 @@
         return !!(el && el.classList && el.classList.contains('filtered-out'));
     }
 
-    function rowLayoutHeight(el) {
-        if (!el || isSearchFilteredOut(el)) return 0;
-        var height = el.offsetHeight || 0;
-        try {
-            var style = window.getComputedStyle(el);
-            height += (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
-        } catch (err) { /* ignore */ }
-        return height;
-    }
-
     function updateRealPageCount(count) {
         var el = document.getElementById('project-script-stats');
         if (!el) return;
@@ -288,9 +292,253 @@
         }
     }
 
+    function createWrap(sceneBlocks) {
+        var wrap = document.createElement('div');
+        wrap.className = PAGES_WRAP_CLASS;
+        if (!enterAnimPending) {
+            wrap.classList.add(PAGES_SETTLED_CLASS);
+        }
+        sceneBlocks.appendChild(wrap);
+        return wrap;
+    }
+
+    /**
+     * Put every row into a single page body so heights are measured at page
+     * width (rows sitting in .scene-blocks are laid out at the wider continuous
+     * width and would break onto the wrong pages).
+     */
+    function reseedWrap(sceneBlocks) {
+        unwrapPages();
+        var rows = Array.prototype.slice.call(sceneBlocks.children);
+        var wrap = createWrap(sceneBlocks);
+        var seed = createPage(1);
+        wrap.appendChild(seed.page);
+        for (var i = 0; i < rows.length; i++) {
+            seed.body.appendChild(rows[i]);
+        }
+        return wrap;
+    }
+
+    function pageBodiesOf(wrap) {
+        return wrap.querySelectorAll(':scope > .' + PAGE_CLASS + ' > .' + PAGE_BODY_CLASS);
+    }
+
+    /**
+     * Ordered rows already living inside the wrap, or null when rows escaped it
+     * (a freshly inserted create-below row, say) and a full reseed is needed to
+     * recover document order.
+     */
+    function collectRows(sceneBlocks, wrap) {
+        for (var i = 0; i < sceneBlocks.children.length; i++) {
+            if (sceneBlocks.children[i] !== wrap) return null;
+        }
+        var rows = [];
+        var bodies = pageBodiesOf(wrap);
+        for (var b = 0; b < bodies.length; b++) {
+            for (var c = 0; c < bodies[b].children.length; c++) {
+                rows.push(bodies[b].children[c]);
+            }
+        }
+        return rows;
+    }
+
+    /**
+     * The `:first-child` and `.project-script-select-row + .block-row` rules in
+     * scripty.css zero a row's top margin, so a row in that position cannot
+     * report the margin it would carry mid-page.
+     */
+    function sitsAtPageBodyTop(el) {
+        var parent = el.parentElement;
+        if (!parent || !parent.classList || !parent.classList.contains(PAGE_BODY_CLASS)) return false;
+        if (parent.firstElementChild === el) return true;
+        var prev = el.previousElementSibling;
+        return !!(prev && prev.classList && prev.classList.contains('project-script-select-row'));
+    }
+
+    /**
+     * Measure every row in one batched read pass. Interleaving appendChild with
+     * offsetHeight (as this used to) forces a synchronous layout per row, which
+     * is what made typing stall on long scripts.
+     */
+    function measureRows(els) {
+        var rows = [];
+        var i;
+        for (i = 0; i < els.length; i++) {
+            var el = els[i];
+            var filtered = isSearchFilteredOut(el);
+            var style = window.getComputedStyle(el);
+            rows.push({
+                el: el,
+                type: (el.getAttribute && el.getAttribute('data-block-type')) || '',
+                forcedBreak: isForcedBreak(el),
+                chrome: isChromeRow(el),
+                filtered: filtered,
+                // Search-filtered rows stay in the DOM (order-preserving) but
+                // contribute no height while .filtered-out hides them.
+                height: filtered ? 0 : (el.offsetHeight || 0),
+                atTop: sitsAtPageBodyTop(el),
+                rawMarginTop: parseFloat(style.marginTop) || 0,
+                fontSize: parseFloat(style.fontSize) || 0
+            });
+        }
+
+        // Prefer a live sample of each block type's mid-page top margin over the
+        // hardcoded em values, so the CSS stays the single source of truth
+        // whenever there is a row in a measurable position.
+        var sampled = {};
+        for (i = 0; i < rows.length; i++) {
+            if (rows[i].filtered || rows[i].atTop || rows[i].rawMarginTop <= 0) continue;
+            if (sampled[rows[i].type] == null) sampled[rows[i].type] = rows[i].rawMarginTop;
+        }
+        for (i = 0; i < rows.length; i++) {
+            if (rows[i].filtered) {
+                rows[i].marginTop = 0;
+                continue;
+            }
+            if (sampled[rows[i].type] != null) {
+                rows[i].marginTop = sampled[rows[i].type];
+                continue;
+            }
+            var em = MARGIN_EM_BY_TYPE[rows[i].type];
+            if (em == null) em = DEFAULT_MARGIN_EM;
+            rows[i].marginTop = em * rows[i].fontSize;
+        }
+        return rows;
+    }
+
+    /** Greedy fill, computed purely from measurements — no layout reads. */
+    function computeAssignment(rows, usableHeight) {
+        var pages = [[]];
+        var height = 0;
+
+        function newPage() {
+            pages.push([]);
+            height = 0;
+        }
+
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+
+            if (row.forcedBreak) {
+                // Page-break markers become the page boundary; hide their height
+                // contribution.
+                pages[pages.length - 1].push(row);
+                if (i < rows.length - 1) newPage();
+                continue;
+            }
+
+            var atPageTop = height === 0;
+            var cost = row.height + (atPageTop ? 0 : row.marginTop);
+            if (!atPageTop && height + cost > usableHeight + 0.5) {
+                newPage();
+                cost = row.height;
+            }
+            pages[pages.length - 1].push(row);
+            height += cost;
+        }
+        return pages;
+    }
+
+    function groupHasVisibleContent(group) {
+        for (var i = 0; i < group.length; i++) {
+            if (group[i].forcedBreak || group[i].chrome) continue;
+            return true;
+        }
+        return false;
+    }
+
+    /** Drop pages that only hold page-breaks or hidden chrome. */
+    function mergeEmptyPages(pages) {
+        // Leading empties fold forward so their rows keep document order.
+        while (pages.length > 1 && !groupHasVisibleContent(pages[0])) {
+            pages[1] = pages[0].concat(pages[1]);
+            pages.shift();
+        }
+        while (pages.length > 1 && !groupHasVisibleContent(pages[pages.length - 1])) {
+            pages[pages.length - 2] = pages[pages.length - 2].concat(pages[pages.length - 1]);
+            pages.pop();
+        }
+        // Middle empties (e.g. search filtered out a whole page of blocks).
+        for (var p = 1; p < pages.length - 1; ) {
+            if (groupHasVisibleContent(pages[p])) {
+                p += 1;
+                continue;
+            }
+            pages[p - 1] = pages[p - 1].concat(pages[p]);
+            pages.splice(p, 1);
+        }
+        return pages;
+    }
+
+    /**
+     * Reconcile the existing page DOM toward `groups`, touching only rows whose
+     * position actually changed. Returns true if anything moved — a reflow that
+     * changes nothing must not disturb the caret at all.
+     */
+    function applyAssignment(wrap, groups) {
+        var changed = false;
+        var pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
+        var bodies = [];
+        var p, i;
+
+        for (p = 0; p < groups.length; p++) {
+            if (p < pages.length) {
+                bodies.push(pages[p].querySelector(':scope > .' + PAGE_BODY_CLASS));
+            } else {
+                var made = createPage(p + 1);
+                wrap.appendChild(made.page);
+                bodies.push(made.body);
+                changed = true;
+            }
+        }
+
+        for (p = 0; p < groups.length; p++) {
+            var body = bodies[p];
+            var group = groups[p];
+            for (i = 0; i < group.length; i++) {
+                if (body.children[i] === group[i].el) continue;
+                body.insertBefore(group[i].el, body.children[i] || null);
+                changed = true;
+            }
+        }
+
+        // Trim only after every page has claimed its rows — a row still sitting
+        // past the end of page 3 may belong to page 5, which has yet to pull it.
+        for (p = 0; p < groups.length; p++) {
+            while (bodies[p].children.length > groups[p].length) {
+                bodies[p].removeChild(bodies[p].lastChild);
+                changed = true;
+            }
+        }
+
+        pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
+        for (p = pages.length - 1; p >= groups.length; p--) {
+            pages[p].remove();
+            changed = true;
+        }
+
+        if (changed) {
+            var finalPages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
+            for (i = 0; i < finalPages.length; i++) {
+                var num = i + 1;
+                finalPages[i].setAttribute('data-page', String(num));
+                finalPages[i].setAttribute('aria-label', 'Page ' + num);
+                var label = finalPages[i].querySelector(':scope > .' + PAGE_NUMBER_CLASS);
+                if (label) label.textContent = String(num);
+            }
+        }
+        return changed;
+    }
+
     function paginate() {
         if (measuring) return;
         if (!document.documentElement.classList.contains(CLASS_NAME)) return;
+        // Re-parenting the focused textarea mid-composition cancels the pending
+        // IME/dead-key input. Wait for compositionend.
+        if (composing) {
+            reflowPendingAfterCompose = true;
+            return;
+        }
 
         var sceneBlocks = getSceneBlocks();
         if (!sceneBlocks) return;
@@ -298,134 +546,24 @@
         var editState = captureEditState();
         measuring = true;
         try {
-            unwrapPages();
+            var wrap = sceneBlocks.querySelector(':scope > .' + PAGES_WRAP_CLASS);
+            var els = wrap ? collectRows(sceneBlocks, wrap) : null;
+            if (!els) {
+                wrap = reseedWrap(sceneBlocks);
+                els = collectRows(sceneBlocks, wrap) || [];
+            }
 
-            var children = Array.prototype.slice.call(sceneBlocks.children);
-            if (!children.length) {
+            if (!els.length) {
+                wrap.remove();
                 updateRealPageCount(0);
                 return;
             }
 
-            var wrap = document.createElement('div');
-            wrap.className = PAGES_WRAP_CLASS;
-            if (!enterAnimPending) {
-                wrap.classList.add(PAGES_SETTLED_CLASS);
-            }
-            sceneBlocks.appendChild(wrap);
-
             var usableHeight = measureUsableHeight(wrap);
-            var pageNum = 0;
-            var current = null;
-            var currentHeight = 0;
+            var groups = mergeEmptyPages(computeAssignment(measureRows(els), usableHeight));
+            var changed = applyAssignment(wrap, groups);
 
-            function startPage() {
-                pageNum += 1;
-                current = createPage(pageNum);
-                wrap.appendChild(current.page);
-                currentHeight = 0;
-            }
-
-            startPage();
-
-            for (var i = 0; i < children.length; i++) {
-                var child = children[i];
-                var forcedBreak = isForcedBreak(child);
-
-                current.body.appendChild(child);
-                // Search-filtered rows stay in the DOM (order-preserving) but
-                // contribute no height while .filtered-out hides them.
-                var height = rowLayoutHeight(child);
-
-                if (!forcedBreak && currentHeight > 0 && currentHeight + height > usableHeight + 0.5) {
-                    startPage();
-                    current.body.appendChild(child);
-                    height = rowLayoutHeight(child);
-                }
-
-                if (forcedBreak) {
-                    // Page-break markers become the page boundary; hide their height contribution.
-                    if (currentHeight === 0 && current.body.children.length === 1) {
-                        // Leading page break: keep an empty page then continue.
-                    }
-                    if (i < children.length - 1) {
-                        startPage();
-                    }
-                    continue;
-                }
-
-                currentHeight += height;
-            }
-
-            // Drop leading/trailing pages that only hold page-breaks or hidden chrome.
-            function pageHasVisibleContent(body) {
-                if (!body) return false;
-                for (var c = 0; c < body.children.length; c++) {
-                    var row = body.children[c];
-                    if (isForcedBreak(row)) continue;
-                    if (isChromeRow(row)) continue;
-                    if (row.getAttribute && row.getAttribute('data-block-id')) return true;
-                    return true;
-                }
-                return false;
-            }
-
-            var pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
-            // Leading empties
-            while (pages.length > 1) {
-                var firstBody = pages[0].querySelector(':scope > .' + PAGE_BODY_CLASS);
-                if (pageHasVisibleContent(firstBody)) break;
-                var nextBody = pages[1].querySelector(':scope > .' + PAGE_BODY_CLASS);
-                if (firstBody && nextBody) {
-                    while (firstBody.firstChild) {
-                        nextBody.insertBefore(firstBody.firstChild, nextBody.firstChild);
-                    }
-                }
-                pages[0].remove();
-                pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
-            }
-            // Trailing empties
-            while (pages.length > 1) {
-                var last = pages[pages.length - 1];
-                var lastBody = last.querySelector(':scope > .' + PAGE_BODY_CLASS);
-                if (pageHasVisibleContent(lastBody)) break;
-                var prev = pages[pages.length - 2];
-                var prevBody = prev.querySelector(':scope > .' + PAGE_BODY_CLASS);
-                if (lastBody && prevBody) {
-                    while (lastBody.firstChild) {
-                        prevBody.appendChild(lastBody.firstChild);
-                    }
-                }
-                last.remove();
-                pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
-            }
-            // Middle empties (e.g. search filtered out a whole page of blocks)
-            for (var p = 1; p < pages.length - 1; ) {
-                var midBody = pages[p].querySelector(':scope > .' + PAGE_BODY_CLASS);
-                if (pageHasVisibleContent(midBody)) {
-                    p += 1;
-                    continue;
-                }
-                var mergeInto = pages[p - 1].querySelector(':scope > .' + PAGE_BODY_CLASS);
-                if (midBody && mergeInto) {
-                    while (midBody.firstChild) {
-                        mergeInto.appendChild(midBody.firstChild);
-                    }
-                }
-                pages[p].remove();
-                pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
-            }
-
-            // Renumber after cleanup.
-            var finalPages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
-            for (var n = 0; n < finalPages.length; n++) {
-                var num = n + 1;
-                finalPages[n].setAttribute('data-page', String(num));
-                finalPages[n].setAttribute('aria-label', 'Page ' + num);
-                var label = finalPages[n].querySelector(':scope > .' + PAGE_NUMBER_CLASS);
-                if (label) label.textContent = String(num);
-            }
-
-            updateRealPageCount(finalPages.length);
+            updateRealPageCount(groups.length);
 
             if (enterAnimPending) {
                 enterAnimPending = false;
@@ -437,9 +575,9 @@
             }
 
             syncActivePage();
+            if (changed) restoreEditState(editState);
         } finally {
             measuring = false;
-            restoreEditState(editState);
         }
     }
 
@@ -470,11 +608,21 @@
     }
 
     function scheduleReflow(delay) {
+        var wait = delay == null ? 80 : delay;
+        var now = Date.now();
+        if (!reflowTimer) {
+            reflowDeadline = now + REFLOW_MAX_WAIT;
+        } else if (now + wait > reflowDeadline) {
+            // Steady typing keeps pushing the debounce out. Cap the deferral so
+            // an overfull page reflows mid-burst, not only when the typist stops.
+            wait = Math.max(0, reflowDeadline - now);
+        }
         if (reflowTimer) clearTimeout(reflowTimer);
         reflowTimer = setTimeout(function () {
             reflowTimer = null;
+            reflowDeadline = 0;
             paginate();
-        }, delay == null ? 80 : delay);
+        }, wait);
     }
 
     window.scriptyIsPageViewMode = function () {
@@ -535,17 +683,46 @@
         return body.scrollHeight > body.clientHeight + 0.5;
     }
 
+    /**
+     * True when the page has shed enough content (a line or more) that rows from
+     * the next page should move up. Without this, deleting text left a ragged
+     * gap until the block lost focus.
+     */
+    function pageBodyCanPullUp(page) {
+        if (!page) return false;
+        var next = page.nextElementSibling;
+        if (!next || !next.classList || !next.classList.contains(PAGE_CLASS)) return false;
+        var body = page.querySelector(':scope > .' + PAGE_BODY_CLASS);
+        if (!body) return false;
+        // ~55 lines to a US Letter screenplay page, so this is roughly one line.
+        var lineSlack = body.clientHeight / 55;
+        return body.clientHeight - body.scrollHeight > lineSlack;
+    }
+
+    document.body.addEventListener('compositionstart', function () {
+        composing = true;
+    });
+
+    document.body.addEventListener('compositionend', function () {
+        composing = false;
+        if (reflowPendingAfterCompose) {
+            reflowPendingAfterCompose = false;
+            if (window.scriptyIsPageViewMode()) scheduleReflow(60);
+        }
+    });
+
     document.body.addEventListener('input', function (e) {
         if (!window.scriptyIsPageViewMode()) return;
+        if (e.isComposing || composing) return;
         var t = e.target;
         if (!t || !t.closest) return;
         if (!t.closest('.project-script .block-row')) return;
         // Avoid full unwrap/rewrap on every keystroke — that makes text jump.
-        // Only reflow while typing when the current page actually overflows.
+        // Only reflow while typing when the page over- or underflows.
         window.requestAnimationFrame(function () {
             if (!t.isConnected) return;
             var page = t.closest('.' + PAGE_CLASS);
-            if (!page || pageBodyOverflows(page)) {
+            if (!page || pageBodyOverflows(page) || pageBodyCanPullUp(page)) {
                 scheduleReflow(200);
             }
         });

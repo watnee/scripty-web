@@ -11324,9 +11324,9 @@ html.scripty-page-view-mode .project-script .scene-blocks .block-row {
 }
 
 /* Industry vertical rhythm: a blank line separates elements on the page.
-   Pagination measures rows in-place, so :first-child margins collapse to 0
-   and are excluded from page-fill height (see rowLayoutHeight in
-   page-view-mode.js). */
+   Pagination samples these margins from live rows and drops the top margin for
+   whichever row lands first on a page, matching the :first-child rule below
+   (see measureRows / computeAssignment in page-view-mode.js). */
 html.scripty-page-view-mode .project-script .screenplay-page-body > .block-row {
     margin-top: 1em;
 }

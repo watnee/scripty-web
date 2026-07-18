@@ -32,18 +32,33 @@
                 <p class="muted" th:if="${#lists.isEmpty(viewModel.projects)}">Your screenplays live here.</p>
             </div>
             <div class="project-list-header-actions">
-                <button type="button"
-                        id="project-list-import-btn"
-                        class="project-list-import-btn"
-                        title="Import a project from a .scripty.json file">Import Project</button>
-                <a th:if="${hasTrashedProjects}"
-                   th:href="@{/project/trash}"
-                   role="button"
-                   title="Restore a recently deleted project">Deleted Projects</a>
-                <a th:href="@{/project/create}" role="button" class="project-list-create-btn">
-                    <span class="project-list-create-icon" aria-hidden="true">+</span>
-                    New Project
-                </a>
+                <div class="project-list-header-buttons">
+                    <button type="button"
+                            id="project-list-import-btn"
+                            class="project-list-import-btn"
+                            aria-describedby="project-list-import-hint"
+                            title="Import a project from a .scripty.json export file">
+                        <span class="project-list-import-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                        </span>
+                        <span class="project-list-import-label">Import Project</span>
+                    </button>
+                    <a th:if="${hasTrashedProjects}"
+                       th:href="@{/project/trash}"
+                       role="button"
+                       title="Restore a recently deleted project">Deleted Projects</a>
+                    <a th:href="@{/project/create}" role="button" class="project-list-create-btn">
+                        <span class="project-list-create-icon" aria-hidden="true">+</span>
+                        New Project
+                    </a>
+                </div>
+                <p class="project-list-import-hint muted" id="project-list-import-hint">
+                    Have a <code>.scripty.json</code> export? Import it to bring that project back into Scripty.
+                </p>
             </div>
         </div>
 
@@ -179,7 +194,12 @@
         importFile.addEventListener('change', function() {
             if (importFile.files && importFile.files.length > 0) {
                 importBtn.disabled = true;
-                importBtn.textContent = 'Importing…';
+                const importLabel = importBtn.querySelector('.project-list-import-label');
+                if (importLabel) {
+                    importLabel.textContent = 'Importing…';
+                } else {
+                    importBtn.textContent = 'Importing…';
+                }
                 importForm.submit();
             }
         });

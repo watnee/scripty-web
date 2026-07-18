@@ -21,15 +21,25 @@
         </div>
 
         <div class="project-list-header">
-            <div class="project-list-header-text">
-                <h1>Projects</h1>
-                <p class="muted" th:if="${!#lists.isEmpty(viewModel.projects)}">
-                    <th:block th:with="count=${#lists.size(viewModel.projects)}">
-                        <span th:if="${count == 1}">1 screenplay</span>
-                        <span th:unless="${count == 1}" th:text="|${count} screenplays|"></span>
-                    </th:block>
-                </p>
-                <p class="muted" th:if="${#lists.isEmpty(viewModel.projects)}">Your screenplays live here.</p>
+            <div class="project-list-header-intro">
+                <span class="project-list-header-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                </span>
+                <div class="project-list-header-text">
+                    <h1>Projects</h1>
+                    <p class="muted" th:if="${!#lists.isEmpty(viewModel.projects)}">
+                        <th:block th:with="count=${#lists.size(viewModel.projects)}">
+                            <span th:if="${count == 1}">1 screenplay</span>
+                            <span th:unless="${count == 1}" th:text="|${count} screenplays|"></span>
+                        </th:block>
+                    </p>
+                    <p class="muted" th:if="${#lists.isEmpty(viewModel.projects)}">Your screenplays live here.</p>
+                </div>
             </div>
             <div class="project-list-header-actions">
                 <div class="project-list-header-buttons">
@@ -109,56 +119,53 @@
         </div>
 
         <div class="project-list-panel" th:if="${!#lists.isEmpty(viewModel.projects)}">
-            <table id="table-projects" class="project-list-table">
-                <tbody>
-                    <tr th:each="project : ${viewModel.projects}"
-                        class="project-list-row"
-                        th:classappend="${project.id == defaultProjectId} ? 'default-project-row' : ''"
-                        th:attr="data-sort-title=${#strings.toLowerCase(project.title)}, data-sort-edited=${project.lastEdited != null ? #temporals.format(project.lastEdited, 'yyyy-MM-dd''T''HH:mm:ss') : ''}">
-                        <td class="project-list-star-cell">
-                            <form th:action="@{/project/toggleDefault}" method="POST" class="project-list-star-form">
-                                <input type="hidden" name="id" th:value="${project.id}" />
-                                <button type="submit"
-                                        class="default-project-toggle"
-                                        th:classappend="${project.id == defaultProjectId} ? 'is-default' : ''"
-                                        th:aria-label="${project.id == defaultProjectId} ? 'Remove as default project' : 'Set as default project'"
-                                        th:title="${project.id == defaultProjectId} ? 'Remove as default project' : 'Set as default project'">
-                                    <span class="icon-outline" aria-hidden="true">☆</span>
-                                    <span class="icon-filled" aria-hidden="true">★</span>
-                                </button>
-                            </form>
-                        </td>
-                        <td class="project-list-main-cell">
-                            <div class="project-title-container">
-                                <div class="project-list-title-wrap">
-                                    <div class="project-list-title-row">
-                                        <a th:href="@{/project/show(id=${project.id})}" class="project-list-title" th:text="${project.title}"></a>
-                                        <span class="project-list-default-label" th:if="${project.id == defaultProjectId}">Default</span>
-                                    </div>
-                                    <div class="project-list-meta">
-                                        <span class="project-list-last-edited" th:if="${project.lastEdited != null}" th:title="${#temporals.format(project.lastEdited, 'MMM d, yyyy, h:mm a')}">
-                                            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                <circle cx="12" cy="12" r="9"></circle>
-                                                <polyline points="12 7 12 12 15 14"></polyline>
-                                            </svg>
-                                            <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.lastEdited})}"></span>
-                                        </span>
-                                        <th:block th:if="${!#lists.isEmpty(project.teams)}">
-                                            <span class="project-list-meta-sep" aria-hidden="true" th:if="${project.lastEdited != null}"></span>
-                                            <span class="project-list-teams">
-                                                <th:block th:each="team : ${project.teams}">
-                                                    <span th:replace="~{fragments/projectListTeam :: link(${team.id}, ${team.name})}"></span>
-                                                </th:block>
-                                            </span>
-                                        </th:block>
-                                    </div>
-                                </div>
-                                <div th:replace="~{fragments/projectListActions :: actions(${project})}"></div>
+            <ul class="project-list-cards" id="project-list-cards">
+                <li th:each="project, iter : ${viewModel.projects}"
+                    class="project-list-row project-list-card"
+                    th:classappend="${project.id == defaultProjectId} ? ' default-project-row' : ''"
+                    th:style="'--card-i:' + ${iter.index}"
+                    th:attr="data-sort-title=${#strings.toLowerCase(project.title)}, data-sort-edited=${project.lastEdited != null ? #temporals.format(project.lastEdited, 'yyyy-MM-dd''T''HH:mm:ss') : ''}">
+                    <span class="project-list-star">
+                        <form th:action="@{/project/toggleDefault}" method="POST" class="project-list-star-form">
+                            <input type="hidden" name="id" th:value="${project.id}" />
+                            <button type="submit"
+                                    class="default-project-toggle"
+                                    th:classappend="${project.id == defaultProjectId} ? 'is-default' : ''"
+                                    th:aria-label="${project.id == defaultProjectId} ? 'Remove as default project' : 'Set as default project'"
+                                    th:title="${project.id == defaultProjectId} ? 'Remove as default project' : 'Set as default project'">
+                                <span class="icon-outline" aria-hidden="true">☆</span>
+                                <span class="icon-filled" aria-hidden="true">★</span>
+                            </button>
+                        </form>
+                    </span>
+                    <div class="project-title-container">
+                        <div class="project-list-title-wrap">
+                            <div class="project-list-title-row">
+                                <a th:href="@{/project/show(id=${project.id})}" class="project-list-title" th:text="${project.title}"></a>
+                                <span class="project-list-default-label" th:if="${project.id == defaultProjectId}">Default</span>
                             </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                            <div class="project-list-meta">
+                                <span class="project-list-last-edited" th:if="${project.lastEdited != null}" th:title="${#temporals.format(project.lastEdited, 'MMM d, yyyy, h:mm a')}">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="9"></circle>
+                                        <polyline points="12 7 12 12 15 14"></polyline>
+                                    </svg>
+                                    <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.lastEdited})}"></span>
+                                </span>
+                                <th:block th:if="${!#lists.isEmpty(project.teams)}">
+                                    <span class="project-list-meta-sep" aria-hidden="true" th:if="${project.lastEdited != null}"></span>
+                                    <span class="project-list-teams">
+                                        <th:block th:each="team : ${project.teams}">
+                                            <span th:replace="~{fragments/projectListTeam :: link(${team.id}, ${team.name})}"></span>
+                                        </th:block>
+                                    </span>
+                                </th:block>
+                            </div>
+                        </div>
+                        <div th:replace="~{fragments/projectListActions :: actions(${project})}"></div>
+                    </div>
+                </li>
+            </ul>
             <p class="project-list-no-results" id="project-list-no-results" hidden>
                 No projects match <strong id="project-list-search-query"></strong>.
             </p>
@@ -211,13 +218,13 @@
         const noResultsEl = document.getElementById('project-list-no-results');
         const noResultsQueryEl = document.getElementById('project-list-search-query');
         const sortSelect = document.getElementById('project-list-sort');
-        const tbody = document.querySelector('#table-projects tbody');
+        const cardList = document.getElementById('project-list-cards');
         if (!searchInput) return;
 
         function sortProjects() {
-            if (!tbody || !sortSelect) return;
+            if (!cardList || !sortSelect) return;
             const mode = sortSelect.value;
-            const rows = Array.from(tbody.querySelectorAll('.project-list-row'));
+            const rows = Array.from(cardList.querySelectorAll('.project-list-row'));
             rows.sort(function(a, b) {
                 if (mode === 'last-edited') {
                     const aTime = Date.parse(a.getAttribute('data-sort-edited') || '') || 0;
@@ -228,8 +235,9 @@
                 }
                 return (a.getAttribute('data-sort-title') || '').localeCompare(b.getAttribute('data-sort-title') || '');
             });
-            rows.forEach(function(row) {
-                tbody.appendChild(row);
+            rows.forEach(function(row, i) {
+                row.style.setProperty('--card-i', i);
+                cardList.appendChild(row);
             });
         }
 
@@ -244,7 +252,7 @@
                 searchWrap.classList.toggle('has-value', !!query);
             }
 
-            const rows = document.querySelectorAll('#table-projects .project-list-row');
+            const rows = document.querySelectorAll('#project-list-cards .project-list-row');
             let visibleCount = 0;
 
             rows.forEach(function(row) {

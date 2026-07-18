@@ -10156,6 +10156,17 @@ html:not(.scripty-page-view-mode) .project-script {
     box-shadow: none;
 }
 
+/* Escape Missing.css main { max-inline-size: var(--eff-line-length) } (~40rem).
+   The screenplay grid is 6in of action text plus the left control gutter and
+   right actions gutter (~52rem total). At the ~40rem cap it overflowed to the
+   right, so the centered body column no longer lined up under the centered
+   header title. Widen main just enough to hold the grid, so its symmetric
+   gutters center the action column on the same axis as the title. Page-view
+   and full-width modes escape the cap with their own rules above/below. */
+html:not(.scripty-page-view-mode):not(.scripty-screenplay-full-width) main:has(.project-script) {
+    max-inline-size: min(100%, 52rem);
+}
+
 :root.-dark-theme:not(.scripty-page-view-mode) .project-script {
     --screenplay-paper: color-mix(in srgb, var(--box-bg, #1e293b) 88%, #0f172a);
     --screenplay-desk: color-mix(in srgb, var(--bg, #0f172a) 85%, #1e293b);

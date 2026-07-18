@@ -57,11 +57,23 @@
             </div>
         </div>
 
-        <div class="song-workspace-list" id="song-workspace-list" th:if="${!#lists.isEmpty(panes)}">
+        <div class="song-workspace-list"
+             id="song-workspace-list"
+             th:if="${!#lists.isEmpty(panes)}"
+             th:attr="data-project-id=${projectId},data-can-reorder=${canEditScript}">
             <section th:each="pane : ${panes}"
                      class="song-workspace-item"
                      th:attr="data-song-id=${pane.id},data-song-title=${#strings.toLowerCase(pane.title)}">
                 <div class="song-workspace-item-header">
+                    <!--/* Mirrors the lyric-line drag handle so reordering songs and
+                           reordering lines read as the same gesture. Arrow keys move
+                           the song too, so ordering is reachable without a mouse. */-->
+                    <button type="button"
+                            th:if="${canEditScript}"
+                            class="song-workspace-drag-handle"
+                            draggable="true"
+                            title="Drag to reorder songs (or focus and press the up/down arrows)"
+                            th:attr="aria-label='Reorder ' + ${pane.title}">&#8942;&#8942;</button>
                     <button type="button"
                             class="song-workspace-toggle"
                             aria-expanded="false"
@@ -108,6 +120,8 @@
                 </div>
             </section>
         </div>
+
+        <p class="song-workspace-status" id="song-workspace-status" role="status" aria-live="polite"></p>
 
         <p class="song-workspace-no-matches muted" id="song-workspace-no-matches" hidden>
             No songs match that filter.

@@ -7281,6 +7281,52 @@ body:has(main.text-documents-page) > main.text-documents-page {
     padding: 0.7rem 0.9rem;
 }
 
+.song-workspace-status:empty {
+    display: none;
+}
+
+.song-workspace-status {
+    margin: 0.75rem 0 0;
+    color: var(--error-fg, #b91c1c);
+}
+
+.song-workspace-drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 1.4rem;
+    height: 1.75rem;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted-fg, #64748b);
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: grab;
+}
+
+.song-workspace-drag-handle:hover,
+.song-workspace-drag-handle:focus-visible {
+    background: color-mix(in srgb, var(--fg, #000) 6%, transparent);
+    color: inherit;
+}
+
+.song-workspace-item--dragging {
+    opacity: 0.5;
+}
+
+/* A 2px rail marks where the dragged song will land, matching the lyric-line
+   drop indicator. */
+.song-workspace-drop-before {
+    box-shadow: 0 -2px 0 0 var(--accent, #6366f1);
+}
+
+.song-workspace-drop-after {
+    box-shadow: 0 2px 0 0 var(--accent, #6366f1);
+}
+
 .song-workspace-toggle {
     display: inline-flex;
     align-items: center;

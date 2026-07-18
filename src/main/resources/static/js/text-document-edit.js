@@ -111,41 +111,97 @@
         } catch (e) { /* caret landed outside the field */ }
     }
 
-    /** Toggles a heading prefix on the caret's line; re-applying a level clears it. */
-    function toggleHeading(el, level) {
+    /**
+     * Splits a line into its indent, whichever list/heading prefix it already
+     * carries, and the text after it. A line holds at most one prefix, so
+     * applying a new one replaces the old rather than stacking on top of it.
+     */
+    function splitPrefix(line) {
+        var indent = (/^\s*/.exec(line) || [''])[0];
+        var rest = line.slice(indent.length);
+        var list = LIST_RE.exec(line);
+        if (list) {
+            return {
+                indent: indent,
+                kind: isOrderedMarker(list[2]) ? 'ordered' : 'bullet',
+                body: line.slice(list[0].length)
+            };
+        }
+        var heading = HEADING_RE.exec(rest);
+        if (heading) {
+            return { indent: indent, kind: 'h' + heading[1].length, body: rest.slice(heading[0].length) };
+        }
+        return { indent: indent, kind: null, body: rest };
+    }
+
+    function applyPrefix(el, kind, marker) {
         var value = el.value;
         var bounds = lineBounds(value, el.selectionStart);
-        var line = value.slice(bounds.start, bounds.end);
-        var hashes = '######'.slice(0, level);
-        var match = HEADING_RE.exec(line);
-        var body = match ? line.slice(match[0].length) : line;
-        var next = match && match[1] === hashes ? body : hashes + ' ' + body;
+        var parts = splitPrefix(value.slice(bounds.start, bounds.end));
+        // Pressing the same control again clears the prefix.
+        var next = parts.kind === kind
+            ? parts.indent + parts.body
+            : parts.indent + marker + ' ' + parts.body;
         replaceRange(el, bounds.start, bounds.end, next);
+    }
+
+    /** Toggles a heading prefix on the caret's line. */
+    function toggleHeading(el, level) {
+        applyPrefix(el, 'h' + level, '######'.slice(0, level));
     }
 
     /** Toggles a bullet or numbered prefix on the caret's line. */
     function toggleList(el, ordered) {
-        var value = el.value;
-        var bounds = lineBounds(value, el.selectionStart);
-        var line = value.slice(bounds.start, bounds.end);
-        var match = LIST_RE.exec(line);
-        var next;
-        if (match && isOrderedMarker(match[2]) === ordered) {
-            next = match[1] + line.slice(match[0].length);
-        } else {
-            var body = match ? line.slice(match[0].length) : line.replace(/^\s*/, '');
-            var indent = match ? match[1] : (/^\s*/.exec(line) || [''])[0];
-            next = indent + (ordered ? '1.' : '-') + ' ' + body;
-        }
-        replaceRange(el, bounds.start, bounds.end, next);
+        applyPrefix(el, ordered ? 'ordered' : 'bullet', ordered ? '1.' : '-');
         renumberOrderedLists(el);
     }
 
     window.scriptyNoteToggleList = toggleList;
     window.scriptyNoteToggleHeading = toggleHeading;
 
+    /** Labels the notes toolbar with the platform's own modifier keys. */
+    function syncNoteToolbarHints() {
+        var toolbar = document.querySelector('.note-format-toolbar');
+        if (!toolbar || toolbar.dataset.scriptyHintsSynced === '1') return;
+        var isMac = typeof window.scriptyIsMac === 'function'
+            ? window.scriptyIsMac()
+            : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
+        var mod = isMac ? '⌘' : 'Ctrl+';
+        var alt = isMac ? '⌥' : 'Alt+';
+        var hints = {
+            'note-undo': isMac ? '⌘Z' : 'Ctrl+Z',
+            'note-redo': isMac ? '⌘⇧Z' : 'Ctrl+Y'
+        };
+        Object.keys(hints).forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.title = el.title.split(' (')[0] + ' (' + hints[id] + ')';
+            el.setAttribute('aria-label', el.title);
+        });
+        ['h1', 'h2', 'h3'].forEach(function (level, index) {
+            var el = toolbar.querySelector('[data-note-format="' + level + '"]');
+            if (!el) return;
+            var hint = mod + alt + (index + 1);
+            el.title = 'Heading ' + (index + 1) + ' (' + hint + ')';
+            el.setAttribute('aria-label', el.title);
+        });
+        toolbar.dataset.scriptyHintsSynced = '1';
+    }
+
     document.addEventListener('click', function (e) {
-        var btn = e.target && e.target.closest ? e.target.closest('[data-note-format]') : null;
+        var target = e.target && e.target.closest ? e.target : null;
+        if (!target) return;
+
+        var historyBtn = target.closest('#note-undo, #note-redo');
+        if (historyBtn) {
+            e.preventDefault();
+            if (typeof window.scriptyPerformHistoryAction === 'function') {
+                window.scriptyPerformHistoryAction(historyBtn.id === 'note-redo' ? 'redo' : 'undo');
+            }
+            return;
+        }
+
+        var btn = target.closest('[data-note-format]');
         if (!btn) return;
         var textarea = document.getElementById('text-document-content');
         if (!textarea) return;
@@ -180,6 +236,7 @@
             clearTimeout(current.statusTimer);
         }
         current = bindEditor(form);
+        syncNoteToolbarHints();
     }
 
     function bindEditor(form) {

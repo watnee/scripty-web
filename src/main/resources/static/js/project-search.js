@@ -646,10 +646,12 @@
         if (!(e.metaKey || e.ctrlKey)) return;
         var key = e.key.toLowerCase();
 
-        // ⌘G / ⌘⇧G steps through matches from anywhere on the page.
-        if (key === 'g' && !e.altKey && matches.length) {
+        // ⌘G advances through matches. Deliberately not ⌘⇧G — that already
+        // toggles the scene outline navigator (toolbar-shortcuts.js). Previous
+        // match is Shift+Enter in the field, or the ↑ button.
+        if (key === 'g' && !e.altKey && !e.shiftKey && matches.length) {
             e.preventDefault();
-            step(e.shiftKey ? -1 : 1);
+            step(1);
             return;
         }
 

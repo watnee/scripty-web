@@ -76,6 +76,11 @@
         <div class="text-document-toolbar-row" th:unless="${isSong}">
             <div class="text-document-top-bar-actions">
                 <div class="note-format-toolbar" role="group" aria-label="Formatting">
+                    <button type="button" class="note-format-btn note-format-btn--icon" id="note-undo"
+                            title="Undo" aria-label="Undo">&#8630;</button>
+                    <button type="button" class="note-format-btn note-format-btn--icon" id="note-redo"
+                            title="Redo" aria-label="Redo">&#8631;</button>
+                    <span class="note-format-divider" aria-hidden="true"></span>
                     <button type="button" class="note-format-btn" data-note-format="bullet"
                             title="Bullet list" aria-label="Bullet list">&bull;&nbsp;List</button>
                     <button type="button" class="note-format-btn" data-note-format="ordered"

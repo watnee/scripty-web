@@ -6688,6 +6688,12 @@ body:has(main.text-documents-page) > main.text-documents-page {
     cursor: pointer;
 }
 
+/* Arrow glyphs need more size than the text labels to stay legible. */
+.note-format-btn--icon {
+    font-size: 1.05rem;
+    padding: 0 0.4rem;
+}
+
 .note-format-btn:hover,
 .note-format-btn:focus-visible {
     background: var(--accent-bg, rgba(0, 0, 0, 0.05));

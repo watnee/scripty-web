@@ -169,7 +169,13 @@
         var active = document.activeElement;
         var activeKey = stackKeyFor(active);
         if (activeKey) return { el: active, key: activeKey };
-        if (!lastTextEditKey) return null;
+        if (!lastTextEditKey) {
+            // On the notes editor the document IS the undo scope. Claim it even
+            // with an empty stack, so an early ⌘Z reports "nothing to undo"
+            // rather than reverting the whole project behind the note.
+            var notes = document.getElementById(NOTES_TEXTAREA_ID);
+            return notes ? { el: notes, key: 'text-document' } : null;
+        }
         var el = elementForKey(lastTextEditKey);
         if (!el) {
             // The field is gone (block saved back to display mode, or deleted).

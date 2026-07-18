@@ -46,6 +46,9 @@
         document.querySelectorAll('.kb-mod-f').forEach(function (el) {
             el.textContent = isMac ? '⌘ F' : 'Ctrl + F';
         });
+        document.querySelectorAll('.kb-mod-g').forEach(function (el) {
+            el.textContent = isMac ? '⌘ G' : 'Ctrl + G';
+        });
         document.querySelectorAll('.kb-mod-shift-f').forEach(function (el) {
             el.textContent = isMac ? '⌘ ⇧ F' : 'Ctrl + Shift + F';
         });
@@ -104,7 +107,7 @@
                 });
             })(digit);
         }
-        ['t', 'u', 'y', 'm', 'x', 'o', 'n', 'b'].forEach(function (letter) {
+        ['t', 'u', 'y', 'm', 'x', 'o', 'n', 'b', 'f'].forEach(function (letter) {
             document.querySelectorAll('.kb-mod-alt-' + letter).forEach(function (el) {
                 var upper = letter.toUpperCase();
                 // Help prose sometimes uses the letter alone inside a longer sentence.

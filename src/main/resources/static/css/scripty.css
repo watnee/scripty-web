@@ -3735,6 +3735,8 @@ input.project-list-search {
 
 input.project-list-search::placeholder {
     color: var(--muted-fg, #94a3b8);
+    /* missing.css right-aligns placeholders; keep ours next to the search icon */
+    text-align: left;
 }
 
 input.project-list-search:focus,

@@ -114,6 +114,40 @@
         }).then(replaceList).catch(function () { /* leave list as-is on error */ });
     }
 
+    // Highlight is a pure style change on one row: paint it in place and save in
+    // the background. Swapping the whole #song-blocks list (as structural() does)
+    // tears down every textarea and makes the editor flicker on each colour pick.
+    var HIGHLIGHTS = ['YELLOW', 'GREEN', 'BLUE', 'RED', 'GRAY'];
+
+    function applyHighlightInPlace(row, highlight) {
+        if (!row) {
+            return;
+        }
+        HIGHLIGHTS.forEach(function (h) {
+            row.classList.remove('song-block-highlight-' + h.toLowerCase());
+        });
+        if (highlight) {
+            row.classList.add('song-block-highlight-' + highlight.toLowerCase());
+            row.setAttribute('data-highlight', highlight);
+        } else {
+            row.removeAttribute('data-highlight');
+        }
+        row.querySelectorAll('.song-block-highlight-btn').forEach(function (btn) {
+            var value = btn.getAttribute('data-highlight') || '';
+            btn.setAttribute('aria-checked', value === (highlight || '') ? 'true' : 'false');
+        });
+    }
+
+    function setHighlight(row, id, highlight) {
+        applyHighlightInPlace(row, highlight);
+        // Sequence after any pending content save so undo checkpoints stay ordered;
+        // the server echoes the refreshed list but we ignore it — the row is already
+        // painted, and a swap would only reintroduce the flicker we just removed.
+        pendingEdit.then(function () {
+            return post('/song/block/setHighlight', { id: id, highlight: highlight || '' });
+        }).catch(function () { /* leave the optimistic colour; retried on next pick */ });
+    }
+
     function documentId() {
         var ed = currentEditor();
         return ed ? ed.getAttribute('data-document-id') : null;
@@ -355,10 +389,8 @@
         } else if (action === 'down') {
             structural('/song/block/moveDown', { id: id });
         } else if (action === 'highlight') {
-            structural('/song/block/setHighlight', {
-                id: id,
-                highlight: btn.getAttribute('data-highlight') || ''
-            });
+            var row = btn.closest('.song-block-row[data-block-id]');
+            setHighlight(row, id, btn.getAttribute('data-highlight') || '');
         }
     });
 

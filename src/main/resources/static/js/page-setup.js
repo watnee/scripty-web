@@ -215,7 +215,7 @@
     };
 
     document.body.addEventListener('click', function (e) {
-        if (e.target && e.target.closest && e.target.closest('#page-setup-open')) {
+        if (e.target && e.target.closest && e.target.closest('#page-setup-open, [data-page-setup-open]')) {
             e.preventDefault();
             openDialog();
         }

@@ -4554,79 +4554,6 @@ html.scripty-block-edit-locked .project-tools-group .script-edition-toggle .scri
     filter: none;
 }
 
-/* Page zoom stepper — mirrors the text-size row, but greys out entirely when
-   page view is off, since there is no sheet to scale. */
-.tools-menu-page-zoom {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.35rem 0.55rem;
-    font-size: 0.84rem;
-    font-weight: 500;
-}
-
-.tools-menu-page-zoom-label {
-    color: var(--fg);
-}
-
-.tools-menu-page-zoom.is-disabled {
-    opacity: 0.45;
-    pointer-events: none;
-}
-
-.view-menu .page-zoom-buttons {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    vertical-align: middle;
-}
-
-.view-menu .page-zoom-value {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 3.1rem;
-    font-variant-numeric: tabular-nums;
-    font-size: 0.8rem;
-    color: var(--muted-fg);
-}
-
-.view-menu .page-zoom-btn {
-    background: var(--interactive-bg);
-    border: 1px solid var(--muted-fg);
-    border-radius: var(--border-radius);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--fg);
-    font-size: 0.85rem;
-    font-weight: 600;
-    line-height: 1;
-    min-width: 2rem;
-    min-height: 1.85rem;
-    padding: 0 0.35rem;
-    box-sizing: border-box;
-    cursor: pointer;
-}
-
-.view-menu .page-zoom-btn:hover,
-.view-menu .page-zoom-btn:focus {
-    filter: brightness(1.1);
-}
-
-.view-menu .page-zoom-btn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-    filter: none;
-}
-
-.view-menu .page-zoom-btn.page-zoom-fit.is-active {
-    background: var(--accent, #475569);
-    border-color: var(--accent, #475569);
-    color: #fff;
-}
-
 .view-menu .full-width-toolbar-btn .full-width-icon--compress {
     display: none;
 }
@@ -11484,67 +11411,109 @@ html.scripty-page-view-mode .project-script .screenplay-page-body {
     color: #fff;
 }
 
-/* Floating page pager. Built by page-navigator.js and appended to <body>, so it
-   is positioned against the viewport rather than the page canvas. */
-.screenplay-page-nav {
+/* Page control bar: navigation, zoom, and page setup in one floating surface.
+   Built by page-navigator.js and appended to <body>, so it is positioned against
+   the viewport rather than the page canvas, and stays put as the sheets scroll. */
+.screenplay-page-bar {
     position: fixed;
     left: 50%;
     bottom: 1.25rem;
     transform: translateX(-50%);
     z-index: 40;
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.5rem;
+    gap: 0.15rem;
+    padding: 0.3rem 0.4rem;
     border-radius: 999px;
-    border: 1px solid var(--muted-fg);
-    background: var(--bg);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+    border: 1px solid color-mix(in srgb, var(--muted-fg) 45%, transparent);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    backdrop-filter: blur(12px) saturate(1.4);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.5) inset,
+        0 4px 12px rgba(0, 0, 0, 0.1),
+        0 12px 32px rgba(0, 0, 0, 0.16);
     font-size: 0.84rem;
+    max-width: calc(100vw - 1.5rem);
 }
 
-.screenplay-page-nav[hidden] {
+.screenplay-page-bar[hidden] {
     display: none;
 }
 
-.screenplay-page-nav-btn {
+.screenplay-page-bar-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    vertical-align: middle;
+}
+
+.screenplay-page-bar-divider {
+    width: 1px;
+    align-self: stretch;
+    margin: 0.2rem 0.3rem;
+    background: color-mix(in srgb, var(--muted-fg) 35%, transparent);
+}
+
+.screenplay-page-bar-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 1.9rem;
-    min-height: 1.9rem;
+    min-width: 1.95rem;
+    min-height: 1.95rem;
     padding: 0;
     border: none;
-    border-radius: 50%;
+    border-radius: 999px;
     background: transparent;
     color: var(--fg);
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
     cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
 }
 
-.screenplay-page-nav-btn:hover:not(:disabled),
-.screenplay-page-nav-btn:focus-visible:not(:disabled) {
-    background: var(--interactive-bg);
+.screenplay-page-bar-btn--wide {
+    min-width: 2.4rem;
+    padding: 0 0.5rem;
 }
 
-.screenplay-page-nav-btn:disabled {
-    opacity: 0.35;
+.screenplay-page-bar-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.screenplay-page-bar-btn:focus-visible {
+    outline: 2px solid var(--accent, #475569);
+    outline-offset: 1px;
+}
+
+.screenplay-page-bar-btn:disabled {
+    opacity: 0.3;
     cursor: not-allowed;
 }
 
-.screenplay-page-nav-field {
+.screenplay-page-bar-btn[aria-pressed="true"],
+.screenplay-page-bar-btn.is-active {
+    background: var(--accent, #475569);
+    color: #fff;
+}
+
+.screenplay-page-bar-field {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
     vertical-align: middle;
+    padding: 0 0.2rem;
     color: var(--muted-fg);
+    white-space: nowrap;
 }
 
-.screenplay-page-nav-label {
+.screenplay-page-bar-label {
     margin: 0;
 }
 
-.screenplay-page-nav-input {
-    width: 2.6rem;
+.screenplay-page-bar-input {
+    width: 2.5rem;
     min-height: 1.6rem;
     padding: 0 0.25rem;
     margin: 0;
@@ -11552,23 +11521,63 @@ html.scripty-page-view-mode .project-script .screenplay-page-body {
     font-variant-numeric: tabular-nums;
     font-size: 0.84rem;
     color: var(--fg);
-    background: var(--interactive-bg);
-    border: 1px solid var(--muted-fg);
+    background: color-mix(in srgb, var(--fg) 7%, transparent);
+    border: 1px solid transparent;
     border-radius: var(--border-radius);
 }
 
-.screenplay-page-nav-total {
+.screenplay-page-bar-input:focus {
+    border-color: var(--accent, #475569);
+    outline: none;
+}
+
+.screenplay-page-bar-total {
     white-space: nowrap;
 }
 
+.screenplay-page-bar-zoom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8rem;
+    color: var(--muted-fg);
+    user-select: none;
+}
+
+/* Narrow screens: keep navigation and zoom, drop the "of N" suffix. The "Page"
+   label stays — it still fits, and reads better than a bare number. (It would
+   also need to outrank missing.css's `label[for] { display: block }`, which beats
+   a bare class selector.) */
 @media (max-width: 720px) {
-    .screenplay-page-nav {
+    .screenplay-page-bar {
         bottom: 0.75rem;
+        gap: 0.1rem;
+        padding: 0.25rem 0.3rem;
+    }
+
+    .screenplay-page-bar-total {
+        display: none;
+    }
+
+    .screenplay-page-bar-zoom {
+        min-width: 2.6rem;
+    }
+
+    .screenplay-page-bar-divider {
+        margin: 0.2rem 0.15rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .screenplay-page-bar-btn {
+        transition: none;
     }
 }
 
 @media print {
-    .screenplay-page-nav {
+    .screenplay-page-bar {
         display: none !important;
     }
 }

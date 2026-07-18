@@ -94,13 +94,8 @@
             fitBtn.classList.toggle('is-active', on);
         }
 
-        var row = document.getElementById('page-zoom-control');
-        if (row) {
-            // Zoom only means anything while the page canvas is on screen.
-            var active = !!(window.scriptyIsPageViewMode && window.scriptyIsPageViewMode());
-            row.classList.toggle('is-disabled', !active);
-            row.setAttribute('aria-disabled', active ? 'false' : 'true');
-        }
+        // No enabled/disabled state to manage: the zoom controls live in the page
+        // bar, which is only shown while the page canvas is on screen.
     }
 
     function apply(options) {
@@ -127,7 +122,9 @@
     }
 
     function sync() {
-        if (document.getElementById('page-zoom-control')) {
+        // Keyed off the page-view toggle, not the zoom control itself: the control
+        // lives in the page bar, which page-navigator.js may not have built yet.
+        if (document.getElementById('page-view-mode-toggle')) {
             apply({ silent: true });
         } else {
             document.documentElement.style.removeProperty(VAR_NAME);

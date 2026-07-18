@@ -4797,14 +4797,25 @@
             var bookmarkBtn = menu.querySelector('.block-drag-menu-bookmark');
             var pinBtn = menu.querySelector('.block-drag-menu-pin');
             var highlightSubmenu = menu.querySelector('.block-drag-menu-highlight');
+            var commentsBtn = menu.querySelector('.block-drag-menu-comments');
             if (!row || !row.hasAttribute('data-block-id')) {
-                // Unsaved create rows cannot be bookmarked, pinned or highlighted.
+                // Unsaved create rows cannot be bookmarked, pinned, highlighted or commented on.
                 var savedDivider = menu.querySelector('.block-drag-menu-saved-divider');
                 if (savedDivider) savedDivider.remove();
                 if (bookmarkBtn) bookmarkBtn.remove();
                 if (pinBtn) pinBtn.remove();
                 if (highlightSubmenu) highlightSubmenu.remove();
+                if (commentsBtn) commentsBtn.remove();
             } else {
+                if (commentsBtn) {
+                    var commentLabel = commentsBtn.querySelector('.block-drag-menu-comments-label');
+                    var commentCount = parseInt(row.getAttribute('data-comment-count') || '0', 10) || 0;
+                    if (commentLabel) {
+                        commentLabel.textContent = commentCount > 0
+                            ? 'Comments (' + commentCount + ')'
+                            : 'Comments';
+                    }
+                }
                 syncBlockDragMenuHighlight(menu, readBlockDragMenuHighlight(row));
                 if (bookmarkBtn && row.getAttribute('data-bookmarked') === 'true') {
                     bookmarkBtn.textContent = 'Remove bookmark';
@@ -5509,6 +5520,20 @@
                     closeAllBlockDragMenus();
                     var row = findBlockRow(dropdown);
                     togglePinFromDragMenu(row);
+                });
+            }
+
+            var commentsBtn = menu.querySelector('[data-block-drag-action="comments"]');
+            if (commentsBtn) {
+                commentsBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeAllBlockDragMenus();
+                    var row = findBlockRow(dropdown);
+                    if (!row || !row.hasAttribute('data-block-id')) return;
+                    if (typeof window.scriptyOpenBlockComments === 'function') {
+                        window.scriptyOpenBlockComments(row);
+                    }
                 });
             }
 
@@ -6411,6 +6436,9 @@
     <script th:src="@{/js/project-toolbar-dropdowns.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/element-type.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/fountain-power.js(v=${assetVersion})}"></script>
+    <!-- Threaded per-block comments (drag menu → Comments, count badges): loaded
+         from nav so it survives HTMX-boosted navigation into /project/show. -->
+    <script th:src="@{/js/block-comments.js(v=${assetVersion})}"></script>
     <!-- Song/note editor autosave: loaded from nav so it survives HTMX-boosted
          navigation into /project/documents/edit (allowScriptTags is false, so
          edit.html script tags are not executed after a boost). -->

@@ -5,16 +5,21 @@ import com.scripty.commandmodel.block.createblock.CreateBlockCommandModel;
 import com.scripty.commandmodel.block.createblockbelow.CreateBlockBelowCommandModel;
 import com.scripty.commandmodel.block.editblock.EditBlockCommandModel;
 import com.scripty.dto.Block;
+import com.scripty.dto.BlockComment;
 import com.scripty.dto.User;
 import com.scripty.security.ProjectAccessSupport;
+import com.scripty.viewmodel.block.BlockCommentViewModel;
 import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.block.createblock.CreateBlockViewModel;
 import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
+import com.scripty.service.BlockCommentService;
 import com.scripty.service.BlockService;
 import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +52,9 @@ public class BlockController {
 
     @Autowired
     ProjectAccessSupport projectAccess;
+
+    @Autowired
+    BlockCommentService blockCommentService;
 
     private String redirectToProject(Block block) {
         return "redirect:/project/show?id=" + block.getProject().getId();
@@ -739,5 +747,97 @@ public class BlockController {
             projectVersionService.autoSaveVersion(resolvedProjectId);
         }
         return redirectAfterBulkAction(projectId, blockIds);
+    }
+
+    // ----- Block comment thread (inline JSON, consumed by block-comments.js) -----
+
+    /** A comment is removable by its own author or by anyone who can edit the block. */
+    private boolean canDeleteComment(BlockComment comment, User current, boolean canEditBlock) {
+        if (canEditBlock) {
+            return true;
+        }
+        if (current == null || current.getId() == null || comment.getAuthor() == null) {
+            return false;
+        }
+        return current.getId().equals(comment.getAuthor().getId());
+    }
+
+    @RequestMapping(value = "/comments", method = RequestMethod.GET, produces = "application/json")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public ResponseEntity<Map<String, Object>> listComments(@RequestParam Integer id, Principal principal) {
+        if (denyBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        boolean canEdit = projectAccess.canEditBlock(id, principal);
+        User current = projectAccess.currentUser(principal);
+        List<BlockCommentViewModel> comments = new ArrayList<>();
+        for (BlockComment comment : blockCommentService.listForBlock(id)) {
+            comments.add(BlockCommentViewModel.from(comment, canDeleteComment(comment, current, canEdit)));
+        }
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("blockId", id);
+        body.put("comments", comments);
+        body.put("count", comments.size());
+        body.put("canComment", true);
+        return ResponseEntity.ok(body);
+    }
+
+    /** Comment counts keyed by block id for a project — the badge painter's one call. */
+    @RequestMapping(value = "/commentCounts", method = RequestMethod.GET, produces = "application/json")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public ResponseEntity<Map<String, Object>> commentCounts(@RequestParam Integer projectId, Principal principal) {
+        if (!projectAccess.canAccessProject(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("counts", blockCommentService.countsForProject(projectId));
+        return ResponseEntity.ok(body);
+    }
+
+    @RequestMapping(value = "/addComment", method = RequestMethod.POST, produces = "application/json")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public ResponseEntity<?> addComment(@RequestParam Integer id,
+                                        @RequestParam("body") String commentBody,
+                                        Principal principal) {
+        if (denyBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        User current = projectAccess.currentUser(principal);
+        if (current == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        BlockComment saved = blockCommentService.addComment(id, current, commentBody);
+        if (saved == null) {
+            return new ResponseEntity<>(Map.of("body", "Comment cannot be empty."), HttpStatus.BAD_REQUEST);
+        }
+        boolean canEdit = projectAccess.canEditBlock(id, principal);
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("comment", BlockCommentViewModel.from(saved, canDeleteComment(saved, current, canEdit)));
+        resp.put("blockId", id);
+        resp.put("count", blockCommentService.countForBlock(id));
+        return ResponseEntity.ok(resp);
+    }
+
+    @RequestMapping(value = "/deleteComment", method = RequestMethod.POST, produces = "application/json")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public ResponseEntity<?> deleteComment(@RequestParam Integer commentId, Principal principal) {
+        BlockComment comment = blockCommentService.read(commentId);
+        if (comment == null || comment.getBlock() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Integer blockId = comment.getBlock().getId();
+        if (denyBlock(blockId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        User current = projectAccess.currentUser(principal);
+        boolean canEdit = projectAccess.canEditBlock(blockId, principal);
+        if (!canDeleteComment(comment, current, canEdit)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        blockCommentService.delete(commentId);
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("blockId", blockId);
+        resp.put("count", blockCommentService.countForBlock(blockId));
+        return ResponseEntity.ok(resp);
     }
 }

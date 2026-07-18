@@ -15,6 +15,7 @@ const ASSETS_TO_CACHE = [
   '/js/block-empty-guard.js',
   '/js/block-selection.js',
   '/js/element-type.js',
+  '/js/block-comments.js',
   '/js/focus-mode.js',
   '/js/outline-mode.js',
   '/js/page-view-mode.js',

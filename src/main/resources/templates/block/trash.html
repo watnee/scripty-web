@@ -34,7 +34,11 @@
                         <div class="text-documents-heading-row">
                             <h2 id="trash-heading">Deleted blocks</h2>
                         </div>
-                        <p class="muted">
+                        <p class="muted" th:if="${viewModel.retentionUnlimited}">
+                            Restore drops a block back into your script with its text and formatting intact.
+                            Deleted blocks stay here until you delete them for good.
+                        </p>
+                        <p class="muted" th:unless="${viewModel.retentionUnlimited}">
                             Restore drops a block back into your script with its text and formatting intact.
                             Deleted blocks stay here for
                             <span th:text="${viewModel.retentionDays}">30</span> days.
@@ -49,7 +53,11 @@
 
             <div class="text-documents-empty-state" th:if="${#lists.isEmpty(viewModel.blocks)}">
                 <p class="text-documents-empty-title">No deleted blocks</p>
-                <p class="muted">
+                <p class="muted" th:if="${viewModel.retentionUnlimited}">
+                    Anything you delete from the script lands here first, and stays recoverable until
+                    you delete it for good.
+                </p>
+                <p class="muted" th:unless="${viewModel.retentionUnlimited}">
                     Anything you delete from the script lands here first, and stays recoverable for
                     <span th:text="${viewModel.retentionDays}">30</span> days.
                 </p>

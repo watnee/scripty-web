@@ -14,6 +14,7 @@ public class DeletedSongBlocksViewModel {
     private String projectTitle;
     private String songTitle;
     private List<DeletedSongBlockViewModel> blocks = List.of();
+    private boolean retentionUnlimited;
 
     public int getDocumentId() {
         return documentId;
@@ -53,5 +54,14 @@ public class DeletedSongBlocksViewModel {
 
     public void setBlocks(List<DeletedSongBlockViewModel> blocks) {
         this.blocks = blocks;
+    }
+
+    /** True when trashed lines are kept until someone deletes them for good. */
+    public boolean isRetentionUnlimited() {
+        return retentionUnlimited;
+    }
+
+    public void setRetentionUnlimited(boolean retentionUnlimited) {
+        this.retentionUnlimited = retentionUnlimited;
     }
 }

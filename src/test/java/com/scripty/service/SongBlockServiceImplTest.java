@@ -3,9 +3,12 @@ package com.scripty.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.scripty.dto.Project;
@@ -25,6 +28,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class SongBlockServiceImplTest {
 
@@ -205,8 +209,24 @@ class SongBlockServiceImplTest {
         assertEquals(1, trash.getBlocks().size());
         assertEquals("b", trash.getBlocks().get(0).getContent());
         assertNotNull(trash.getBlocks().get(0).getDeletedAt());
-        assertNotNull(trash.getBlocks().get(0).getPurgesAt());
+        // No purge date by default: the line waits for a manual "Delete forever".
+        assertTrue(trash.isRetentionUnlimited());
+        assertNull(trash.getBlocks().get(0).getPurgesAt());
         assertEquals(1, deletedCount());
+    }
+
+    @Test
+    void deletedLineGetsAPurgeDateWhenRetentionIsPositive() {
+        ReflectionTestUtils.setField(service, "trashRetentionDays", 30);
+        doc.setContent("a\nb\nc");
+        Integer middle = service.getBlocks(7, EDITION_ID).get(1).getId();
+
+        service.deleteBlock(middle);
+
+        var trash = service.getDeletedBlocksViewModel(7);
+        assertFalse(trash.isRetentionUnlimited());
+        var deleted = trash.getBlocks().get(0);
+        assertEquals(deleted.getDeletedAt().plusDays(30), deleted.getPurgesAt());
     }
 
     @Test
@@ -344,5 +364,20 @@ class SongBlockServiceImplTest {
         assertEquals(42, service.projectIdForDocument(7));
         assertEquals(7, service.documentIdForBlock(id));
         assertFalse(service.projectIdForDocument(7) == null);
+    }
+
+    @Test
+    void purgeExpiredBlocksKeepsEverythingWhenRetentionIsUnlimited() {
+        // The shipped default: trashed lines wait for a manual "Delete forever".
+        assertEquals(0, service.purgeExpiredBlocks());
+    }
+
+    @Test
+    void purgeExpiredBlocksStillSweepsWhenRetentionIsPositive() {
+        ReflectionTestUtils.setField(service, "trashRetentionDays", 30);
+
+        service.purgeExpiredBlocks();
+
+        verify(songBlockRepository).findByDeletedAtNotNullAndDeletedAtBefore(any());
     }
 }

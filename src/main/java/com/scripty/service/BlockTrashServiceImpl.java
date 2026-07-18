@@ -30,7 +30,9 @@ public class BlockTrashServiceImpl implements BlockTrashService {
     private final BlockService blockService;
     private final ProjectService projectService;
 
-    @Value("${app.block-trash-retention-days:30}")
+    // Zero or less keeps deleted blocks indefinitely: the nightly sweep no-ops and the
+    // trash page drops its purge-date copy. Set a positive value to re-enable expiry.
+    @Value("${app.block-trash-retention-days:0}")
     private int retentionDays;
 
     public BlockTrashServiceImpl(DeletedBlockRepository deletedBlockRepository,
@@ -90,6 +92,9 @@ public class BlockTrashServiceImpl implements BlockTrashService {
     @Override
     @Transactional
     public int purgeExpired() {
+        if (retentionDays <= 0) {
+            return 0;
+        }
         LocalDateTime cutoff = LocalDateTime.now().minusDays(retentionDays);
         List<DeletedBlock> expired = deletedBlockRepository.findByDeletedAtBefore(cutoff);
         if (expired.isEmpty()) {
@@ -127,7 +132,7 @@ public class BlockTrashServiceImpl implements BlockTrashService {
         if (deletedBy != null) {
             deletedByName = deletedBy.getUsername();
         }
-        LocalDateTime purgeAt = record.getDeletedAt() != null
+        LocalDateTime purgeAt = retentionDays > 0 && record.getDeletedAt() != null
                 ? record.getDeletedAt().plusDays(retentionDays)
                 : null;
         return new DeletedBlockViewModel(

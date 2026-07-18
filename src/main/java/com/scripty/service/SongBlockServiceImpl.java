@@ -30,8 +30,10 @@ public class SongBlockServiceImpl implements SongBlockService {
     private final SongEditionService songEditionService;
 
     // Trashed lines stay recoverable for this long; matches the document trash window.
-    @Value("${scripty.songblocks.trash-retention-days:30}")
-    private int trashRetentionDays = 30;
+    // Zero or less keeps them indefinitely: the nightly sweep no-ops and the trash page
+    // drops its purge-date copy. Set a positive value to re-enable expiry.
+    @Value("${scripty.songblocks.trash-retention-days:0}")
+    private int trashRetentionDays = 0;
 
     @Autowired
     public SongBlockServiceImpl(SongBlockRepository songBlockRepository,
@@ -231,9 +233,11 @@ public class SongBlockServiceImpl implements SongBlockService {
                     block.getContent(),
                     block.getHighlight(),
                     block.getDeletedAt(),
-                    block.getDeletedAt() != null ? block.getDeletedAt().plusDays(trashRetentionDays) : null));
+                    trashRetentionDays > 0 && block.getDeletedAt() != null
+                            ? block.getDeletedAt().plusDays(trashRetentionDays) : null));
         }
         vm.setBlocks(deleted);
+        vm.setRetentionUnlimited(trashRetentionDays <= 0);
         return vm;
     }
 
@@ -276,6 +280,9 @@ public class SongBlockServiceImpl implements SongBlockService {
     @Override
     @Transactional
     public int purgeExpiredBlocks() {
+        if (trashRetentionDays <= 0) {
+            return 0;
+        }
         LocalDateTime cutoff = LocalDateTime.now().minusDays(trashRetentionDays);
         List<SongBlock> expired = songBlockRepository.findByDeletedAtNotNullAndDeletedAtBefore(cutoff);
         songBlockRepository.deleteAll(expired);

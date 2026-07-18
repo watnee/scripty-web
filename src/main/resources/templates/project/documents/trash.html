@@ -58,7 +58,11 @@
             <div class="text-documents-empty-state" th:if="${#lists.isEmpty(documents)}">
                 <p class="text-documents-empty-title"
                    th:text="${isSongList} ? 'No deleted songs' : 'No deleted notes'">Empty</p>
-                <p class="muted">
+                <p class="muted" th:if="${viewModel.retentionUnlimited}">
+                    Anything you delete lands here first, and stays recoverable until you delete it
+                    for good.
+                </p>
+                <p class="muted" th:unless="${viewModel.retentionUnlimited}">
                     Anything you delete lands here first, and stays recoverable for 30 days.
                 </p>
             </div>

@@ -13,6 +13,7 @@ public class TextDocumentListViewModel {
     private int trashedSongCount;
     /** How many notes are sitting in the trash. */
     private int trashedDraftCount;
+    private boolean retentionUnlimited;
 
     public Integer getProjectId() {
         return projectId;
@@ -60,6 +61,15 @@ public class TextDocumentListViewModel {
 
     public void setTrashedDraftCount(int trashedDraftCount) {
         this.trashedDraftCount = trashedDraftCount;
+    }
+
+    /** True when trashed documents are kept until someone deletes them for good. */
+    public boolean isRetentionUnlimited() {
+        return retentionUnlimited;
+    }
+
+    public void setRetentionUnlimited(boolean retentionUnlimited) {
+        this.retentionUnlimited = retentionUnlimited;
     }
 
     public boolean isEmpty() {

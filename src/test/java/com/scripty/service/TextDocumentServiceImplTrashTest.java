@@ -220,6 +220,33 @@ class TextDocumentServiceImplTrashTest {
         assertEquals("Opening Number", vm.getSongs().get(0).getTitle());
         assertEquals(deletedAt, vm.getSongs().get(0).getDeletedAt());
         assertEquals(deletedAt.plusDays(30), vm.getSongs().get(0).getPurgesAt());
+        assertFalse(vm.isRetentionUnlimited());
+    }
+
+    @Test
+    void purgeExpiredKeepsEverythingWhenRetentionIsUnlimited() {
+        ReflectionTestUtils.setField(service, "trashRetentionDays", 0);
+
+        assertEquals(0, service.purgeExpired());
+        verify(textDocumentRepository, never()).findByDeletedAtBefore(any(LocalDateTime.class));
+        verify(textDocumentRepository, never()).delete(any(TextDocument.class));
+    }
+
+    @Test
+    void trashViewModelReportsNoPurgeDateWhenRetentionIsUnlimited() {
+        ReflectionTestUtils.setField(service, "trashRetentionDays", 0);
+        song.setDeletedAt(LocalDateTime.now().minusDays(2));
+
+        when(projectRepository.findWithTeamsById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(projectService.canUserAccessProject(project, user)).thenReturn(true);
+        when(textDocumentRepository.findByProjectIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(PROJECT_ID))
+                .thenReturn(List.of(song));
+
+        var vm = service.getTrashViewModel(PROJECT_ID, user);
+
+        assertNotNull(vm);
+        assertTrue(vm.isRetentionUnlimited());
+        assertNull(vm.getSongs().get(0).getPurgesAt());
     }
 
     @Test

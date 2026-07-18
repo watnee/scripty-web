@@ -6341,14 +6341,28 @@
         // Create rows only submit on Enter, so typed-but-unconfirmed content
         // (e.g. the first block of a brand-new project) is lost when the user
         // leaves the page. Quiet-save any non-empty create row.
-        function commitOpenCreateRows() {
-            document.querySelectorAll(
+        // Pass `done` to be called once every open create row has saved —
+        // export needs to wait for the server to have the content.
+        function commitOpenCreateRows(done) {
+            const rows = Array.from(document.querySelectorAll(
                 '.block-row:not([data-block-id]):not(.project-script-select-row) textarea[name="content"], ' +
                 'tr:not([data-block-id]) textarea[name="content"]'
-            ).forEach(function(ta) {
-                if (!ta.isConnected || ta.value.trim() === '') return;
+            )).filter(function(ta) {
+                if (!ta.isConnected || ta.value.trim() === '') return false;
                 const row = ta.closest('.block-row, tr');
-                if (!row || row.dataset.enterCreatingBelow === 'true') return;
+                return row && row.dataset.enterCreatingBelow !== 'true';
+            });
+            if (rows.length === 0) {
+                if (done) done();
+                return;
+            }
+            let remaining = rows.length;
+            function finishOne() {
+                remaining--;
+                if (remaining <= 0 && done) done();
+            }
+            rows.forEach(function(ta) {
+                const row = ta.closest('.block-row, tr');
                 const container = row.closest('.scene-blocks, #table-blocks, tbody');
                 invalidateHtmxHistoryCache();
                 submitCreateRowFromEnter(ta, {
@@ -6362,6 +6376,7 @@
                         if (container && container.isConnected) {
                             ensureTrailingCreateRow(container);
                         }
+                        finishOne();
                     }
                 });
             });
@@ -6547,6 +6562,51 @@
             commitOpenBlockEdits();
             commitOpenCreateRows();
         });
+
+        // Exports are rendered server-side from the database, but they download
+        // as an attachment: the document stays alive and visible, so none of the
+        // flush hooks above fire. Unsaved content — most often the first block of
+        // a new project, which lives only in a create row with no server record —
+        // would be missing from the PDF/DOCX, then reappear on the next reload
+        // (which does fire pagehide). Flush first, then let the download start.
+        function hasUnsavedBlockContent() {
+            const selectors = [
+                '.block-content form.block-inline-edit-form textarea[name="content"]',
+                '.block-content form[hx-post*="/block/editInline"] textarea[name="content"]',
+                '.block-row:not([data-block-id]):not(.project-script-select-row) textarea[name="content"]',
+                'tr:not([data-block-id]) textarea[name="content"]'
+            ];
+            return Array.from(document.querySelectorAll(selectors.join(', ')))
+                .some(function(ta) { return ta.value.trim() !== ''; });
+        }
+
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest && e.target.closest(
+                'a[href*="/project/export"], a[href*="/project/documents/export"]'
+            );
+            if (!link || link.dataset.exportFlushed === 'true') return;
+            if (!hasUnsavedBlockContent()) return;
+
+            e.preventDefault();
+            let resumed = false;
+            function resume() {
+                if (resumed) return;
+                resumed = true;
+                link.dataset.exportFlushed = 'true';
+                link.click();
+                delete link.dataset.exportFlushed;
+            }
+            // Never strand the user if a save stalls — download anyway.
+            const guard = setTimeout(resume, 3000);
+            let pending = 2;
+            function finishOne() {
+                if (--pending > 0) return;
+                clearTimeout(guard);
+                resume();
+            }
+            flushOpenBlockEdits(finishOne);
+            commitOpenCreateRows(finishOne);
+        }, true);
 
     })();
     </script>

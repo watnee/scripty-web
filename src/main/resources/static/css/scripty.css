@@ -6823,6 +6823,9 @@ body:has(main.text-documents-page) > main.text-documents-page {
     display: flex;
     flex-direction: column;
     gap: 0.1rem;
+    /* Number the lyric lines. A pure-CSS counter renumbers itself when the
+       list is swapped by HTMX or reordered by drag, with no server or JS help. */
+    counter-reset: song-line;
 }
 
 .song-block-row {
@@ -6831,7 +6834,54 @@ body:has(main.text-documents-page) > main.text-documents-page {
     align-items: flex-start;
     gap: 0.4rem;
     border-radius: 6px;
-    padding: 0.1rem 0.25rem;
+    /* 2px left rail marks the active line on :focus-within; transparent by
+       default. Trim the left padding by the same 2px so the lyric text does
+       not shift when the rail appears. */
+    border-left: 2px solid transparent;
+    padding: 0.1rem 0.25rem 0.1rem calc(0.25rem - 2px);
+    counter-increment: song-line;
+    transition: background-color 0.12s ease-in-out, border-left-color 0.12s ease-in-out;
+}
+
+/* Faint hover wash so pointing at a line reads as interactive. Skipped for
+   highlighted, selected, or actively-edited rows so it never fights their own
+   background or the "no tint while typing" rule below. */
+.song-block-row:not([class*="song-block-highlight-"]):not(.block-selected):not(:focus-within):hover {
+    background-color: color-mix(in srgb, var(--fg, #0f172a) 4%, transparent);
+}
+
+/* Accent rail on the line that holds the caret. */
+.song-block-row:focus-within {
+    border-left-color: var(--accent, #475569);
+}
+
+/* Line number sitting in the gutter that otherwise only holds the hover
+   controls. Right-aligned toward the lyric text; fades out on hover/focus so
+   the "+" / "⋮⋮" controls can take the same space. */
+.song-block-row::before {
+    content: counter(song-line);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 2.7rem;
+    padding-top: 0.3rem;
+    padding-right: 0.2rem;
+    text-align: right;
+    font-family: "Courier Prime", "Courier New", Courier, monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--muted-fg, #64748b);
+    opacity: 0.5;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: opacity 0.12s ease-in-out;
+}
+
+.song-block-row:hover::before,
+.song-block-row:focus-within::before,
+.song-block-row:has(.song-block-menu-dropdown.open)::before {
+    opacity: 0;
 }
 
 /* Drag-to-reorder feedback, matching the screenplay block rows. */

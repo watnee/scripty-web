@@ -214,21 +214,24 @@
     }
 
     function positionPopover(row) {
-        var anchor = row.querySelector('.block-drag-menu-dropdown')
-            || row.querySelector('.block-left-controls')
-            || row;
+        // Dock the thread to the RIGHT of the block. Anchor to the script text
+        // (.block-content) so the popover sits in the right margin beside the
+        // block; fall back to the row when content isn't found.
+        var anchor = row.querySelector('.block-content') || row;
         var rect = anchor.getBoundingClientRect();
         popover.hidden = false; // measure with layout applied
         var pw = popover.offsetWidth || 320;
         var ph = popover.offsetHeight || 260;
         var margin = 8;
 
+        // Prefer the right side; flip to the left of the block only if the
+        // popover would overflow the viewport, then clamp as a last resort.
         var left = rect.right + margin;
         if (left + pw > window.innerWidth - margin) {
-            left = Math.max(margin, rect.left - pw - margin);
-        }
-        if (left + pw > window.innerWidth - margin) {
-            left = Math.max(margin, window.innerWidth - pw - margin);
+            var flipped = rect.left - pw - margin;
+            left = flipped >= margin
+                ? flipped
+                : Math.max(margin, window.innerWidth - pw - margin);
         }
         var top = rect.top;
         if (top + ph > window.innerHeight - margin) {

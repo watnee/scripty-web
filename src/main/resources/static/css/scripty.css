@@ -11867,6 +11867,61 @@ html.scripty-hide-block-select:not(.scripty-block-edit-locked) .table-blocks-all
     transform: translateX(-50%) translateY(0);
 }
 
+.scripty-install-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    height: 1.85rem;
+    padding: 0 0.6rem;
+    margin-right: 0.15rem;
+    background: var(--accent-bg);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--border-radius);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.scripty-install-nav-btn[hidden] {
+    display: none !important;
+}
+
+.scripty-install-nav-btn:hover,
+.scripty-install-nav-btn:focus {
+    background: var(--accent);
+    color: var(--interactive-bg, #fff);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.scripty-install-nav-icon {
+    flex-shrink: 0;
+}
+
+/* Keep the toolbar tidy on narrow screens: icon-only install button. */
+@media (max-width: 640px) {
+    .scripty-install-nav-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .scripty-install-nav-btn {
+        padding: 0 0.4rem;
+    }
+}
+
 .scripty-pwa-install-banner {
     position: fixed;
     left: 50%;

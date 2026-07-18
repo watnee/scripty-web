@@ -6797,6 +6797,9 @@
          HTMX-boosted navigation. -->
     <script th:src="@{/js/vendor/typo.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/spellcheck.js(v=${assetVersion})}"></script>
+    <!-- Cut/Copy/Paste menu on right-click over highlighted text. Loaded after
+         spellcheck.js so the spell popup gets first refusal on a bare caret. -->
+    <script th:src="@{/js/text-selection-menu.js(v=${assetVersion})}"></script>
 </header>
 
     <div th:fragment="helpDropdown(currentPage)" class="nav-dropdown help-dropdown" id="help-dropdown">

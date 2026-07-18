@@ -30,6 +30,7 @@ const ASSETS_TO_CACHE = [
   '/js/fountain-power.js',
   '/js/vendor/typo.js',
   '/js/spellcheck.js',
+  '/js/text-selection-menu.js',
   '/js/offline-store.js',
   '/js/offline.js',
   '/js/offline-edit.js',

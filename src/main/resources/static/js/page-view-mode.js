@@ -138,8 +138,11 @@
         probe.appendChild(probeBody);
         probeParent.appendChild(probe);
         var pageStyle = window.getComputedStyle(probe);
-        var padTop = parseFloat(pageStyle.paddingTop) || 0;
-        var padBottom = parseFloat(pageStyle.paddingBottom) || 0;
+        var bodyStyle = window.getComputedStyle(probeBody);
+        // Top/bottom margins live on the body (in cqw); the page itself only
+        // contributes its border. Read both so either can carry the padding.
+        var padTop = (parseFloat(pageStyle.paddingTop) || 0) + (parseFloat(bodyStyle.paddingTop) || 0);
+        var padBottom = (parseFloat(pageStyle.paddingBottom) || 0) + (parseFloat(bodyStyle.paddingBottom) || 0);
         var borderTop = parseFloat(pageStyle.borderTopWidth) || 0;
         var borderBottom = parseFloat(pageStyle.borderBottomWidth) || 0;
         var totalHeight = probe.offsetHeight;

@@ -6107,6 +6107,60 @@ body:has(main.text-documents-page) > main.text-documents-page {
     min-width: 0;
 }
 
+/* Wide screens: lift the song editor's toolbar row up onto the breadcrumb row so
+   the editing chrome uses one row instead of two — mirroring the screenplay
+   toolbar's .has-toolbar-brand lift. The row overlays the breadcrumb bar, so it
+   must not steal clicks from the title/breadcrumb (pointer-events) while its own
+   menus stay clickable. Right-aligned so it drops into the bar's empty right
+   region rather than over the breadcrumb text on the left. */
+@media (min-width: 1280px) {
+    .text-document-edit-page--song .text-document-toolbar-row {
+        position: relative;
+        /* Above the breadcrumb bar; menus that open (z 1300+) still win. */
+        z-index: 30;
+        /* Breadcrumb row min-height (2.25rem) + its bottom margin (0.35rem). */
+        margin-top: -2.6rem;
+        margin-bottom: 0;
+        justify-content: flex-end;
+        align-content: center;
+        pointer-events: none;
+    }
+
+    .text-document-edit-page--song .text-document-toolbar-row > .text-document-top-bar-actions,
+    .text-document-edit-page--song .text-document-toolbar-row > .text-document-meta-bar--toolbar {
+        pointer-events: auto;
+    }
+
+    /* Group the menus and "Last edited" together on the right so they read as one
+       lifted toolbar, instead of shoving the meta to the far edge. */
+    .text-document-edit-page--song .text-document-meta-bar--toolbar {
+        margin-left: 0;
+    }
+
+    /* The breadcrumb bar holds only the crumbs + title, so reserve the right-hand
+       zone the lifted toolbar drops into and keep the crumbs on a single line. */
+    .text-document-edit-page--song .top-bar nav[aria-label="Breadcrumb"] {
+        max-width: calc(100% - 21rem);
+    }
+
+    .text-document-edit-page--song .top-bar nav[aria-label="Breadcrumb"] > ol {
+        flex-wrap: nowrap;
+    }
+
+    /* Crumbs keep their natural width; only the trailing title shrinks and clips
+       (it already has min-width:0 / overflow:hidden) so nothing wraps to a second
+       row or runs under the menus. */
+    .text-document-edit-page--song .top-bar nav[aria-label="Breadcrumb"] > ol > li {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .text-document-edit-page--song .top-bar nav[aria-label="Breadcrumb"] > ol > li.text-document-breadcrumb-title {
+        flex-shrink: 1;
+        min-width: 0;
+    }
+}
+
 .text-documents-heading-row {
     display: inline-flex;
     align-items: center;

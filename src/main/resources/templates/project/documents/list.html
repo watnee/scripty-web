@@ -317,7 +317,7 @@
                               method="post"
                               class="text-document-delete-form"
                               hx-boost="false"
-                              th:attr="onsubmit=${isSongList} ? 'return confirm(\'Move this song to the trash? You can restore it for 30 days.\');' : 'return confirm(\'Move this note to the trash? You can restore it for 30 days.\');'">
+                              th:attr="onsubmit=${isSongList} ? 'return confirm(\'Move this song to the trash? You can restore it from there at any time.\');' : 'return confirm(\'Move this note to the trash? You can restore it from there at any time.\');'">
                             <input type="hidden" name="id" th:value="${doc.id}" />
                             <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
                             <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />

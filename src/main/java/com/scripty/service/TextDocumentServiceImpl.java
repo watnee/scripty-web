@@ -38,9 +38,13 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     private final ScriptEditionService scriptEditionService;
     private final EmailService emailService;
 
-    /** How long a trashed document stays recoverable before the purge job removes it. */
-    @Value("${scripty.documents.trash-retention-days:30}")
-    private int trashRetentionDays = 30;
+    /**
+     * How long a trashed document stays recoverable before the purge job removes it.
+     * Zero or less keeps it indefinitely: the nightly sweep no-ops and the trash page
+     * drops its purge-date copy. Set a positive value to re-enable expiry.
+     */
+    @Value("${scripty.documents.trash-retention-days:0}")
+    private int trashRetentionDays = 0;
 
     @Autowired
     public TextDocumentServiceImpl(TextDocumentRepository textDocumentRepository,
@@ -320,13 +324,15 @@ public class TextDocumentServiceImpl implements TextDocumentService {
                 .findByProjectIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(projectId)) {
             TextDocumentViewModel docVm = toViewModel(doc, project, false);
             docVm.setDeletedAt(doc.getDeletedAt());
-            docVm.setPurgesAt(doc.getDeletedAt().plusDays(trashRetentionDays));
+            docVm.setPurgesAt(trashRetentionDays > 0
+                    ? doc.getDeletedAt().plusDays(trashRetentionDays) : null);
             if (TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
                 songs.add(docVm);
             } else {
                 drafts.add(docVm);
             }
         }
+        vm.setRetentionUnlimited(trashRetentionDays <= 0);
         vm.setSongs(songs);
         vm.setDrafts(drafts);
         return vm;
@@ -399,6 +405,9 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     @Override
     @Transactional
     public int purgeExpired() {
+        if (trashRetentionDays <= 0) {
+            return 0;
+        }
         LocalDateTime cutoff = LocalDateTime.now().minusDays(trashRetentionDays);
         List<TextDocument> expired = textDocumentRepository.findByDeletedAtBefore(cutoff);
         for (TextDocument doc : expired) {

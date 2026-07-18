@@ -151,7 +151,7 @@
                     : plural(ids.length, 'song');
                 var pronoun = ids.length === 1 ? 'it' : 'them';
                 if (!window.confirm('Move ' + label + ' to the trash? You can restore '
-                        + pronoun + ' for 30 days.')) return;
+                        + pronoun + ' from there at any time.')) return;
 
                 Array.prototype.slice.call(deleteForm.querySelectorAll('input[name="id"]'))
                     .forEach(function (old) { old.remove(); });

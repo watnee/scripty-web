@@ -27,7 +27,9 @@
         // Scale screenplay block text via CSS var. Absolute 12pt on .block-content
         // does not inherit from main { font-size: N% }, so a custom property is required.
         var scale = (size / 100).toFixed(2);
-        document.documentElement.style.setProperty('--scripty-text-scale', scale);
+        // Written as the *base* scale: page view multiplies it by the canvas zoom
+        // to derive the effective --scripty-text-scale (see scripty.css).
+        document.documentElement.style.setProperty('--scripty-base-text-scale', scale);
         try {
             window.dispatchEvent(new CustomEvent('scripty:text-size-changed', { detail: { size: size } }));
         } catch (err) { /* ignore */ }

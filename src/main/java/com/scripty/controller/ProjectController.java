@@ -4,6 +4,7 @@ import com.scripty.api.HypermediaSupport;
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
+import com.scripty.dto.PageSetup;
 import com.scripty.dto.Project;
 import com.scripty.dto.ScriptEdition;
 import com.scripty.dto.Team;
@@ -786,6 +787,8 @@ public class ProjectController {
             @RequestParam Integer id,
             @RequestParam(required = false, defaultValue = "fountain") String format,
             @RequestParam(required = false) Integer editionId,
+            @RequestParam(required = false) String paper,
+            @RequestParam(required = false) String margins,
             Principal principal) {
         if (denyProjectAccess(id, principal)) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
@@ -818,7 +821,8 @@ public class ProjectController {
                     .body(archive);
         }
         if ("pdf".equals(normalized)) {
-            byte[] pdf = pdfExportService.exportProject(id, resolvedEditionId, caps);
+            byte[] pdf = pdfExportService.exportProject(
+                    id, resolvedEditionId, caps, PageSetup.of(paper, margins));
             String filename = exportFilename(project, "pdf");
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)

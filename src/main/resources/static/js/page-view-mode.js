@@ -18,6 +18,9 @@
     var PAGE_ACTIVE_CLASS = 'screenplay-page--active';
     var PAGE_BODY_CLASS = 'screenplay-page-body';
     var PAGE_NUMBER_CLASS = 'screenplay-page-number';
+    var PAGE_OVERFLOW_CLASS = 'screenplay-page--overflowing';
+    var CONT_MARKER_CLASS = 'screenplay-cont-marker';
+    var OVERFLOW_TOLERANCE = 12;
     var reflowTimer = null;
     var reflowDeadline = 0;
     var measuring = false;
@@ -111,6 +114,10 @@
         var wrap = sceneBlocks.querySelector(':scope > .' + PAGES_WRAP_CLASS);
         if (!wrap) return;
 
+        // Continuation markers are generated chrome — drop them so they never
+        // leak back into the continuous-scroll DOM or survive into a reflow.
+        stripContMarkers(wrap);
+
         var fragment = document.createDocumentFragment();
         var pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
         for (var i = 0; i < pages.length; i++) {
@@ -179,6 +186,176 @@
 
     function isSearchFilteredOut(el) {
         return !!(el && el.classList && el.classList.contains('filtered-out'));
+    }
+
+    function isSpeechRow(type) {
+        return type === 'DIALOGUE' || type === 'PARENTHETICAL';
+    }
+
+    /** An atom that opens with dialogue or a parenthetical continues the previous speech. */
+    function continuesSpeech(atom) {
+        return !!atom && isSpeechRow(atom.type);
+    }
+
+    function speakerName(row) {
+        var el = row.el;
+        var field = el && el.querySelector
+            ? el.querySelector('.block-input-textarea, textarea[name="content"], .block-content')
+            : null;
+        var text = field
+            ? (field.value != null ? field.value : field.textContent)
+            : ((el && el.textContent) || '');
+        return String(text || '')
+            .trim()
+            .split('\n')[0]
+            .replace(/\s*\(CONT'D\)\s*$/i, '')
+            .trim()
+            .toUpperCase();
+    }
+
+    /**
+     * Returns the speaker still holding the floor after this atom:
+     * a name when the atom carries a cue, null when the speech simply continues,
+     * '' when an action/scene/transition row ends the speech.
+     */
+    function trailingSpeaker(atom) {
+        for (var i = atom.rows.length - 1; i >= 0; i--) {
+            if (atom.rows[i].type === 'CHARACTER') {
+                return speakerName(atom.rows[i]);
+            }
+        }
+        return continuesSpeech(atom) ? null : '';
+    }
+
+    /**
+     * Rows that must not be separated by a page boundary are collected into a
+     * single indivisible atom, so the placement loop moves the whole unit to the
+     * next page at once instead of stranding a cue or heading at the bottom:
+     *   - CHARACTER / PARENTHETICAL bind forward to the line they introduce
+     *   - SCENE binds forward to its first body row (no orphaned headings)
+     *   - chrome rows (select rows, inline create) bind to the block they precede
+     *
+     * Operates on measured row descriptors, not live DOM, so pagination stays a
+     * pure computation over one batched measurement pass.
+     */
+    function buildAtoms(rows) {
+        var atoms = [];
+        var i = 0;
+
+        while (i < rows.length) {
+            var group = [rows[i]];
+            var type = rows[i].type;
+            i += 1;
+
+            while (i < rows.length && !rows[i].type && rows[i].chrome) {
+                group.push(rows[i]);
+                i += 1;
+            }
+
+            if (type === 'CHARACTER' || type === 'PARENTHETICAL') {
+                while (i < rows.length) {
+                    var nextType = rows[i].type;
+                    if (!nextType && rows[i].chrome) {
+                        group.push(rows[i]);
+                        i += 1;
+                        continue;
+                    }
+                    if (!isSpeechRow(nextType)) break;
+                    group.push(rows[i]);
+                    i += 1;
+                    if (nextType === 'DIALOGUE') break;
+                }
+            } else if (type === 'SCENE') {
+                while (i < rows.length) {
+                    var followType = rows[i].type;
+                    if (!followType && rows[i].chrome) {
+                        group.push(rows[i]);
+                        i += 1;
+                        continue;
+                    }
+                    if (!followType || followType === 'PAGE_BREAK') break;
+                    group.push(rows[i]);
+                    i += 1;
+                    break;
+                }
+            }
+
+            atoms.push({
+                rows: group,
+                type: type,
+                forcedBreak: group[0].forcedBreak
+            });
+        }
+
+        return atoms;
+    }
+
+    /**
+     * Height an atom costs on a page. Only the atom's first row can shed its top
+     * margin, and only when it lands at the top of a page.
+     */
+    function atomCost(atom, atPageTop) {
+        var total = 0;
+        for (var i = 0; i < atom.rows.length; i++) {
+            var row = atom.rows[i];
+            total += row.height + ((i === 0 && atPageTop) ? 0 : row.marginTop);
+        }
+        return total;
+    }
+
+    function makeContMarker(modifier, text) {
+        var el = document.createElement('div');
+        el.className = CONT_MARKER_CLASS + ' ' + CONT_MARKER_CLASS + '--' + modifier;
+        el.setAttribute('data-screenplay-marker', modifier);
+        el.setAttribute('aria-hidden', 'true');
+        el.textContent = text;
+        return el;
+    }
+
+    /**
+     * A continuation marker as a synthetic row descriptor, so it flows through
+     * computeAssignment / mergeEmptyPages / applyAssignment like any other row.
+     * Marked chrome so a page holding only markers still counts as empty.
+     */
+    function markerRow(modifier, text, height) {
+        return {
+            el: makeContMarker(modifier, text),
+            type: '',
+            marker: modifier,
+            markerText: text,
+            forcedBreak: false,
+            chrome: true,
+            filtered: false,
+            height: height,
+            marginTop: 0
+        };
+    }
+
+    function stripContMarkers(root) {
+        if (!root) return;
+        root.querySelectorAll('[data-screenplay-marker]').forEach(function (el) { el.remove(); });
+    }
+
+    function isContMarker(el) {
+        return !!(el && el.getAttribute && el.getAttribute('data-screenplay-marker'));
+    }
+
+    /**
+     * Measure a (MORE) line once per reflow so computeAssignment can reserve
+     * room for it without touching layout mid-computation.
+     */
+    function measureContReserve(wrap) {
+        var body = wrap.querySelector(':scope > .' + PAGE_CLASS + ' > .' + PAGE_BODY_CLASS);
+        if (!body) return 0;
+        var probe = makeContMarker('more', '(MORE)');
+        body.appendChild(probe);
+        var height = probe.offsetHeight || 0;
+        try {
+            var style = window.getComputedStyle(probe);
+            height += (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
+        } catch (err) { /* ignore */ }
+        probe.remove();
+        return height;
     }
 
     function updateRealPageCount(count) {
@@ -339,6 +516,8 @@
         var bodies = pageBodiesOf(wrap);
         for (var b = 0; b < bodies.length; b++) {
             for (var c = 0; c < bodies[b].children.length; c++) {
+                // Continuation markers are generated each reflow, not content.
+                if (isContMarker(bodies[b].children[c])) continue;
                 rows.push(bodies[b].children[c]);
             }
         }
@@ -409,37 +588,113 @@
         return rows;
     }
 
-    /** Greedy fill, computed purely from measurements — no layout reads. */
-    function computeAssignment(rows, usableHeight) {
+    /**
+     * Greedy fill, computed purely from measurements — no layout reads.
+     *
+     * Places whole atoms rather than single rows, so a character cue, a
+     * parenthetical, or a scene heading is never stranded at the foot of a page.
+     * When a break lands mid-speech the page closes with (MORE) and the next one
+     * opens under CHARACTER (CONT'D); room for the (MORE) is reserved before the
+     * fit test so adding it can never itself overflow the page.
+     */
+    function computeAssignment(rows, usableHeight, contReserve) {
+        var atoms = buildAtoms(rows);
         var pages = [[]];
         var height = 0;
+        var lastSpeaker = '';
 
         function newPage() {
             pages.push([]);
             height = 0;
         }
 
-        for (var i = 0; i < rows.length; i++) {
-            var row = rows[i];
+        function pushRows(atom) {
+            var page = pages[pages.length - 1];
+            for (var r = 0; r < atom.rows.length; r++) {
+                page.push(atom.rows[r]);
+            }
+        }
 
-            if (row.forcedBreak) {
+        for (var i = 0; i < atoms.length; i++) {
+            var atom = atoms[i];
+
+            if (atom.forcedBreak) {
                 // Page-break markers become the page boundary; hide their height
                 // contribution.
-                pages[pages.length - 1].push(row);
-                if (i < rows.length - 1) newPage();
+                pushRows(atom);
+                if (i < atoms.length - 1) newPage();
                 continue;
             }
 
             var atPageTop = height === 0;
-            var cost = row.height + (atPageTop ? 0 : row.marginTop);
-            if (!atPageTop && height + cost > usableHeight + 0.5) {
+            var cost = atomCost(atom, atPageTop);
+
+            // Reserve a (MORE) line when the next atom carries this same speech
+            // onto the following page. The speaker to test is the one in effect
+            // AFTER this atom lands — an atom that opens with its own cue (say
+            // CHARACTER + DIALOGUE) establishes the speaker itself, so consulting
+            // the previous lastSpeaker would skip the reservation and let the
+            // (MORE) overflow the page it gets appended to.
+            var speakerAfter = trailingSpeaker(atom);
+            var speakerIfPlaced = speakerAfter === null ? lastSpeaker : speakerAfter;
+            var willNeedMore = continuesSpeech(atoms[i + 1]) && !!speakerIfPlaced;
+            var limit = usableHeight - (willNeedMore ? contReserve : 0);
+
+            if (!atPageTop && height + cost > limit + 0.5) {
+                var contSpeaker = (continuesSpeech(atom) && lastSpeaker) ? lastSpeaker : '';
+                if (contSpeaker) {
+                    pages[pages.length - 1].push(markerRow('more', '(MORE)', contReserve));
+                }
                 newPage();
-                cost = row.height;
+                if (contSpeaker) {
+                    pages[pages.length - 1].push(
+                        markerRow('contd', contSpeaker + " (CONT'D)", contReserve));
+                    height += contReserve;
+                }
+                cost = atomCost(atom, height === 0);
             }
-            pages[pages.length - 1].push(row);
+
+            pushRows(atom);
             height += cost;
+
+            if (speakerAfter !== null) lastSpeaker = speakerAfter;
         }
         return pages;
+    }
+
+    /**
+     * Merging empty pages can strand a marker mid-page; a (MORE) is only
+     * meaningful last on a page and a (CONT'D) only first. Done on the computed
+     * groups so the DOM never shows a stranded marker even for a frame.
+     */
+    function dropStrandedMarkers(pages) {
+        for (var p = 0; p < pages.length; p++) {
+            pages[p] = pages[p].filter(function (row, idx, group) {
+                if (row.marker === 'more') return idx === group.length - 1;
+                if (row.marker === 'contd') return idx === 0;
+                return true;
+            });
+        }
+        return pages;
+    }
+
+    /**
+     * A single block taller than the sheet would otherwise be clipped by the page
+     * body's overflow:hidden — let that page grow instead. The tolerance keeps
+     * sub-pixel rounding across many rows from stretching an otherwise
+     * well-fitted page; a genuine overrun is an unsplittable block, which
+     * overshoots by far more than this.
+     */
+    function markOverflowingPages(wrap) {
+        var pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
+        for (var i = 0; i < pages.length; i++) {
+            var body = pages[i].querySelector(':scope > .' + PAGE_BODY_CLASS);
+            if (!body) continue;
+            pages[i].classList.toggle(
+                PAGE_OVERFLOW_CLASS,
+                body.scrollHeight > body.clientHeight + OVERFLOW_TOLERANCE
+            );
+        }
     }
 
     function groupHasVisibleContent(group) {
@@ -499,8 +754,20 @@
             var body = bodies[p];
             var group = groups[p];
             for (i = 0; i < group.length; i++) {
-                if (body.children[i] === group[i].el) continue;
-                body.insertBefore(group[i].el, body.children[i] || null);
+                var existing = body.children[i];
+                if (existing === group[i].el) continue;
+                // Markers are rebuilt every reflow, so compare them by what they
+                // say rather than by identity — otherwise every reflow would
+                // "change" the DOM and needlessly restore the caret.
+                if (group[i].marker
+                        && existing
+                        && existing.getAttribute
+                        && existing.getAttribute('data-screenplay-marker') === group[i].marker
+                        && existing.textContent === group[i].markerText) {
+                    group[i].el = existing;
+                    continue;
+                }
+                body.insertBefore(group[i].el, existing || null);
                 changed = true;
             }
         }
@@ -547,6 +814,7 @@
         if (!sceneBlocks) return;
 
         var editState = captureEditState();
+        var pageCount = 0;
         measuring = true;
         try {
             var wrap = sceneBlocks.querySelector(':scope > .' + PAGES_WRAP_CLASS);
@@ -563,10 +831,13 @@
             }
 
             var usableHeight = measureUsableHeight(wrap);
-            var groups = mergeEmptyPages(computeAssignment(measureRows(els), usableHeight));
+            var contReserve = measureContReserve(wrap);
+            var groups = dropStrandedMarkers(
+                mergeEmptyPages(computeAssignment(measureRows(els), usableHeight, contReserve)));
             var changed = applyAssignment(wrap, groups);
 
             updateRealPageCount(groups.length);
+            markOverflowingPages(wrap);
 
             if (enterAnimPending) {
                 enterAnimPending = false;
@@ -577,10 +848,16 @@
                 }, 520);
             }
 
+            pageCount = groups.length;
             syncActivePage();
             if (changed) restoreEditState(editState);
         } finally {
             measuring = false;
+            try {
+                window.dispatchEvent(new CustomEvent('scripty:pages-paginated', {
+                    detail: { count: pageCount }
+                }));
+            } catch (err) { /* ignore */ }
         }
     }
 
@@ -672,6 +949,16 @@
     });
 
     window.addEventListener('scripty:full-width-changed', function () {
+        if (window.scriptyIsPageViewMode()) scheduleReflow(50);
+    });
+
+    // Zoom and paper size both change the sheet's usable height, so the line
+    // budget per page has to be measured again.
+    window.addEventListener('scripty:page-zoom-changed', function () {
+        if (window.scriptyIsPageViewMode()) scheduleReflow(50);
+    });
+
+    window.addEventListener('scripty:page-setup-changed', function () {
         if (window.scriptyIsPageViewMode()) scheduleReflow(50);
     });
 

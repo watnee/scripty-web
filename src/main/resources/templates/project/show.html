@@ -365,6 +365,19 @@
                                     title="Auto-capitalize shots"><span>Shots</span></button>
                         </div>
                     </div>
+                    <button id="page-setup-open"
+                            type="button"
+                            class="nav-dropdown-item"
+                            role="menuitem"
+                            aria-label="Page setup"
+                            title="Paper size, margins, and page numbers">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="4" y="3" width="16" height="18" rx="1.5"></rect>
+                            <line x1="7" y1="7" x2="17" y2="7"></line>
+                            <line x1="7" y1="17" x2="17" y2="17"></line>
+                        </svg>
+                        <span>Page setup…</span>
+                    </button>
                     <div class="nav-dropdown lists-dropdown" id="project-lists-dropdown">
                         <button id="nav-lists"
                                 type="button"
@@ -996,6 +1009,9 @@
     <script th:src="@{/js/focus-mode.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/outline-mode.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/page-view-mode.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/page-setup.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/page-zoom.js(v=${assetVersion})}"></script>
+    <script th:src="@{/js/page-navigator.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/full-width-toggle.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/parenthetical-parens.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/toolbar-toggle.js(v=${assetVersion})}"></script>

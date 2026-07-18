@@ -6,11 +6,11 @@ import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
-import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfWriter;
 import com.scripty.dto.Block;
+import com.scripty.dto.PageSetup;
 import com.scripty.dto.Project;
 import com.scripty.dto.ScriptEdition;
 import com.scripty.repository.BlockRepository;
@@ -23,13 +23,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Industry-style US Letter screenplay PDF (Courier 12pt), matching print CSS margins
- * and element indents.
+ * Industry-style screenplay PDF (Courier 12pt), matching print CSS margins and
+ * element indents. Paper size and margins follow the caller's {@link PageSetup},
+ * defaulting to US Letter with 1in margins (1.5in on the binding edge).
  */
 @Service
 public class PdfExportServiceImpl implements PdfExportService {
 
     // Geometry is shared with the DOCX and FDX exporters — see ScreenplayLayout.
+    // Page margins here are only the fallback: Page setup can override them per
+    // export via PageSetup, which carries its own paper size and margins.
     private static final float LEFT_MARGIN = ScreenplayLayout.pt(ScreenplayLayout.MARGIN_LEFT_IN);
     private static final float RIGHT_MARGIN = ScreenplayLayout.pt(ScreenplayLayout.MARGIN_RIGHT_IN);
     private static final float TOP_MARGIN = ScreenplayLayout.pt(ScreenplayLayout.MARGIN_TOP_IN);
@@ -70,13 +73,29 @@ public class PdfExportServiceImpl implements PdfExportService {
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId, Integer editionId) {
-        return exportProject(projectId, editionId, CapitalizationPreferences.ALL);
+        return exportProject(projectId, editionId, CapitalizationPreferences.ALL, PageSetup.DEFAULT);
     }
 
     @Override
     @Transactional(readOnly = true)
     public byte[] exportProject(Integer projectId, Integer editionId, CapitalizationPreferences caps) {
+        return exportProject(projectId, editionId, caps, PageSetup.DEFAULT);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportProject(Integer projectId, Integer editionId, PageSetup pageSetup) {
+        return exportProject(projectId, editionId, CapitalizationPreferences.ALL, pageSetup);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportProject(Integer projectId,
+                                Integer editionId,
+                                CapitalizationPreferences caps,
+                                PageSetup pageSetup) {
         CapitalizationPreferences capitalization = caps != null ? caps : CapitalizationPreferences.ALL;
+        PageSetup setup = pageSetup != null ? pageSetup : PageSetup.DEFAULT;
         Project project = projectRepository.findById(projectId).orElse(null);
         ScriptEdition edition = scriptEditionService.requireForProject(projectId, editionId);
         List<Block> blocks = edition != null
@@ -84,7 +103,7 @@ public class PdfExportServiceImpl implements PdfExportService {
                 : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
 
         try {
-            return toPdf(project, blocks, capitalization);
+            return toPdf(project, blocks, capitalization, setup);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to export project " + projectId + " as PDF", e);
         }
@@ -92,13 +111,25 @@ public class PdfExportServiceImpl implements PdfExportService {
 
     /** Package-private seam so the layout can be asserted without a Spring context. */
     static byte[] toPdf(Project project, List<Block> blocks) throws Exception {
-        return toPdf(project, blocks, CapitalizationPreferences.ALL);
+        return toPdf(project, blocks, CapitalizationPreferences.ALL, PageSetup.DEFAULT);
     }
 
     static byte[] toPdf(Project project, List<Block> blocks, CapitalizationPreferences capitalization)
             throws Exception {
+        return toPdf(project, blocks, capitalization, PageSetup.DEFAULT);
+    }
+
+    static byte[] toPdf(Project project,
+                        List<Block> blocks,
+                        CapitalizationPreferences capitalization,
+                        PageSetup setup) throws Exception {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            Document document = new Document(PageSize.LETTER, LEFT_MARGIN, RIGHT_MARGIN, TOP_MARGIN, BOTTOM_MARGIN);
+            Document document = new Document(
+                    setup.paper().rectangle(),
+                    setup.margins().left(),
+                    setup.margins().right(),
+                    setup.margins().top(),
+                    setup.margins().bottom());
             PdfWriter.getInstance(document, out);
             document.open();
 

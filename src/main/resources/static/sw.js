@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v123';
+const CACHE_NAME = 'scripty-cache-v124';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/offline-project.html',
@@ -22,6 +22,9 @@ const ASSETS_TO_CACHE = [
   '/js/focus-mode.js',
   '/js/outline-mode.js',
   '/js/page-view-mode.js',
+  '/js/page-setup.js',
+  '/js/page-zoom.js',
+  '/js/page-navigator.js',
   '/js/full-width-toggle.js',
   '/js/toolbar-toggle.js',
   '/js/project-search.js',

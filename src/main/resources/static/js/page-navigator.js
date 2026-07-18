@@ -15,7 +15,10 @@
     window._scriptyPageNavigatorInit = true;
 
     var BAR_ID = 'screenplay-page-nav';
-    var PAGE_SELECTOR = '.project-script .screenplay-page:not(.screenplay-page--measure)';
+    // The cover sheet is unnumbered (as in every export), so it is not a
+    // destination the pager counts or jumps to — page 1 is the first script page.
+    var PAGE_SELECTOR = '.project-script .screenplay-page'
+        + ':not(.screenplay-page--measure):not(.screenplay-page--cover)';
     var current = 1;
     var total = 0;
     var spyFrame = null;

@@ -1,7 +1,10 @@
 <th:block xmlns:th="http://www.thymeleaf.org">
 
+<!--/* The songs workspace stacks one editor per song, so the id has to be able to
+       vary; callers that render a single song leave blocksDomId unset and keep
+       the historical "song-blocks" id. JS finds the list by class either way. */-->
 <div th:fragment="blocks"
-     id="song-blocks"
+     th:id="${blocksDomId} != null ? ${blocksDomId} : 'song-blocks'"
      class="song-blocks"
      th:attr="data-focus-id=${focusBlockId}">
     <th:block th:each="block : ${blocks}">

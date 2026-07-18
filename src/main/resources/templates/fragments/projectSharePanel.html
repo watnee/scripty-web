@@ -96,6 +96,10 @@
                    th:attr="data-contact-suggest=${projectId}"
                    autocomplete="email" />
         </label>
+        <label class="project-share-invite-attach">
+            <input type="checkbox" name="attachPdf" value="true" th:checked="*{attachPdf}" />
+            <span>Also attach a PDF copy of the screenplay</span>
+        </label>
         <button type="submit" class="project-share-invite-btn">Send view link</button>
     </form>
 </div>

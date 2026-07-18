@@ -15,6 +15,8 @@ public class SendViewInvitationCommandModel {
     @Size(max = 100, message = "Email must be no more than 100 characters.")
     private String email;
 
+    private boolean attachPdf;
+
     public Integer getProjectId() {
         return projectId;
     }
@@ -29,5 +31,13 @@ public class SendViewInvitationCommandModel {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public boolean isAttachPdf() {
+        return attachPdf;
+    }
+
+    public void setAttachPdf(boolean attachPdf) {
+        this.attachPdf = attachPdf;
     }
 }

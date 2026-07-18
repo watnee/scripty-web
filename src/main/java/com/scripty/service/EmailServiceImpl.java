@@ -8,10 +8,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -47,11 +49,11 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void send(String to, String subject, String htmlBody) {
+    public void send(String to, String subject, String htmlBody, EmailAttachment attachment) {
         // The Cloudflare email Worker is an explicit opt-in: it takes precedence
         // over SMTP because Railway restricts outbound SMTP ports.
         if (StringUtils.hasText(emailWorkerUrl) && StringUtils.hasText(emailWorkerSecret)) {
-            sendViaEmailWorker(to, subject, htmlBody);
+            sendViaEmailWorker(to, subject, htmlBody, attachment);
             return;
         }
         if (!smtpEnabled) {
@@ -59,10 +61,11 @@ public class EmailServiceImpl implements EmailService {
             log.info("Mail disabled. Skipped email to={} subject={}", to, subject);
             return;
         }
-        sendViaSmtp(to, subject, htmlBody);
+        sendViaSmtp(to, subject, htmlBody, attachment);
     }
 
-    private void sendViaEmailWorker(String to, String subject, String htmlBody) {
+    private void sendViaEmailWorker(String to, String subject, String htmlBody,
+                                    EmailAttachment attachment) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(emailWorkerUrl))
@@ -70,7 +73,7 @@ public class EmailServiceImpl implements EmailService {
                     .header("Authorization", "Bearer " + emailWorkerSecret)
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(
-                            buildEmailPayload(to, subject, htmlBody)))
+                            buildEmailPayload(to, subject, htmlBody, attachment)))
                     .build();
             HttpResponse<String> response =
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -90,20 +93,29 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    String buildEmailPayload(String to, String subject, String htmlBody) {
+    String buildEmailPayload(String to, String subject, String htmlBody, EmailAttachment attachment) {
         try {
             ObjectNode payload = objectMapper.createObjectNode();
             payload.put("from", mailFrom);
             payload.put("to", to);
             payload.put("subject", subject);
             payload.put("html", htmlBody);
+            if (attachment != null && attachment.content() != null && attachment.content().length > 0) {
+                // The Worker decodes base64 content back into raw bytes before
+                // handing it to the Cloudflare Email Sending binding.
+                ObjectNode entry = payload.putArray("attachments").addObject();
+                entry.put("filename", attachment.filename());
+                entry.put("type", attachment.contentType());
+                entry.put("encoding", "base64");
+                entry.put("content", Base64.getEncoder().encodeToString(attachment.content()));
+            }
             return objectMapper.writeValueAsString(payload);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to build email payload for " + to, e);
         }
     }
 
-    private void sendViaSmtp(String to, String subject, String htmlBody) {
+    private void sendViaSmtp(String to, String subject, String htmlBody, EmailAttachment attachment) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -111,6 +123,11 @@ public class EmailServiceImpl implements EmailService {
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlBody, true);
+            if (attachment != null && attachment.content() != null && attachment.content().length > 0) {
+                helper.addAttachment(attachment.filename(),
+                        new ByteArrayResource(attachment.content()),
+                        attachment.contentType());
+            }
             mailSender.send(message);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to send email to " + to, e);

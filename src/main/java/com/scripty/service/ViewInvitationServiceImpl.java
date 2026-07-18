@@ -30,6 +30,7 @@ public class ViewInvitationServiceImpl implements ViewInvitationService {
     private final ProjectRepository projectRepository;
     private final ProjectService projectService;
     private final EmailService emailService;
+    private final PdfExportService pdfExportService;
     private final ProjectActivityService projectActivityService;
     private final String baseUrl;
 
@@ -38,12 +39,14 @@ public class ViewInvitationServiceImpl implements ViewInvitationService {
                                      ProjectRepository projectRepository,
                                      ProjectService projectService,
                                      EmailService emailService,
+                                     PdfExportService pdfExportService,
                                      ProjectActivityService projectActivityService,
                                      @Value("${app.base-url:}") String baseUrl) {
         this.viewInvitationRepository = viewInvitationRepository;
         this.projectRepository = projectRepository;
         this.projectService = projectService;
         this.emailService = emailService;
+        this.pdfExportService = pdfExportService;
         this.projectActivityService = projectActivityService;
         this.baseUrl = baseUrl;
     }
@@ -90,7 +93,7 @@ public class ViewInvitationServiceImpl implements ViewInvitationService {
         invitation.setExpiresAt(now.plusDays(VIEW_INVITE_EXPIRY_DAYS));
         ViewInvitation saved = viewInvitationRepository.save(invitation);
 
-        sendViewInviteEmail(saved, invitedBy, project);
+        sendViewInviteEmail(saved, invitedBy, project, command.isAttachPdf());
         projectActivityService.record(
                 project.getId(),
                 invitedBy.getId(),
@@ -194,12 +197,18 @@ public class ViewInvitationServiceImpl implements ViewInvitationService {
         return invitation;
     }
 
-    private void sendViewInviteEmail(ViewInvitation invitation, User invitedBy, Project project) {
+    private void sendViewInviteEmail(ViewInvitation invitation, User invitedBy, Project project,
+                                     boolean attachPdf) {
         String viewUrl = resolveBaseUrl() + "/view?token=" + invitation.getToken();
         String inviterName = formatInviterName(invitedBy);
         String title = project.getTitle() != null && !project.getTitle().isBlank()
                 ? project.getTitle()
                 : "Untitled Project";
+
+        EmailAttachment attachment = attachPdf ? buildPdfAttachment(project) : null;
+        String attachmentNote = attachment != null
+                ? "<p style=\"font-size:13px;color:#6b7280;\">A PDF copy of the screenplay is attached to this email.</p>"
+                : "";
 
         String subject = inviterName + " shared a screenplay with you";
         String body = """
@@ -208,6 +217,7 @@ public class ViewInvitationServiceImpl implements ViewInvitationService {
                   <p><strong>%s</strong> invited you to read <strong>%s</strong> on Scripty.</p>
                   <p><a href="%s" style="display:inline-block;padding:10px 16px;background:#1f2937;color:#fff;text-decoration:none;border-radius:6px;">Read the screenplay</a></p>
                   <p style="font-size:13px;color:#6b7280;">Or open this link:<br>%s</p>
+                  %s
                   <p style="font-size:13px;color:#6b7280;">This link is view-only and expires in %d days. Please don't forward it.</p>
                 </div>
                 """.formatted(
@@ -215,9 +225,40 @@ public class ViewInvitationServiceImpl implements ViewInvitationService {
                 HtmlUtils.htmlEscape(title),
                 viewUrl,
                 HtmlUtils.htmlEscape(viewUrl),
+                attachmentNote,
                 VIEW_INVITE_EXPIRY_DAYS
         );
-        emailService.send(invitation.getEmail(), subject, body);
+        emailService.send(invitation.getEmail(), subject, body, attachment);
+    }
+
+    private EmailAttachment buildPdfAttachment(Project project) {
+        byte[] pdf = pdfExportService.exportProject(project.getId());
+        return new EmailAttachment(pdfFilename(project), "application/pdf", pdf);
+    }
+
+    private String pdfFilename(Project project) {
+        String base = null;
+        if (project.getScreenplayTitle() != null && !project.getScreenplayTitle().isBlank()) {
+            base = project.getScreenplayTitle();
+        } else if (project.getTitle() != null && !project.getTitle().isBlank()) {
+            base = project.getTitle();
+        }
+        if (base == null) {
+            return "screenplay.pdf";
+        }
+        String sanitized = base.trim()
+                .replaceAll("[\\\\/:*?\"<>|]+", "-")
+                .replaceAll("\\s+", "-")
+                .replaceAll("[^a-zA-Z0-9._-]+", "-")
+                .replaceAll("-{2,}", "-")
+                .replaceAll("^[.-]+|[.-]+$", "");
+        if (sanitized.isBlank()) {
+            return "screenplay.pdf";
+        }
+        if (sanitized.length() > 80) {
+            sanitized = sanitized.substring(0, 80).replaceAll("[.-]+$", "");
+        }
+        return sanitized + ".pdf";
     }
 
     private String resolveBaseUrl() {

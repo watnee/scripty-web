@@ -17,6 +17,12 @@
     var PAGE_CLASS = 'screenplay-page';
     var PAGE_ACTIVE_CLASS = 'screenplay-page--active';
     var PAGE_BODY_CLASS = 'screenplay-page-body';
+    var COVER_CLASS = 'screenplay-page--cover';
+    var COVER_BODY_CLASS = 'screenplay-page-cover-body';
+    // The cover sheet is a page element but never a paginated one: every query
+    // that walks "the pages content is laid into" must skip it, or page 1 of the
+    // script would be filled into the title page.
+    var CONTENT_PAGE_SEL = '.' + PAGE_CLASS + ':not(.' + COVER_CLASS + ')';
     var PAGE_NUMBER_CLASS = 'screenplay-page-number';
     var PAGE_OVERFLOW_CLASS = 'screenplay-page--overflowing';
     var CONT_MARKER_CLASS = 'screenplay-cont-marker';
@@ -119,7 +125,7 @@
         stripContMarkers(wrap);
 
         var fragment = document.createDocumentFragment();
-        var pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
+        var pages = wrap.querySelectorAll(':scope > ' + CONTENT_PAGE_SEL);
         for (var i = 0; i < pages.length; i++) {
             var body = pages[i].querySelector(':scope > .' + PAGE_BODY_CLASS);
             if (!body) continue;
@@ -148,6 +154,97 @@
         page.appendChild(body);
         page.appendChild(number);
         return { page: page, body: body };
+    }
+
+    /**
+     * Title page fields, read from the hidden holder show.html renders. Mirrors
+     * the export renderers: the screenplay title falls back to the project title,
+     * so a cover sheet shows whatever a PDF export would put on page one.
+     */
+    function coverData() {
+        var el = document.getElementById('page-view-cover-data');
+        if (!el) return null;
+
+        function attr(name) {
+            return String(el.getAttribute('data-' + name) || '').trim();
+        }
+
+        var title = attr('title') || attr('project-title');
+        if (!title) return null;
+
+        return {
+            projectId: attr('project-id'),
+            title: title,
+            writers: attr('writers'),
+            version: attr('version'),
+            contact: attr('contact')
+        };
+    }
+
+    function coverSignature(data) {
+        return [data.title, data.writers, data.version, data.contact].join('');
+    }
+
+    function buildCoverPage(data) {
+        var page = document.createElement('div');
+        page.className = PAGE_CLASS + ' ' + COVER_CLASS;
+        page.setAttribute('role', 'region');
+        page.setAttribute('aria-label', 'Title page');
+        page.setAttribute('data-cover-signature', coverSignature(data));
+
+        var body = document.createElement('div');
+        body.className = COVER_BODY_CLASS;
+
+        function line(cls, text) {
+            var el = document.createElement('div');
+            el.className = cls;
+            el.textContent = text;
+            return el;
+        }
+
+        var titleWrap = document.createElement('div');
+        titleWrap.className = 'screenplay-cover-title-wrap';
+        titleWrap.appendChild(line('screenplay-cover-title', data.title.toUpperCase()));
+        if (data.writers) {
+            titleWrap.appendChild(line('screenplay-cover-by', 'written by'));
+            titleWrap.appendChild(line('screenplay-cover-writers', data.writers));
+        }
+        if (data.version) {
+            titleWrap.appendChild(line('screenplay-cover-version', data.version));
+        }
+        body.appendChild(titleWrap);
+        body.appendChild(line('screenplay-cover-contact', data.contact));
+
+        page.appendChild(body);
+
+        if (data.projectId) {
+            var edit = document.createElement('a');
+            edit.className = 'screenplay-cover-edit hide-in-reader-view';
+            edit.href = '/project/titlePage?id=' + encodeURIComponent(data.projectId);
+            edit.textContent = 'Edit title page';
+            page.appendChild(edit);
+        }
+        return page;
+    }
+
+    /**
+     * Keep the cover sheet as the wrap's first child, rebuilt only when the
+     * title page fields actually change — every other reflow leaves it alone.
+     */
+    function ensureCoverPage(wrap) {
+        var existing = wrap.querySelector(':scope > .' + COVER_CLASS);
+        var data = coverData();
+
+        if (!data) {
+            if (existing) existing.remove();
+            return;
+        }
+        if (existing && existing.getAttribute('data-cover-signature') === coverSignature(data)) {
+            if (wrap.firstElementChild !== existing) wrap.insertBefore(existing, wrap.firstChild);
+            return;
+        }
+        if (existing) existing.remove();
+        wrap.insertBefore(buildCoverPage(data), wrap.firstChild);
     }
 
     function measureUsableHeight(probeParent) {
@@ -345,7 +442,7 @@
      * room for it without touching layout mid-computation.
      */
     function measureContReserve(wrap) {
-        var body = wrap.querySelector(':scope > .' + PAGE_CLASS + ' > .' + PAGE_BODY_CLASS);
+        var body = wrap.querySelector(':scope > ' + CONTENT_PAGE_SEL + ' > .' + PAGE_BODY_CLASS);
         if (!body) return 0;
         var probe = makeContMarker('more', '(MORE)');
         body.appendChild(probe);
@@ -500,7 +597,7 @@
     }
 
     function pageBodiesOf(wrap) {
-        return wrap.querySelectorAll(':scope > .' + PAGE_CLASS + ' > .' + PAGE_BODY_CLASS);
+        return wrap.querySelectorAll(':scope > ' + CONTENT_PAGE_SEL + ' > .' + PAGE_BODY_CLASS);
     }
 
     /**
@@ -686,7 +783,7 @@
      * overshoots by far more than this.
      */
     function markOverflowingPages(wrap) {
-        var pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
+        var pages = wrap.querySelectorAll(':scope > ' + CONTENT_PAGE_SEL);
         for (var i = 0; i < pages.length; i++) {
             var body = pages[i].querySelector(':scope > .' + PAGE_BODY_CLASS);
             if (!body) continue;
@@ -735,7 +832,7 @@
      */
     function applyAssignment(wrap, groups) {
         var changed = false;
-        var pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
+        var pages = wrap.querySelectorAll(':scope > ' + CONTENT_PAGE_SEL);
         var bodies = [];
         var p, i;
 
@@ -781,14 +878,14 @@
             }
         }
 
-        pages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
+        pages = wrap.querySelectorAll(':scope > ' + CONTENT_PAGE_SEL);
         for (p = pages.length - 1; p >= groups.length; p--) {
             pages[p].remove();
             changed = true;
         }
 
         if (changed) {
-            var finalPages = wrap.querySelectorAll(':scope > .' + PAGE_CLASS);
+            var finalPages = wrap.querySelectorAll(':scope > ' + CONTENT_PAGE_SEL);
             for (i = 0; i < finalPages.length; i++) {
                 var num = i + 1;
                 finalPages[i].setAttribute('data-page', String(num));
@@ -829,6 +926,8 @@
                 updateRealPageCount(0);
                 return;
             }
+
+            ensureCoverPage(wrap);
 
             var usableHeight = measureUsableHeight(wrap);
             var contReserve = measureContReserve(wrap);

@@ -999,6 +999,15 @@
                     </span>
                 </h1>
             </div>
+            <!-- Title page metadata for the page-view cover sheet. Lives outside
+                 .scene-blocks so the paginator never treats it as a script row. -->
+            <div id="page-view-cover-data" hidden
+                 th:attr="data-project-id=${viewModel.id},
+                          data-project-title=${viewModel.title},
+                          data-title=${viewModel.screenplayTitle},
+                          data-writers=${viewModel.writers},
+                          data-version=${viewModel.screenplayVersion},
+                          data-contact=${viewModel.contactInfo}"></div>
             <div th:replace="~{project/showScriptBody :: scriptBody(${viewModel})}"></div>
         </article>
     </main>

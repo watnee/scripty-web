@@ -2,6 +2,7 @@ package com.scripty.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 /**
  * HAL representation of one lyric line of a song, the song counterpart of
@@ -9,6 +10,7 @@ import org.springframework.hateoas.RepresentationModel;
  * songs have no element types, characters or scene flags.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = "songBlock", collectionRelation = ApiRel.SONG_BLOCKS)
 public class SongBlockResource extends RepresentationModel<SongBlockResource> {
 
     private Integer id;

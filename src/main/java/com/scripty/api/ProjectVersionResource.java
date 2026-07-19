@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.scripty.viewmodel.project.versionhistory.VersionChangeSummary;
 import java.time.OffsetDateTime;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 /**
  * HAL representation of a single saved {@link com.scripty.dto.ProjectVersion}
@@ -11,6 +12,7 @@ import org.springframework.hateoas.RepresentationModel;
  * view shows; the snapshot JSON itself is never exposed.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = ApiRel.VERSION, collectionRelation = ApiRel.VERSIONS)
 public class ProjectVersionResource extends RepresentationModel<ProjectVersionResource> {
 
     private Integer id;

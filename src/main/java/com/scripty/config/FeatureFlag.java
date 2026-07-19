@@ -23,7 +23,19 @@ public enum FeatureFlag {
      * Service worker registration. Caches static assets and public offline
      * shells only; project HTML lives in IndexedDB.
      */
-    SERVICE_WORKER("service-worker", true);
+    SERVICE_WORKER("service-worker", true),
+
+    /**
+     * Managing invitations over the REST API.
+     *
+     * <p>Default off, unlike every other flag here, because turning it on
+     * widens who can make the server send email. The web forms have always been
+     * able to, but a form is driven by a person and an endpoint can be driven
+     * by a script; the endpoints are rate limited for that reason, and this
+     * flag means the surface does not appear at all until someone decides it
+     * should.
+     */
+    API_INVITATIONS("api-invitations", false);
 
     private final String key;
     private final boolean defaultValue;

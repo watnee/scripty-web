@@ -42,6 +42,9 @@ public final class ApiRel {
     public static final String COMMENT_COUNTS = "commentCounts";
     public static final String ACTIVITY = "activity";
     public static final String ASSIGN_PRODUCTIONS = "assignProductions";
+    public static final String INVITATIONS = "invitations";
+    public static final String SEND_INVITATION = "sendInvitation";
+    public static final String REVOKE = "revoke";
 
     // Named variants of a script. `editionId` was already accepted as a query
     // parameter; these are what let a client discover the ids to pass.

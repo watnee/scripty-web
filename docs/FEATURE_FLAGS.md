@@ -11,6 +11,45 @@ there is no live kill-switch. Everything about a flag lives in one place:
 |------|-----------------|---------|----------|
 | `passkeys` | `FEATURE_PASSKEYS` | `true` | Passkey (WebAuthn) sign-in. Also needs a usable `APP_BASE_URL` — without one, passkeys stay off whatever the flag says. |
 | `service-worker` | `FEATURE_SERVICE_WORKER` | `true` | Service worker registration for static assets and public offline shells. |
+| `api-invitations` | `FEATURE_API_INVITATIONS` | `false` | Managing invitations over the REST API (`/api/project/{id}/invitations`). See below before turning this on. |
+
+### `api-invitations`
+
+Off by default, unlike the others, because turning it on widens who can make
+the server send mail. The web forms have always been able to; the difference is
+that a form is paced by a person and an endpoint is paced by whatever is calling
+it. Before enabling, know what it does and does not open up.
+
+What it enables: listing, sending and revoking invitations — both collaborators
+and view-only readers — for anyone who can already edit the screenplay.
+
+What it does not enable, deliberately:
+
+- **Accepting an invitation.** There is no REST endpoint for it. Accepting
+  creates a user account without authentication, and the person doing it has no
+  session by definition, so it stays a browser route reached from the email
+  link. Turning this flag on does not add an unauthenticated write path to
+  `/api`.
+- **Reading a screenplay by view token.** Also stays a browser route. The API
+  never returns a token or an invite URL, so it cannot hand out a long-lived
+  read-anything-in-this-screenplay credential.
+- **PDF attachments.** The web form lets a sender attach a rendered PDF of the
+  whole screenplay; the API does not offer the option and always sends without
+  one. Rendering a screenplay per invitation is real CPU and a large outbound
+  attachment, which is fine when a person chooses it each time and is not fine
+  when a loop does.
+
+Sending is rate limited per user (20 per hour) by
+[`InvitationRateLimiter`](../src/main/java/com/scripty/security/InvitationRateLimiter.java).
+That limiter is in-memory and per-instance: it is a brake on one runaway
+session, not a distributed quota. A restart clears it and a second instance
+keeps its own count.
+
+One behaviour to preserve if this code is ever changed: sending to an address
+that already has an account answers exactly like sending to one that does not.
+The service returns null in that case so as not to reveal who is registered, and
+the endpoint must not turn that into a distinguishable response — returning a
+409 would be the obvious instinct and would undo the defence from the outside.
 
 ## Flipping a flag on Railway
 

@@ -2,7 +2,10 @@ package com.scripty.api;
 
 import com.scripty.controller.ActorRestController;
 import com.scripty.controller.BlockRestController;
+import com.scripty.config.FeatureFlag;
+import com.scripty.config.FeatureFlags;
 import com.scripty.controller.ContactSuggestionRestController;
+import com.scripty.controller.InvitationRestController;
 import com.scripty.controller.PersonRestController;
 import com.scripty.controller.ProjectActivityRestController;
 import com.scripty.controller.ProjectController;
@@ -36,6 +39,9 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
 
     @Autowired
     ProjectAccessSupport projectAccess;
+
+    @Autowired
+    FeatureFlags featureFlags;
 
     @Override
     public EntityModel<ProjectResource> toModel(ProjectViewModel project) {
@@ -125,6 +131,12 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         if (canEditScript(id)) {
             links.add(linkTo(methodOn(ProjectRestController.class).importScript(id, null, null, null))
                     .withRel(ApiRel.IMPORT_SCRIPT));
+            // Only when the flag is on, so a client sees no invitation surface
+            // at all until the endpoints actually answer.
+            if (featureFlags.isEnabled(FeatureFlag.API_INVITATIONS)) {
+                links.add(linkTo(methodOn(InvitationRestController.class).list(id, null))
+                        .withRel(ApiRel.INVITATIONS));
+            }
         }
         return links.toArray(new org.springframework.hateoas.Link[0]);
     }

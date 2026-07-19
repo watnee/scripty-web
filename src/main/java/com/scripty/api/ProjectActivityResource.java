@@ -3,6 +3,7 @@ package com.scripty.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 /**
  * HAL representation of one entry in a project's activity log.
@@ -13,6 +14,7 @@ import org.springframework.hateoas.RepresentationModel;
  * without parsing prose.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = ApiRel.ACTIVITY_ENTRY, collectionRelation = ApiRel.ACTIVITY)
 public class ProjectActivityResource extends RepresentationModel<ProjectActivityResource> {
 
     private Integer id;

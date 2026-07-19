@@ -2,6 +2,7 @@ package com.scripty.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 /**
  * Someone who has been invited to a screenplay — a collaborator who will get an
@@ -13,6 +14,7 @@ import org.springframework.hateoas.RepresentationModel;
  * to read it.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = ApiRel.INVITATION, collectionRelation = ApiRel.INVITATIONS)
 public class InvitationResource extends RepresentationModel<InvitationResource> {
 
     private Integer id;

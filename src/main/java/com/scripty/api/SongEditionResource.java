@@ -3,6 +3,7 @@ package com.scripty.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 /**
  * HAL representation of one named edition of a song — an alternate set of
@@ -13,6 +14,7 @@ import org.springframework.hateoas.RepresentationModel;
  * history all along, with no way for a client to learn which ids exist.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = ApiRel.SONG_EDITION, collectionRelation = ApiRel.SONG_EDITIONS)
 public class SongEditionResource extends RepresentationModel<SongEditionResource> {
 
     private Integer id;

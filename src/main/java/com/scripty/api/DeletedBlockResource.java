@@ -3,6 +3,7 @@ package com.scripty.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 /**
  * HAL representation of a screenplay element sitting in the trash.
@@ -14,6 +15,7 @@ import org.springframework.hateoas.RepresentationModel;
  * the writer to guess.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = ApiRel.DELETED_BLOCK, collectionRelation = ApiRel.DELETED_BLOCKS)
 public class DeletedBlockResource extends RepresentationModel<DeletedBlockResource> {
 
     private Integer id;

@@ -3,6 +3,7 @@ package com.scripty.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 /**
  * HAL representation of one named edition of a screenplay — a shooting draft, a
@@ -18,6 +19,7 @@ import org.springframework.hateoas.RepresentationModel;
  * a writer can work in a draft while readers stay on the last published cut.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = ApiRel.EDITION, collectionRelation = ApiRel.EDITIONS)
 public class ScriptEditionResource extends RepresentationModel<ScriptEditionResource> {
 
     private Integer id;

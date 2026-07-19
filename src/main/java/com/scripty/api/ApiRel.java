@@ -33,15 +33,26 @@ public final class ApiRel {
 
     // Recovery. Each collection that can lose things advertises its own trash.
     public static final String TRASH = "trash";
+    // Embed keys for the things a trash holds. `trash` is the link to it; a
+    // collection needs its own name for the items inside.
+    public static final String DELETED_BLOCK = "deletedBlock";
+    public static final String DELETED_BLOCKS = "deletedBlocks";
+    public static final String TRASHED_PROJECT = "trashedProject";
+    public static final String TRASHED_PROJECTS = "trashedProjects";
+    public static final String DELETED_DOCUMENT = "deletedDocument";
+    public static final String DELETED_DOCUMENTS = "deletedDocuments";
     public static final String PURGE = "purge";
     public static final String EMPTY_TRASH = "emptyTrash";
 
     // Collaboration.
+    public static final String COMMENT = "comment";
     public static final String COMMENTS = "comments";
     public static final String ADD_COMMENT = "addComment";
     public static final String COMMENT_COUNTS = "commentCounts";
+    public static final String ACTIVITY_ENTRY = "activityEntry";
     public static final String ACTIVITY = "activity";
     public static final String ASSIGN_PRODUCTIONS = "assignProductions";
+    public static final String INVITATION = "invitation";
     public static final String INVITATIONS = "invitations";
     public static final String SEND_INVITATION = "sendInvitation";
     public static final String REVOKE = "revoke";
@@ -50,6 +61,8 @@ public final class ApiRel {
     // parameter; these are what let a client discover the ids to pass.
     public static final String EDITIONS = "editions";
     public static final String EDITION = "edition";
+    public static final String SONG_EDITION = "songEdition";
+    public static final String SONG_EDITIONS = "songEditions";
     public static final String SET_DEFAULT = "setDefault";
     public static final String SET_PUBLISHED = "setPublished";
     public static final String EXPORT = "export";

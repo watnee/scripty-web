@@ -3,6 +3,7 @@ package com.scripty.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 /**
  * HAL representation of one comment on a screenplay element.
@@ -14,6 +15,7 @@ import org.springframework.hateoas.RepresentationModel;
  * out from a boolean.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = ApiRel.COMMENT, collectionRelation = ApiRel.COMMENTS)
 public class BlockCommentResource extends RepresentationModel<BlockCommentResource> {
 
     private Integer id;

@@ -3,6 +3,7 @@ package com.scripty.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 /**
  * HAL representation of a song or note sitting in the trash.
@@ -13,6 +14,7 @@ import org.springframework.hateoas.RepresentationModel;
  * how long that remains true.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = ApiRel.DELETED_DOCUMENT, collectionRelation = ApiRel.DELETED_DOCUMENTS)
 public class DeletedDocumentResource extends RepresentationModel<DeletedDocumentResource> {
 
     private Integer id;

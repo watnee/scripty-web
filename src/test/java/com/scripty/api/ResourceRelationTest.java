@@ -40,7 +40,15 @@ class ResourceRelationTest {
                 Arguments.of(SongBlockResource.class, "songBlock", "songBlocks"),
                 Arguments.of(SongVersionResource.class, "version", "songVersions"),
                 Arguments.of(ProjectVersionResource.class, "version", "versions"),
-                Arguments.of(TextDocumentResource.class, "document", "documents"));
+                Arguments.of(TextDocumentResource.class, "document", "documents"),
+                Arguments.of(ScriptEditionResource.class, "edition", "editions"),
+                Arguments.of(SongEditionResource.class, "songEdition", "songEditions"),
+                Arguments.of(BlockCommentResource.class, "comment", "comments"),
+                Arguments.of(ProjectActivityResource.class, "activityEntry", "activity"),
+                Arguments.of(InvitationResource.class, "invitation", "invitations"),
+                Arguments.of(DeletedBlockResource.class, "deletedBlock", "deletedBlocks"),
+                Arguments.of(TrashedProjectResource.class, "trashedProject", "trashedProjects"),
+                Arguments.of(DeletedDocumentResource.class, "deletedDocument", "deletedDocuments"));
     }
 
     @ParameterizedTest(name = "{0} embeds as {2}")

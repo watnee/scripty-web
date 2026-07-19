@@ -42,9 +42,28 @@ class ApiHypermediaIntegrationTest {
                 .andExpect(jsonPath("$._links.curies[0].href",
                         org.hamcrest.Matchers.containsString("/docs/api-rels.html")))
                 // Custom rels come out namespaced; IANA self stays bare.
+                // `actors` stands in for what `users` used to demonstrate here:
+                // users and teams are advertised only to admins now, so they
+                // are no longer a fair example of unconditional namespacing.
                 .andExpect(jsonPath("$._links.['scripty:projects'].href").exists())
-                .andExpect(jsonPath("$._links.['scripty:users'].href").exists())
+                .andExpect(jsonPath("$._links.['scripty:actors'].href").exists())
                 .andExpect(jsonPath("$._links.self.href").exists());
+    }
+
+    /**
+     * {@code /api/user/**} and {@code /api/team/**} are admin-only in the
+     * security config, so advertising them to everyone handed most callers two
+     * links that could only 403. A hypermedia client is entitled to treat an
+     * advertised rel as one it may follow.
+     */
+    @Test
+    void rootWithholdsAdminOnlyRelsFromOrdinaryMembers() throws Exception {
+        mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON).with(user("member").roles("USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._links.['scripty:users']").doesNotExist())
+                .andExpect(jsonPath("$._links.['scripty:teams']").doesNotExist())
+                // The rest of the surface is unaffected.
+                .andExpect(jsonPath("$._links.['scripty:projects'].href").exists());
     }
 
     @Test

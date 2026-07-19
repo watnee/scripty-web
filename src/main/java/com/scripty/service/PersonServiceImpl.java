@@ -187,7 +187,12 @@ public class PersonServiceImpl implements PersonService {
         if (actor != null && actorBelongsToProject(actor, project)) {
             person.setActor(actor);
         }
-        if (project != null) person.setProject(project);
+        if (project != null) {
+            person.setProject(project);
+            // Characters are listed by edition (see getPersonListViewModel), so a new
+            // character must join the project's default edition or it is invisible.
+            person.setScriptEdition(scriptEditionService.getDefaultForProject(project.getId()));
+        }
         Person saved = personRepository.save(person);
         if (project != null) {
             updateProjectLastEdited(project.getId());

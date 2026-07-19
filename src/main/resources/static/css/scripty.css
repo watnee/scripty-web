@@ -12297,6 +12297,18 @@ html.scripty-page-view-mode .project-script .block-content {
     line-height: 1;
 }
 
+/* The rule above un-grids .block-content for page view, but it also outranked
+   the edit-state stacking grid — .block-content:has(...):has(...) scores (0,3,0)
+   against this selector's (0,3,1). That grid is what keeps the reader mirror and
+   the edit form in a single cell; without it the two stack in normal flow, so a
+   block doubled in height the moment it was clicked into and shoved every line
+   below it down the page. Restore the stack at page-view specificity. */
+html.scripty-page-view-mode .project-script .block-content:has(> .reader-visible-text):has(> .block-inline-edit-form),
+html.scripty-page-view-mode .project-script .block-content:has(> .reader-visible-text):has(> form[hx-post*="/block/editInline"]) {
+    display: grid;
+    grid-template-columns: minmax(0, 100%);
+}
+
 /* Continuous mode uses padding + centered columns; page view uses margin indents.
    Reset padding so dialogue/parenthetical don't double-indent and reflow while editing. */
 html.scripty-page-view-mode .project-script .block-content.block-type-dialogue,

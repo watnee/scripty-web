@@ -6379,9 +6379,30 @@
             // Clear prior min-heights so a previous tall measure can't ratchet the block taller
             mirror.style.minHeight = '';
             textarea.style.height = 'auto';
-            autoGrowTextarea(textarea);
 
-            const height = Math.max(mirror.offsetHeight, textarea.offsetHeight);
+            // The mirror renders exactly what the block shows when it is not being
+            // edited, so it — not the textarea — is the authority on how tall the
+            // block should be. Sizing from the textarea's scrollHeight instead
+            // rounds the block up to a whole pixel, which nudged it taller the
+            // moment it was clicked into and drifted every line below it.
+            const mirrorHeight = mirror.getBoundingClientRect().height;
+            const needed = textarea.scrollHeight;
+
+            // A value ending in a newline is the one case the mirror genuinely
+            // cannot represent, since its trailing line box collapses. Let the
+            // textarea override the mirror only when it needs another whole line,
+            // never when it merely reports a taller box for the same lines — a
+            // textarea's scrollHeight overshoots the text it holds by a pixel or
+            // two, so the threshold has to be measured in lines, not pixels.
+            const lineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight) || 0;
+            const slack = lineHeight > 0 ? lineHeight / 2 : 1;
+            if (mirrorHeight > 0 && needed <= mirrorHeight + slack) {
+                textarea.style.height = mirrorHeight + 'px';
+                return;
+            }
+
+            autoGrowTextarea(textarea);
+            const height = Math.max(mirrorHeight, textarea.offsetHeight);
             if (height > 0) {
                 mirror.style.minHeight = height + 'px';
                 textarea.style.height = height + 'px';

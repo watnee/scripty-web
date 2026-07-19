@@ -2,6 +2,7 @@ package com.scripty.api;
 
 import com.scripty.controller.ProjectRestController;
 import com.scripty.controller.SongBlockRestController;
+import com.scripty.controller.SongEditionRestController;
 import com.scripty.controller.SongVersionRestController;
 import com.scripty.controller.DocumentTrashRestController;
 import com.scripty.controller.TextDocumentRestController;
@@ -116,6 +117,8 @@ public class TextDocumentResourceAssembler {
                     .withRel(ApiRel.SONG_BLOCKS));
             links.add(linkTo(methodOn(SongVersionRestController.class).list(id, null, null))
                     .withRel(ApiRel.VERSIONS));
+            links.add(linkTo(methodOn(SongEditionRestController.class).list(id, null))
+                    .withRel(ApiRel.EDITIONS));
         }
         if (projectId != null) {
             links.add(linkTo(methodOn(TextDocumentRestController.class).list(projectId, null, null))

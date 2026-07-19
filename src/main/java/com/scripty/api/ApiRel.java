@@ -35,6 +35,13 @@ public final class ApiRel {
     public static final String TRASH = "trash";
     public static final String PURGE = "purge";
     public static final String EMPTY_TRASH = "emptyTrash";
+
+    // Named variants of a script. `editionId` was already accepted as a query
+    // parameter; these are what let a client discover the ids to pass.
+    public static final String EDITIONS = "editions";
+    public static final String EDITION = "edition";
+    public static final String SET_DEFAULT = "setDefault";
+    public static final String SET_PUBLISHED = "setPublished";
     public static final String EXPORT = "export";
     public static final String EXPORT_PDF = "exportPdf";
     public static final String EXPORT_DOCX = "exportDocx";

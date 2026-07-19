@@ -8,6 +8,7 @@ import com.scripty.controller.ProjectController;
 import com.scripty.controller.ProjectRestController;
 import com.scripty.controller.ProjectTrashRestController;
 import com.scripty.controller.ProjectVersionRestController;
+import com.scripty.controller.ScriptEditionRestController;
 import com.scripty.controller.TextDocumentRestController;
 import com.scripty.dto.Project;
 import com.scripty.dto.TextDocument;
@@ -145,6 +146,7 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(TextDocumentRestController.class).list(id, TextDocument.TYPE_SONG, null)).withRel(ApiRel.SONGS),
                 linkTo(methodOn(TextDocumentRestController.class).list(id, TextDocument.TYPE_NOTES, null)).withRel(ApiRel.NOTES),
                 linkTo(methodOn(ProjectVersionRestController.class).list(id, null, null)).withRel(ApiRel.VERSIONS),
+                linkTo(methodOn(ScriptEditionRestController.class).list(id, null)).withRel(ApiRel.EDITIONS),
                 linkTo(methodOn(ContactSuggestionRestController.class).suggest(id, null, null))
                         .withRel(ApiRel.CONTACT_SUGGESTIONS),
                 linkTo(methodOn(ProjectController.class).syncStatus(id, null, null, null)).withRel(ApiRel.SYNC_STATUS),

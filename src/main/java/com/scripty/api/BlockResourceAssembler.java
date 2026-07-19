@@ -1,5 +1,6 @@
 package com.scripty.api;
 
+import com.scripty.controller.BlockCommentRestController;
 import com.scripty.controller.BlockRestController;
 import com.scripty.controller.BlockTrashRestController;
 import com.scripty.controller.ProjectRestController;
@@ -153,6 +154,10 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
                     .andAffordance(afford(methodOn(BlockRestController.class).delete(id, null)));
         }
         links.add(self);
+        // Commenting needs only read access — leaving a note is how someone
+        // who may not edit contributes — so this sits outside the canEdit gate.
+        links.add(linkTo(methodOn(BlockCommentRestController.class).list(id, null))
+                .withRel(ApiRel.COMMENTS));
         if (canEdit) {
             links.add(linkTo(methodOn(BlockRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE));
             links.add(linkTo(methodOn(BlockRestController.class).delete(id, null)).withRel(ApiRel.DELETE));

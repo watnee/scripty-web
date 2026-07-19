@@ -38,6 +38,12 @@ public final class ApiRel {
 
     // Named variants of a script. `editionId` was already accepted as a query
     // parameter; these are what let a client discover the ids to pass.
+    // Collaboration.
+    public static final String COMMENTS = "comments";
+    public static final String ADD_COMMENT = "addComment";
+    public static final String COMMENT_COUNTS = "commentCounts";
+    public static final String ACTIVITY = "activity";
+
     public static final String EDITIONS = "editions";
     public static final String EDITION = "edition";
     public static final String SET_DEFAULT = "setDefault";

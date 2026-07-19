@@ -639,11 +639,13 @@
     function extractCharacterList(data) {
         if (!data) return [];
         if (Array.isArray(data)) return data;
+        // PersonResource declares @Relation(collectionRelation = "characters") and
+        // the curie provider namespaces embedded rels, so the wire key is
+        // "scripty:characters". The bare key is kept as a fallback for responses
+        // served without the curie provider (and for older cached payloads).
         if (data._embedded) {
-            return data._embedded.personResourceList
-                || data._embedded.persons
-                || data._embedded.characterViewModels
-                || Object.values(data._embedded)[0]
+            return data._embedded['scripty:characters']
+                || data._embedded.characters
                 || [];
         }
         return [];

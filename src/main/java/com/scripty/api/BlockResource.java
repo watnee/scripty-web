@@ -2,8 +2,10 @@ package com.scripty.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = "block", collectionRelation = ApiRel.BLOCKS)
 public class BlockResource extends RepresentationModel<BlockResource> {
 
     private Integer id;

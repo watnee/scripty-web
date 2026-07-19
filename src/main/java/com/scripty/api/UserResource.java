@@ -2,8 +2,10 @@ package com.scripty.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = "user", collectionRelation = ApiRel.USERS)
 public class UserResource extends RepresentationModel<UserResource> {
 
     private Integer id;

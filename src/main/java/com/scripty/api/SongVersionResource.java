@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.scripty.viewmodel.song.versionhistory.SongVersionChangeSummary;
 import java.time.OffsetDateTime;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 /**
  * HAL representation of a single saved {@link com.scripty.dto.SongVersion} in a
@@ -12,6 +13,7 @@ import org.springframework.hateoas.RepresentationModel;
  * snapshot JSON itself is never exposed.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = ApiRel.VERSION, collectionRelation = "songVersions")
 public class SongVersionResource extends RepresentationModel<SongVersionResource> {
 
     private Integer id;

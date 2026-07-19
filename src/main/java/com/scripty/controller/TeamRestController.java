@@ -1,5 +1,6 @@
 package com.scripty.controller;
 
+import com.scripty.api.AssignProductionsRequest;
 import com.scripty.api.RestErrors;
 import com.scripty.api.TeamResource;
 import com.scripty.api.TeamResourceAssembler;
@@ -81,6 +82,37 @@ public class TeamRestController {
             return ResponseEntity.ok(teamResourceAssembler.toModel(team));
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(Map.of("name", e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Assigns the productions a team works on.
+     *
+     * <p>Separate from the rename above rather than folded into it:
+     * {@code TeamService.update} takes both a name and a project list, and
+     * passing null for either means "leave alone" — so a single endpoint would
+     * make it impossible to clear a team's productions, since an empty list and
+     * an omitted one would look the same by the time they reached the service.
+     * A dedicated endpoint reads the empty list as "assign nothing".
+     */
+    @RequestMapping(value = "/{id}/productions", method = RequestMethod.PUT, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> assignProductions(@PathVariable Integer id,
+                                               @RequestBody AssignProductionsRequest request) {
+        Team existing = teamService.read(id);
+        if (existing == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (request.projectIds() == null) {
+            return new ResponseEntity<>(
+                    Map.of("projectIds", "You must supply a list of productions, possibly empty."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        try {
+            // Null name leaves it alone; the list is applied as given.
+            teamService.update(id, null, request.projectIds());
+            return ResponseEntity.ok(teamResourceAssembler.toModel(teamService.read(id)));
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(Map.of("projectIds", e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
 

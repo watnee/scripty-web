@@ -49,6 +49,8 @@ public class TeamResourceAssembler implements RepresentationModelAssembler<Team,
                 linkTo(methodOn(TeamRestController.class).show(id)).withSelfRel(),
                 linkTo(methodOn(TeamRestController.class).list()).withRel(ApiRel.TEAMS),
                 linkTo(methodOn(TeamRestController.class).update(id, null, null)).withRel(ApiRel.UPDATE),
+                linkTo(methodOn(TeamRestController.class).assignProductions(id, null))
+                        .withRel(ApiRel.ASSIGN_PRODUCTIONS),
                 linkTo(methodOn(TeamRestController.class).delete(id)).withRel(ApiRel.DELETE)
         };
     }

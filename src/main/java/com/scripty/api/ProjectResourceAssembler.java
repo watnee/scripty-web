@@ -4,6 +4,7 @@ import com.scripty.controller.ActorRestController;
 import com.scripty.controller.BlockRestController;
 import com.scripty.controller.ContactSuggestionRestController;
 import com.scripty.controller.PersonRestController;
+import com.scripty.controller.ProjectActivityRestController;
 import com.scripty.controller.ProjectController;
 import com.scripty.controller.ProjectRestController;
 import com.scripty.controller.ProjectTrashRestController;
@@ -147,6 +148,7 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(TextDocumentRestController.class).list(id, TextDocument.TYPE_NOTES, null)).withRel(ApiRel.NOTES),
                 linkTo(methodOn(ProjectVersionRestController.class).list(id, null, null)).withRel(ApiRel.VERSIONS),
                 linkTo(methodOn(ScriptEditionRestController.class).list(id, null)).withRel(ApiRel.EDITIONS),
+                linkTo(methodOn(ProjectActivityRestController.class).list(id, null, null)).withRel(ApiRel.ACTIVITY),
                 linkTo(methodOn(ContactSuggestionRestController.class).suggest(id, null, null))
                         .withRel(ApiRel.CONTACT_SUGGESTIONS),
                 linkTo(methodOn(ProjectController.class).syncStatus(id, null, null, null)).withRel(ApiRel.SYNC_STATUS),

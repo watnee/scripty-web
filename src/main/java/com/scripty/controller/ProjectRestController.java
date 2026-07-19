@@ -212,7 +212,8 @@ public class ProjectRestController {
      * back as a validation error rather than a failure.
      */
     @RequestMapping(value = "/{id}/import-script", method = RequestMethod.POST,
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaTypes.HAL_JSON_VALUE)
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> importScript(
             @PathVariable Integer id,
             @RequestPart("file") MultipartFile file,

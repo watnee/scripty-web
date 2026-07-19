@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Relation(itemRelation = ApiRel.PROJECT, collectionRelation = ApiRel.PROJECTS)
 public class ProjectResource extends RepresentationModel<ProjectResource> {
 
     private Integer id;

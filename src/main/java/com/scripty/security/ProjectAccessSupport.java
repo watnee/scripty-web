@@ -13,12 +13,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 /**
  * Shared project/block/person access checks for MVC and REST controllers.
  */
 @Component
 public class ProjectAccessSupport {
+
+    private static final String CAN_EDIT_SCRIPT_CACHE_KEY =
+            ProjectAccessSupport.class.getName() + ".canEditScript.";
 
     private final ProjectService projectService;
     private final UserService userService;
@@ -61,11 +66,32 @@ public class ProjectAccessSupport {
      * Whether the current (context) user may edit the given project's script.
      * The assembler counterpart of {@link #canEditScript(Integer, User)}, so a
      * gated mutation link is emitted only when the client could actually use it.
+     *
+     * <p>Assemblers call this once per link set, so a collection response asks
+     * the same question for the same project dozens of times — each one
+     * otherwise costing a user lookup plus a project-access lookup. The answer
+     * cannot change within a request, so it is memoized against the current
+     * request. Outside a request (tests, async work) it is simply recomputed.
      */
     public boolean canEditScriptForCurrentUser(Integer projectId) {
         if (projectId == null) {
             return false;
         }
+        RequestAttributes request = RequestContextHolder.getRequestAttributes();
+        if (request == null) {
+            return computeCanEditScriptForCurrentUser(projectId);
+        }
+        String key = CAN_EDIT_SCRIPT_CACHE_KEY + projectId;
+        Object cached = request.getAttribute(key, RequestAttributes.SCOPE_REQUEST);
+        if (cached instanceof Boolean) {
+            return (Boolean) cached;
+        }
+        boolean allowed = computeCanEditScriptForCurrentUser(projectId);
+        request.setAttribute(key, allowed, RequestAttributes.SCOPE_REQUEST);
+        return allowed;
+    }
+
+    private boolean computeCanEditScriptForCurrentUser(Integer projectId) {
         User user = currentUser();
         return user != null && canEditScript(projectId, user);
     }

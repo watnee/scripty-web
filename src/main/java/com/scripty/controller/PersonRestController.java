@@ -18,6 +18,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,7 +41,8 @@ public class PersonRestController {
     @Autowired
     ProjectAccessSupport projectAccess;
 
-    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE, "application/json"})
+    @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE,
+            MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<PersonResource>>> list(
             @RequestParam Integer projectId, Principal principal) {
         if (!projectAccess.canAccessProject(projectId, principal)) {

@@ -3,6 +3,7 @@ package com.scripty.api;
 import com.scripty.controller.ProjectRestController;
 import com.scripty.controller.SongBlockRestController;
 import com.scripty.controller.SongVersionRestController;
+import com.scripty.controller.DocumentTrashRestController;
 import com.scripty.controller.TextDocumentRestController;
 import com.scripty.dto.TextDocument;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
@@ -67,6 +68,9 @@ public class TextDocumentResourceAssembler {
                     .importFile(null, null, null, null)).withRel(ApiRel.IMPORT_DOCUMENT));
             collection.add(linkTo(methodOn(TextDocumentRestController.class)
                     .reorder(projectId, null, null)).withRel(ApiRel.REORDER));
+            // Deleting a song or note is recoverable; say where it went.
+            collection.add(linkTo(methodOn(DocumentTrashRestController.class)
+                    .list(projectId, null)).withRel(ApiRel.TRASH));
         }
         return collection;
     }

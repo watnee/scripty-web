@@ -5,16 +5,21 @@ import com.scripty.api.ProjectResourceAssembler;
 import com.scripty.api.RestErrors;
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
+import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
 import com.scripty.dto.Project;
+import com.scripty.dto.ScriptEdition;
 import com.scripty.dto.User;
 import com.scripty.security.ProjectAccessSupport;
+import com.scripty.service.FountainImportService;
 import com.scripty.service.ProjectArchiveService;
+import com.scripty.service.ScriptEditionService;
 import com.scripty.service.ScriptImportException;
 import com.scripty.service.ProjectService;
 import com.scripty.service.UserService;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,12 +28,14 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,6 +58,12 @@ public class ProjectRestController {
 
     @Autowired
     ProjectArchiveService projectArchiveService;
+
+    @Autowired
+    FountainImportService fountainImportService;
+
+    @Autowired
+    ScriptEditionService scriptEditionService;
 
     @RequestMapping(method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<CollectionModel<EntityModel<ProjectResource>>> list(Principal principal) {
@@ -155,8 +168,82 @@ public class ProjectRestController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         commandModel.setId(id);
+        // Title-page edits are a screenplay edit, gated the same way the MVC
+        // /project/titlePage handler gates them.
+        if (commandModel.hasTitlePageFields() && !projectAccess.canEditScript(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         Project project = projectService.saveEditProjectCommandModel(commandModel);
+        if (commandModel.hasTitlePageFields()) {
+            project = saveTitlePageFields(id, commandModel);
+        }
         return ResponseEntity.ok(projectResourceAssembler.toModel(project));
+    }
+
+    /**
+     * Persists the optional title-page fields through the same service path as
+     * the web title-page form. Starts from the stored values so a field the
+     * caller omitted stays untouched.
+     */
+    private Project saveTitlePageFields(Integer id, EditProjectCommandModel commandModel) {
+        TitlePageCommandModel titlePage = projectService.getTitlePageCommandModel(id);
+        if (titlePage == null) {
+            return projectService.read(id);
+        }
+        if (commandModel.getScreenplayTitle() != null) {
+            titlePage.setScreenplayTitle(commandModel.getScreenplayTitle());
+        }
+        if (commandModel.getWriters() != null) {
+            titlePage.setWriters(commandModel.getWriters());
+        }
+        if (commandModel.getContactInfo() != null) {
+            titlePage.setContactInfo(commandModel.getContactInfo());
+        }
+        if (commandModel.getScreenplayVersion() != null) {
+            titlePage.setScreenplayVersion(commandModel.getScreenplayVersion());
+        }
+        return projectService.saveTitlePageCommandModel(titlePage);
+    }
+
+    /**
+     * Replaces the project's script from an uploaded file (mirrors the web
+     * editor's Import button). Accepts .fountain, .txt, .docx, .doc, .fdx and
+     * .pdf as the "file" multipart part; an unsupported or unreadable file comes
+     * back as a validation error rather than a failure.
+     */
+    @RequestMapping(value = "/{id}/import-script", method = RequestMethod.POST,
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<?> importScript(
+            @PathVariable Integer id,
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(required = false) Integer editionId,
+            Principal principal) {
+        if (projectService.read(id) == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!projectAccess.canEditScript(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        ScriptEdition edition = scriptEditionService.requireForProject(id, editionId);
+        Integer resolvedEditionId = edition != null ? edition.getId() : editionId;
+        try {
+            FountainImportService.ImportOutcome outcome =
+                    fountainImportService.importFileIntoProjectWithStatus(id, resolvedEditionId, file);
+            if (!outcome.success()) {
+                return new ResponseEntity<>(java.util.Map.of("file", outcome.message()), HttpStatus.BAD_REQUEST);
+            }
+        } catch (ScriptImportException e) {
+            return new ResponseEntity<>(java.util.Map.of("file", e.getUserMessage()), HttpStatus.BAD_REQUEST);
+        } catch (IOException e) {
+            return new ResponseEntity<>(java.util.Map.of("file",
+                    "Could not import that file. Check access and try a .fountain, .txt, .docx, .doc, .fdx, or .pdf file."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+        if (viewModel == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(projectResourceAssembler.toModel(viewModel));
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})

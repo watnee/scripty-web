@@ -45,4 +45,62 @@ public class EditProjectCommandModel {
     public void setTeamIds(List<Integer> teamIds) {
         this.teamIds = teamIds;
     }
+
+    /**
+     * Title-page fields, all optional: a null field leaves the stored value
+     * alone. The MVC edit form does not submit them (it has its own title-page
+     * page), so that path is unaffected. Limits mirror
+     * {@code TitlePageCommandModel}, which persists these.
+     */
+    @Size(max = 255, message = "Screenplay Title must be no more than 255 characters in length.")
+    private String screenplayTitle;
+
+    @Size(max = 255, message = "Writers must be no more than 255 characters in length.")
+    private String writers;
+
+    @Size(max = 1000, message = "Contact Information must be no more than 1000 characters in length.")
+    private String contactInfo;
+
+    @Size(max = 255, message = "Version must be no more than 255 characters in length.")
+    private String screenplayVersion;
+
+    public String getScreenplayTitle() {
+        return screenplayTitle;
+    }
+
+    public void setScreenplayTitle(String screenplayTitle) {
+        this.screenplayTitle = screenplayTitle;
+    }
+
+    public String getWriters() {
+        return writers;
+    }
+
+    public void setWriters(String writers) {
+        this.writers = writers;
+    }
+
+    public String getContactInfo() {
+        return contactInfo;
+    }
+
+    public void setContactInfo(String contactInfo) {
+        this.contactInfo = contactInfo;
+    }
+
+    public String getScreenplayVersion() {
+        return screenplayVersion;
+    }
+
+    public void setScreenplayVersion(String screenplayVersion) {
+        this.screenplayVersion = screenplayVersion;
+    }
+
+    /**
+     * True when the caller supplied at least one title-page field.
+     */
+    public boolean hasTitlePageFields() {
+        return screenplayTitle != null || writers != null
+                || contactInfo != null || screenplayVersion != null;
+    }
 }

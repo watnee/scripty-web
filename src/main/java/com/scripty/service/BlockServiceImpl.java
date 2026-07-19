@@ -18,6 +18,7 @@ import com.scripty.viewmodel.block.BlockViewModel;
 import com.scripty.viewmodel.block.createblock.CreateBlockViewModel;
 import com.scripty.viewmodel.block.createblock.CreatePersonViewModel;
 import com.scripty.viewmodel.block.createblockbelow.CreateBlockBelowViewModel;
+import com.scripty.util.BlockFormatting;
 import com.scripty.util.PlainTextSanitizer;
 import com.scripty.viewmodel.block.editblock.EditBlockViewModel;
 import com.scripty.viewmodel.block.editblock.EditPersonViewModel;
@@ -492,9 +493,41 @@ public class BlockServiceImpl implements BlockService {
         if (cmd.getTags() != null) {
             block.setTags(PlainTextSanitizer.sanitizeSingleLine(cmd.getTags()));
         }
+        applyFormatting(block, cmd);
         blockRepository.save(block);
         recordScriptEdited(block.getProject(), resolveEdition(block));
         return block;
+    }
+
+    /**
+     * Applies only the formatting the caller actually supplied. Absent (null)
+     * fields keep the stored value, so a content-only save — the web form, or an
+     * API client's debounced auto-save — never wipes alignment, font or styles.
+     * Unrecognized alignment/font values are ignored here; callers that want to
+     * report them validate before saving.
+     */
+    private void applyFormatting(Block block, EditBlockCommandModel cmd) {
+        if (cmd.getTextAlign() != null) {
+            String align = BlockFormatting.normalizeAlign(cmd.getTextAlign());
+            if (align != null) {
+                block.setTextAlign(align);
+            }
+        }
+        if (cmd.getFont() != null) {
+            String font = BlockFormatting.normalizeFont(cmd.getFont());
+            if (font != null) {
+                block.setFont(font);
+            }
+        }
+        if (cmd.getTextBold() != null) {
+            block.setTextBold(cmd.getTextBold());
+        }
+        if (cmd.getTextItalic() != null) {
+            block.setTextItalic(cmd.getTextItalic());
+        }
+        if (cmd.getTextUnderline() != null) {
+            block.setTextUnderline(cmd.getTextUnderline());
+        }
     }
 
     @Override

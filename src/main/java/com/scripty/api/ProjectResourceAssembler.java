@@ -19,7 +19,10 @@ import java.util.stream.Collectors;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.scripty.security.ProjectAccessSupport;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -27,6 +30,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Component
 public class ProjectResourceAssembler implements RepresentationModelAssembler<ProjectViewModel, EntityModel<ProjectResource>> {
+
+    @Autowired
+    ProjectAccessSupport projectAccess;
 
     @Override
     public EntityModel<ProjectResource> toModel(ProjectViewModel project) {
@@ -100,7 +106,24 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         return resource;
     }
 
+    /**
+     * Script import is advertised only to users who may edit the screenplay,
+     * matching the permission the endpoint itself enforces.
+     */
+    private boolean canEditScript(Integer projectId) {
+        return projectAccess.canEditScriptForCurrentUser(projectId);
+    }
+
     private org.springframework.hateoas.Link[] projectLinks(int id) {
+        List<org.springframework.hateoas.Link> links = new ArrayList<>(List.of(baseProjectLinks(id)));
+        if (canEditScript(id)) {
+            links.add(linkTo(methodOn(ProjectRestController.class).importScript(id, null, null, null))
+                    .withRel(ApiRel.IMPORT_SCRIPT));
+        }
+        return links.toArray(new org.springframework.hateoas.Link[0]);
+    }
+
+    private org.springframework.hateoas.Link[] baseProjectLinks(int id) {
         org.springframework.hateoas.Link self =
                 linkTo(methodOn(ProjectRestController.class).show(id, null)).withSelfRel()
                         .andAffordance(afford(methodOn(ProjectRestController.class).update(id, null, null, null)))

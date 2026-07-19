@@ -16,6 +16,7 @@ import com.scripty.service.BlockService;
 import com.scripty.service.ProjectUndoRedoService;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.ScriptEditionService;
+import com.scripty.util.BlockFormatting;
 import com.scripty.dto.ScriptEdition;
 import com.scripty.viewmodel.block.BlockViewModel;
 import jakarta.validation.Valid;
@@ -142,6 +143,7 @@ public class BlockRestController {
             @Valid @RequestBody EditBlockCommandModel commandModel,
             BindingResult bindingResult,
             Principal principal) {
+        validateFormatting(commandModel, bindingResult);
         if (bindingResult.hasErrors()) {
             return new ResponseEntity<>(RestErrors.from(bindingResult), HttpStatus.BAD_REQUEST);
         }
@@ -153,6 +155,23 @@ public class BlockRestController {
         Block block = blockService.saveEditBlockCommandModel(commandModel);
         projectVersionService.autoSaveVersionForBlock(block.getId());
         return ResponseEntity.ok(blockResourceAssembler.toModel(block));
+    }
+
+    /**
+     * Rejects alignment/font values outside the sets the editor offers. Omitted
+     * (null) formatting is always fine — it means "leave what is stored".
+     */
+    private static void validateFormatting(EditBlockCommandModel commandModel, BindingResult bindingResult) {
+        if (commandModel.getTextAlign() != null
+                && BlockFormatting.normalizeAlign(commandModel.getTextAlign()) == null) {
+            bindingResult.rejectValue("textAlign", "textAlign.invalid",
+                    "Text align must be one of left, center, or right.");
+        }
+        if (commandModel.getFont() != null
+                && BlockFormatting.normalizeFont(commandModel.getFont()) == null) {
+            bindingResult.rejectValue("font", "font.invalid",
+                    "Font must be one of Courier Prime, Arial, or Times New Roman.");
+        }
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})

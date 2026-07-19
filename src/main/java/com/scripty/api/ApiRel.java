@@ -49,6 +49,7 @@ public final class ApiRel {
     public static final String PREFERENCES = "preferences";
     public static final String CAPITALIZATION_PREFERENCES = "capitalizationPreferences";
     public static final String CONTACT_SUGGESTIONS = "contactSuggestions";
+    public static final String IMPORT_SCRIPT = "importScript";
 
     private ApiRel() {
     }

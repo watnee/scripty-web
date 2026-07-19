@@ -1,6 +1,7 @@
 package com.scripty.api;
 
 import com.scripty.controller.BlockRestController;
+import com.scripty.controller.BlockTrashRestController;
 import com.scripty.controller.ProjectRestController;
 import com.scripty.dto.Block;
 import com.scripty.security.ProjectAccessSupport;
@@ -81,6 +82,13 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
                     .withRel(ApiRel.BULK_DELETE));
             collection.add(linkTo(methodOn(BlockRestController.class).bulkReplace(null, null))
                     .withRel(ApiRel.BULK_REPLACE));
+        }
+        if (canEditProject(projectId)) {
+            // Deleting an element is recoverable; say where it went. Offered
+            // even for an empty script, since that is exactly when everything
+            // has just been deleted.
+            collection.add(linkTo(methodOn(BlockTrashRestController.class).list(projectId, null))
+                    .withRel(ApiRel.TRASH));
         }
         return collection;
     }

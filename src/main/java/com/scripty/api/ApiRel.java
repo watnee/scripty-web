@@ -30,6 +30,11 @@ public final class ApiRel {
     public static final String BULK_FORMAT = "bulkFormat";
     public static final String BULK_DELETE = "bulkDelete";
     public static final String BULK_REPLACE = "bulkReplace";
+
+    // Recovery. Each collection that can lose things advertises its own trash.
+    public static final String TRASH = "trash";
+    public static final String PURGE = "purge";
+    public static final String EMPTY_TRASH = "emptyTrash";
     public static final String EXPORT = "export";
     public static final String EXPORT_PDF = "exportPdf";
     public static final String EXPORT_DOCX = "exportDocx";

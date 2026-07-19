@@ -6,6 +6,7 @@ import com.scripty.controller.ContactSuggestionRestController;
 import com.scripty.controller.PersonRestController;
 import com.scripty.controller.ProjectController;
 import com.scripty.controller.ProjectRestController;
+import com.scripty.controller.ProjectTrashRestController;
 import com.scripty.controller.ProjectVersionRestController;
 import com.scripty.controller.TextDocumentRestController;
 import com.scripty.dto.Project;
@@ -90,7 +91,10 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         }
         return CollectionModel.of(resources)
                 .add(linkTo(methodOn(ProjectRestController.class).list(null)).withSelfRel())
-                .add(linkTo(methodOn(ProjectRestController.class).importProject(null)).withRel(ApiRel.IMPORT_PROJECT));
+                .add(linkTo(methodOn(ProjectRestController.class).importProject(null)).withRel(ApiRel.IMPORT_PROJECT))
+                // Deleting a project is a soft delete, so the collection also
+                // points at where the deleted ones went.
+                .add(linkTo(methodOn(ProjectTrashRestController.class).list(null)).withRel(ApiRel.TRASH));
     }
 
     private ProjectResource toResource(ProjectViewModel project) {

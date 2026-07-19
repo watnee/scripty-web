@@ -11,12 +11,12 @@ import java.time.temporal.ChronoUnit;
  * default ISO-8601 date decoding rejects both a missing offset and fractional
  * seconds.
  */
-final class ApiDates {
+public final class ApiDates {
 
     private ApiDates() {
     }
 
-    static OffsetDateTime toOffset(LocalDateTime local) {
+    public static OffsetDateTime toOffset(LocalDateTime local) {
         return local == null
                 ? null
                 : local.atZone(ZoneId.systemDefault()).toOffsetDateTime()

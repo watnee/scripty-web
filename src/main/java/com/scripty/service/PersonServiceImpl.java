@@ -219,6 +219,14 @@ public class PersonServiceImpl implements PersonService {
         Actor previousActor = person.getActor();
         person.setActor(actor != null && actorBelongsToProject(actor, project) ? actor : null);
         person.setProject(project);
+        if (project != null) {
+            // Keeps the character's edition consistent with its project: an edition that
+            // still belongs to the project is preserved, anything else (including a missing
+            // one) falls back to the project's default so the character stays listable.
+            // getId() on the lazy proxy does not initialise it — open-in-view is off.
+            Integer editionId = person.getScriptEdition() != null ? person.getScriptEdition().getId() : null;
+            person.setScriptEdition(scriptEditionService.requireForProject(project.getId(), editionId));
+        }
         personRepository.save(person);
         if (project != null) {
             updateProjectLastEdited(project.getId());

@@ -67,6 +67,21 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
             collection.add(linkTo(methodOn(BlockRestController.class).createInitial(projectId, null))
                     .withRel(ApiRel.CREATE_INITIAL));
         }
+        if (!resources.isEmpty() && canEditProject(projectId)) {
+            // Bulk operations act on a set of blocks, so they belong to the
+            // collection rather than to any one block — and there is nothing to
+            // act on until the script has some.
+            collection.add(linkTo(methodOn(BlockRestController.class).bulkSetType(null, null))
+                    .withRel(ApiRel.BULK_SET_TYPE));
+            collection.add(linkTo(methodOn(BlockRestController.class).bulkAddTags(null, null))
+                    .withRel(ApiRel.BULK_ADD_TAGS));
+            collection.add(linkTo(methodOn(BlockRestController.class).bulkFormat(null, null))
+                    .withRel(ApiRel.BULK_FORMAT));
+            collection.add(linkTo(methodOn(BlockRestController.class).bulkDelete(null, null))
+                    .withRel(ApiRel.BULK_DELETE));
+            collection.add(linkTo(methodOn(BlockRestController.class).bulkReplace(null, null))
+                    .withRel(ApiRel.BULK_REPLACE));
+        }
         return collection;
     }
 

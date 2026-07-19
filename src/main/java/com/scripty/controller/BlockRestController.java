@@ -2,6 +2,12 @@ package com.scripty.controller;
 
 import com.scripty.api.BlockResource;
 import com.scripty.api.BlockResourceAssembler;
+import com.scripty.api.BulkAddTagsRequest;
+import com.scripty.api.BulkBlockRequest;
+import com.scripty.api.BulkDeleteRequest;
+import com.scripty.api.BulkFormatRequest;
+import com.scripty.api.BulkReplaceRequest;
+import com.scripty.api.BulkSetTypeRequest;
 import com.scripty.api.CreateBlockBelowRequest;
 import com.scripty.api.MoveBlockRequest;
 import com.scripty.api.RestErrors;
@@ -284,6 +290,191 @@ public class BlockRestController {
         }
         projectVersionService.autoSaveVersionForBlock(block.getId());
         return ResponseEntity.ok(blockResourceAssembler.toModel(block));
+    }
+
+    // ---------------------------------------------------------------------
+    // Bulk operations
+    //
+    // The web editor has had these since the selection toolbar landed, but only
+    // as form-encoded MVC endpoints that answer with a 302 to an HTML page —
+    // unusable from an API client. These are the REST counterparts.
+    //
+    // Each records exactly one undo checkpoint for the whole batch, which is
+    // the point of having them: retyping twenty elements should be one press of
+    // undo, not twenty. Looping the per-block endpoints cannot achieve that.
+    //
+    // All five answer with the project's refreshed block collection, so a
+    // client applies the result in a single round trip instead of re-fetching.
+    // ---------------------------------------------------------------------
+
+    /**
+     * Shared guard: a bulk call needs a non-empty id list, a project, and edit
+     * rights over every block named — checked against the project the caller
+     * supplied, so a caller cannot reach blocks outside it.
+     *
+     * @return the error response to return, or null when the call may proceed
+     */
+    private ResponseEntity<?> denyBulk(BulkBlockRequest request, Principal principal) {
+        if (request.ids() == null || request.ids().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "You must supply at least one block id."), HttpStatus.BAD_REQUEST);
+        }
+        if (request.ids().contains(null)) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Block ids must not be null."), HttpStatus.BAD_REQUEST);
+        }
+        if (request.projectId() == null) {
+            return new ResponseEntity<>(
+                    Map.of("projectId", "You must supply a value for Project."), HttpStatus.BAD_REQUEST);
+        }
+        if (!projectAccess.canEditScript(request.projectId(), principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (!projectAccess.canEditBlocks(
+                request.ids(), request.projectId(), projectAccess.currentUser(principal))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return null;
+    }
+
+    /** The collection every bulk operation answers with, after the batch ran. */
+    private ResponseEntity<CollectionModel<EntityModel<BlockResource>>> refreshed(
+            Integer projectId, Principal principal) {
+        return list(projectId, null, principal);
+    }
+
+    @RequestMapping(value = "/bulk/type", method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkSetType(
+            @RequestBody BulkSetTypeRequest request, Principal principal) {
+        ResponseEntity<?> denied = denyBulk(request, principal);
+        if (denied != null) {
+            return denied;
+        }
+        if (request.type() == null || request.type().isBlank()) {
+            return new ResponseEntity<>(
+                    Map.of("type", "You must supply a value for Type."), HttpStatus.BAD_REQUEST);
+        }
+        projectUndoRedoService.recordCheckpoint(request.projectId());
+        blockService.setBlockTypes(request.ids(), request.type());
+        projectVersionService.autoSaveVersion(request.projectId());
+        return refreshed(request.projectId(), principal);
+    }
+
+    @RequestMapping(value = "/bulk/tags", method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkAddTags(
+            @RequestBody BulkAddTagsRequest request, Principal principal) {
+        ResponseEntity<?> denied = denyBulk(request, principal);
+        if (denied != null) {
+            return denied;
+        }
+        if (request.tags() == null || request.tags().isBlank()) {
+            return new ResponseEntity<>(
+                    Map.of("tags", "You must supply a value for Tags."), HttpStatus.BAD_REQUEST);
+        }
+        projectUndoRedoService.recordCheckpoint(request.projectId());
+        blockService.addTagsToBlocks(request.ids(), request.tags());
+        projectVersionService.autoSaveVersion(request.projectId());
+        return refreshed(request.projectId(), principal);
+    }
+
+    @RequestMapping(value = "/bulk/delete", method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkDelete(
+            @RequestBody BulkDeleteRequest request, Principal principal) {
+        ResponseEntity<?> denied = denyBulk(request, principal);
+        if (denied != null) {
+            return denied;
+        }
+        projectUndoRedoService.recordCheckpoint(request.projectId());
+        blockService.deleteBlocks(request.ids());
+        projectVersionService.autoSaveVersion(request.projectId());
+        return refreshed(request.projectId(), principal);
+    }
+
+    /**
+     * Applies alignment, font, a style toggle and/or a highlight in one batch.
+     * Unknown alignment and font values are rejected, matching the per-block
+     * update; an unknown highlight clears the tint, matching the service.
+     */
+    @RequestMapping(value = "/bulk/format", method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkFormat(
+            @RequestBody BulkFormatRequest request, Principal principal) {
+        ResponseEntity<?> denied = denyBulk(request, principal);
+        if (denied != null) {
+            return denied;
+        }
+        if (request.isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("format", "You must supply at least one of align, font, style, or highlight."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        if (request.hasAlign() && BlockFormatting.normalizeAlign(request.align()) == null) {
+            return new ResponseEntity<>(
+                    Map.of("align", "Text align must be one of left, center, or right."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        if (request.hasFont() && BlockFormatting.normalizeFont(request.font()) == null) {
+            return new ResponseEntity<>(
+                    Map.of("font", "Font must be one of Courier Prime, Arial, or Times New Roman."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        if (request.hasStyle() && !Block.TEXT_STYLES.contains(canonicalStyle(request.style()))) {
+            return new ResponseEntity<>(
+                    Map.of("style", "Style must be one of bold, italic, or underline."),
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        projectUndoRedoService.recordCheckpoint(request.projectId());
+        if (request.hasAlign()) {
+            blockService.setBlockAlignments(request.ids(), request.align());
+        }
+        if (request.hasFont()) {
+            blockService.setBlockFonts(request.ids(), request.font());
+        }
+        if (request.hasStyle()) {
+            blockService.toggleBlockTextStyles(request.ids(), request.style());
+        }
+        if (request.hasHighlight()) {
+            blockService.setBlockHighlights(request.ids(), request.resolvedHighlight());
+        }
+        projectVersionService.autoSaveVersion(request.projectId());
+        return refreshed(request.projectId(), principal);
+    }
+
+    private static String canonicalStyle(String style) {
+        return style == null ? null : style.trim().toUpperCase();
+    }
+
+    /**
+     * Find and replace across a set of blocks.
+     *
+     * <p>Answers with the refreshed collection like every other bulk call. The
+     * service's changed-block count is deliberately not surfaced: a caller can
+     * see exactly what changed by comparing the returned blocks with the ones
+     * it already held, and inventing a side channel for one number would make
+     * this the only bulk endpoint whose result is not just the collection.
+     */
+    @RequestMapping(value = "/bulk/replace", method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkReplace(
+            @RequestBody BulkReplaceRequest request, Principal principal) {
+        ResponseEntity<?> denied = denyBulk(request, principal);
+        if (denied != null) {
+            return denied;
+        }
+        if (request.find() == null || request.find().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("find", "You must supply a value to find."), HttpStatus.BAD_REQUEST);
+        }
+
+        projectUndoRedoService.recordCheckpoint(request.projectId());
+        blockService.replaceInBlocks(
+                request.ids(),
+                request.find(),
+                request.replacementOrEmpty(),
+                request.matchCaseOrFalse(),
+                request.wholeWordOrFalse(),
+                request.includeCharacterCuesOrFalse());
+        projectVersionService.autoSaveVersion(request.projectId());
+        return refreshed(request.projectId(), principal);
     }
 
     /**

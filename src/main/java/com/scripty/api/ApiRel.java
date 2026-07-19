@@ -22,6 +22,14 @@ public final class ApiRel {
     public static final String CREATE_INITIAL = "createInitial";
     public static final String SET_TYPE = "setType";
     public static final String MOVE = "move";
+
+    // Bulk operations act on a set of blocks at once, so they are advertised on
+    // the block collection rather than on any one block.
+    public static final String BULK_SET_TYPE = "bulkSetType";
+    public static final String BULK_ADD_TAGS = "bulkAddTags";
+    public static final String BULK_FORMAT = "bulkFormat";
+    public static final String BULK_DELETE = "bulkDelete";
+    public static final String BULK_REPLACE = "bulkReplace";
     public static final String EXPORT = "export";
     public static final String EXPORT_PDF = "exportPdf";
     public static final String EXPORT_DOCX = "exportDocx";

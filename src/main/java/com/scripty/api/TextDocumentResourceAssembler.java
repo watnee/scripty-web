@@ -5,6 +5,7 @@ import com.scripty.controller.SongBlockRestController;
 import com.scripty.controller.SongEditionRestController;
 import com.scripty.controller.SongVersionRestController;
 import com.scripty.controller.DocumentTrashRestController;
+import com.scripty.controller.TextDocumentController;
 import com.scripty.controller.TextDocumentRestController;
 import com.scripty.dto.TextDocument;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
@@ -125,6 +126,20 @@ public class TextDocumentResourceAssembler {
                     .withRel(ApiRel.DOCUMENTS));
             links.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null))
                     .withRel(ApiRel.PROJECT));
+        }
+        // Exporting is a read, so it sits outside the edit gate — a
+        // collaborator with view-only access can still take a copy away.
+        // Song-only, matching the web menu: SongExportService lays lyrics out
+        // as a song, which is not what a note wants.
+        if (TextDocument.TYPE_SONG.equalsIgnoreCase(type)) {
+            links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "txt", null))
+                    .withRel(ApiRel.EXPORT_SONG_TXT));
+            links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "pdf", null))
+                    .withRel(ApiRel.EXPORT_SONG_PDF));
+            links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "docx", null))
+                    .withRel(ApiRel.EXPORT_SONG_DOCX));
+            links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "epub", null))
+                    .withRel(ApiRel.EXPORT_SONG_EPUB));
         }
         if (canEdit(projectId)) {
             links.add(linkTo(methodOn(TextDocumentRestController.class).update(id, null, null, null))

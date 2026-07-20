@@ -73,7 +73,7 @@ public final class ApiRel {
     /** The whole project as a re-importable .scripty.json archive. */
     public static final String EXPORT_ARCHIVE = "exportArchive";
     // A song exports on its own, in the formats SongExportService offers.
-    public static final String EXPORT_SONG_TXT = "exportTxt";
+    public static final String EXPORT_SONG_TXT = "exportSongTxt";
     public static final String EXPORT_SONG_PDF = "exportSongPdf";
     public static final String EXPORT_SONG_DOCX = "exportSongDocx";
     public static final String EXPORT_SONG_EPUB = "exportSongEpub";

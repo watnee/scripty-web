@@ -64,6 +64,13 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
         CollectionModel<EntityModel<BlockResource>> collection = CollectionModel.of(resources)
                 .add(linkTo(methodOn(BlockRestController.class).list(projectId, null, null)).withSelfRel())
                 .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
+        if (!resources.isEmpty()) {
+            // Which elements have discussion on them, in one call rather than a
+            // request per element. Reading comments needs only read access, so
+            // this sits outside the edit gate below.
+            collection.add(linkTo(methodOn(BlockCommentRestController.class).commentCounts(projectId, null))
+                    .withRel(ApiRel.COMMENT_COUNTS));
+        }
         if (resources.isEmpty() && canEditProject(projectId)) {
             // Only an empty script can take a first block; see createInitial.
             collection.add(linkTo(methodOn(BlockRestController.class).createInitial(projectId, null))

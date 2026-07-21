@@ -64,16 +64,34 @@
     <tr id="songBlocks"><td>songBlocks</td><td>The lyric blocks of a song.</td></tr>
     <tr id="notes"><td>notes</td><td>A project's note documents.</td></tr>
     <tr id="commentCounts"><td>commentCounts</td><td>How many comments sit on each element of a project, keyed by block id, as <code>{"counts": {"12": 3}}</code>. Advertised on a non-empty block collection so a client can mark the discussed elements without a request per element; elements with no comments are absent rather than zero.</td></tr>
+    <tr id="songEditions"><td>songEditions</td><td>A song's named editions — an alternate lyric, a rewrite, a cut for a different scene. The song counterpart of <code>editions</code>, hung off the document rather than the project; the resource is shaped identically.</td></tr>
+    <tr id="songEdition"><td>songEdition</td><td>A single song edition.</td></tr>
     <tr id="versions"><td>versions</td><td>The version history of a project or song.</td></tr>
+    <tr id="songVersions"><td>songVersions</td><td>The version history of a song, as the collection relation embedding its snapshots. A song snapshot reports the title and lyric line count where a screenplay's reports scenes and elements.</td></tr>
     <tr id="version"><td>version</td><td>A single saved version.</td></tr>
     <tr id="headshot"><td>headshot</td><td>An actor's headshot image.</td></tr>
     <tr id="syncStatus"><td>syncStatus</td><td>Whether a project changed since a given revision.</td></tr>
     <tr id="undoRedoStatus"><td>undoRedoStatus</td><td>Whether undo/redo is currently available.</td></tr>
     <tr id="capitalizationPreferences"><td>capitalizationPreferences</td><td>The signed-in user's auto-capitalization settings.</td></tr>
-    <tr id="preferences"><td>preferences</td><td>The signed-in user's stored editor preferences.</td></tr>
     <tr id="contactSuggestions"><td>contactSuggestions</td><td>Name/email suggestions for a project's invite forms.</td></tr>
     <tr id="account"><td>account</td><td>The signed-in user's own account. Not an admin's view of someone else's.</td></tr>
     <tr id="passkeys"><td>passkeys</td><td>The passkeys registered to the signed-in user. Present only where passkeys are configured; registration itself is a browser-side WebAuthn ceremony, so the API lists and revokes only.</td></tr>
+    <tr id="passkey"><td>passkey</td><td>A single registered passkey.</td></tr>
+    <tr id="editions"><td>editions</td><td>A project's named editions of the screenplay — a shooting draft, a table read, a production revision. <code>editionId</code> is accepted on blocks, imports and version history; this is how a client learns which ids exist.</td></tr>
+    <tr id="edition"><td>edition</td><td>A single script edition.</td></tr>
+    <tr id="comments"><td>comments</td><td>The comments left on one element.</td></tr>
+    <tr id="comment"><td>comment</td><td>A single comment.</td></tr>
+    <tr id="activity"><td>activity</td><td>A project's activity feed — who changed what, most recent first.</td></tr>
+    <tr id="activityEntry"><td>activityEntry</td><td>A single entry in the activity feed.</td></tr>
+    <tr id="invitations"><td>invitations</td><td>The outstanding invitations to a project.</td></tr>
+    <tr id="invitation"><td>invitation</td><td>A single invitation.</td></tr>
+    <tr id="trash"><td>trash</td><td>The trash a deleted thing went to. Advertised alongside <code>delete</code> so a client can say where the deletion can be undone from.</td></tr>
+    <tr id="trashedProjects"><td>trashedProjects</td><td>Projects the signed-in user has deleted and can still restore.</td></tr>
+    <tr id="trashedProject"><td>trashedProject</td><td>A single deleted project.</td></tr>
+    <tr id="deletedBlocks"><td>deletedBlocks</td><td>Elements deleted from a project, still restorable.</td></tr>
+    <tr id="deletedBlock"><td>deletedBlock</td><td>A single deleted element.</td></tr>
+    <tr id="deletedDocuments"><td>deletedDocuments</td><td>Songs and notes deleted from a project, still restorable.</td></tr>
+    <tr id="deletedDocument"><td>deletedDocument</td><td>A single deleted song or note.</td></tr>
   </tbody>
 </table>
 
@@ -121,6 +139,19 @@
     <tr id="exportSongsPdf"><td>exportSongsPdf</td><td class="method">GET</td><td>Download the project's songs as one PDF songbook.</td></tr>
     <tr id="exportSongsDocx"><td>exportSongsDocx</td><td class="method">GET</td><td>Download the project's songs as one Word (.docx) songbook.</td></tr>
     <tr id="exportSongsEpub"><td>exportSongsEpub</td><td class="method">GET</td><td>Download the project's songs as one EPUB songbook.</td></tr>
+    <tr id="addComment"><td>addComment</td><td class="method">POST</td><td>Leave a comment on an element.</td></tr>
+    <tr id="sendInvitation"><td>sendInvitation</td><td class="method">POST</td><td>Invite someone to a project by email.</td></tr>
+    <tr id="revoke"><td>revoke</td><td class="method">DELETE</td><td>Withdraw an outstanding invitation, or remove a registered passkey.</td></tr>
+    <tr id="assignProductions"><td>assignProductions</td><td class="method">PUT</td><td>Replace the set of productions a team is attached to.</td></tr>
+    <tr id="setDefault"><td>setDefault</td><td class="method">POST</td><td>Make this edition the one opened when no edition is named.</td></tr>
+    <tr id="setPublished"><td>setPublished</td><td class="method">POST</td><td>Make this edition the one view-only readers see. Independent of the default, so a writer can work in a draft while readers stay on the last published cut.</td></tr>
+    <tr id="purge"><td>purge</td><td class="method">DELETE</td><td>Delete one item from the trash for good. Not recoverable.</td></tr>
+    <tr id="emptyTrash"><td>emptyTrash</td><td class="method">DELETE</td><td>Delete everything in the trash for good. Not recoverable.</td></tr>
+    <tr id="bulkSetType"><td>bulkSetType</td><td class="method">POST</td><td>Retype every element in a selection. Advertised on the block collection rather than a block, since it acts on a set of them.</td></tr>
+    <tr id="bulkAddTags"><td>bulkAddTags</td><td class="method">POST</td><td>Add tags to every element in a selection.</td></tr>
+    <tr id="bulkFormat"><td>bulkFormat</td><td class="method">POST</td><td>Set alignment, font, style or highlight across a selection in one undo checkpoint. Each field applies only when present; <code>style</code> is a per-element toggle rather than a set, so a mixed selection comes back inverted. Pass <code>clearHighlight</code> to remove a tint, since a blank <code>highlight</code> means "leave alone".</td></tr>
+    <tr id="bulkReplace"><td>bulkReplace</td><td class="method">POST</td><td>Find and replace across a selection. <code>find</code> and <code>replace</code> are both literal — never regular expressions. Character cues are skipped unless <code>includeCharacterCues</code> is set, because a cue mirrors its person record.</td></tr>
+    <tr id="bulkDelete"><td>bulkDelete</td><td class="method">POST</td><td>Delete every element in a selection. Recoverable from the project's <a href="#trash">trash</a>.</td></tr>
   </tbody>
 </table>
 </body>

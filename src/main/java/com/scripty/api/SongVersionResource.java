@@ -13,7 +13,7 @@ import org.springframework.hateoas.server.core.Relation;
  * snapshot JSON itself is never exposed.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Relation(itemRelation = ApiRel.VERSION, collectionRelation = "songVersions")
+@Relation(itemRelation = ApiRel.VERSION, collectionRelation = ApiRel.SONG_VERSIONS)
 public class SongVersionResource extends RepresentationModel<SongVersionResource> {
 
     private Integer id;

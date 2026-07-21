@@ -112,6 +112,10 @@ public final class ApiRel {
     public static final String TOGGLE_DEFAULT = "toggleDefault";
     public static final String IMPORT_PROJECT = "importProject";
     public static final String VERSIONS = "versions";
+    // A song embeds its snapshots under their own collection relation, so the
+    // two histories stay apart where both could be in hand. The item relation
+    // is VERSION either way — one saved version reads the same.
+    public static final String SONG_VERSIONS = "songVersions";
     public static final String VERSION = "version";
     public static final String RESTORE = "restore";
     public static final String CREATE = "create";
@@ -123,7 +127,6 @@ public final class ApiRel {
     public static final String CHANGE_PASSWORD = "changePassword";
     public static final String PASSKEY = "passkey";
     public static final String PASSKEYS = "passkeys";
-    public static final String PREFERENCES = "preferences";
     public static final String CAPITALIZATION_PREFERENCES = "capitalizationPreferences";
     public static final String CONTACT_SUGGESTIONS = "contactSuggestions";
     public static final String IMPORT_SCRIPT = "importScript";

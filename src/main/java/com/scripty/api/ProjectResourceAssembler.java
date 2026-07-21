@@ -97,7 +97,15 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
             }
             resources.add(model);
         }
-        return CollectionModel.of(resources)
+        CollectionModel<EntityModel<ProjectResource>> collection = CollectionModel.of(resources);
+        if (!resources.isEmpty()) {
+            // Everything the caller can see, as one re-importable bundle — the
+            // round trip that `importProject` reads back. Only worth offering
+            // when there is something to take away.
+            collection.add(linkTo(methodOn(ProjectController.class).exportProjects(null, null))
+                    .withRel(ApiRel.EXPORT_PROJECTS));
+        }
+        return collection
                 .add(linkTo(methodOn(ProjectRestController.class).list(null)).withSelfRel())
                 .add(linkTo(methodOn(ProjectRestController.class).importProject(null)).withRel(ApiRel.IMPORT_PROJECT))
                 // Deleting a project is a soft delete, so the collection also

@@ -65,6 +65,25 @@ public class TextDocumentResourceAssembler {
                 .add(self)
                 .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null))
                         .withRel(ApiRel.PROJECT));
+        // A songbook of the whole project, offered only where there is a song
+        // to put in it. Exporting is a read, so it sits outside the edit gate.
+        boolean hasSong = false;
+        for (TextDocumentViewModel document : documents) {
+            if (TextDocument.TYPE_SONG.equalsIgnoreCase(document.getDocumentType())) {
+                hasSong = true;
+                break;
+            }
+        }
+        if (hasSong) {
+            collection.add(linkTo(methodOn(TextDocumentController.class)
+                    .exportSongs(projectId, "txt", null, null)).withRel(ApiRel.EXPORT_SONGS_TXT));
+            collection.add(linkTo(methodOn(TextDocumentController.class)
+                    .exportSongs(projectId, "pdf", null, null)).withRel(ApiRel.EXPORT_SONGS_PDF));
+            collection.add(linkTo(methodOn(TextDocumentController.class)
+                    .exportSongs(projectId, "docx", null, null)).withRel(ApiRel.EXPORT_SONGS_DOCX));
+            collection.add(linkTo(methodOn(TextDocumentController.class)
+                    .exportSongs(projectId, "epub", null, null)).withRel(ApiRel.EXPORT_SONGS_EPUB));
+        }
         if (canEdit(projectId)) {
             collection.add(linkTo(methodOn(TextDocumentRestController.class)
                     .importFile(null, null, null, null)).withRel(ApiRel.IMPORT_DOCUMENT));

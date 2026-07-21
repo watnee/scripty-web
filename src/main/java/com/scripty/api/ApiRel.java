@@ -72,11 +72,24 @@ public final class ApiRel {
     public static final String EXPORT_EPUB = "exportEpub";
     /** The whole project as a re-importable .scripty.json archive. */
     public static final String EXPORT_ARCHIVE = "exportArchive";
+    /**
+     * Every project the caller can see, as one re-importable bundle. Advertised
+     * on the project collection rather than on a project, because it is the
+     * collection it exports; `ids` narrows it to a selection.
+     */
+    public static final String EXPORT_PROJECTS = "exportProjects";
     // A song exports on its own, in the formats SongExportService offers.
     public static final String EXPORT_SONG_TXT = "exportSongTxt";
     public static final String EXPORT_SONG_PDF = "exportSongPdf";
     public static final String EXPORT_SONG_DOCX = "exportSongDocx";
     public static final String EXPORT_SONG_EPUB = "exportSongEpub";
+    // A project's songs gathered into one songbook, in the same formats. These
+    // live on the document collection, since that is what they export; `ids`
+    // narrows the songbook to a selection.
+    public static final String EXPORT_SONGS_TXT = "exportSongsTxt";
+    public static final String EXPORT_SONGS_PDF = "exportSongsPdf";
+    public static final String EXPORT_SONGS_DOCX = "exportSongsDocx";
+    public static final String EXPORT_SONGS_EPUB = "exportSongsEpub";
     // Which characters an actor auditions for, within a project. The ids ride on
     // the project-scoped actor resource; `setAuditions` is the action that
     // replaces the set. Per-project, so it is advertised only on a project-scoped

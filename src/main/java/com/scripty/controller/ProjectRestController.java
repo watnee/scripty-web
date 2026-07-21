@@ -1,5 +1,7 @@
 package com.scripty.controller;
 
+import com.scripty.api.ApiRel;
+import com.scripty.api.ProjectAccessUserResource;
 import com.scripty.api.ProjectResource;
 import com.scripty.api.ProjectResourceAssembler;
 import com.scripty.api.RestErrors;
@@ -18,9 +20,11 @@ import com.scripty.service.ProjectService;
 import com.scripty.service.UserService;
 import com.scripty.viewmodel.project.projectlist.ProjectListViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
+import com.scripty.viewmodel.project.projectprofile.ProjectShareUserViewModel;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -39,6 +43,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping(value = "/api/project")
@@ -153,6 +160,40 @@ public class ProjectRestController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(projectResourceAssembler.toModel(viewModel));
+    }
+
+    /**
+     * Everyone who can already see this project, and whether they can write.
+     *
+     * <p>The invitation list answers a different question. Role and team
+     * membership grant access on their own, so a project can be readable by
+     * people no invitation names — and the web project page has always shown
+     * this list beside the invitations for exactly that reason.
+     *
+     * <p>Access to the project is enough to read it: knowing who else is in the
+     * room is part of working in it, and none of it is hidden from these people
+     * anywhere else in the app.
+     */
+    @RequestMapping(value = "/{id}/access", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> access(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canAccessProject(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (projectService.read(id) == null) {
+            return ResponseEntity.notFound().build();
+        }
+        List<EntityModel<ProjectAccessUserResource>> people = new ArrayList<>();
+        for (ProjectShareUserViewModel user : projectService.getProjectShareAccessUsers(id)) {
+            ProjectAccessUserResource resource = new ProjectAccessUserResource();
+            resource.setDisplayName(user.getDisplayName());
+            resource.setAccessLabel(user.getAccessLabel());
+            resource.setCanEdit(user.isCanEdit());
+            resource.setPermissionLabel(user.getPermissionLabel());
+            people.add(EntityModel.of(resource));
+        }
+        return ResponseEntity.ok(CollectionModel.of(people)
+                .add(linkTo(methodOn(ProjectRestController.class).access(id, null)).withSelfRel())
+                .add(linkTo(methodOn(ProjectRestController.class).show(id, null)).withRel(ApiRel.PROJECT)));
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})

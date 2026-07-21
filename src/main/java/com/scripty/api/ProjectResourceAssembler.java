@@ -169,6 +169,10 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(ProjectVersionRestController.class).list(id, null, null)).withRel(ApiRel.VERSIONS),
                 linkTo(methodOn(ScriptEditionRestController.class).list(id, null)).withRel(ApiRel.EDITIONS),
                 linkTo(methodOn(ProjectActivityRestController.class).list(id, null, null)).withRel(ApiRel.ACTIVITY),
+                // Outside the edit gate, and separate from `invitations`: role
+                // and team membership let people in without an invitation, so
+                // this is the only link that answers who is actually reading.
+                linkTo(methodOn(ProjectRestController.class).access(id, null)).withRel(ApiRel.ACCESS),
                 linkTo(methodOn(ContactSuggestionRestController.class).suggest(id, null, null))
                         .withRel(ApiRel.CONTACT_SUGGESTIONS),
                 linkTo(methodOn(ProjectController.class).syncStatus(id, null, null, null)).withRel(ApiRel.SYNC_STATUS),

@@ -151,6 +151,35 @@ class SongBlockRestAccessTest {
         verify(songBlockService, never()).read(anyInt());
     }
 
+    /**
+     * Undo rewrites the lyrics, so it sits behind the same gate as typing them.
+     * The status is gated with it: telling a reader there are five steps to
+     * walk back would offer a door that will not open.
+     */
+    @Test
+    void nonWriterCannotUndoOrRedo() {
+        givenNonWriterMember();
+
+        assertEquals(HttpStatus.FORBIDDEN, controller.undo(DOCUMENT_ID, EDITION_ID, principal).getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN, controller.redo(DOCUMENT_ID, EDITION_ID, principal).getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN,
+                controller.undoRedoStatus(DOCUMENT_ID, EDITION_ID, principal).getStatusCode());
+        verifyNoInteractions(songUndoRedoService);
+    }
+
+    @Test
+    void writerCanStepThroughTheUndoStack() {
+        when(projectAccess.canAccessProject(anyInt(), any(Principal.class))).thenReturn(true);
+        when(projectAccess.canEditScript(anyInt(), any(Principal.class))).thenReturn(true);
+
+        assertEquals(HttpStatus.OK, controller.undo(DOCUMENT_ID, null, principal).getStatusCode());
+        assertEquals(HttpStatus.OK, controller.redo(DOCUMENT_ID, null, principal).getStatusCode());
+        // A missing editionId resolves to the song's default version, and the
+        // stacks are per version, so the resolved one is what gets walked.
+        verify(songUndoRedoService).undo(DOCUMENT_ID, EDITION_ID);
+        verify(songUndoRedoService).redo(DOCUMENT_ID, EDITION_ID);
+    }
+
     /** An unknown block resolves to no project, so it is rejected before any write. */
     @Test
     void unknownBlockIsRejected() {

@@ -92,6 +92,10 @@
     <tr id="deletedBlock"><td>deletedBlock</td><td>A single deleted element.</td></tr>
     <tr id="deletedDocuments"><td>deletedDocuments</td><td>Songs and notes deleted from a project, still restorable.</td></tr>
     <tr id="deletedDocument"><td>deletedDocument</td><td>A single deleted song or note.</td></tr>
+    <tr id="deletedSongBlocks"><td>deletedSongBlocks</td><td>Lyric lines deleted from a song, still restorable. Kept apart from <code>deletedBlocks</code> because a line and a screenplay element are restored by different services and carry different fields.</td></tr>
+    <tr id="deletedSongBlock"><td>deletedSongBlock</td><td>A single deleted lyric line. <code>purgeAt</code> is absent where the deployment keeps trashed lines until someone deletes them for good.</td></tr>
+    <tr id="access"><td>access</td><td>Everyone who can already see a project, with why (their role, or the team carrying it) and whether they can write. Not the same as <code>invitations</code>: role and team membership grant access without one.</td></tr>
+    <tr id="accessUser"><td>accessUser</td><td>One person who can see the project.</td></tr>
   </tbody>
 </table>
 

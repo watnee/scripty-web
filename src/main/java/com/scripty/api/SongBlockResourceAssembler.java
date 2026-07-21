@@ -2,6 +2,7 @@ package com.scripty.api;
 
 import com.scripty.controller.ProjectRestController;
 import com.scripty.controller.SongBlockRestController;
+import com.scripty.controller.SongBlockTrashRestController;
 import com.scripty.controller.SongVersionRestController;
 import com.scripty.controller.TextDocumentRestController;
 import com.scripty.dto.SongBlock;
@@ -70,9 +71,18 @@ public class SongBlockResourceAssembler {
         CollectionModel<EntityModel<SongBlockResource>> collection = CollectionModel.of(resources)
                 .add(self)
                 .add(documentLinks(documentId, projectId, false));
+        // Reading what was cut needs only access to the song, the same rule the
+        // web editor's recovery page follows, so this sits outside the gate.
+        collection.add(linkTo(methodOn(SongBlockTrashRestController.class).list(documentId, null))
+                .withRel(ApiRel.TRASH));
         if (canEdit(projectId)) {
             collection.add(linkTo(methodOn(SongBlockRestController.class).append(documentId, null, null))
                     .withRel(ApiRel.CREATE));
+            // Only an editor has a stack to walk: the checkpoints are recorded
+            // by their own edits, so offering this to a reader would advertise
+            // an undo of somebody else's typing.
+            collection.add(linkTo(methodOn(SongBlockRestController.class)
+                    .undoRedoStatus(documentId, null, null)).withRel(ApiRel.UNDO_REDO_STATUS));
         }
         return collection;
     }

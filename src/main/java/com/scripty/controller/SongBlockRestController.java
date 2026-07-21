@@ -1,5 +1,6 @@
 package com.scripty.controller;
 
+import com.scripty.api.ApiRel;
 import com.scripty.api.CreateSongBlockBelowRequest;
 import com.scripty.api.EditSongBlockRequest;
 import com.scripty.api.MoveBlockRequest;
@@ -14,6 +15,7 @@ import com.scripty.service.SongEditionService;
 import com.scripty.service.SongUndoRedoService;
 import com.scripty.service.SongVersionService;
 import java.security.Principal;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -28,6 +30,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * REST/HAL counterpart of {@link SongBlockController}, mirroring
@@ -249,6 +254,76 @@ public class SongBlockRestController {
         SongBlock block = songBlockService.moveTo(id, request.position());
         songVersionService.autoSaveVersionForBlock(id);
         return ResponseEntity.ok(assembler.toModel(block, projectId));
+    }
+
+    // Undo and redo for the song editor. The MVC pair behind /song/block/undo
+    // answers with an HTMX fragment, so an API client could see the stacks
+    // through undoRedoStatus and never step through them; these return the
+    // rewound block collection, which is what the caller was reading anyway.
+    //
+    // The stacks are session-scoped and per song version, so two clients signed
+    // in as the same writer do not share them — the same rule the screenplay's
+    // undo has always followed.
+
+    @RequestMapping(value = "/undo", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> undo(@RequestParam Integer documentId,
+                                  @RequestParam(required = false) Integer editionId,
+                                  Principal principal) {
+        return step(documentId, editionId, principal, true);
+    }
+
+    @RequestMapping(value = "/redo", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> redo(@RequestParam Integer documentId,
+                                  @RequestParam(required = false) Integer editionId,
+                                  Principal principal) {
+        return step(documentId, editionId, principal, false);
+    }
+
+    /**
+     * Whether there is anything to step back to, so a client can grey out the
+     * two buttons rather than discover the answer by pressing them.
+     */
+    @RequestMapping(value = "/undo-redo-status", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> undoRedoStatus(@RequestParam Integer documentId,
+                                            @RequestParam(required = false) Integer editionId,
+                                            Principal principal) {
+        if (!canEditDocument(documentId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Integer resolved = effectiveEdition(documentId, editionId);
+        Map<String, Object> status = new LinkedHashMap<>();
+        status.put("canUndo", songUndoRedoService.canUndo(documentId, resolved));
+        status.put("canRedo", songUndoRedoService.canRedo(documentId, resolved));
+        // The links carry the resolved version, not the caller's possibly-absent
+        // one, so following them stays on the version this answer describes.
+        return ResponseEntity.ok(EntityModel.of(status)
+                .add(linkTo(methodOn(SongBlockRestController.class).undoRedoStatus(documentId, resolved, null))
+                        .withSelfRel())
+                .add(linkTo(methodOn(SongBlockRestController.class).undo(documentId, resolved, null))
+                        .withRel(ApiRel.UNDO))
+                .add(linkTo(methodOn(SongBlockRestController.class).redo(documentId, resolved, null))
+                        .withRel(ApiRel.REDO))
+                .add(linkTo(methodOn(SongBlockRestController.class).list(documentId, resolved, null))
+                        .withRel(ApiRel.SONG_BLOCKS))
+                .add(linkTo(methodOn(TextDocumentRestController.class).show(documentId, null))
+                        .withRel(ApiRel.SONG)));
+    }
+
+    private ResponseEntity<?> step(Integer documentId, Integer editionId, Principal principal, boolean undo) {
+        if (!canEditDocument(documentId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Integer resolved = effectiveEdition(documentId, editionId);
+        if (undo) {
+            songUndoRedoService.undo(documentId, resolved);
+        } else {
+            songUndoRedoService.redo(documentId, resolved);
+        }
+        // An empty stack is not an error: the collection comes back unchanged,
+        // and undo-redo-status is where a client learns it had nowhere to go.
+        Integer projectId = songBlockService.projectIdForDocument(documentId);
+        return ResponseEntity.ok(assembler.toCollection(
+                songBlockService.getBlocks(documentId, resolved), documentId, projectId));
     }
 
     private ResponseEntity<EntityModel<SongBlockResource>> created(SongBlock block, Integer projectId) {

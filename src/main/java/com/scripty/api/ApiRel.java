@@ -41,6 +41,12 @@ public final class ApiRel {
     public static final String TRASHED_PROJECTS = "trashedProjects";
     public static final String DELETED_DOCUMENT = "deletedDocument";
     public static final String DELETED_DOCUMENTS = "deletedDocuments";
+    // A song's trashed lines are their own collection: a lyric line and a
+    // screenplay element are restored by different services and previewed
+    // differently, so mixing them under one embed key would hand a client two
+    // shapes behind one name.
+    public static final String DELETED_SONG_BLOCK = "deletedSongBlock";
+    public static final String DELETED_SONG_BLOCKS = "deletedSongBlocks";
     public static final String PURGE = "purge";
     public static final String EMPTY_TRASH = "emptyTrash";
 
@@ -56,6 +62,11 @@ public final class ApiRel {
     public static final String INVITATIONS = "invitations";
     public static final String SEND_INVITATION = "sendInvitation";
     public static final String REVOKE = "revoke";
+    // Who can already see a project, as opposed to who has been invited to.
+    // Team membership and role grant access without any invitation, so the
+    // invitation list alone never answers "who is reading this".
+    public static final String ACCESS = "access";
+    public static final String ACCESS_USER = "accessUser";
 
     // Named variants of a script. `editionId` was already accepted as a query
     // parameter; these are what let a client discover the ids to pass.

@@ -153,6 +153,35 @@ class SongHypermediaTest {
     }
 
     /**
+     * Undo walks back the caller's own checkpoints, so it belongs to whoever
+     * can type. The trash does not: seeing what was cut is reading, and the web
+     * recovery page opens for a reader too.
+     */
+    @Test
+    void writerSeesUndoRedoAndTrash() {
+        givenCanEdit(true);
+
+        CollectionModel<EntityModel<SongBlockResource>> collection =
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+
+        assertTrue(hasLink(collection, ApiRel.UNDO_REDO_STATUS));
+        assertTrue(hasLink(collection, ApiRel.TRASH));
+    }
+
+    @Test
+    void readOnlyMemberSeesTheTrashButNoUndo() {
+        givenCanEdit(false);
+
+        CollectionModel<EntityModel<SongBlockResource>> collection =
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+
+        assertFalse(hasLink(collection, ApiRel.UNDO_REDO_STATUS),
+                "a reader has no checkpoints of their own to step back through");
+        assertTrue(hasLink(collection, ApiRel.TRASH),
+                "reading what was cut from a song needs only access to the song");
+    }
+
+    /**
      * A method-derived self link always carries one implicit affordance (its own
      * GET), so gating is measured by the writer's self link exposing strictly
      * more — the update/delete (item) and append (collection) HAL-FORMS

@@ -71,6 +71,8 @@
     <tr id="capitalizationPreferences"><td>capitalizationPreferences</td><td>The signed-in user's auto-capitalization settings.</td></tr>
     <tr id="preferences"><td>preferences</td><td>The signed-in user's stored editor preferences.</td></tr>
     <tr id="contactSuggestions"><td>contactSuggestions</td><td>Name/email suggestions for a project's invite forms.</td></tr>
+    <tr id="account"><td>account</td><td>The signed-in user's own account. Not an admin's view of someone else's.</td></tr>
+    <tr id="passkeys"><td>passkeys</td><td>The passkeys registered to the signed-in user. Present only where passkeys are configured; registration itself is a browser-side WebAuthn ceremony, so the API lists and revokes only.</td></tr>
   </tbody>
 </table>
 
@@ -88,6 +90,8 @@
     <tr id="reorder"><td>reorder</td><td class="method">PUT</td><td>Reorder documents within a project.</td></tr>
     <tr id="setType"><td>setType</td><td class="method">PUT</td><td>Change a block's screenplay element type.</td></tr>
     <tr id="setHighlight"><td>setHighlight</td><td class="method">PUT</td><td>Set or clear a song block's highlight.</td></tr>
+    <tr id="setAuditions"><td>setAuditions</td><td class="method">POST</td><td>Replace, wholesale, the characters an actor auditions for in a project. Advertised on a project-scoped actor only; an empty list clears them.</td></tr>
+    <tr id="changePassword"><td>changePassword</td><td class="method">POST</td><td>Change the signed-in user's own password. The current password is required.</td></tr>
     <tr id="toggleBookmark"><td>toggleBookmark</td><td class="method">POST</td><td>Toggle a block's bookmark.</td></tr>
     <tr id="togglePinned"><td>togglePinned</td><td class="method">POST</td><td>Toggle whether a block is pinned.</td></tr>
     <tr id="toggleDefault"><td>toggleDefault</td><td class="method">POST</td><td>Toggle a project as the user's default.</td></tr>

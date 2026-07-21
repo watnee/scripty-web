@@ -1,5 +1,6 @@
 package com.scripty.api;
 
+import com.scripty.controller.AccountRestController;
 import com.scripty.controller.ActorRestController;
 import com.scripty.controller.ProjectRestController;
 import com.scripty.controller.TeamRestController;
@@ -42,7 +43,10 @@ public class ApiRootController {
                 linkTo(methodOn(TextDocumentRestController.class).list(null, TextDocument.TYPE_SONG, null))
                         .withRel(ApiRel.SONGS),
                 linkTo(methodOn(UserPreferenceRestController.class).readCapitalization(null))
-                        .withRel(ApiRel.CAPITALIZATION_PREFERENCES)
+                        .withRel(ApiRel.CAPITALIZATION_PREFERENCES),
+                // Your own account: available to anyone signed in, unlike the
+                // admin-only `users` below.
+                linkTo(methodOn(AccountRestController.class).show(null)).withRel(ApiRel.ACCOUNT)
         );
 
         // Users and teams sit behind ROLE_ADMIN in the security config, so

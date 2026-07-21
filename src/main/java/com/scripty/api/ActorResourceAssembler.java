@@ -28,7 +28,15 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
     }
 
     public EntityModel<ActorResource> toModel(ActorViewModel actor, Integer projectId) {
-        return EntityModel.of(toResource(actor)).add(actorLinks(actor.getId(), projectId, actor.isHasHeadshot()));
+        ActorResource resource = toResource(actor);
+        // Auditions only mean something within a project, so the ids ride along
+        // only on a project-scoped actor. An empty list is still sent — it says
+        // "auditions for no one", which a client must be able to tell apart from
+        // "auditions not in scope" (null, omitted).
+        if (projectId != null) {
+            resource.setAuditionCharacterIds(new ArrayList<>(actor.getAuditionCharacterIds()));
+        }
+        return EntityModel.of(resource).add(actorLinks(actor.getId(), projectId, actor.isHasHeadshot()));
     }
 
     public EntityModel<ActorResource> toModel(ActorProfileViewModel profile) {
@@ -118,6 +126,10 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
             links.add(linkTo(methodOn(ActorController.class).headshot(id, null)).withRel(ApiRel.HEADSHOT));
         }
         if (projectId != null) {
+            // Setting auditions is a per-project action, so it is offered only on
+            // a project-scoped actor.
+            links.add(linkTo(methodOn(ActorRestController.class).setAuditions(id, projectId, null, null))
+                    .withRel(ApiRel.SET_AUDITIONS));
             links.add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
         }
         return links.toArray(org.springframework.hateoas.Link[]::new);

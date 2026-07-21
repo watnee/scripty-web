@@ -77,6 +77,11 @@ public final class ApiRel {
     public static final String EXPORT_SONG_PDF = "exportSongPdf";
     public static final String EXPORT_SONG_DOCX = "exportSongDocx";
     public static final String EXPORT_SONG_EPUB = "exportSongEpub";
+    // Which characters an actor auditions for, within a project. The ids ride on
+    // the project-scoped actor resource; `setAuditions` is the action that
+    // replaces the set. Per-project, so it is advertised only on a project-scoped
+    // actor.
+    public static final String SET_AUDITIONS = "setAuditions";
     public static final String HEADSHOT = "headshot";
     public static final String DOCUMENTS = "documents";
     public static final String DOCUMENT = "document";
@@ -97,6 +102,14 @@ public final class ApiRel {
     public static final String VERSION = "version";
     public static final String RESTORE = "restore";
     public static final String CREATE = "create";
+    // The signed-in user's own account — not an admin's view of someone else's.
+    // Advertised on the API root to anyone signed in; `passkeys` appears only
+    // where passkeys are configured, and registering a new one stays a browser
+    // ceremony, so the API offers listing and revoking only.
+    public static final String ACCOUNT = "account";
+    public static final String CHANGE_PASSWORD = "changePassword";
+    public static final String PASSKEY = "passkey";
+    public static final String PASSKEYS = "passkeys";
     public static final String PREFERENCES = "preferences";
     public static final String CAPITALIZATION_PREFERENCES = "capitalizationPreferences";
     public static final String CONTACT_SUGGESTIONS = "contactSuggestions";

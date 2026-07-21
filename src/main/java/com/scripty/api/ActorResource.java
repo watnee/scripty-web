@@ -16,6 +16,11 @@ public class ActorResource extends RepresentationModel<ActorResource> {
     private String email;
     private Boolean hasHeadshot;
     private List<Integer> projectIds;
+    /** The characters this actor auditions for, in the project the list was
+     * scoped to. Present (possibly empty) only on a project-scoped actor; null
+     * — and so omitted — otherwise, since auditions have no meaning without a
+     * project. */
+    private List<Integer> auditionCharacterIds;
 
     public Integer getId() {
         return id;
@@ -71,5 +76,13 @@ public class ActorResource extends RepresentationModel<ActorResource> {
 
     public void setProjectIds(List<Integer> projectIds) {
         this.projectIds = projectIds;
+    }
+
+    public List<Integer> getAuditionCharacterIds() {
+        return auditionCharacterIds;
+    }
+
+    public void setAuditionCharacterIds(List<Integer> auditionCharacterIds) {
+        this.auditionCharacterIds = auditionCharacterIds;
     }
 }

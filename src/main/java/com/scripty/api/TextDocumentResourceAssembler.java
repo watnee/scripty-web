@@ -84,6 +84,14 @@ public class TextDocumentResourceAssembler {
             collection.add(linkTo(methodOn(TextDocumentController.class)
                     .exportSongs(projectId, "epub", null, null)).withRel(ApiRel.EXPORT_SONGS_EPUB));
         }
+        if (hasSong && canEdit(projectId)) {
+            // Deleting a selection is songs-only, as the web's checkbox column
+            // is: TextDocumentService.deleteSongs skips anything that is not a
+            // song, so offering this on a project of notes would promise
+            // nothing.
+            collection.add(linkTo(methodOn(TextDocumentRestController.class)
+                    .bulkDelete(projectId, null, null)).withRel(ApiRel.BULK_DELETE));
+        }
         if (canEdit(projectId)) {
             collection.add(linkTo(methodOn(TextDocumentRestController.class)
                     .importFile(null, null, null, null)).withRel(ApiRel.IMPORT_DOCUMENT));

@@ -155,7 +155,7 @@
     <tr id="bulkAddTags"><td>bulkAddTags</td><td class="method">POST</td><td>Add tags to every element in a selection.</td></tr>
     <tr id="bulkFormat"><td>bulkFormat</td><td class="method">POST</td><td>Set alignment, font, style or highlight across a selection in one undo checkpoint. Each field applies only when present; <code>style</code> is a per-element toggle rather than a set, so a mixed selection comes back inverted. Pass <code>clearHighlight</code> to remove a tint, since a blank <code>highlight</code> means "leave alone".</td></tr>
     <tr id="bulkReplace"><td>bulkReplace</td><td class="method">POST</td><td>Find and replace across a selection. <code>find</code> and <code>replace</code> are both literal — never regular expressions. Character cues are skipped unless <code>includeCharacterCues</code> is set, because a cue mirrors its person record.</td></tr>
-    <tr id="bulkDelete"><td>bulkDelete</td><td class="method">POST</td><td>Delete every element in a selection. Recoverable from the project's <a href="#trash">trash</a>.</td></tr>
+    <tr id="bulkDelete"><td>bulkDelete</td><td class="method">POST</td><td>Delete every item in a selection — elements when it rides on the block collection, songs when it rides on the <a href="#documents">document</a> collection. Recoverable from the project's <a href="#trash">trash</a> either way.</td></tr>
   </tbody>
 </table>
 </body>

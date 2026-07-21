@@ -186,6 +186,37 @@ public class TextDocumentRestController {
         return list(projectId, null, principal);
     }
 
+    /**
+     * Moves several songs to the trash in one call, the way the web list's
+     * checkbox column does. Songs only: {@link TextDocumentService#deleteSongs}
+     * skips any id that is not a song of this project, so a mixed selection
+     * quietly deletes the songs in it and leaves the notes alone.
+     *
+     * <p>Answers with the refreshed collection rather than a count, so a client
+     * that just deleted half a list does not have to ask again for the other
+     * half.
+     */
+    @RequestMapping(value = "/bulk/delete", method = RequestMethod.POST,
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkDelete(
+            @RequestParam Integer projectId,
+            @RequestBody(required = false) BulkDeleteDocumentsRequest request,
+            Principal principal) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request == null || request.ids() == null || request.ids().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Choose at least one song to delete."), HttpStatus.BAD_REQUEST);
+        }
+        int deleted = textDocumentService.deleteSongs(request.ids(), projectId, currentUser(principal));
+        if (deleted == 0) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Those songs could not be deleted."), HttpStatus.BAD_REQUEST);
+        }
+        return list(projectId, null, principal);
+    }
+
     /** Copies a song or note into a new document titled "… (copy)". */
     @RequestMapping(value = "/{id}/duplicate", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> duplicate(
@@ -349,5 +380,8 @@ public class TextDocumentRestController {
     }
 
     public record ChangeTypeRequest(String type) {
+    }
+
+    public record BulkDeleteDocumentsRequest(List<Integer> ids) {
     }
 }

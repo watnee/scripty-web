@@ -10,6 +10,7 @@ import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.BlockCommentService;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -77,6 +79,31 @@ public class BlockCommentRestController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(collection(id, principal));
+    }
+
+    /**
+     * How many comments sit on each element of a project, keyed by block id.
+     *
+     * <p>One call for the whole script, because the alternative is a request per
+     * element to discover that most of them have nothing. Blocks with no
+     * comments are simply absent from the map rather than present as zero.
+     *
+     * <p>Reading comments needs only read access, matching {@code list} above.
+     */
+    @RequestMapping(value = "/comment-counts", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> commentCounts(@RequestParam Integer projectId, Principal principal) {
+        if (!projectAccess.canAccessProject(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        // Keyed by id, so JSON object keys are strings — the client reads them
+        // back as ints.
+        Map<String, Long> counts = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Long> entry : blockCommentService.countsForProject(projectId).entrySet()) {
+            counts.put(String.valueOf(entry.getKey()), entry.getValue());
+        }
+        return ResponseEntity.ok(EntityModel.of(Map.of("counts", counts))
+                .add(linkTo(methodOn(BlockCommentRestController.class).commentCounts(projectId, null)).withSelfRel())
+                .add(linkTo(methodOn(BlockRestController.class).list(projectId, null, null)).withRel(ApiRel.BLOCKS)));
     }
 
     @RequestMapping(value = "/comments/{commentId}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})

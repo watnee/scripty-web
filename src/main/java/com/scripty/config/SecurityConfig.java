@@ -148,7 +148,10 @@ public class SecurityConfig {
                         "/forgot-password",
                         "/forgot-password/**")
                     .permitAll()
-                .requestMatchers("/account/password")
+                // Your own account is yours: changing your password and managing
+                // your own passkeys are not admin actions, so these sit ahead of
+                // the admin block rather than inside it.
+                .requestMatchers("/account/password", "/api/account/**")
                     .hasRole("USER")
                 .requestMatchers(
                         "/config/**",
@@ -156,7 +159,6 @@ public class SecurityConfig {
                         "/api/user/**",
                         "/team/**",
                         "/api/team/**",
-                        "/api/account/**",
                         "/account/**")
                     .hasRole("ADMIN")
                 .requestMatchers(

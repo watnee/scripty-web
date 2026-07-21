@@ -168,7 +168,12 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(ProjectController.class).exportScript(id, "fountain", null, null, null, null)).withRel(ApiRel.EXPORT),
                 linkTo(methodOn(ProjectController.class).exportScript(id, "pdf", null, null, null, null)).withRel(ApiRel.EXPORT_PDF),
                 linkTo(methodOn(ProjectController.class).exportScript(id, "docx", null, null, null, null)).withRel(ApiRel.EXPORT_DOCX),
-                linkTo(methodOn(ProjectController.class).exportScript(id, "fdx", null, null, null, null)).withRel(ApiRel.EXPORT_FDX)
+                linkTo(methodOn(ProjectController.class).exportScript(id, "fdx", null, null, null, null)).withRel(ApiRel.EXPORT_FDX),
+                // The same endpoint has always served these two; only the
+                // advertisement was missing, so API clients could not find
+                // them the way the web menu could.
+                linkTo(methodOn(ProjectController.class).exportScript(id, "epub", null, null, null, null)).withRel(ApiRel.EXPORT_EPUB),
+                linkTo(methodOn(ProjectController.class).exportScript(id, "scripty", null, null, null, null)).withRel(ApiRel.EXPORT_ARCHIVE)
         };
     }
 }

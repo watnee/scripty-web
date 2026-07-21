@@ -63,6 +63,7 @@
     <tr id="song"><td>song</td><td>The song a block or version belongs to.</td></tr>
     <tr id="songBlocks"><td>songBlocks</td><td>The lyric blocks of a song.</td></tr>
     <tr id="notes"><td>notes</td><td>A project's note documents.</td></tr>
+    <tr id="commentCounts"><td>commentCounts</td><td>How many comments sit on each element of a project, keyed by block id, as <code>{"counts": {"12": 3}}</code>. Advertised on a non-empty block collection so a client can mark the discussed elements without a request per element; elements with no comments are absent rather than zero.</td></tr>
     <tr id="versions"><td>versions</td><td>The version history of a project or song.</td></tr>
     <tr id="version"><td>version</td><td>A single saved version.</td></tr>
     <tr id="headshot"><td>headshot</td><td>An actor's headshot image.</td></tr>
@@ -71,6 +72,8 @@
     <tr id="capitalizationPreferences"><td>capitalizationPreferences</td><td>The signed-in user's auto-capitalization settings.</td></tr>
     <tr id="preferences"><td>preferences</td><td>The signed-in user's stored editor preferences.</td></tr>
     <tr id="contactSuggestions"><td>contactSuggestions</td><td>Name/email suggestions for a project's invite forms.</td></tr>
+    <tr id="account"><td>account</td><td>The signed-in user's own account. Not an admin's view of someone else's.</td></tr>
+    <tr id="passkeys"><td>passkeys</td><td>The passkeys registered to the signed-in user. Present only where passkeys are configured; registration itself is a browser-side WebAuthn ceremony, so the API lists and revokes only.</td></tr>
   </tbody>
 </table>
 
@@ -85,15 +88,17 @@
     <tr id="update"><td>update</td><td class="method">PUT</td><td>Replace the resource's editable fields.</td></tr>
     <tr id="delete"><td>delete</td><td class="method">DELETE</td><td>Delete the resource.</td></tr>
     <tr id="move"><td>move</td><td class="method">PUT</td><td>Reorder a block within its document.</td></tr>
-    <tr id="reorder"><td>reorder</td><td class="method">PUT</td><td>Reorder documents within a project.</td></tr>
+    <tr id="reorder"><td>reorder</td><td class="method">POST</td><td>Reorder documents within a project.</td></tr>
     <tr id="setType"><td>setType</td><td class="method">PUT</td><td>Change a block's screenplay element type.</td></tr>
     <tr id="setHighlight"><td>setHighlight</td><td class="method">PUT</td><td>Set or clear a song block's highlight.</td></tr>
+    <tr id="setAuditions"><td>setAuditions</td><td class="method">POST</td><td>Replace, wholesale, the characters an actor auditions for in a project. Advertised on a project-scoped actor only; an empty list clears them.</td></tr>
+    <tr id="changePassword"><td>changePassword</td><td class="method">POST</td><td>Change the signed-in user's own password. The current password is required.</td></tr>
     <tr id="toggleBookmark"><td>toggleBookmark</td><td class="method">POST</td><td>Toggle a block's bookmark.</td></tr>
     <tr id="togglePinned"><td>togglePinned</td><td class="method">POST</td><td>Toggle whether a block is pinned.</td></tr>
     <tr id="toggleDefault"><td>toggleDefault</td><td class="method">POST</td><td>Toggle a project as the user's default.</td></tr>
     <tr id="insert"><td>insert</td><td class="method">POST</td><td>Insert content into a text document.</td></tr>
     <tr id="duplicate"><td>duplicate</td><td class="method">POST</td><td>Duplicate a text document.</td></tr>
-    <tr id="changeType"><td>changeType</td><td class="method">PUT</td><td>Change a document between song and notes.</td></tr>
+    <tr id="changeType"><td>changeType</td><td class="method">POST</td><td>Change a document between song and notes. Send <code>{"type": "SONG"}</code> or <code>{"type": "NOTES"}</code>; any other value is read as SONG.</td></tr>
     <tr id="restore"><td>restore</td><td class="method">POST</td><td>Restore a saved version as current.</td></tr>
     <tr id="undo"><td>undo</td><td class="method">POST</td><td>Undo the last change.</td></tr>
     <tr id="redo"><td>redo</td><td class="method">POST</td><td>Redo the last undone change.</td></tr>

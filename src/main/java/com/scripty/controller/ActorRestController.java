@@ -3,13 +3,16 @@ package com.scripty.controller;
 import com.scripty.api.ActorResource;
 import com.scripty.api.ActorResourceAssembler;
 import com.scripty.api.RestErrors;
+import com.scripty.api.SetAuditionsRequest;
 import com.scripty.commandmodel.actor.createactor.CreateActorCommandModel;
 import com.scripty.commandmodel.actor.editactor.EditActorCommandModel;
 import com.scripty.dto.Actor;
 import com.scripty.repository.ActorRepository;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ActorService;
+import com.scripty.service.AuditionService;
 import com.scripty.viewmodel.actor.actorlist.ActorListViewModel;
+import com.scripty.viewmodel.actor.actorlist.ActorViewModel;
 import com.scripty.viewmodel.actor.actorprofile.ActorProfileViewModel;
 import jakarta.validation.Valid;
 import java.security.Principal;
@@ -40,6 +43,9 @@ public class ActorRestController {
 
     @Autowired
     ActorResourceAssembler actorResourceAssembler;
+
+    @Autowired
+    AuditionService auditionService;
 
     @Autowired
     ProjectAccessSupport projectAccess;
@@ -110,5 +116,34 @@ public class ActorRestController {
         }
         Actor actor = actorService.deleteActor(id);
         return ResponseEntity.ok(actorResourceAssembler.toDeleteModel(actor));
+    }
+
+    /**
+     * Replaces, wholesale, the set of characters this actor auditions for in the
+     * given project. Answers with the refreshed project-scoped actor, so the
+     * caller sees the audition ids it just set without a second read.
+     */
+    @RequestMapping(value = "/{id}/auditions", method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> setAuditions(
+            @PathVariable Integer id,
+            @RequestParam Integer projectId,
+            @RequestBody SetAuditionsRequest request,
+            Principal principal) {
+        if (!projectAccess.canViewCasting(principal)
+                || !projectAccess.canAccessProject(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        auditionService.setAuditionsForActorInProject(
+                id, projectId, request == null ? null : request.characterIds());
+
+        ActorListViewModel viewModel = actorService.getActorListViewModel(projectId);
+        ActorViewModel updated = viewModel.getActors().stream()
+                .filter(actor -> actor.getId() == id)
+                .findFirst()
+                .orElse(null);
+        if (updated == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(actorResourceAssembler.toModel(updated, projectId));
     }
 }

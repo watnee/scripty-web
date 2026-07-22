@@ -129,6 +129,7 @@
     <tr id="undo"><td>undo</td><td class="method">POST</td><td>Undo the last change.</td></tr>
     <tr id="redo"><td>redo</td><td class="method">POST</td><td>Redo the last undone change.</td></tr>
     <tr id="shareEmail"><td>shareEmail</td><td class="method">POST</td><td>Email a song to a recipient.</td></tr>
+    <tr id="bulkShareEmail"><td>bulkShareEmail</td><td class="method">POST</td><td>Email a selection of songs to a recipient in one message. Rides on the <a href="#documents">document</a> collection; takes <code>ids</code> and <code>email</code>, and answers with how many were sent and their titles, since anything in the selection that is not a song is skipped.</td></tr>
     <tr id="importProject"><td>importProject</td><td class="method">POST</td><td>Create a project by importing a file.</td></tr>
     <tr id="importDocument"><td>importDocument</td><td class="method">POST</td><td>Create a document by importing a file — .txt, .fountain, .docx, .doc, .fdx, .epub, .pdf, or a .musicxml/.mxl score, whose lyrics become the song's lines and whose title becomes its own.</td></tr>
     <tr id="importScript"><td>importScript</td><td class="method">POST</td><td>Replace an existing project's script by importing a file.</td></tr>

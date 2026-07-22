@@ -85,4 +85,33 @@ class DocumentBulkDeleteRelTest {
         assertFalse(collection(document(3, TextDocument.TYPE_NOTES))
                 .getLink(ApiRel.BULK_DELETE).isPresent());
     }
+
+    // Emailing a selection rides on exactly the same two conditions, so it is
+    // pinned here rather than in a file of its own — if the pair ever drift
+    // apart, one of these fails.
+
+    @Test
+    void anEditorWithSongsIsOfferedTheBulkEmail() {
+        when(projectAccess.canEditScriptForCurrentUser(any())).thenReturn(true);
+
+        assertTrue(collection(document(1, TextDocument.TYPE_SONG),
+                              document(2, TextDocument.TYPE_NOTES))
+                .getLink(ApiRel.BULK_SHARE_EMAIL).isPresent());
+    }
+
+    @Test
+    void aReaderIsNotOfferedTheBulkEmail() {
+        when(projectAccess.canEditScriptForCurrentUser(any())).thenReturn(false);
+
+        assertFalse(collection(document(1, TextDocument.TYPE_SONG))
+                .getLink(ApiRel.BULK_SHARE_EMAIL).isPresent());
+    }
+
+    @Test
+    void aProjectOfNotesAloneHasNothingToBulkEmail() {
+        when(projectAccess.canEditScriptForCurrentUser(any())).thenReturn(true);
+
+        assertFalse(collection(document(3, TextDocument.TYPE_NOTES))
+                .getLink(ApiRel.BULK_SHARE_EMAIL).isPresent());
+    }
 }

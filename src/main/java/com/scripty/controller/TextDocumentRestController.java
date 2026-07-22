@@ -217,6 +217,51 @@ public class TextDocumentRestController {
         return list(projectId, null, principal);
     }
 
+    /**
+     * Emails several songs in one message, the way the web list's checkbox
+     * column does — its "Email selected" posts the ticked ids to the same
+     * service call this uses.
+     *
+     * <p>Songs only, like every other bulk action here:
+     * {@link TextDocumentService#shareSongsByEmail} skips anything that is not
+     * a song, so a mixed selection sends the songs in it and leaves the notes
+     * alone. Answers with how many actually went and their titles, since a
+     * selection can be partly refused and a bare "sent" would overstate it.
+     */
+    @RequestMapping(value = "/bulk/share-email", method = RequestMethod.POST,
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkShareEmail(
+            @RequestParam Integer projectId,
+            @RequestBody(required = false) BulkShareEmailRequest request,
+            Principal principal) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request == null || request.ids() == null || request.ids().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Choose at least one song to email."), HttpStatus.BAD_REQUEST);
+        }
+        if (request.email() == null || request.email().isBlank()) {
+            return new ResponseEntity<>(
+                    Map.of("email", "You must supply a recipient address."), HttpStatus.BAD_REQUEST);
+        }
+        List<TextDocument> shared = textDocumentService.shareSongsByEmail(
+                request.ids(), request.email(), currentUser(principal));
+        if (shared.isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("email", "Could not email those songs. Check the address and try again."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        List<String> titles = new ArrayList<>();
+        for (TextDocument document : shared) {
+            titles.add(document.getTitle());
+        }
+        return ResponseEntity.ok(Map.of(
+                "shared", shared.size(),
+                "titles", titles,
+                "email", request.email().trim()));
+    }
+
     /** Copies a song or note into a new document titled "… (copy)". */
     @RequestMapping(value = "/{id}/duplicate", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> duplicate(
@@ -383,5 +428,8 @@ public class TextDocumentRestController {
     }
 
     public record BulkDeleteDocumentsRequest(List<Integer> ids) {
+    }
+
+    public record BulkShareEmailRequest(List<Integer> ids, String email) {
     }
 }

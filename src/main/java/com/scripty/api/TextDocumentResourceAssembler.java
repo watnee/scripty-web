@@ -93,6 +93,10 @@ public class TextDocumentResourceAssembler {
             // nothing.
             collection.add(linkTo(methodOn(TextDocumentRestController.class)
                     .bulkDelete(projectId, null, null)).withRel(ApiRel.BULK_DELETE));
+            // Emailing a selection is songs-only for the same reason, and sits
+            // behind the same edit gate the single-song `shareEmail` does.
+            collection.add(linkTo(methodOn(TextDocumentRestController.class)
+                    .bulkShareEmail(projectId, null, null)).withRel(ApiRel.BULK_SHARE_EMAIL));
         }
         if (canEdit(projectId)) {
             collection.add(linkTo(methodOn(TextDocumentRestController.class)

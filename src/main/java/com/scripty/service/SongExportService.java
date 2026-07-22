@@ -14,7 +14,12 @@ public interface SongExportService {
         TXT("txt", "text/plain; charset=UTF-8"),
         PDF("pdf", "application/pdf"),
         DOCX("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-        EPUB("epub", EpubPackage.CONTENT_TYPE);
+        EPUB("epub", EpubPackage.CONTENT_TYPE),
+        /**
+         * The one format here that is not a document: a score, so lyrics can be
+         * carried into MuseScore, Finale, Sibelius or Dorico and set to music.
+         */
+        MUSICXML(SongMusicXmlWriter.EXTENSION, SongMusicXmlWriter.CONTENT_TYPE);
 
         private final String extension;
         private final String contentType;
@@ -42,6 +47,9 @@ public interface SongExportService {
             case "pdf" -> Format.PDF;
             case "docx", "word" -> Format.DOCX;
             case "epub" -> Format.EPUB;
+            // Uncompressed only: a `.mxl` would need zipping, and every notation
+            // program reads the plain form.
+            case "musicxml", "xml" -> Format.MUSICXML;
             default -> Format.TXT;
         };
     }

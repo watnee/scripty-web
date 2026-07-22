@@ -70,7 +70,7 @@
     <tr id="songVersions"><td>songVersions</td><td>The version history of a song, as the collection relation embedding its snapshots. A song snapshot reports the title and lyric line count where a screenplay's reports scenes and elements.</td></tr>
     <tr id="version"><td>version</td><td>A single saved version.</td></tr>
     <tr id="headshot"><td>headshot</td><td>An actor's headshot image. Present only when the actor has one.</td></tr>
-    <tr id="forgotPassword"><td>forgotPassword</td><td>Ask for a password-reset email. POST <code>{"email"}</code>. Always answers 202 with the same message, whether or not the address is registered. The only relation an unauthenticated API root carries.</td></tr>
+    <tr id="forgotPassword"><td>forgotPassword</td><td>Ask for a password-reset email. POST <code>{"email"}</code>. Always answers 202 with the same message, whether or not the address is registered. Advertised on the 401 challenge, since nothing behind the sign-in can advertise it.</td></tr>
     <tr id="resetPassword"><td>resetPassword</td><td>Set a new password using the token from a recovery email. POST <code>{"token","password"}</code>. GET the same URL with <code>?token=</code> to ask whether a token is still good and whose account it belongs to.</td></tr>
     <tr id="setHeadshot"><td>setHeadshot</td><td>Store a headshot for this actor. POST a <code>multipart/form-data</code> body with a <code>headshot</code> part holding a JPG, PNG, WebP or GIF of 5 MB or less. Answers with the refreshed actor.</td></tr>
     <tr id="removeHeadshot"><td>removeHeadshot</td><td>DELETE this actor's headshot. Present only when the actor has one. Answers with the refreshed actor.</td></tr>
@@ -130,7 +130,7 @@
     <tr id="redo"><td>redo</td><td class="method">POST</td><td>Redo the last undone change.</td></tr>
     <tr id="shareEmail"><td>shareEmail</td><td class="method">POST</td><td>Email a song to a recipient.</td></tr>
     <tr id="importProject"><td>importProject</td><td class="method">POST</td><td>Create a project by importing a file.</td></tr>
-    <tr id="importDocument"><td>importDocument</td><td class="method">POST</td><td>Create a document by importing a file.</td></tr>
+    <tr id="importDocument"><td>importDocument</td><td class="method">POST</td><td>Create a document by importing a file — .txt, .fountain, .docx, .doc, .fdx, .epub, .pdf, or a .musicxml/.mxl score, whose lyrics become the song's lines and whose title becomes its own.</td></tr>
     <tr id="importScript"><td>importScript</td><td class="method">POST</td><td>Replace an existing project's script by importing a file.</td></tr>
     <tr id="export"><td>export</td><td class="method">GET</td><td>Download the script as Fountain.</td></tr>
     <tr id="exportPdf"><td>exportPdf</td><td class="method">GET</td><td>Download the script as PDF.</td></tr>
@@ -143,10 +143,12 @@
     <tr id="exportSongPdf"><td>exportSongPdf</td><td class="method">GET</td><td>Download one song as PDF.</td></tr>
     <tr id="exportSongDocx"><td>exportSongDocx</td><td class="method">GET</td><td>Download one song as Word (.docx).</td></tr>
     <tr id="exportSongEpub"><td>exportSongEpub</td><td class="method">GET</td><td>Download one song as EPUB.</td></tr>
+    <tr id="exportSongMusicXml"><td>exportSongMusicXml</td><td class="method">GET</td><td>Download one song as a MusicXML score — the words laid under a staff, one note per word, ready to set to music in a notation program. <code>importDocument</code> reads the same format back.</td></tr>
     <tr id="exportSongsTxt"><td>exportSongsTxt</td><td class="method">GET</td><td>Download the project's songs as one text songbook. Add <code>ids</code> to narrow it to a selection.</td></tr>
     <tr id="exportSongsPdf"><td>exportSongsPdf</td><td class="method">GET</td><td>Download the project's songs as one PDF songbook.</td></tr>
     <tr id="exportSongsDocx"><td>exportSongsDocx</td><td class="method">GET</td><td>Download the project's songs as one Word (.docx) songbook.</td></tr>
     <tr id="exportSongsEpub"><td>exportSongsEpub</td><td class="method">GET</td><td>Download the project's songs as one EPUB songbook.</td></tr>
+    <tr id="exportSongsMusicXml"><td>exportSongsMusicXml</td><td class="method">GET</td><td>Download the project's songs as one MusicXML score, each song a titled section on its own page. Add <code>ids</code> to narrow it to a selection.</td></tr>
     <tr id="addComment"><td>addComment</td><td class="method">POST</td><td>Leave a comment on an element.</td></tr>
     <tr id="sendInvitation"><td>sendInvitation</td><td class="method">POST</td><td>Invite someone to a project by email.</td></tr>
     <tr id="revoke"><td>revoke</td><td class="method">DELETE</td><td>Withdraw an outstanding invitation, or remove a registered passkey.</td></tr>

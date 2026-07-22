@@ -510,7 +510,7 @@ public class TextDocumentController {
             if (saved == null) {
                 redirectAttributes.addFlashAttribute(
                         "documentImportMessage",
-                        "Could not import that file. Check access and try a .txt, .fountain, .docx, .doc, .fdx, .epub, or .pdf file.");
+                        "Could not import that file. Check access and try a .txt, .fountain, .docx, .doc, .fdx, .epub, .pdf, or .musicxml file.");
                 return "redirect:" + listUrl(projectId, isSong);
             }
             redirectAttributes.addFlashAttribute(
@@ -523,7 +523,7 @@ public class TextDocumentController {
         } catch (IOException e) {
             redirectAttributes.addFlashAttribute(
                     "documentImportMessage",
-                    "Could not import that file. Check access and try a .txt, .fountain, .docx, .doc, .fdx, .epub, or .pdf file.");
+                    "Could not import that file. Check access and try a .txt, .fountain, .docx, .doc, .fdx, .epub, .pdf, or .musicxml file.");
             return "redirect:" + listUrl(projectId, isSong);
         }
     }

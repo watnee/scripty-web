@@ -137,6 +137,7 @@ public class SongExportServiceImpl implements SongExportService {
             case PDF -> renderPdf(songs);
             case DOCX -> renderDocx(songs);
             case EPUB -> renderEpub(songs, baseName, project, identifierSeed);
+            case MUSICXML -> renderMusicXml(songs, baseName);
             case TXT -> renderTxt(songs).getBytes(java.nio.charset.StandardCharsets.UTF_8);
         };
         if (content == null) {
@@ -275,6 +276,30 @@ public class SongExportServiceImpl implements SongExportService {
         } catch (IOException e) {
             return null;
         }
+    }
+
+    /**
+     * A score of the words alone, for setting to music elsewhere. Several songs
+     * become sections of one score rather than several files, matching how the
+     * other formats gather a songbook — MusicXML has no notion of a second
+     * piece in the same document, so each song is a titled section on its own
+     * page.
+     */
+    private byte[] renderMusicXml(List<TextDocument> songs, String scoreTitle) {
+        if (songs.isEmpty()) {
+            return SongMusicXmlWriter.write(scoreTitle, List.of());
+        }
+        if (songs.size() == 1) {
+            // The score already carries the song's name as its title, so a
+            // heading above the staff would only say it twice.
+            return SongMusicXmlWriter.write(scoreTitle,
+                    List.of(new SongMusicXmlWriter.Song(null, lyrics(songs.get(0)))));
+        }
+        List<SongMusicXmlWriter.Song> sections = new ArrayList<>();
+        for (TextDocument song : songs) {
+            sections.add(new SongMusicXmlWriter.Song(title(song), lyrics(song)));
+        }
+        return SongMusicXmlWriter.write(scoreTitle, sections);
     }
 
     private String songBody(TextDocument song) {

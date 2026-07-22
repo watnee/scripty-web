@@ -46,6 +46,9 @@ public class ScriptImportTextExtractor {
             PdfConversionResult result = PdfToFountainConverter.convertDetailed(file.getInputStream());
             return new Extraction(result.text(), true, result.usedScreenplayLayout());
         }
+        if (isMusicXml(file, lowerName, contentType)) {
+            return new Extraction(MusicXmlToLyricsConverter.convertPlain(file.getInputStream()), false, false);
+        }
         if (isDocx(lowerName, contentType)) {
             return new Extraction(extractDocx(file.getInputStream()), false, false);
         }
@@ -77,6 +80,9 @@ public class ScriptImportTextExtractor {
         if (isPdf(lowerName, contentType)) {
             return PdfToFountainConverter.convertPlain(file.getInputStream());
         }
+        if (isMusicXml(file, lowerName, contentType)) {
+            return MusicXmlToLyricsConverter.convertPlain(file.getInputStream());
+        }
         if (isDocx(lowerName, contentType)) {
             try (XWPFDocument document = new XWPFDocument(file.getInputStream())) {
                 return extractDocxPlain(document);
@@ -89,6 +95,24 @@ public class ScriptImportTextExtractor {
         return normalizeLineEndings(new String(file.getBytes(), StandardCharsets.UTF_8));
     }
 
+    /**
+     * What the file calls itself, when the format records a title of its own.
+     * Only a score does; everything else is named after the file it arrived in.
+     */
+    public String extractTitle(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+        String filename = file.getOriginalFilename();
+        String lowerName = filename != null ? filename.toLowerCase(Locale.ROOT) : "";
+        String contentType = file.getContentType() != null
+                ? file.getContentType().toLowerCase(Locale.ROOT) : "";
+        if (!isMusicXml(file, lowerName, contentType)) {
+            return null;
+        }
+        return MusicXmlToLyricsConverter.convert(file.getInputStream()).title();
+    }
+
     private static boolean isFdx(String lowerName, String contentType) {
         return FdxToFountainConverter.looksLikeFdx(lowerName, contentType);
     }
@@ -99,6 +123,20 @@ public class ScriptImportTextExtractor {
 
     private static boolean isEpub(String lowerName, String contentType) {
         return EpubToFountainConverter.looksLikeEpub(lowerName, contentType);
+    }
+
+    /**
+     * Notation programs still write plain {@code .xml} out of long habit, so a
+     * name that says nothing is worth a look inside before it is taken for raw
+     * text — the alternative is importing the markup itself as the lyric.
+     */
+    private static boolean isMusicXml(MultipartFile file, String lowerName, String contentType)
+            throws IOException {
+        if (MusicXmlToLyricsConverter.looksLikeMusicXml(lowerName, contentType)) {
+            return true;
+        }
+        return lowerName.endsWith(".xml")
+                && MusicXmlToLyricsConverter.looksLikeMusicXmlContent(file.getBytes());
     }
 
     private static boolean isDocx(String lowerName, String contentType) {

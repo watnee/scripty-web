@@ -83,6 +83,7 @@ class BundleExportRelsTest {
         assertTrue(hasRel(collection, ApiRel.EXPORT_SONGS_PDF));
         assertTrue(hasRel(collection, ApiRel.EXPORT_SONGS_DOCX));
         assertTrue(hasRel(collection, ApiRel.EXPORT_SONGS_EPUB));
+        assertTrue(hasRel(collection, ApiRel.EXPORT_SONGS_MUSICXML));
         assertFalse(hasRel(collection, ApiRel.IMPORT_DOCUMENT));
     }
 
@@ -97,6 +98,18 @@ class BundleExportRelsTest {
         assertFalse(hasRel(collection, ApiRel.EXPORT_SONGS_PDF));
         assertFalse(hasRel(collection, ApiRel.EXPORT_SONGS_DOCX));
         assertFalse(hasRel(collection, ApiRel.EXPORT_SONGS_EPUB));
+        assertFalse(hasRel(collection, ApiRel.EXPORT_SONGS_MUSICXML));
+    }
+
+    @Test
+    void aSongOffersItselfAsAScoreAndANoteDoesNot() {
+        when(projectAccess.canEditScriptForCurrentUser(any())).thenReturn(false);
+
+        EntityModel<TextDocumentResource> song = documents.toModel(document(1, TextDocument.TYPE_SONG));
+        EntityModel<TextDocumentResource> note = documents.toModel(document(2, TextDocument.TYPE_NOTES));
+
+        assertTrue(song.getLink(ApiRel.EXPORT_SONG_MUSICXML).isPresent());
+        assertFalse(note.getLink(ApiRel.EXPORT_SONG_MUSICXML).isPresent());
     }
 
     @Test

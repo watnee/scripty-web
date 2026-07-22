@@ -83,6 +83,8 @@ public class TextDocumentResourceAssembler {
                     .exportSongs(projectId, "docx", null, null)).withRel(ApiRel.EXPORT_SONGS_DOCX));
             collection.add(linkTo(methodOn(TextDocumentController.class)
                     .exportSongs(projectId, "epub", null, null)).withRel(ApiRel.EXPORT_SONGS_EPUB));
+            collection.add(linkTo(methodOn(TextDocumentController.class)
+                    .exportSongs(projectId, "musicxml", null, null)).withRel(ApiRel.EXPORT_SONGS_MUSICXML));
         }
         if (hasSong && canEdit(projectId)) {
             // Deleting a selection is songs-only, as the web's checkbox column
@@ -167,6 +169,8 @@ public class TextDocumentResourceAssembler {
                     .withRel(ApiRel.EXPORT_SONG_DOCX));
             links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "epub", null))
                     .withRel(ApiRel.EXPORT_SONG_EPUB));
+            links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "musicxml", null))
+                    .withRel(ApiRel.EXPORT_SONG_MUSICXML));
         }
         if (canEdit(projectId)) {
             links.add(linkTo(methodOn(TextDocumentRestController.class).update(id, null, null, null))

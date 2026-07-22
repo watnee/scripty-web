@@ -412,11 +412,52 @@ class SongExportServiceImplTest {
     }
 
     @Test
+    void exportsOneSongAsAScoreOfItsWords() throws IOException {
+        TextDocument doc = song(1, "Hold The Line", "First verse here\n\nSecond verse here");
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
+
+        SongExportService.SongExport export =
+                service.exportSong(1, SongExportService.Format.MUSICXML, user);
+
+        assertNotNull(export);
+        assertEquals("Hold-The-Line.musicxml", export.filename());
+        assertEquals("application/vnd.recordare.musicxml+xml", export.contentType());
+        // The words survive the trip out and back, which is the whole point of
+        // handing a lyric to a notation program.
+        assertEquals("First verse here\n\nSecond verse here",
+                MusicXmlToLyricsConverter.convert(new ByteArrayInputStream(export.content())).text());
+        assertEquals("Hold The Line",
+                MusicXmlToLyricsConverter.convert(new ByteArrayInputStream(export.content())).title());
+    }
+
+    @Test
+    void exportsASongbookAsSectionsOfOneScore() throws IOException {
+        TextDocument first = song(1, "Opener", "one");
+        TextDocument last = song(3, "Closer", "two");
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("My Musical")));
+        when(textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+                .thenReturn(List.of(first, last));
+
+        SongExportService.SongExport export =
+                service.exportSongs(PROJECT_ID, null, SongExportService.Format.MUSICXML, user);
+
+        assertNotNull(export);
+        assertEquals("My-Musical-Songs.musicxml", export.filename());
+        String xml = new String(export.content(), StandardCharsets.UTF_8);
+        assertTrue(xml.contains(">Opener</words>"), xml);
+        assertTrue(xml.contains(">Closer</words>"), xml);
+        assertEquals("one\ntwo",
+                MusicXmlToLyricsConverter.convert(new ByteArrayInputStream(export.content())).text());
+    }
+
+    @Test
     void parseFormatFallsBackToText() {
         assertEquals(SongExportService.Format.PDF, SongExportService.parseFormat("pdf"));
         assertEquals(SongExportService.Format.PDF, SongExportService.parseFormat("  PDF "));
         assertEquals(SongExportService.Format.DOCX, SongExportService.parseFormat("word"));
         assertEquals(SongExportService.Format.EPUB, SongExportService.parseFormat("epub"));
+        assertEquals(SongExportService.Format.MUSICXML, SongExportService.parseFormat("musicxml"));
+        assertEquals(SongExportService.Format.MUSICXML, SongExportService.parseFormat("xml"));
         assertEquals(SongExportService.Format.TXT, SongExportService.parseFormat("txt"));
         assertEquals(SongExportService.Format.TXT, SongExportService.parseFormat("nonsense"));
         assertEquals(SongExportService.Format.TXT, SongExportService.parseFormat(null));

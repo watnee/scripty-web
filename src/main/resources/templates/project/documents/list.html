@@ -89,7 +89,7 @@
                     <button type="button"
                             class="project-list-action-btn project-list-action-btn--secondary"
                             id="import-doc-btn"
-                            th:title="${isSongList} ? 'Import a song from a .txt, .fountain, .docx, .doc, .fdx, .epub, or .pdf file' : 'Import a note from a .txt, .fountain, .docx, .doc, .fdx, .epub, or .pdf file'">Import</button>
+                            th:title="${isSongList} ? 'Import a song from a .txt, .fountain, .docx, .doc, .fdx, .epub, .pdf, or .musicxml file' : 'Import a note from a .txt, .fountain, .docx, .doc, .fdx, .epub, .pdf, or .musicxml file'">Import</button>
                     <div class="nav-dropdown song-export-dropdown"
                          id="songs-export-dropdown"
                          th:if="${isSongList and !#lists.isEmpty(documents)}">
@@ -119,6 +119,11 @@
                                role="menuitem"
                                th:href="@{/project/documents/export-songs(projectId=${viewModel.projectId}, format=epub)}"
                                hx-boost="false">EPUB (.epub)</a>
+                            <a class="nav-dropdown-item song-export-link"
+                               role="menuitem"
+                               title="A score of the words, to set to music in MuseScore, Finale, Sibelius or Dorico"
+                               th:href="@{/project/documents/export-songs(projectId=${viewModel.projectId}, format=musicxml)}"
+                               hx-boost="false">MusicXML (.musicxml)</a>
                         </div>
                     </div>
                     <button type="button"
@@ -171,7 +176,7 @@
                 <input type="file"
                        id="import-doc-file"
                        name="file"
-                       accept=".txt,.fountain,.docx,.doc,.fdx,.epub,.pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml,application/epub+zip,application/pdf"
+                       accept=".txt,.fountain,.docx,.doc,.fdx,.epub,.pdf,.musicxml,.mxl,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml,application/epub+zip,application/pdf,application/vnd.recordare.musicxml+xml,application/vnd.recordare.musicxml"
                        aria-hidden="true"
                        tabindex="-1" />
             </form>

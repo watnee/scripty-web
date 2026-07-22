@@ -337,7 +337,7 @@ public class TextDocumentRestController {
             TextDocument saved = textDocumentService.importFile(projectId, type, file, user);
             if (saved == null) {
                 return new ResponseEntity<>(
-                        Map.of("file", "Could not import that file. Try a .txt, .fountain, .docx, .doc, .fdx, .epub, or .pdf file."),
+                        Map.of("file", "Could not import that file. Try a .txt, .fountain, .docx, .doc, .fdx, .epub, .pdf, or .musicxml file."),
                         HttpStatus.BAD_REQUEST);
             }
             TextDocumentViewModel viewModel = textDocumentService.getViewModel(saved.getId(), user);
@@ -348,7 +348,7 @@ public class TextDocumentRestController {
             return new ResponseEntity<>(Map.of("file", e.getUserMessage()), HttpStatus.BAD_REQUEST);
         } catch (IOException e) {
             return new ResponseEntity<>(
-                    Map.of("file", "Could not import that file. Try a .txt, .fountain, .docx, .doc, .fdx, .epub, or .pdf file."),
+                    Map.of("file", "Could not import that file. Try a .txt, .fountain, .docx, .doc, .fdx, .epub, .pdf, or .musicxml file."),
                     HttpStatus.BAD_REQUEST);
         }
     }

@@ -18,7 +18,7 @@
                     type="button"
                     class="nav-dropdown-item"
                     role="menuitem"
-                    title="Import a song from a .txt, .fountain, .docx, .doc, .fdx, .epub, or .pdf file into this project">Import song</button>
+                    title="Import a song from a .txt, .fountain, .docx, .doc, .fdx, .epub, .pdf, or .musicxml file into this project">Import song</button>
             <div class="nav-dropdown-divider" role="separator"></div>
             <div class="file-menu-label" aria-hidden="true">Export</div>
             <a class="nav-dropdown-item"
@@ -37,6 +37,11 @@
                role="menuitem"
                th:href="@{/project/documents/export(id=${documentId}, format=epub)}"
                hx-boost="false">EPUB (.epub)</a>
+            <a class="nav-dropdown-item"
+               role="menuitem"
+               title="A score of the words, to set to music in MuseScore, Finale, Sibelius or Dorico"
+               th:href="@{/project/documents/export(id=${documentId}, format=musicxml)}"
+               hx-boost="false">MusicXML (.musicxml)</a>
             <div class="nav-dropdown-divider" role="separator"></div>
             <button id="song-nav-print"
                     type="button"
@@ -54,7 +59,7 @@
         <input type="file"
                id="song-import-file"
                name="file"
-               accept=".txt,.fountain,.docx,.doc,.fdx,.epub,.pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml,application/epub+zip,application/pdf"
+               accept=".txt,.fountain,.docx,.doc,.fdx,.epub,.pdf,.musicxml,.mxl,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/x-fdx,text/xml,application/epub+zip,application/pdf,application/vnd.recordare.musicxml+xml,application/vnd.recordare.musicxml"
                aria-hidden="true"
                tabindex="-1" />
     </form>

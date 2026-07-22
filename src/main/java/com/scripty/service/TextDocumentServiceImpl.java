@@ -780,7 +780,12 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         }
 
         TextDocumentCommandModel cmd = getNewCommandModel(projectId, type);
-        cmd.setTitle(titleFromFilename(file.getOriginalFilename(), cmd.getDocumentType()));
+        // A score names itself, and that name is the songwriter's, where the
+        // filename is often the notation program's.
+        String declared = scriptImportTextExtractor.extractTitle(file);
+        cmd.setTitle(declared != null && !declared.isBlank()
+                ? declared.trim()
+                : titleFromFilename(file.getOriginalFilename(), cmd.getDocumentType()));
         cmd.setContent(content);
         return save(cmd, currentUser);
     }

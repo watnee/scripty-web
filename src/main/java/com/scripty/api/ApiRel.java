@@ -94,6 +94,13 @@ public final class ApiRel {
     public static final String EXPORT_SONG_PDF = "exportSongPdf";
     public static final String EXPORT_SONG_DOCX = "exportSongDocx";
     public static final String EXPORT_SONG_EPUB = "exportSongEpub";
+    /**
+     * The lyric as a score, for setting to music in a notation program. The odd
+     * one out among the song exports: the others are documents to read, this one
+     * is meant to be opened and worked on, and it is the format
+     * {@code importDocument} reads back.
+     */
+    public static final String EXPORT_SONG_MUSICXML = "exportSongMusicXml";
     // A project's songs gathered into one songbook, in the same formats. These
     // live on the document collection, since that is what they export; `ids`
     // narrows the songbook to a selection.
@@ -101,6 +108,8 @@ public final class ApiRel {
     public static final String EXPORT_SONGS_PDF = "exportSongsPdf";
     public static final String EXPORT_SONGS_DOCX = "exportSongsDocx";
     public static final String EXPORT_SONGS_EPUB = "exportSongsEpub";
+    /** Every song as sections of one score; MusicXML has no second piece. */
+    public static final String EXPORT_SONGS_MUSICXML = "exportSongsMusicXml";
     // Which characters an actor auditions for, within a project. The ids ride on
     // the project-scoped actor resource; `setAuditions` is the action that
     // replaces the set. Per-project, so it is advertised only on a project-scoped
@@ -111,14 +120,16 @@ public final class ApiRel {
     // multipart image and is offered on every actor a caller may edit;
     // `removeHeadshot` is offered only where there is one to remove, so a client
     // needs no separate flag to decide whether to draw the control.
-    // Password recovery, the one flow whose caller is signed out by definition.
-    // `forgotPassword` is the only rel an anonymous root carries; `resetPassword`
-    // rides on the answer to a request, and on a token that is still good — a
-    // token that has expired simply arrives without it.
-    public static final String FORGOT_PASSWORD = "forgotPassword";
-    public static final String RESET_PASSWORD = "resetPassword";
     public static final String SET_HEADSHOT = "setHeadshot";
     public static final String REMOVE_HEADSHOT = "removeHeadshot";
+
+    // Password recovery, the one flow whose caller is signed out by definition.
+    // Nothing behind the sign-in can advertise it, so `forgotPassword` rides on
+    // the 401 challenge itself; `resetPassword` rides on the answer to a
+    // request, and on a token that is still good — a token that has expired
+    // simply arrives without it.
+    public static final String FORGOT_PASSWORD = "forgotPassword";
+    public static final String RESET_PASSWORD = "resetPassword";
     public static final String DOCUMENTS = "documents";
     public static final String DOCUMENT = "document";
     public static final String SONGS = "songs";

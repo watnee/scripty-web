@@ -146,7 +146,15 @@ public class SecurityConfig {
                         // Tokenized read-only screenplay links from view invites.
                         "/view",
                         "/forgot-password",
-                        "/forgot-password/**")
+                        "/forgot-password/**",
+                        // The same recovery flow over the API. Deliberately not
+                        // /api itself: an anonymous root would answer 200 where
+                        // a native client needs the 401 Basic challenge to know
+                        // it must ask for credentials. The recovery link rides
+                        // on that challenge instead — see
+                        // HtmxLoginUrlAuthenticationEntryPoint.
+                        "/api/forgot-password",
+                        "/api/forgot-password/**")
                     .permitAll()
                 // Your own account is yours: changing your password and managing
                 // your own passkeys are not admin actions, so these sit ahead of
@@ -188,9 +196,16 @@ public class SecurityConfig {
             // with an Authorization header, which browsers cannot attach cross-site,
             // so CSRF tokens add nothing for them. Cookie-authenticated /api calls
             // (HTMX) keep full CSRF protection.
-            .csrf(csrf -> csrf.ignoringRequestMatchers(new AndRequestMatcher(
-                    new AntPathRequestMatcher("/api/**"),
-                    request -> request.getHeader(HttpHeaders.AUTHORIZATION) != null)))
+            .csrf(csrf -> csrf.ignoringRequestMatchers(
+                    new AndRequestMatcher(
+                            new AntPathRequestMatcher("/api/**"),
+                            request -> request.getHeader(HttpHeaders.AUTHORIZATION) != null),
+                    // Password recovery has no session to carry a token and no
+                    // credentials to send — the caller is signed out, which is
+                    // the whole point of it. Nothing here acts on behalf of a
+                    // signed-in user, so there is no authority to ride on.
+                    new AntPathRequestMatcher("/api/forgot-password/**"),
+                    new AntPathRequestMatcher("/api/forgot-password")))
             // Keep users signed in across server restarts and session expiry:
             // a DB-backed remember-me token silently re-authenticates for 30 days
             // (sliding — each auto-login refreshes the token). alwaysRemember means

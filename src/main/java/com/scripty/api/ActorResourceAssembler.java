@@ -122,8 +122,15 @@ public class ActorResourceAssembler implements RepresentationModelAssembler<Acto
         links.add(linkTo(methodOn(ActorRestController.class).list(projectId, null)).withRel(ApiRel.ACTORS));
         links.add(linkTo(methodOn(ActorRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE));
         links.add(linkTo(methodOn(ActorRestController.class).delete(id, null)).withRel(ApiRel.DELETE));
+        // Setting one is always on offer; reading and removing one only make
+        // sense where there is a headshot, so a client can draw its controls
+        // from the links alone rather than from the `hasHeadshot` flag.
+        links.add(linkTo(methodOn(ActorRestController.class).setHeadshot(id, null, null))
+                .withRel(ApiRel.SET_HEADSHOT));
         if (Boolean.TRUE.equals(hasHeadshot)) {
             links.add(linkTo(methodOn(ActorController.class).headshot(id, null)).withRel(ApiRel.HEADSHOT));
+            links.add(linkTo(methodOn(ActorRestController.class).removeHeadshot(id, null))
+                    .withRel(ApiRel.REMOVE_HEADSHOT));
         }
         if (projectId != null) {
             // Setting auditions is a per-project action, so it is offered only on

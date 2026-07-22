@@ -28,8 +28,8 @@ public class HtmxLoginUrlAuthenticationEntryPoint extends LoginUrlAuthentication
         if (isApiRequest(request)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setHeader("WWW-Authenticate", "Basic realm=\"Scripty API\"");
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"unauthorized\"}");
+            response.setContentType("application/hal+json");
+            response.getWriter().write(unauthorizedBody(request));
             return;
         }
         if (isHtmxRequest(request)) {
@@ -39,6 +39,26 @@ public class HtmxLoginUrlAuthenticationEntryPoint extends LoginUrlAuthentication
             return;
         }
         super.commence(request, response, authException);
+    }
+
+    /**
+     * The challenge, with the one thing a signed-out caller can actually do.
+     *
+     * <p>Password recovery is the awkward case for a link-driven client: the
+     * flow exists precisely for someone who cannot sign in, and every document
+     * that would advertise it sits behind the sign-in. The challenge is the one
+     * response such a caller is guaranteed to see, so the link rides on that —
+     * which keeps recovery something a client follows rather than a path it has
+     * to know.
+     *
+     * <p>Written by hand rather than through the HAL serializer, so there is no
+     * curie to namespace it against; the bare relation name is the unprefixed
+     * form of the same thing.
+     */
+    private static String unauthorizedBody(HttpServletRequest request) {
+        String href = request.getContextPath() + "/api/forgot-password";
+        return "{\"error\": \"unauthorized\","
+                + "\"_links\": {\"forgotPassword\": {\"href\": \"" + href + "\"}}}";
     }
 
     private static boolean isApiRequest(HttpServletRequest request) {

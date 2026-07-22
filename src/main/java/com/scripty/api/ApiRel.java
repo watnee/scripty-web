@@ -107,6 +107,18 @@ public final class ApiRel {
     // actor.
     public static final String SET_AUDITIONS = "setAuditions";
     public static final String HEADSHOT = "headshot";
+    // Writing the headshot, as opposed to reading it. `setHeadshot` takes a
+    // multipart image and is offered on every actor a caller may edit;
+    // `removeHeadshot` is offered only where there is one to remove, so a client
+    // needs no separate flag to decide whether to draw the control.
+    // Password recovery, the one flow whose caller is signed out by definition.
+    // `forgotPassword` is the only rel an anonymous root carries; `resetPassword`
+    // rides on the answer to a request, and on a token that is still good — a
+    // token that has expired simply arrives without it.
+    public static final String FORGOT_PASSWORD = "forgotPassword";
+    public static final String RESET_PASSWORD = "resetPassword";
+    public static final String SET_HEADSHOT = "setHeadshot";
+    public static final String REMOVE_HEADSHOT = "removeHeadshot";
     public static final String DOCUMENTS = "documents";
     public static final String DOCUMENT = "document";
     public static final String SONGS = "songs";

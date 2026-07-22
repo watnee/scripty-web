@@ -10,6 +10,7 @@ import com.scripty.dto.Actor;
 import com.scripty.repository.ActorRepository;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ActorService;
+import com.scripty.service.ActorHeadshotService;
 import com.scripty.service.AuditionService;
 import com.scripty.viewmodel.actor.actorlist.ActorListViewModel;
 import com.scripty.viewmodel.actor.actorlist.ActorViewModel;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping(value = "/api/actor")
@@ -46,6 +48,9 @@ public class ActorRestController {
 
     @Autowired
     AuditionService auditionService;
+
+    @Autowired
+    ActorHeadshotService actorHeadshotService;
 
     @Autowired
     ProjectAccessSupport projectAccess;
@@ -116,6 +121,60 @@ public class ActorRestController {
         }
         Actor actor = actorService.deleteActor(id);
         return ResponseEntity.ok(actorResourceAssembler.toDeleteModel(actor));
+    }
+
+    /**
+     * Stores a new headshot for this actor.
+     *
+     * Multipart rather than a raw image body, so the same
+     * {@link com.scripty.service.ActorHeadshotService} the web form uses does
+     * the validating — one place decides what an acceptable headshot is, and a
+     * REST client cannot slip past a rule the browser is held to. Answers with
+     * the refreshed actor, whose links now include {@code removeHeadshot}.
+     */
+    @RequestMapping(value = "/{id}/headshot", method = RequestMethod.POST, consumes = "multipart/form-data", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> setHeadshot(
+            @PathVariable Integer id,
+            @RequestParam("headshot") MultipartFile headshot,
+            Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Actor actor = actorRepository.findById(id).orElse(null);
+        if (actor == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (headshot == null || headshot.isEmpty()) {
+            return new ResponseEntity<>(
+                    RestErrors.of("headshot", "A headshot image is required."), HttpStatus.BAD_REQUEST);
+        }
+        try {
+            actorHeadshotService.updateHeadshot(actor, headshot, false);
+        } catch (IllegalArgumentException ex) {
+            // Too big, or not an image we can serve back. The service's message
+            // names the rule, so it is worth passing on rather than replacing.
+            return new ResponseEntity<>(
+                    RestErrors.of("headshot", ex.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(actorResourceAssembler.toModel(actor));
+    }
+
+    /**
+     * Takes the headshot away. Answers with the refreshed actor rather than an
+     * empty body, so the caller sees the links it has left — the point being
+     * that {@code removeHeadshot} is now gone from them.
+     */
+    @RequestMapping(value = "/{id}/headshot", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> removeHeadshot(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canViewCasting(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Actor actor = actorRepository.findById(id).orElse(null);
+        if (actor == null) {
+            return ResponseEntity.notFound().build();
+        }
+        actorHeadshotService.updateHeadshot(actor, null, true);
+        return ResponseEntity.ok(actorResourceAssembler.toModel(actor));
     }
 
     /**

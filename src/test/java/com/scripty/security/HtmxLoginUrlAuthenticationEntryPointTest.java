@@ -47,7 +47,11 @@ class HtmxLoginUrlAuthenticationEntryPointTest {
 
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
         assertEquals("Basic realm=\"Scripty API\"", response.getHeader("WWW-Authenticate"));
-        assertTrue(response.getContentType().startsWith("application/json"));
+        // HAL, not plain JSON: the body carries the one link a signed-out caller
+        // can follow, which is how a link-driven client finds password recovery
+        // at all — every document that would advertise it needs a sign-in.
+        assertTrue(response.getContentType().startsWith("application/hal+json"));
+        assertTrue(response.getContentAsString().contains("forgotPassword"));
         assertNull(response.getRedirectedUrl());
         assertNull(response.getHeader("HX-Redirect"));
     }

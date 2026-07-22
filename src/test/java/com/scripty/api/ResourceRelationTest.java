@@ -46,6 +46,7 @@ class ResourceRelationTest {
                 Arguments.of(BlockCommentResource.class, "comment", "comments"),
                 Arguments.of(ProjectActivityResource.class, "activityEntry", "activity"),
                 Arguments.of(InvitationResource.class, "invitation", "invitations"),
+                Arguments.of(InviteTeamResource.class, "inviteTeam", "inviteTeams"),
                 Arguments.of(DeletedBlockResource.class, "deletedBlock", "deletedBlocks"),
                 Arguments.of(TrashedProjectResource.class, "trashedProject", "trashedProjects"),
                 Arguments.of(DeletedDocumentResource.class, "deletedDocument", "deletedDocuments"));

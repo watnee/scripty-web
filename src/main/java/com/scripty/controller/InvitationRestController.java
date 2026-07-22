@@ -2,15 +2,19 @@ package com.scripty.controller;
 
 import com.scripty.api.ApiRel;
 import com.scripty.api.InvitationResource;
+import com.scripty.api.InviteTeamResource;
 import com.scripty.api.SendInvitationRequest;
 import com.scripty.commandmodel.invitation.SendInvitationCommandModel;
 import com.scripty.commandmodel.invitation.SendViewInvitationCommandModel;
 import com.scripty.config.FeatureFlag;
 import com.scripty.config.FeatureFlags;
+import com.scripty.dto.Project;
+import com.scripty.dto.Team;
 import com.scripty.dto.User;
 import com.scripty.security.InvitationRateLimiter;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.InvitationService;
+import com.scripty.service.ProjectService;
 import com.scripty.service.ViewInvitationService;
 import com.scripty.viewmodel.invitation.PendingInvitationViewModel;
 import com.scripty.viewmodel.invitation.ViewInvitationViewModel;
@@ -71,6 +75,9 @@ public class InvitationRestController {
     ProjectAccessSupport projectAccess;
 
     @Autowired
+    ProjectService projectService;
+
+    @Autowired
     InvitationRateLimiter rateLimiter;
 
     @Autowired
@@ -90,6 +97,31 @@ public class InvitationRestController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(collection(projectId, principal));
+    }
+
+    /**
+     * The teams a collaborator can be invited into: the ones this project is
+     * assigned to, which is the same list the web's invite form renders.
+     *
+     * <p>Its own endpoint rather than a field on the invitation collection,
+     * because it answers a different question — that collection says who has
+     * been invited, this says what may be chosen next — and because a client
+     * only needs it while a person is filling in the form.
+     *
+     * <p>An empty list is a real answer, not an error: a project with no teams
+     * cannot take collaborators, and the web says so in prose rather than
+     * offering a form that cannot be submitted.
+     */
+    @RequestMapping(value = "/teams", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> inviteTeams(@PathVariable Integer projectId, Principal principal) {
+        if (disabled()) {
+            return ResponseEntity.notFound().build();
+        }
+        // Same gate as the invitation list: choosing a team is part of sending.
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(teamCollection(projectId));
     }
 
     /**
@@ -213,8 +245,30 @@ public class InvitationRestController {
                 .add(linkTo(methodOn(InvitationRestController.class).list(projectId, null)).withSelfRel())
                 .add(linkTo(methodOn(InvitationRestController.class).send(projectId, null, null))
                         .withRel(ApiRel.SEND_INVITATION))
+                // Always advertised, even where the project has no teams: the
+                // answer "there are none, so you cannot invite a collaborator"
+                // is one a client needs to be able to reach and show.
+                .add(linkTo(methodOn(InvitationRestController.class).inviteTeams(projectId, null))
+                        .withRel(ApiRel.INVITE_TEAMS))
                 .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null))
                         .withRel(ApiRel.PROJECT));
+    }
+
+    private CollectionModel<EntityModel<InviteTeamResource>> teamCollection(Integer projectId) {
+        List<EntityModel<InviteTeamResource>> resources = new ArrayList<>();
+        Project project = projectService.readWithTeams(projectId);
+        if (project != null) {
+            for (Team team : project.getSortedTeams()) {
+                InviteTeamResource resource = new InviteTeamResource();
+                resource.setId(team.getId());
+                resource.setName(team.getName());
+                resources.add(EntityModel.of(resource));
+            }
+        }
+        return CollectionModel.of(resources)
+                .add(linkTo(methodOn(InvitationRestController.class).inviteTeams(projectId, null)).withSelfRel())
+                .add(linkTo(methodOn(InvitationRestController.class).list(projectId, null))
+                        .withRel(ApiRel.INVITATIONS));
     }
 
     private Link[] itemLinks(Integer projectId, Integer id) {

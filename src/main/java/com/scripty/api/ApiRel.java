@@ -61,6 +61,11 @@ public final class ApiRel {
     public static final String INVITATION = "invitation";
     public static final String INVITATIONS = "invitations";
     public static final String SEND_INVITATION = "sendInvitation";
+    // The teams a collaborator can be invited into. Inviting an editor needs a
+    // team, and a project's teams are the only valid choices, so a client that
+    // cannot read this list cannot send a valid invitation at all.
+    public static final String INVITE_TEAMS = "inviteTeams";
+    public static final String INVITE_TEAM = "inviteTeam";
     public static final String REVOKE = "revoke";
     // Who can already see a project, as opposed to who has been invited to.
     // Team membership and role grant access without any invitation, so the

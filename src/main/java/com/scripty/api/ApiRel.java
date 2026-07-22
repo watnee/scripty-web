@@ -139,6 +139,7 @@ public final class ApiRel {
     public static final String NOTES = "notes";
     public static final String INSERT = "insert";
     public static final String SHARE_EMAIL = "shareEmail";
+    public static final String BULK_SHARE_EMAIL = "bulkShareEmail";
     public static final String IMPORT_DOCUMENT = "importDocument";
     public static final String REORDER = "reorder";
     public static final String DUPLICATE = "duplicate";

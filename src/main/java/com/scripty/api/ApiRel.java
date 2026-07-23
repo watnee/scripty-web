@@ -70,6 +70,13 @@ public final class ApiRel {
     // cannot read this list cannot send a valid invitation at all.
     public static final String INVITE_TEAMS = "inviteTeams";
     public static final String INVITE_TEAM = "inviteTeam";
+    // The project side of team membership: every team the writer could assign
+    // this project to, each flagged assigned-or-not, so the production page's
+    // team checkboxes can be built and saved through the project's `update`
+    // affordance. Its own list because `inviteTeams` deliberately shows only the
+    // project's current teams, not the ones it could gain.
+    public static final String PROJECT_TEAMS = "projectTeams";
+    public static final String PROJECT_TEAM = "projectTeam";
     public static final String REVOKE = "revoke";
     // Who can already see a project, as opposed to who has been invited to.
     // Team membership and role grant access without any invitation, so the

@@ -101,6 +101,7 @@
     <tr id="access"><td>access</td><td>Everyone who can already see a project, with why (their role, or the team carrying it) and whether they can write. Not the same as <code>invitations</code>: role and team membership grant access without one.</td></tr>
     <tr id="accessUser"><td>accessUser</td><td>One person who can see the project.</td></tr>
     <tr id="inviteTeam"><td>inviteTeam</td><td>One team in the <code>inviteTeams</code> collection: an id and a name to choose from when inviting a collaborator.</td></tr>
+    <tr id="projectTeam"><td>projectTeam</td><td>One team in the <code>projectTeams</code> collection: an id, a name, and an <code>assigned</code> flag saying whether the project belongs to it now.</td></tr>
   </tbody>
 </table>
 
@@ -155,6 +156,7 @@
     <tr id="addComment"><td>addComment</td><td class="method">POST</td><td>Leave a comment on an element.</td></tr>
     <tr id="sendInvitation"><td>sendInvitation</td><td class="method">POST</td><td>Invite someone to a project by email. A collaborator invitation must name a <code>teamId</code> from <code>inviteTeams</code>; a <code>viewOnly</code> one must not.</td></tr>
     <tr id="inviteTeams"><td>inviteTeams</td><td class="method">GET</td><td>The teams a collaborator may be invited into: the ones this project is assigned to. An empty collection means the project can take no collaborators until it is assigned a team.</td></tr>
+    <tr id="projectTeams"><td>projectTeams</td><td class="method">GET</td><td>Every team the writer could assign this project to, each with an <code>assigned</code> flag — the production page's team checkboxes. Read-only: to change the assignment, send the chosen ids back as <code>teamIds</code> through <code>update</code>. Advertised only to an editor.</td></tr>
     <tr id="revoke"><td>revoke</td><td class="method">DELETE</td><td>Withdraw an outstanding invitation, or remove a registered passkey.</td></tr>
     <tr id="assignProductions"><td>assignProductions</td><td class="method">PUT</td><td>Replace the set of productions a team is attached to.</td></tr>
     <tr id="setDefault"><td>setDefault</td><td class="method">POST</td><td>Make this edition the one opened when no edition is named.</td></tr>

@@ -4,7 +4,9 @@ import com.scripty.api.ApiRel;
 import com.scripty.api.ProjectAccessUserResource;
 import com.scripty.api.ProjectResource;
 import com.scripty.api.ProjectResourceAssembler;
+import com.scripty.api.ProjectTeamOptionResource;
 import com.scripty.api.RestErrors;
+import com.scripty.dto.Team;
 import com.scripty.commandmodel.project.createproject.CreateProjectCommandModel;
 import com.scripty.commandmodel.project.editproject.EditProjectCommandModel;
 import com.scripty.commandmodel.project.titlepage.TitlePageCommandModel;
@@ -53,6 +55,9 @@ public class ProjectRestController {
 
     @Autowired
     ProjectService projectService;
+
+    @Autowired
+    com.scripty.service.TeamService teamService;
 
     @Autowired
     ProjectResourceAssembler projectResourceAssembler;
@@ -193,6 +198,46 @@ public class ProjectRestController {
         }
         return ResponseEntity.ok(CollectionModel.of(people)
                 .add(linkTo(methodOn(ProjectRestController.class).access(id, null)).withSelfRel())
+                .add(linkTo(methodOn(ProjectRestController.class).show(id, null)).withRel(ApiRel.PROJECT)));
+    }
+
+    /**
+     * Every team the writer could assign this project to, each flagged with
+     * whether it is assigned now — the project side of the web production page's
+     * team checkboxes. The choices are the same full team list the production
+     * form offers ({@code teamService.list()}); an ordinary editor has no other
+     * way to read them since {@code /api/team} is admin-only.
+     *
+     * <p>Read-only: to change the assignment a client sends the ticked ids back
+     * through {@code update}'s {@code teamIds}, which is why this collection
+     * points at {@code update} rather than carrying its own write. Gated the
+     * same way its rel is advertised and the same way {@code inviteTeams} is —
+     * on edit rights, since reassigning a project's teams is an editor's call.
+     */
+    @RequestMapping(value = "/{id}/teams", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> teams(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canEditScript(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Project project = projectService.readWithTeams(id);
+        if (project == null) {
+            return ResponseEntity.notFound().build();
+        }
+        java.util.Set<Integer> assignedIds = new java.util.HashSet<>();
+        for (Team team : project.getSortedTeams()) {
+            assignedIds.add(team.getId());
+        }
+        List<EntityModel<ProjectTeamOptionResource>> options = new ArrayList<>();
+        for (Team team : teamService.list()) {
+            ProjectTeamOptionResource resource = new ProjectTeamOptionResource();
+            resource.setId(team.getId());
+            resource.setName(team.getName());
+            resource.setAssigned(assignedIds.contains(team.getId()));
+            options.add(EntityModel.of(resource));
+        }
+        return ResponseEntity.ok(CollectionModel.of(options)
+                .add(linkTo(methodOn(ProjectRestController.class).teams(id, null)).withSelfRel())
+                .add(linkTo(methodOn(ProjectRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE))
                 .add(linkTo(methodOn(ProjectRestController.class).show(id, null)).withRel(ApiRel.PROJECT)));
     }
 

@@ -139,6 +139,11 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         if (canEditScript(id)) {
             links.add(linkTo(methodOn(ProjectRestController.class).importScript(id, null, null, null))
                     .withRel(ApiRel.IMPORT_SCRIPT));
+            // Managing which teams a project belongs to is an editor's call, so
+            // a reader is never shown the picker. The write still rides on
+            // `update`; this only advertises where to read the current choices.
+            links.add(linkTo(methodOn(ProjectRestController.class).teams(id, null))
+                    .withRel(ApiRel.PROJECT_TEAMS));
             // Only when the flag is on, so a client sees no invitation surface
             // at all until the endpoints actually answer.
             if (featureFlags.isEnabled(FeatureFlag.API_INVITATIONS)) {

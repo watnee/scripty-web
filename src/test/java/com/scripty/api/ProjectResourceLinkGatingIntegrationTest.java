@@ -44,6 +44,8 @@ class ProjectResourceLinkGatingIntegrationTest {
 
     /** Custom rels are namespaced by the curie provider (see HypermediaConfig). */
     private static final String IMPORT_SCRIPT_REL = "$._links.['scripty:importScript']";
+    /** Team management is editor-only, gated the same way as script import. */
+    private static final String PROJECT_TEAMS_REL = "$._links.['scripty:projectTeams']";
 
     @Autowired
     private MockMvc mockMvc;
@@ -114,6 +116,26 @@ class ProjectResourceLinkGatingIntegrationTest {
                 // added, so the affordance describes the real request body.
                 .andExpect(jsonPath("$._templates.update.properties[?(@.name == 'screenplayTitle')]").exists())
                 .andExpect(jsonPath("$._templates.update.properties[?(@.name == 'writers')]").exists());
+    }
+
+    @Test
+    void writerIsOfferedTheProjectTeamsLink() throws Exception {
+        mockMvc.perform(get("/api/project/" + projectId)
+                        .accept(MediaTypes.HAL_FORMS_JSON)
+                        .with(user(WRITER).roles("USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(PROJECT_TEAMS_REL).exists())
+                .andExpect(jsonPath(PROJECT_TEAMS_REL + ".href",
+                        org.hamcrest.Matchers.containsString("/api/project/" + projectId + "/teams")));
+    }
+
+    @Test
+    void readOnlyUserIsNotOfferedTheProjectTeamsLink() throws Exception {
+        mockMvc.perform(get("/api/project/" + projectId)
+                        .accept(MediaTypes.HAL_FORMS_JSON)
+                        .with(user(READER).roles("USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(PROJECT_TEAMS_REL).doesNotExist());
     }
 
     @Test

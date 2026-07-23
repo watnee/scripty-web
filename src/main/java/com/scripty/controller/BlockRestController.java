@@ -10,6 +10,7 @@ import com.scripty.api.BulkReplaceRequest;
 import com.scripty.api.BulkSetTypeRequest;
 import com.scripty.api.CreateBlockBelowRequest;
 import com.scripty.api.MoveBlockRequest;
+import com.scripty.api.ReplaceOccurrenceRequest;
 import com.scripty.api.RestErrors;
 import com.scripty.api.SetBlockTypeRequest;
 import com.scripty.commandmodel.block.createblock.CreateBlockCommandModel;
@@ -509,5 +510,49 @@ public class BlockRestController {
         Block block = blockService.moveBlockTo(id, request.position());
         projectVersionService.autoSaveVersionForBlock(block.getId());
         return ResponseEntity.ok(blockResourceAssembler.toModel(block));
+    }
+
+    /**
+     * Replaces one occurrence of {@code find} inside a single block — the
+     * one-at-a-time "Replace" that walks a find through the script, as opposed
+     * to {@code /bulk/replace}'s "Replace All".
+     *
+     * <p>Its own checkpoint, so each single replace is a separate undo step,
+     * matching the MVC {@code /block/replaceOne} the web editor drives. An empty
+     * {@code find} is rejected; an out-of-range {@code occurrence} simply
+     * changes nothing and the block is returned as it was.
+     */
+    @RequestMapping(value = "/{id}/replace", method = RequestMethod.POST, consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> replace(
+            @PathVariable Integer id,
+            @RequestBody ReplaceOccurrenceRequest request,
+            Principal principal) {
+        if (!projectAccess.canEditBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request.find() == null || request.find().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("find", "You must supply a value to find."), HttpStatus.BAD_REQUEST);
+        }
+        Block current = blockService.read(id);
+        if (current == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        recordCheckpointFor(id);
+        Block block = blockService.replaceOccurrenceInBlock(
+                id,
+                request.find(),
+                request.replacementOrEmpty(),
+                request.matchCaseOrFalse(),
+                request.wholeWordOrFalse(),
+                request.occurrenceOrFirst());
+        // A no-op (nothing at that occurrence) leaves the block untouched; hand
+        // back what is there either way so the client re-reads current state.
+        Block result = block != null ? block : current;
+        if (block != null) {
+            projectVersionService.autoSaveVersionForBlock(block.getId());
+        }
+        return ResponseEntity.ok(blockResourceAssembler.toModel(result));
     }
 }

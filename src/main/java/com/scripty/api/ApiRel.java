@@ -22,6 +22,10 @@ public final class ApiRel {
     public static final String CREATE_INITIAL = "createInitial";
     public static final String SET_TYPE = "setType";
     public static final String MOVE = "move";
+    // Replace one occurrence in one block — the single-step "Replace" beside the
+    // block collection's "Replace All" (BULK_REPLACE). Per block, so it rides
+    // here rather than on the collection.
+    public static final String REPLACE = "replace";
 
     // Bulk operations act on a set of blocks at once, so they are advertised on
     // the block collection rather than on any one block.

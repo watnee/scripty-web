@@ -173,6 +173,7 @@ public class BlockResourceAssembler implements RepresentationModelAssembler<Bloc
             links.add(linkTo(methodOn(BlockRestController.class).createBelow(id, null, null)).withRel(ApiRel.CREATE_BELOW));
             links.add(linkTo(methodOn(BlockRestController.class).setType(id, null, null)).withRel(ApiRel.SET_TYPE));
             links.add(linkTo(methodOn(BlockRestController.class).move(id, null, null)).withRel(ApiRel.MOVE));
+            links.add(linkTo(methodOn(BlockRestController.class).replace(id, null, null)).withRel(ApiRel.REPLACE));
         }
         if (projectId != null) {
             links.add(linkTo(methodOn(BlockRestController.class).list(projectId, null, null)).withRel(ApiRel.BLOCKS));

@@ -413,7 +413,7 @@ public class BlockRestController {
                     Map.of("align", "Text align must be one of left, center, or right."),
                     HttpStatus.BAD_REQUEST);
         }
-        if (request.hasFont() && BlockFormatting.normalizeFont(request.font()) == null) {
+        if (request.font() != null && BlockFormatting.normalizeFont(request.font()) == null) {
             return new ResponseEntity<>(
                     Map.of("font", "Font must be one of Courier Prime, Arial, or Times New Roman."),
                     HttpStatus.BAD_REQUEST);
@@ -429,7 +429,7 @@ public class BlockRestController {
             blockService.setBlockAlignments(request.ids(), request.align());
         }
         if (request.hasFont()) {
-            blockService.setBlockFonts(request.ids(), request.font());
+            blockService.setBlockFonts(request.ids(), request.resolvedFont());
         }
         if (request.hasStyle()) {
             blockService.toggleBlockTextStyles(request.ids(), request.style());

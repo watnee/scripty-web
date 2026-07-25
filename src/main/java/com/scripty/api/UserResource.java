@@ -1,6 +1,7 @@
 package com.scripty.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.List;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.server.core.Relation;
 
@@ -24,6 +25,11 @@ public class UserResource extends RepresentationModel<UserResource> {
     private Boolean viewCasting;
     private Boolean developer;
     private Boolean enabled;
+    /// The projects this user can reach, and why. Present only on the
+    /// single-user profile (the {@code GET /api/user/{id}} response), where the
+    /// service computes it; the list omits it (NON_NULL), matching the web,
+    /// where only the profile page shows the access breakdown.
+    private List<UserProjectAccessResource> projectAccess;
 
     public Integer getId() {
         return id;
@@ -151,5 +157,13 @@ public class UserResource extends RepresentationModel<UserResource> {
 
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public List<UserProjectAccessResource> getProjectAccess() {
+        return projectAccess;
+    }
+
+    public void setProjectAccess(List<UserProjectAccessResource> projectAccess) {
+        this.projectAccess = projectAccess;
     }
 }

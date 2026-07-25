@@ -4,6 +4,7 @@ import com.scripty.controller.UserRestController;
 import com.scripty.dto.User;
 import com.scripty.viewmodel.user.userlist.UserViewModel;
 import com.scripty.viewmodel.user.userprofile.UserProfileViewModel;
+import com.scripty.viewmodel.user.userprofile.UserProjectAccessViewModel;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.hateoas.CollectionModel;
@@ -40,7 +41,30 @@ public class UserResourceAssembler implements RepresentationModelAssembler<UserV
         resource.setViewCasting(profile.isViewCasting());
         resource.setDeveloper(profile.isDeveloper());
         resource.setEnabled(profile.isEnabled());
+        resource.setProjectAccess(toProjectAccess(profile.getProjectAccess()));
         return EntityModel.of(resource).add(userLinks(profile.getId()));
+    }
+
+    /// Maps the computed per-project access rows onto the resource. Only the
+    /// profile path carries these — the list (`toResource`) and the
+    /// create/update (`User`) paths leave `projectAccess` null, so NON_NULL
+    /// omits it there, matching the web where only the profile page shows it.
+    private List<UserProjectAccessResource> toProjectAccess(
+            List<UserProjectAccessViewModel> access) {
+        if (access == null) {
+            return null;
+        }
+        List<UserProjectAccessResource> resources = new ArrayList<>();
+        for (UserProjectAccessViewModel vm : access) {
+            UserProjectAccessResource resource = new UserProjectAccessResource();
+            resource.setProjectId(vm.getProjectId());
+            resource.setProjectName(vm.getProjectName());
+            resource.setCanEdit(vm.isCanEdit());
+            resource.setPermissionLabel(vm.getPermissionLabel());
+            resource.setAccessReason(vm.getAccessReason());
+            resources.add(resource);
+        }
+        return resources;
     }
 
     public EntityModel<UserResource> toModel(User user) {

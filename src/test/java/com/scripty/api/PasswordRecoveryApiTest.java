@@ -43,6 +43,10 @@ class PasswordRecoveryApiTest {
         mockMvc.perform(get("/api").accept("application/hal+json"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$._links.forgotPassword.href").value(notNullValue()))
+                // No base URL in this profile means no passkeys, and a rel that
+                // could only 404 must not be advertised (PasskeyApiTest pins
+                // the enabled shape).
+                .andExpect(jsonPath("$._links.passkeyLogin").doesNotExist())
                 .andExpect(jsonPath("$._links.projects").doesNotExist());
     }
 

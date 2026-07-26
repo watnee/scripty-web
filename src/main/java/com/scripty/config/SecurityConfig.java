@@ -1,6 +1,7 @@
 package com.scripty.config;
 
 import com.scripty.repository.UserRepository;
+import com.scripty.security.ApiTokenAuthenticationFilter;
 import com.scripty.security.CsrfAccessDeniedHandler;
 import com.scripty.security.CsrfTokenEagerLoadingFilter;
 import com.scripty.security.EmailResolvingUserDetailsManager;
@@ -10,6 +11,8 @@ import com.scripty.security.LoginSuccessHandler;
 import com.scripty.security.LogoutIgnoringRequestCache;
 import com.scripty.security.MetricsTokenAuthorizationManager;
 import com.scripty.security.PasswordDiscardingUserCredentialRepository;
+import com.scripty.service.ApiTokenService;
+import java.util.Set;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -28,14 +31,18 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.AndRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.webauthn.api.PublicKeyCredentialRpEntity;
 import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredentialUserEntityRepository;
 import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
+import org.springframework.security.web.webauthn.management.WebAuthnRelyingPartyOperations;
+import org.springframework.security.web.webauthn.management.Webauthn4JRelyingPartyOperations;
 
 @Configuration
 @EnableWebSecurity
@@ -72,8 +79,10 @@ public class SecurityConfig {
     }
 
     @Bean
-    public HtmxLoginUrlAuthenticationEntryPoint authenticationEntryPoint() {
-        return new HtmxLoginUrlAuthenticationEntryPoint("/login");
+    public HtmxLoginUrlAuthenticationEntryPoint authenticationEntryPoint(
+            PasskeySettings passkeySettings) {
+        // The 401 challenge advertises passkey sign-in only when it exists.
+        return new HtmxLoginUrlAuthenticationEntryPoint("/login", passkeySettings.isEnabled());
     }
 
     @Bean
@@ -100,10 +109,16 @@ public class SecurityConfig {
             UserRepository userRepository,
             UserDetailsManager userDetailsManager,
             PersistentTokenRepository persistentTokenRepository,
-            PasskeySettings passkeySettings) throws Exception {
+            PasskeySettings passkeySettings,
+            ApiTokenService apiTokenService) throws Exception {
         applyWebAuthn(http, passkeySettings);
         http
             .requestCache(cache -> cache.requestCache(requestCache))
+            // Native clients signed in with a passkey have no password for
+            // Basic; their bearer tokens authenticate here instead.
+            .addFilterBefore(
+                    new ApiTokenAuthenticationFilter(apiTokenService, userDetailsManager),
+                    BasicAuthenticationFilter.class)
             // Accounts still on seeded/generated deploy credentials are locked to
             // the change-password page until they choose a real password.
             .addFilterAfter(new ForcedPasswordChangeFilter(userRepository),
@@ -154,7 +169,15 @@ public class SecurityConfig {
                         // on that challenge instead — see
                         // HtmxLoginUrlAuthenticationEntryPoint.
                         "/api/forgot-password",
-                        "/api/forgot-password/**")
+                        "/api/forgot-password/**",
+                        // The native passkey sign-in ceremony: like the browser's
+                        // /webauthn/authenticate/options + /login/webauthn above,
+                        // both halves run before a user is authenticated.
+                        "/api/login/passkey/options",
+                        "/api/login/passkey",
+                        // iOS fetches this unauthenticated to validate the app's
+                        // webcredentials associated domain for passkeys.
+                        "/.well-known/apple-app-site-association")
                     .permitAll()
                 // Your own account is yours: changing your password and managing
                 // your own passkeys are not admin actions, so these sit ahead of
@@ -205,7 +228,11 @@ public class SecurityConfig {
                     // the whole point of it. Nothing here acts on behalf of a
                     // signed-in user, so there is no authority to ride on.
                     new AntPathRequestMatcher("/api/forgot-password/**"),
-                    new AntPathRequestMatcher("/api/forgot-password")))
+                    new AntPathRequestMatcher("/api/forgot-password"),
+                    // The native passkey sign-in is anonymous for the same
+                    // reason; the ceremony's own challenge is its protection.
+                    new AntPathRequestMatcher("/api/login/passkey/options"),
+                    new AntPathRequestMatcher("/api/login/passkey")))
             // Keep users signed in across server restarts and session expiry:
             // a DB-backed remember-me token silently re-authenticates for 30 days
             // (sliding — each auto-login refreshes the token). alwaysRemember means
@@ -282,6 +309,11 @@ public class SecurityConfig {
     /**
      * Passkey (WebAuthn) sign-in, bound to the app.base-url domain. Skipped when
      * no base URL is configured — password login keeps working either way.
+     *
+     * <p>The relying party itself (rp id, origin, credential storage) lives in
+     * the {@link #relyingPartyOperations} bean, which this DSL picks up — the
+     * same instance PasskeyRestController runs the native ceremonies through,
+     * so both flows verify against one relying party.
      */
     private static void applyWebAuthn(HttpSecurity http, PasskeySettings settings)
             throws Exception {
@@ -289,12 +321,30 @@ public class SecurityConfig {
             return;
         }
         http.webAuthn(webAuthn -> webAuthn
-                .rpName("Scripty")
-                .rpId(settings.getRpId())
-                .allowedOrigins(settings.getOrigin())
                 // Scripty ships its own registration page (PasskeyController); the
                 // framework default also NPEs when CSRF is disabled (dev profile).
                 .disableDefaultRegistrationPage(true));
+    }
+
+    /**
+     * The one relying party both passkey flows share: Spring Security's
+     * browser filters and the native API ceremonies. When passkeys are
+     * disabled the bean still exists (its consumers inject it), but every
+     * caller gates on {@link PasskeySettings#isEnabled} first, so the
+     * placeholder relying party is never asked to verify anything.
+     */
+    @Bean
+    public WebAuthnRelyingPartyOperations relyingPartyOperations(PasskeySettings settings,
+            JdbcPublicKeyCredentialUserEntityRepository userEntityRepository,
+            UserCredentialRepository userCredentialRepository) {
+        boolean enabled = settings.isEnabled();
+        PublicKeyCredentialRpEntity rpEntity = PublicKeyCredentialRpEntity.builder()
+                .id(enabled ? settings.getRpId() : "passkeys-disabled.invalid")
+                .name("Scripty")
+                .build();
+        Set<String> origins = enabled ? Set.of(settings.getOrigin()) : Set.of();
+        return new Webauthn4JRelyingPartyOperations(
+                userEntityRepository, userCredentialRepository, rpEntity, origins);
     }
 
     /** Persist passkey user handles across restarts (table: user_entities, V33). */

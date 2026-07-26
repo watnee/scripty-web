@@ -28,8 +28,10 @@ public class ForcedPasswordChangeFilter extends OncePerRequestFilter {
     // /webauthn/ is exempt: registering a passkey is the other way to resolve a
     // bootstrap credential — PasswordDiscardingUserCredentialRepository replaces
     // the temporary password and clears the flag when the passkey is saved.
+    // /api/account/passkeys is the same ceremony for native clients.
     private static final String[] EXEMPT_PREFIXES = {
-            "/css/", "/js/", "/icons/", "/fonts/", "/dictionaries/", "/actuator/", "/webauthn/"
+            "/css/", "/js/", "/icons/", "/fonts/", "/dictionaries/", "/actuator/", "/webauthn/",
+            "/api/account/passkeys"
     };
 
     private static final String[] EXEMPT_PATHS = {

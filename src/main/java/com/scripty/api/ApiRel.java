@@ -172,12 +172,21 @@ public final class ApiRel {
     public static final String CREATE = "create";
     // The signed-in user's own account — not an admin's view of someone else's.
     // Advertised on the API root to anyone signed in; `passkeys` appears only
-    // where passkeys are configured, and registering a new one stays a browser
-    // ceremony, so the API offers listing and revoking only.
+    // where passkeys are configured.
     public static final String ACCOUNT = "account";
     public static final String CHANGE_PASSWORD = "changePassword";
     public static final String PASSKEY = "passkey";
     public static final String PASSKEYS = "passkeys";
+    // The WebAuthn ceremonies, opened up to native clients: each rel points at
+    // an options endpoint, whose response carries a `verify` link for the
+    // second half of the ceremony. REGISTER_PASSKEY rides on the passkeys
+    // collection (you must be signed in to add one); PASSKEY_LOGIN rides on
+    // the signed-out 401 challenge, the one document an anonymous caller sees.
+    public static final String REGISTER_PASSKEY = "registerPasskey";
+    public static final String PASSKEY_LOGIN = "passkeyLogin";
+    public static final String VERIFY = "verify";
+    // Where a passkey sign-in's bearer token can be revoked (the API's sign-out).
+    public static final String REVOKE_TOKEN = "revokeToken";
     public static final String CAPITALIZATION_PREFERENCES = "capitalizationPreferences";
     public static final String CONTACT_SUGGESTIONS = "contactSuggestions";
     public static final String IMPORT_SCRIPT = "importScript";

@@ -18,8 +18,15 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
  */
 public class HtmxLoginUrlAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
 
+    private final boolean passkeysEnabled;
+
     public HtmxLoginUrlAuthenticationEntryPoint(String loginFormUrl) {
+        this(loginFormUrl, false);
+    }
+
+    public HtmxLoginUrlAuthenticationEntryPoint(String loginFormUrl, boolean passkeysEnabled) {
         super(loginFormUrl);
+        this.passkeysEnabled = passkeysEnabled;
     }
 
     @Override
@@ -42,7 +49,7 @@ public class HtmxLoginUrlAuthenticationEntryPoint extends LoginUrlAuthentication
     }
 
     /**
-     * The challenge, with the one thing a signed-out caller can actually do.
+     * The challenge, with the things a signed-out caller can actually do.
      *
      * <p>Password recovery is the awkward case for a link-driven client: the
      * flow exists precisely for someone who cannot sign in, and every document
@@ -51,14 +58,24 @@ public class HtmxLoginUrlAuthenticationEntryPoint extends LoginUrlAuthentication
      * which keeps recovery something a client follows rather than a path it has
      * to know.
      *
+     * <p>Passkey sign-in rides here for the same reason: the ceremony's options
+     * endpoint is what an anonymous native client follows instead of typing a
+     * password, and this challenge is the only document it sees. Advertised
+     * only when passkeys are configured, like the {@code passkeys} rel on the
+     * account.
+     *
      * <p>Written by hand rather than through the HAL serializer, so there is no
-     * curie to namespace it against; the bare relation name is the unprefixed
+     * curie to namespace it against; the bare relation names are the unprefixed
      * form of the same thing.
      */
-    private static String unauthorizedBody(HttpServletRequest request) {
-        String href = request.getContextPath() + "/api/forgot-password";
-        return "{\"error\": \"unauthorized\","
-                + "\"_links\": {\"forgotPassword\": {\"href\": \"" + href + "\"}}}";
+    private String unauthorizedBody(HttpServletRequest request) {
+        String recoveryHref = request.getContextPath() + "/api/forgot-password";
+        String links = "\"forgotPassword\": {\"href\": \"" + recoveryHref + "\"}";
+        if (passkeysEnabled) {
+            String passkeyHref = request.getContextPath() + "/api/login/passkey/options";
+            links += ", \"passkeyLogin\": {\"href\": \"" + passkeyHref + "\"}";
+        }
+        return "{\"error\": \"unauthorized\", \"_links\": {" + links + "}}";
     }
 
     private static boolean isApiRequest(HttpServletRequest request) {

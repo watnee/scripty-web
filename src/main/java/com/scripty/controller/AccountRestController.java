@@ -39,8 +39,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * <p>Everything here acts on the principal, never on an id supplied by the
  * caller — there is no way to name someone else's account, which is what keeps
  * these endpoints out of the admin block in the security config. Registering a
- * new passkey is deliberately absent: it is a WebAuthn ceremony the browser and
- * Spring Security's filters run between them, not something a REST call can do.
+ * new passkey lives in {@link PasskeyRestController}: the ceremony the browser
+ * runs against Spring Security's filters, reshaped for a cookie-less client.
  */
 @RestController
 @RequestMapping(value = "/api/account")
@@ -96,7 +96,7 @@ public class AccountRestController {
         if (!passkeySettings.isEnabled() || principal == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(passkeyCollection(principal.getName()));
+        return ResponseEntity.ok(passkeyCollectionFor(principal.getName()));
     }
 
     /**
@@ -114,7 +114,7 @@ public class AccountRestController {
             return ResponseEntity.notFound().build();
         }
         userCredentialRepository.delete(owned.getCredentialId());
-        return ResponseEntity.ok(passkeyCollection(principal.getName()));
+        return ResponseEntity.ok(passkeyCollectionFor(principal.getName()));
     }
 
     // MARK: - helpers
@@ -164,14 +164,22 @@ public class AccountRestController {
         return userCredentialRepository.findByUserId(userEntity.getId());
     }
 
-    private CollectionModel<EntityModel<PasskeyResource>> passkeyCollection(String username) {
+    /**
+     * The caller's passkeys, with the {@code registerPasskey} rel pointing a
+     * native client at the ceremony's options endpoint. Also the shape every
+     * mutation answers with, so the list in hand is never stale — which is why
+     * {@link PasskeyRestController} builds its registration response here.
+     */
+    CollectionModel<EntityModel<PasskeyResource>> passkeyCollectionFor(String username) {
         List<EntityModel<PasskeyResource>> items = new ArrayList<>();
         for (CredentialRecord record : ownCredentials(username)) {
             items.add(toModel(record));
         }
         return CollectionModel.of(items)
                 .add(linkTo(methodOn(AccountRestController.class).passkeys(null)).withSelfRel(),
-                        linkTo(methodOn(AccountRestController.class).show(null)).withRel(ApiRel.ACCOUNT));
+                        linkTo(methodOn(AccountRestController.class).show(null)).withRel(ApiRel.ACCOUNT),
+                        linkTo(methodOn(PasskeyRestController.class).registrationOptions(null))
+                                .withRel(ApiRel.REGISTER_PASSKEY));
     }
 
     private EntityModel<PasskeyResource> toModel(CredentialRecord record) {

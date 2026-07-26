@@ -79,8 +79,12 @@
     <tr id="capitalizationPreferences"><td>capitalizationPreferences</td><td>The signed-in user's auto-capitalization settings.</td></tr>
     <tr id="contactSuggestions"><td>contactSuggestions</td><td>Name/email suggestions for a project's invite forms.</td></tr>
     <tr id="account"><td>account</td><td>The signed-in user's own account. Not an admin's view of someone else's.</td></tr>
-    <tr id="passkeys"><td>passkeys</td><td>The passkeys registered to the signed-in user. Present only where passkeys are configured; registration itself is a browser-side WebAuthn ceremony, so the API lists and revokes only.</td></tr>
+    <tr id="passkeys"><td>passkeys</td><td>The passkeys registered to the signed-in user. Present only where passkeys are configured.</td></tr>
     <tr id="passkey"><td>passkey</td><td>A single registered passkey.</td></tr>
+    <tr id="registerPasskey"><td>registerPasskey</td><td>Begin registering a passkey: POST (no body) answers the standard WebAuthn creation options under <code>publicKey</code> plus a <code>challengeId</code>, with a <code>verify</code> link to POST <code>{"challengeId","label","credential"}</code> back to. The ceremony state lives behind the <code>challengeId</code> — no cookies involved — and expires after a few minutes, single-use.</td></tr>
+    <tr id="passkeyLogin"><td>passkeyLogin</td><td>Begin a passkey sign-in. Advertised on the 401 challenge, like <code>forgotPassword</code>: the caller is signed out by definition. POST (no body) answers WebAuthn request options under <code>publicKey</code> plus a <code>challengeId</code>, with a <code>verify</code> link; a verified assertion answers <code>{"username","token"}</code> — a bearer token the client sends as <code>Authorization: Bearer</code> in place of Basic, since a passkey leaves it with no password.</td></tr>
+    <tr id="verify"><td>verify</td><td>The second half of a WebAuthn ceremony: where the authenticator's response is POSTed.</td></tr>
+    <tr id="revokeToken"><td>revokeToken</td><td>DELETE, with the bearer token in the Authorization header, to revoke it — the API's sign-out for a passkey session.</td></tr>
     <tr id="editions"><td>editions</td><td>A project's named editions of the screenplay — a shooting draft, a table read, a production revision. <code>editionId</code> is accepted on blocks, imports and version history; this is how a client learns which ids exist.</td></tr>
     <tr id="edition"><td>edition</td><td>A single script edition.</td></tr>
     <tr id="comments"><td>comments</td><td>The comments left on one element.</td></tr>

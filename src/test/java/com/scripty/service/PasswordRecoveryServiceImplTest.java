@@ -70,6 +70,34 @@ class PasswordRecoveryServiceImplTest {
         );
     }
 
+    /**
+     * The email carries the token, and carries it in the link rather than as
+     * something to read off and retype. That is what lets a tap in Mail open
+     * the app at the password field: both the app and the web page take the
+     * token out of the URL, so there is never a code to copy.
+     */
+    @Test
+    void theEmailCarriesTheTokenInTheLink() {
+        User user = new User();
+        user.setId(42);
+        user.setUsername("testuser");
+        user.setEmail("user@example.com");
+        user.setFirstName("Test");
+        when(userRepository.findByEmailIgnoreCase("user@example.com")).thenReturn(Optional.of(user));
+
+        recoveryService.sendRecoveryEmail("user@example.com");
+
+        ArgumentCaptor<PasswordRecoveryToken> tokenCaptor =
+                ArgumentCaptor.forClass(PasswordRecoveryToken.class);
+        verify(tokenRepository).save(tokenCaptor.capture());
+        ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailService).send(eq("user@example.com"), any(String.class), bodyCaptor.capture());
+
+        String token = tokenCaptor.getValue().getToken();
+        assertTrue(bodyCaptor.getValue().contains("/forgot-password/reset?token=" + token),
+                "the reset link must carry the token the app reads out of it");
+    }
+
     @Test
     void sendRecoveryEmailFailsSilentlyWhenUserDoesNotExist() {
         when(userRepository.findByEmailIgnoreCase("missing@example.com")).thenReturn(Optional.empty());

@@ -1,8 +1,10 @@
 package com.scripty.api;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,11 +45,57 @@ class PasswordRecoveryApiTest {
         mockMvc.perform(get("/api").accept("application/hal+json"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$._links.forgotPassword.href").value(notNullValue()))
+                // Where a new password goes. Normally learned from the answer to
+                // the request above, but an app opened by the link in the email
+                // has the token and never made that request — without this it
+                // would be left guessing the path.
+                .andExpect(jsonPath("$._links.resetPassword.href").value(notNullValue()))
                 // No base URL in this profile means no passkeys, and a rel that
                 // could only 404 must not be advertised (PasskeyApiTest pins
                 // the enabled shape).
                 .andExpect(jsonPath("$._links.passkeyLogin").doesNotExist())
                 .andExpect(jsonPath("$._links.projects").doesNotExist());
+    }
+
+    /**
+     * The link advertised on the challenge is the one that actually answers, so
+     * a client that follows it with a token in hand gets a verdict rather than
+     * a 404. Pinned because the challenge writes that href by hand: nothing
+     * else would notice if the two drifted apart.
+     */
+    @Test
+    void theAdvertisedResetLinkAnswers() throws Exception {
+        String href = mockMvc.perform(get("/api").accept("application/hal+json"))
+                .andReturn().getResponse().getContentAsString()
+                .replaceAll("(?s).*\"resetPassword\": \\{\"href\": \"([^\"]+)\".*", "$1");
+
+        mockMvc.perform(get(href).param("token", "not-a-real-token")
+                        .accept("application/hal+json"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(false));
+    }
+
+    /**
+     * What makes the reset link a magic link: iOS routes it to the app instead
+     * of a browser only while the site association file claims that exact path.
+     * The claim is narrow on purpose — every other page on the domain, and the
+     * reset page reached without a token, still belongs to the browser.
+     */
+    @Test
+    void theSiteAssociationClaimsOnlyTheResetLink() throws Exception {
+        mockMvc.perform(get("/.well-known/apple-app-site-association"))
+                .andExpect(status().isOk())
+                // Apple's CDN sits between this and the device, so a copy it
+                // holds onto is a deploy the device does not believe yet — and
+                // the only symptom is links quietly opening in the browser.
+                // Spring Security's no-cache default is what prevents that, so
+                // it is pinned rather than assumed.
+                .andExpect(header().string("Cache-Control", containsString("no-cache")))
+                .andExpect(jsonPath("$.applinks.details[0].appIDs[0]", containsString(".")))
+                .andExpect(jsonPath("$.applinks.details[0].components[0]['/']")
+                        .value("/forgot-password/reset"))
+                .andExpect(jsonPath("$.applinks.details[0].components[0]['?'].token")
+                        .value("?*"));
     }
 
     /**

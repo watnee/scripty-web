@@ -58,6 +58,14 @@ public class HtmxLoginUrlAuthenticationEntryPoint extends LoginUrlAuthentication
      * which keeps recovery something a client follows rather than a path it has
      * to know.
      *
+     * <p>{@code resetPassword} rides alongside it because of how a client
+     * arrives at that step. Normally it comes back on the answer to the request
+     * above, which is the only way a client that just asked for an email could
+     * learn it. But a native app opened by the magic link in the email has the
+     * token and never made that request — it may not even have been running —
+     * so without the rel here it would be holding a token with nowhere to send
+     * it, and the client would be reduced to guessing the path.
+     *
      * <p>Passkey sign-in rides here for the same reason: the ceremony's options
      * endpoint is what an anonymous native client follows instead of typing a
      * password, and this challenge is the only document it sees. Advertised
@@ -70,7 +78,8 @@ public class HtmxLoginUrlAuthenticationEntryPoint extends LoginUrlAuthentication
      */
     private String unauthorizedBody(HttpServletRequest request) {
         String recoveryHref = request.getContextPath() + "/api/forgot-password";
-        String links = "\"forgotPassword\": {\"href\": \"" + recoveryHref + "\"}";
+        String links = "\"forgotPassword\": {\"href\": \"" + recoveryHref + "\"}"
+                + ", \"resetPassword\": {\"href\": \"" + recoveryHref + "/reset\"}";
         if (passkeysEnabled) {
             String passkeyHref = request.getContextPath() + "/api/login/passkey/options";
             links += ", \"passkeyLogin\": {\"href\": \"" + passkeyHref + "\"}";

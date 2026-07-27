@@ -67,7 +67,13 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
 
         tokenRepository.save(token);
 
-        // Send email
+        // Send email.
+        //
+        // One link, and nothing to copy out of it: on a device with the app
+        // installed this opens Scripty straight at "choose a new password" (the
+        // app claims this path in the site association file), and anywhere else
+        // it opens the same page in a browser. Both ends read the token out of
+        // the URL, so there is never a code to retype.
         String resetUrl = baseUrl + "/forgot-password/reset?token=" + tokenString;
         String subject = "Reset your Scripty password";
         String htmlBody = String.format(
@@ -75,7 +81,7 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
                         + "<h2>Password Reset Request</h2>"
                         + "<p>Hello %s,</p>"
                         + "<p>We received a request to reset the password for your Scripty account associated with this email address.</p>"
-                        + "<p>Click the button below to choose a new password. This link is valid for 2 hours.</p>"
+                        + "<p>Tap the button below to choose a new password — it opens the Scripty app if you have it installed, and your browser if you don't. The link is valid for 2 hours.</p>"
                         + "<div style=\"margin: 30px 0;\">"
                         + "  <a href=\"%s\" style=\"background-color: #3878a8; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;\">Reset Password</a>"
                         + "</div>"
@@ -88,7 +94,9 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
                 user.getFirstName(), resetUrl, resetUrl, resetUrl
         );
 
-        log.info("Sending password recovery email to={} token={}", user.getEmail(), tokenString);
+        // Never the token itself: anyone who can read the logs could reset the
+        // account with it, which is the same rule the invitation mail follows.
+        log.info("Sending password recovery email to={}", user.getEmail());
         emailService.send(user.getEmail(), subject, htmlBody);
     }
 

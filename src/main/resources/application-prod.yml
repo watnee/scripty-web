@@ -18,6 +18,32 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${MYSQLUSER}
     password: ${MYSQLPASSWORD}
+    hikari:
+      # Named so the Hikari metrics Actuator exports (hikaricp.connections.*)
+      # carry a readable pool tag on the Grafana dashboards instead of HikariPool-1.
+      pool-name: scripty-pool
+      # Fixed-size pool: minimum-idle tracks maximum-pool-size so the pool does not
+      # shrink and then pay reconnect cost on the next burst. Tunable by variable
+      # because raising it is a Railway restart, not a redeploy.
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: ${DB_POOL_SIZE:10}
+      # Fail a request that cannot get a connection in 10s rather than parking the
+      # servlet thread for Hikari's 30s default — with the pool exhausted, a 30s
+      # wait ties up threads faster than it clears them.
+      connection-timeout: 10000
+      # The pair that matters on Railway. Private networking drops idle TCP with no
+      # notice to either end, so a connection can sit in the pool healthy-looking
+      # and be dead when handed out ("Communications link failure" on a normal
+      # request). keepalive-time probes idle connections every 4 minutes, and
+      # max-lifetime retires each one well before MySQL's own wait_timeout or any
+      # intermediate idle cutoff can reap it. keepalive-time must stay below
+      # max-lifetime, which must stay below the server's wait_timeout.
+      keepalive-time: 240000
+      max-lifetime: 900000
+      # A connection still checked out after 30s is a leak, not slow work: every
+      # request path here is short. Logs the borrowing stack trace rather than
+      # leaving the pool to drain silently.
+      leak-detection-threshold: 30000
   jpa:
     hibernate:
       ddl-auto: validate

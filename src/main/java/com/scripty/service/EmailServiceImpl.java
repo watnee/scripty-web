@@ -58,11 +58,12 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void send(String to, String subject, String htmlBody, EmailAttachment attachment) {
+    public void send(String to, String subject, String htmlBody, String textBody,
+                     EmailAttachment attachment) {
         // The Cloudflare email Worker is an explicit opt-in: it takes precedence
         // over SMTP because Railway restricts outbound SMTP ports.
         if (StringUtils.hasText(emailWorkerUrl) && StringUtils.hasText(emailWorkerSecret)) {
-            send(TRANSPORT_WORKER, () -> sendViaEmailWorker(to, subject, htmlBody, attachment));
+            send(TRANSPORT_WORKER, () -> sendViaEmailWorker(to, subject, htmlBody, textBody, attachment));
             return;
         }
         if (!smtpEnabled) {
@@ -73,7 +74,7 @@ public class EmailServiceImpl implements EmailService {
             metrics.emailSent(TRANSPORT_NONE, ScriptyMetrics.OUTCOME_SUCCESS);
             return;
         }
-        send(TRANSPORT_SMTP, () -> sendViaSmtp(to, subject, htmlBody, attachment));
+        send(TRANSPORT_SMTP, () -> sendViaSmtp(to, subject, htmlBody, textBody, attachment));
     }
 
     /** Records the outcome of one delivery attempt without swallowing the failure. */
@@ -87,7 +88,7 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    private void sendViaEmailWorker(String to, String subject, String htmlBody,
+    private void sendViaEmailWorker(String to, String subject, String htmlBody, String textBody,
                                     EmailAttachment attachment) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -96,7 +97,7 @@ public class EmailServiceImpl implements EmailService {
                     .header("Authorization", "Bearer " + emailWorkerSecret)
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(
-                            buildEmailPayload(to, subject, htmlBody, attachment)))
+                            buildEmailPayload(to, subject, htmlBody, textBody, attachment)))
                     .build();
             HttpResponse<String> response =
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -116,13 +117,20 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    String buildEmailPayload(String to, String subject, String htmlBody, EmailAttachment attachment) {
+    String buildEmailPayload(String to, String subject, String htmlBody, String textBody,
+                             EmailAttachment attachment) {
         try {
             ObjectNode payload = objectMapper.createObjectNode();
             payload.put("from", mailFrom);
             payload.put("to", to);
             payload.put("subject", subject);
             payload.put("html", htmlBody);
+            // Omitted rather than sent empty: the Worker derives a text part by
+            // stripping tags out of the HTML when the caller supplies none, and
+            // that guess is better than a blank alternative.
+            if (StringUtils.hasText(textBody)) {
+                payload.put("text", textBody);
+            }
             if (attachment != null && attachment.content() != null && attachment.content().length > 0) {
                 // The Worker decodes base64 content back into raw bytes before
                 // handing it to the Cloudflare Email Sending binding.
@@ -138,14 +146,22 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    private void sendViaSmtp(String to, String subject, String htmlBody, EmailAttachment attachment) {
+    private void sendViaSmtp(String to, String subject, String htmlBody, String textBody,
+                             EmailAttachment attachment) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(mailFrom);
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(htmlBody, true);
+            if (StringUtils.hasText(textBody)) {
+                // multipart/alternative — the reader picks. Unlike the Worker
+                // there is nothing here that would invent a text part, so an
+                // HTML-only message really does go out with no alternative.
+                helper.setText(textBody, htmlBody);
+            } else {
+                helper.setText(htmlBody, true);
+            }
             if (attachment != null && attachment.content() != null && attachment.content().length > 0) {
                 helper.addAttachment(attachment.filename(),
                         new ByteArrayResource(attachment.content()),

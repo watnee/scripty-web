@@ -84,6 +84,18 @@ public class ApiTokenService {
         repository.findByTokenHash(hash(rawToken)).ifPresent(repository::delete);
     }
 
+    /**
+     * Revokes every token a user holds — what a password reset needs, since the
+     * point of a reset is that whoever had the old credentials keeps nothing.
+     */
+    @Transactional
+    public void revokeAll(String username) {
+        if (username == null || username.isBlank()) {
+            return;
+        }
+        repository.deleteByUsername(username);
+    }
+
     private static String hash(String raw) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

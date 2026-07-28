@@ -23,8 +23,13 @@ public class PasswordRecoveryToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, unique = true, length = 64)
-    private String token;
+    /**
+     * SHA-256 of the token that went out in the email, hex-encoded — never the
+     * token itself. The raw value resets the account, so it lives only in the
+     * recipient's inbox; this row can only recognise it, not reproduce it.
+     */
+    @Column(name = "token_hash", nullable = false, unique = true, length = 64)
+    private String tokenHash;
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
@@ -48,12 +53,12 @@ public class PasswordRecoveryToken {
         this.user = user;
     }
 
-    public String getToken() {
-        return token;
+    public String getTokenHash() {
+        return tokenHash;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setTokenHash(String tokenHash) {
+        this.tokenHash = tokenHash;
     }
 
     public LocalDateTime getExpiresAt() {

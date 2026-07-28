@@ -82,7 +82,7 @@ class EmailServiceImplTest {
                 "", "https://scripty.example.workers.dev/internal/email", "secret", metrics());
 
         String json = service.buildEmailPayload(
-                "user@example.com", "Reset \"your\" password", "<p>Hi & welcome</p>", null);
+                "user@example.com", "Reset \"your\" password", "<p>Hi & welcome</p>", null, null);
 
         JsonNode payload = new ObjectMapper().readTree(json);
         assertEquals("Scripty <noreply@solfege.app>", payload.get("from").asText());
@@ -90,6 +90,23 @@ class EmailServiceImplTest {
         assertEquals("Reset \"your\" password", payload.get("subject").asText());
         assertEquals("<p>Hi & welcome</p>", payload.get("html").asText());
         assertFalse(payload.has("attachments"));
+        // No text part rather than an empty one: the Worker strips tags out of
+        // the HTML to make its own when the field is absent, and that guess
+        // beats handing every reader a blank alternative.
+        assertFalse(payload.has("text"));
+    }
+
+    @Test
+    void emailPayloadCarriesThePlainTextAlternativeWhenThereIsOne() throws Exception {
+        EmailServiceImpl service = new EmailServiceImpl(null,
+                "Scripty <noreply@solfege.app>", false,
+                "", "https://scripty.example.workers.dev/internal/email", "secret", metrics());
+
+        String json = service.buildEmailPayload("user@example.com", "Reset your password",
+                "<p>Open the link</p>", "Open the link", null);
+
+        JsonNode payload = new ObjectMapper().readTree(json);
+        assertEquals("Open the link", payload.get("text").asText());
     }
 
     @Test
@@ -101,7 +118,7 @@ class EmailServiceImplTest {
         EmailAttachment attachment = new EmailAttachment("script.pdf", "application/pdf", bytes);
 
         String json = service.buildEmailPayload(
-                "user@example.com", "Screenplay", "<p>Attached</p>", attachment);
+                "user@example.com", "Screenplay", "<p>Attached</p>", null, attachment);
 
         JsonNode payload = new ObjectMapper().readTree(json);
         JsonNode entry = payload.get("attachments").get(0);

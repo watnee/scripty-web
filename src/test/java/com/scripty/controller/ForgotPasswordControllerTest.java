@@ -1,30 +1,43 @@
 package com.scripty.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.scripty.dto.PasswordRecoveryToken;
 import com.scripty.dto.User;
+import com.scripty.security.PasswordResetRateLimiter;
 import com.scripty.service.PasswordRecoveryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 class ForgotPasswordControllerTest {
 
     private PasswordRecoveryService recoveryService;
+    private PasswordResetRateLimiter rateLimiter;
     private ForgotPasswordController controller;
 
     @BeforeEach
     void setUp() {
         recoveryService = mock(PasswordRecoveryService.class);
-        controller = new ForgotPasswordController(recoveryService);
+        rateLimiter = new PasswordResetRateLimiter();
+        controller = new ForgotPasswordController(recoveryService, rateLimiter);
+    }
+
+    private static MockHttpServletRequest requestFrom(String ip) {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr(ip);
+        return request;
     }
 
     @Test
@@ -35,11 +48,58 @@ class ForgotPasswordControllerTest {
     @Test
     void processRequestCallsServiceAndReturnsSuccessMessage() {
         ExtendedModelMap model = new ExtendedModelMap();
-        String view = controller.processRequest("user@example.com", model);
+        String view = controller.processRequest("user@example.com", model, requestFrom("10.0.0.1"));
 
         verify(recoveryService).sendRecoveryEmail("user@example.com");
         assertEquals("forgot-password/request", view);
         assertTrue(((String) model.getAttribute("successMessage")).contains("instructions to reset your password have been sent"));
+    }
+
+    /**
+     * The limit stops the sending, not the answering. A page that said "too many
+     * attempts" would be telling a stranger they had found a real address — the
+     * one thing this flow refuses to say — so a refused request has to be
+     * indistinguishable from a sent one.
+     */
+    @Test
+    void processRequestLooksIdenticalOnceRateLimited() {
+        ExtendedModelMap model = null;
+        for (int i = 0; i < 10; i++) {
+            model = new ExtendedModelMap();
+            String view = controller.processRequest("flooded@example.com", model,
+                    requestFrom("10.0.0.2"));
+            assertEquals("forgot-password/request", view);
+            assertTrue(((String) model.getAttribute("successMessage"))
+                    .contains("instructions to reset your password have been sent"));
+        }
+        assertNull(model.getAttribute("errorMessage"));
+        // Three of the ten got through; the service never heard about the rest.
+        verify(recoveryService, times(3)).sendRecoveryEmail("flooded@example.com");
+    }
+
+    @Test
+    void processRequestStopsOneAddressWalkingAListOfEmails() {
+        for (int i = 0; i < 20; i++) {
+            controller.processRequest("person" + i + "@example.com", new ExtendedModelMap(),
+                    requestFrom("10.0.0.3"));
+        }
+        // Each address is under its own limit, so only the per-IP window can
+        // refuse these — and past fifteen it does.
+        verify(recoveryService, never()).sendRecoveryEmail("person15@example.com");
+        verify(recoveryService, never()).sendRecoveryEmail("person19@example.com");
+    }
+
+    @Test
+    void processRequestStillSucceedsWhenTheServiceThrows() {
+        doThrow(new IllegalStateException("SMTP down"))
+                .when(recoveryService).sendRecoveryEmail(any());
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        String view = controller.processRequest("user@example.com", model, requestFrom("10.0.0.4"));
+
+        assertEquals("forgot-password/request", view);
+        assertTrue(((String) model.getAttribute("successMessage"))
+                .contains("instructions to reset your password have been sent"));
     }
 
     @Test

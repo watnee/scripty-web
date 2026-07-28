@@ -4,7 +4,9 @@ import com.scripty.api.ApiRel;
 import com.scripty.api.ResetPasswordRequest;
 import com.scripty.api.RestErrors;
 import com.scripty.dto.PasswordRecoveryToken;
+import com.scripty.security.PasswordResetRateLimiter;
 import com.scripty.service.PasswordRecoveryService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -51,26 +53,39 @@ public class PasswordRecoveryRestController {
             "If that address is registered, instructions to reset your password have been sent.";
 
     private final PasswordRecoveryService recoveryService;
+    private final PasswordResetRateLimiter rateLimiter;
 
     @Autowired
-    public PasswordRecoveryRestController(PasswordRecoveryService recoveryService) {
+    public PasswordRecoveryRestController(PasswordRecoveryService recoveryService,
+                                          PasswordResetRateLimiter rateLimiter) {
         this.recoveryService = recoveryService;
+        this.rateLimiter = rateLimiter;
     }
 
     /**
      * Sends a recovery email. Always 202, always the same body — see the class
      * comment. A failure to send is an operator's problem, not the caller's, so
      * it is logged rather than reported.
+     *
+     * <p>That covers being rate limited too. A 429 here would be a straight
+     * answer to "does this address have an account", since only a real one gets
+     * far enough to be worth limiting — so a refused request is a 202 like any
+     * other, and the email simply does not go.
      */
     @PostMapping(consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<Map<String, Object>>> request(
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body, HttpServletRequest servletRequest) {
         String email = body == null ? null : body.get("email");
         if (email != null && !email.isBlank()) {
-            try {
-                recoveryService.sendRecoveryEmail(email);
-            } catch (Exception e) {
-                log.error("Password recovery email failed", e);
+            if (!rateLimiter.tryAcquire(email, servletRequest.getRemoteAddr())) {
+                log.warn("Password recovery rate limit reached; email not sent. ip={}",
+                        servletRequest.getRemoteAddr());
+            } else {
+                try {
+                    recoveryService.sendRecoveryEmail(email);
+                } catch (Exception e) {
+                    log.error("Password recovery email failed", e);
+                }
             }
         }
         Map<String, Object> answer = new LinkedHashMap<>();

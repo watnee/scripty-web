@@ -5,39 +5,75 @@ import com.scripty.dto.User;
 import com.scripty.repository.PasswordRecoveryTokenRepository;
 import com.scripty.repository.UserRepository;
 import com.scripty.security.PasswordPolicy;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.Base64;
+import java.util.HexFormat;
 import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.StringUtils;
+import org.thymeleaf.ITemplateEngine;
+import org.thymeleaf.context.Context;
 
 @Service
 public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
 
     private static final Logger log = LoggerFactory.getLogger(PasswordRecoveryServiceImpl.class);
 
+    /** How long a link in an inbox stays good for. */
+    private static final int EXPIRY_HOURS = 2;
+
+    /** 256 bits, the same strength {@link ApiTokenService} mints at. */
+    private static final int TOKEN_BYTES = 32;
+
     private final UserRepository userRepository;
     private final PasswordRecoveryTokenRepository tokenRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final ApiTokenService apiTokenService;
+    private final PersistentTokenRepository persistentTokenRepository;
+    private final ITemplateEngine templateEngine;
+
+    /**
+     * Raw tokens are never stored, so they have to be unguessable rather than
+     * merely unique — {@link java.util.UUID#randomUUID()} would do for the
+     * second and is the wrong tool for the first.
+     */
+    private final SecureRandom random = new SecureRandom();
 
     @Value("${app.base-url:http://localhost:8080}")
     private String baseUrl;
+
+    @Value("${app.support-email:support@scripty.app}")
+    private String supportEmail;
 
     @Autowired
     public PasswordRecoveryServiceImpl(UserRepository userRepository,
                                        PasswordRecoveryTokenRepository tokenRepository,
                                        EmailService emailService,
-                                       PasswordEncoder passwordEncoder) {
+                                       PasswordEncoder passwordEncoder,
+                                       ApiTokenService apiTokenService,
+                                       PersistentTokenRepository persistentTokenRepository,
+                                       ITemplateEngine templateEngine) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
+        this.apiTokenService = apiTokenService;
+        this.persistentTokenRepository = persistentTokenRepository;
+        this.templateEngine = templateEngine;
     }
 
     @Override
@@ -57,47 +93,34 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
         // Clean up any existing tokens for this user first
         tokenRepository.deleteByUser(user);
 
-        // Generate token and expiry (2 hours)
-        String tokenString = UUID.randomUUID().toString();
+        // The raw token goes in the email and nowhere else; the row keeps only
+        // its digest, so a database read cannot reset anyone's account.
+        String rawToken = newRawToken();
         PasswordRecoveryToken token = new PasswordRecoveryToken();
         token.setUser(user);
-        token.setToken(tokenString);
+        token.setTokenHash(hash(rawToken));
         token.setCreatedAt(LocalDateTime.now());
-        token.setExpiresAt(LocalDateTime.now().plusHours(2));
+        token.setExpiresAt(LocalDateTime.now().plusHours(EXPIRY_HOURS));
 
         tokenRepository.save(token);
 
-        // Send email.
-        //
         // One link, and nothing to copy out of it: on a device with the app
         // installed this opens Scripty straight at "choose a new password" (the
         // app claims this path in the site association file), and anywhere else
         // it opens the same page in a browser. Both ends read the token out of
         // the URL, so there is never a code to retype.
-        String resetUrl = baseUrl + "/forgot-password/reset?token=" + tokenString;
-        String subject = "Reset your Scripty password";
-        String htmlBody = String.format(
-                "<div style=\"font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; line-height: 1.6;\">"
-                        + "<h2>Password Reset Request</h2>"
-                        + "<p>Hello %s,</p>"
-                        + "<p>We received a request to reset the password for your Scripty account associated with this email address.</p>"
-                        + "<p>Tap the button below to choose a new password — it opens the Scripty app if you have it installed, and your browser if you don't. The link is valid for 2 hours.</p>"
-                        + "<div style=\"margin: 30px 0;\">"
-                        + "  <a href=\"%s\" style=\"background-color: #3878a8; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;\">Reset Password</a>"
-                        + "</div>"
-                        + "<p>If the button doesn't work, you can copy and paste this link into your browser:</p>"
-                        + "<p><a href=\"%s\">%s</a></p>"
-                        + "<p>If you did not request a password reset, you can safely ignore this email.</p>"
-                        + "<hr style=\"border: none; border-top: 1px solid #eee; margin-top: 30px;\" />"
-                        + "<p style=\"font-size: 0.8em; color: #888;\">Scripty App</p>"
-                        + "</div>",
-                user.getFirstName(), resetUrl, resetUrl, resetUrl
-        );
+        String resetUrl = baseUrl + "/forgot-password/reset?token=" + rawToken;
+
+        Context context = new Context();
+        context.setVariable("firstName", displayName(user));
+        context.setVariable("email", user.getEmail());
+        context.setVariable("resetUrl", resetUrl);
+        context.setVariable("expiryHours", EXPIRY_HOURS);
 
         // Never the token itself: anyone who can read the logs could reset the
         // account with it, which is the same rule the invitation mail follows.
         log.info("Sending password recovery email to={}", user.getEmail());
-        emailService.send(user.getEmail(), subject, htmlBody);
+        sendAfterCommit(user.getEmail(), "Reset your Scripty password", "email/password-reset", context);
     }
 
     @Override
@@ -107,7 +130,7 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
             throw new IllegalArgumentException("Reset token must not be empty.");
         }
 
-        PasswordRecoveryToken recoveryToken = tokenRepository.findByToken(token)
+        PasswordRecoveryToken recoveryToken = tokenRepository.findByTokenHash(hash(token))
                 .orElseThrow(() -> new IllegalArgumentException("Invalid password reset token."));
 
         if (recoveryToken.isExpired()) {
@@ -147,6 +170,104 @@ public class PasswordRecoveryServiceImpl implements PasswordRecoveryService {
         // Delete/consume the token
         tokenRepository.deleteByUser(user);
 
+        // A reset exists because the old password is not trusted any more —
+        // either it was forgotten or somebody else has it. Anything minted off
+        // that password has to go with it, or an attacker who got in keeps a
+        // way back that changing the password did nothing about. Remember-me
+        // cookies and API bearer tokens are both exactly that.
+        revokeStandingCredentials(user);
+
+        Context context = new Context();
+        context.setVariable("firstName", displayName(user));
+        context.setVariable("email", user.getEmail());
+        context.setVariable("supportEmail", supportEmail);
+
+        // The one message in this flow nobody asked for, and the reason it is
+        // worth sending: if the reset was not theirs, this is how they find out.
+        sendAfterCommit(user.getEmail(), "Your Scripty password was changed",
+                "email/password-changed", context);
+
         log.info("Successfully reset password for user={}", user.getUsername());
+    }
+
+    private void revokeStandingCredentials(User user) {
+        // Neither is essential to the reset itself, and neither is worth losing
+        // the new password over: a failure here is logged and the reset stands.
+        try {
+            apiTokenService.revokeAll(user.getUsername());
+        } catch (RuntimeException e) {
+            log.error("Failed to revoke API tokens after password reset for user={}",
+                    user.getUsername(), e);
+        }
+        try {
+            persistentTokenRepository.removeUserTokens(user.getUsername());
+        } catch (RuntimeException e) {
+            log.error("Failed to clear remember-me tokens after password reset for user={}",
+                    user.getUsername(), e);
+        }
+    }
+
+    /** Null when there is nothing worth greeting someone by. */
+    private static String displayName(User user) {
+        String firstName = user.getFirstName();
+        return StringUtils.hasText(firstName) ? firstName.trim() : null;
+    }
+
+    private String newRawToken() {
+        byte[] bytes = new byte[TOKEN_BYTES];
+        random.nextBytes(bytes);
+        // URL-safe and unpadded, because this spends its life in a query string.
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private static String hash(String raw) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(raw.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 unavailable", e);
+        }
+    }
+
+    /**
+     * Renders both halves of a message and sends it once the transaction that
+     * asked for it has actually committed.
+     *
+     * <p>Mail is the one side effect a rollback cannot take back. Sent from
+     * inside the transaction, a failure after the send leaves a link in someone's
+     * inbox for a token that was never written — and a send that throws rolls
+     * back a row the recipient may already be holding a link to. Waiting for the
+     * commit makes the row the thing that decides.
+     *
+     * <p>Outside a transaction — a unit test, a caller that opened none — there
+     * is nothing to wait for, so it goes immediately.
+     */
+    private void sendAfterCommit(String to, String subject, String template, Context context) {
+        // Bare name for the HTML half — Boot's resolver appends .html, and the
+        // layout the templates pull in is referenced the same way. The text half
+        // names its extension outright, which is what MailTemplateConfig's
+        // resolver keys off.
+        String htmlBody = templateEngine.process(template, context);
+        String textBody = templateEngine.process(template + ".txt", context);
+
+        Runnable send = () -> emailService.send(to, subject, htmlBody, textBody, null);
+
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            send.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                // Past the commit there is no transaction left to fail, so a
+                // send that throws here would only escape into the caller's
+                // response for work that already succeeded.
+                try {
+                    send.run();
+                } catch (RuntimeException e) {
+                    log.error("Failed to send '{}' email to={}", subject, to, e);
+                }
+            }
+        });
     }
 }

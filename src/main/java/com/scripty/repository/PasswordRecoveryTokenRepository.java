@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PasswordRecoveryTokenRepository extends JpaRepository<PasswordRecoveryToken, Integer> {
 
-    Optional<PasswordRecoveryToken> findByToken(String token);
+    Optional<PasswordRecoveryToken> findByTokenHash(String tokenHash);
 
     void deleteByUser(User user);
 }

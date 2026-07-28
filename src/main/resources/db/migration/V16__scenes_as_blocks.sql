@@ -26,9 +26,14 @@ FROM (
 	       s.`name` AS content,
 	       FALSE AS bookmarked,
 	       FALSE AS pinned,
-	       CAST(NULL AS VARCHAR(1024)) AS tags,
+	       -- CHAR/SIGNED, not VARCHAR/INT: those are column types, not cast
+	       -- targets. MySQL 9.4 rejects the latter, so this migration could no
+	       -- longer be replayed on an empty database even though it applied
+	       -- cleanly when it first ran. The UNION ALL below takes each column's
+	       -- type from the matching branch, so the cast only pins NULL's type.
+	       CAST(NULL AS CHAR(1024)) AS tags,
 	       'SCENE' AS block_type,
-	       CAST(NULL AS INT) AS person_id
+	       CAST(NULL AS SIGNED) AS person_id
 	FROM scene s
 	UNION ALL
 	SELECT s.project_id,

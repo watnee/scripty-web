@@ -617,6 +617,16 @@
         }
     });
 
+    // htmx snapshots the page into its history cache without issuing a
+    // request, so beforeRequest never fires on that path. Flush first, or a
+    // later Back restores the snapshot taken before the pending save landed
+    // and the editor shows stale text.
+    document.body.addEventListener('htmx:beforeHistorySave', function () {
+        if (current && (current.isDirty() || current.hasPending())) {
+            current.saveNow(true);
+        }
+    });
+
     // Re-bind after boosted navigation swaps a new editor form in
     // (allowScriptTags is false, so this script only runs on hard loads).
     document.body.addEventListener('htmx:afterSettle', initEditor);

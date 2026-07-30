@@ -9,6 +9,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -223,6 +224,41 @@ class PasskeyApiTest {
         mockMvc.perform(get("/api").accept("application/hal+json")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized());
+    }
+
+    /**
+     * The export links the API advertises resolve to the web controller's own
+     * paths — {@code /project/export} is not under {@code /api} — and a
+     * passkey sign-in leaves the client with nothing but its bearer token.
+     * The token has to authenticate there too, or Export and Print in the
+     * native app end at a redirect to the login page.
+     */
+    @Test
+    void aBearerTokenReachesTheExportEndpointTheApiAdvertises() throws Exception {
+        CreateUserCommandModel command = new CreateUserCommandModel();
+        command.setUsername("printpat");
+        command.setPassword("a-long-password");
+        command.setFirstName("Print");
+        command.setLastName("Pat");
+        command.setWriter(true);
+        userService.saveCreateUserCommandModel(command);
+
+        String token = apiTokens.issue("printpat", "iPhone");
+
+        String created = mockMvc.perform(post("/api/project")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\": \"Printable\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        int projectId = json.readTree(created).get("id").asInt();
+
+        mockMvc.perform(get("/project/export")
+                        .param("id", String.valueOf(projectId))
+                        .param("format", "pdf")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF));
     }
 
     @Test

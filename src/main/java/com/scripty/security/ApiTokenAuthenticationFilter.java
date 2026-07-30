@@ -19,11 +19,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * table — the header a native client sends after a passkey sign-in, which
  * leaves it with no password for Basic.
  *
- * <p>Scoped to {@code /api} paths and stateless like Basic: each request
- * authenticates itself, nothing is written to the session. An unknown or
- * revoked token simply leaves the request anonymous, so it falls through to
- * the same 401 challenge any signed-out API call gets — which is exactly the
- * signal that sends the client back to the login screen.
+ * <p>Not scoped to {@code /api} paths, because the API itself points beyond
+ * them: the export links it advertises resolve to the web controllers
+ * ({@code /project/export}, {@code /project/documents/…}), and a passkey
+ * client following one has nothing but this token to offer. Basic
+ * authenticates every path; the token must too, or Export and Print in the
+ * native app end at a redirect to the login page. Browsers never attach a
+ * Bearer header, so web sessions are untouched.
+ *
+ * <p>Stateless like Basic: each request authenticates itself, nothing is
+ * written to the session. An unknown or revoked token simply leaves the
+ * request anonymous, so it falls through to the same 401 challenge any
+ * signed-out API call gets — which is exactly the signal that sends the
+ * client back to the login screen.
  */
 public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
 
@@ -42,7 +50,7 @@ public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (isApiRequest(request) && header != null && header.startsWith(SCHEME)
+        if (header != null && header.startsWith(SCHEME)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
             String username = tokens.resolve(header.substring(SCHEME.length()).trim());
             if (username != null) {
@@ -60,10 +68,5 @@ public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
-    }
-
-    private static boolean isApiRequest(HttpServletRequest request) {
-        String path = request.getRequestURI().substring(request.getContextPath().length());
-        return path.equals("/api") || path.startsWith("/api/");
     }
 }

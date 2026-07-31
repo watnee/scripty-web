@@ -218,6 +218,64 @@ public class TextDocumentRestController {
     }
 
     /**
+     * Archives one song or note: takes it out of the list without deleting it.
+     *
+     * <p>Answers with the refreshed collection rather than the document, for the
+     * same reason {@link #bulkDelete} does — the caller's next question is what
+     * the list looks like now, and the archived document is no longer in it.
+     */
+    @RequestMapping(value = "/{id}/archive", method = RequestMethod.POST,
+            produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> archive(
+            @PathVariable Integer id,
+            @RequestParam(required = false) Integer projectId,
+            Principal principal) {
+        User user = currentUser(principal);
+        TextDocumentViewModel viewModel = textDocumentService.getViewModel(id, user);
+        if (viewModel == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Integer resolvedProjectId = projectId != null ? projectId : viewModel.getProjectId();
+        if (!projectAccess.canEditScript(resolvedProjectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (textDocumentService.archive(id, resolvedProjectId, user) == null) {
+            return new ResponseEntity<>(
+                    Map.of("id", "That document is not in this project's list."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        return list(resolvedProjectId, null, principal);
+    }
+
+    /**
+     * Archives several documents in one call.
+     *
+     * <p>Unlike {@link #bulkDelete} this is not songs-only: archiving does
+     * nothing type-specific, so a selection of notes is as valid as one of
+     * songs. Ids already archived or outside the project are skipped.
+     */
+    @RequestMapping(value = "/bulk/archive", method = RequestMethod.POST,
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkArchive(
+            @RequestParam Integer projectId,
+            @RequestBody(required = false) BulkArchiveDocumentsRequest request,
+            Principal principal) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request == null || request.ids() == null || request.ids().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Choose at least one song or note to archive."), HttpStatus.BAD_REQUEST);
+        }
+        int archived = textDocumentService.archiveDocuments(request.ids(), projectId, currentUser(principal));
+        if (archived == 0) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Those documents could not be archived."), HttpStatus.BAD_REQUEST);
+        }
+        return list(projectId, null, principal);
+    }
+
+    /**
      * Emails several songs in one message, the way the web list's checkbox
      * column does — its "Email selected" posts the ticked ids to the same
      * service call this uses.
@@ -428,6 +486,9 @@ public class TextDocumentRestController {
     }
 
     public record BulkDeleteDocumentsRequest(List<Integer> ids) {
+    }
+
+    public record BulkArchiveDocumentsRequest(List<Integer> ids) {
     }
 
     public record BulkShareEmailRequest(List<Integer> ids, String email) {

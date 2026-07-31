@@ -108,6 +108,12 @@ public class SongExportServiceImpl implements SongExportService {
             if (!TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
                 continue;
             }
+            // A songbook of "everything" means everything in the list, so
+            // archived songs stay out of it — but naming one by id still
+            // exports it, which is what the archive view's own export does.
+            if (wanted == null && doc.isArchived()) {
+                continue;
+            }
             if (wanted == null || wanted.contains(doc.getId())) {
                 songs.add(doc);
             }

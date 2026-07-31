@@ -13,6 +13,10 @@ public class TextDocumentListViewModel {
     private int trashedSongCount;
     /** How many notes are sitting in the trash. */
     private int trashedDraftCount;
+    /** How many songs are archived, so the list can offer a way through to them. */
+    private int archivedSongCount;
+    /** How many notes are archived. */
+    private int archivedDraftCount;
     private boolean retentionUnlimited;
 
     public Integer getProjectId() {
@@ -61,6 +65,22 @@ public class TextDocumentListViewModel {
 
     public void setTrashedDraftCount(int trashedDraftCount) {
         this.trashedDraftCount = trashedDraftCount;
+    }
+
+    public int getArchivedSongCount() {
+        return archivedSongCount;
+    }
+
+    public void setArchivedSongCount(int archivedSongCount) {
+        this.archivedSongCount = archivedSongCount;
+    }
+
+    public int getArchivedDraftCount() {
+        return archivedDraftCount;
+    }
+
+    public void setArchivedDraftCount(int archivedDraftCount) {
+        this.archivedDraftCount = archivedDraftCount;
     }
 
     /** True when trashed documents are kept until someone deletes them for good. */

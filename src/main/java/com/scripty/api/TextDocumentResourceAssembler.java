@@ -4,6 +4,7 @@ import com.scripty.controller.ProjectRestController;
 import com.scripty.controller.SongBlockRestController;
 import com.scripty.controller.SongEditionRestController;
 import com.scripty.controller.SongVersionRestController;
+import com.scripty.controller.DocumentArchiveRestController;
 import com.scripty.controller.DocumentTrashRestController;
 import com.scripty.controller.TextDocumentController;
 import com.scripty.controller.TextDocumentRestController;
@@ -106,6 +107,13 @@ public class TextDocumentResourceAssembler {
             // Deleting a song or note is recoverable; say where it went.
             collection.add(linkTo(methodOn(DocumentTrashRestController.class)
                     .list(projectId, null)).withRel(ApiRel.TRASH));
+            // The archive is always reachable, empty or not — unlike the bulk
+            // rels below it needs no song to be useful, since notes archive too,
+            // and a client wants somewhere to send the first one.
+            collection.add(linkTo(methodOn(DocumentArchiveRestController.class)
+                    .list(projectId, null)).withRel(ApiRel.ARCHIVED));
+            collection.add(linkTo(methodOn(TextDocumentRestController.class)
+                    .bulkArchive(projectId, null, null)).withRel(ApiRel.BULK_ARCHIVE));
         }
         return collection;
     }
@@ -187,6 +195,10 @@ public class TextDocumentResourceAssembler {
                     .withRel(ApiRel.DUPLICATE));
             links.add(linkTo(methodOn(TextDocumentRestController.class).changeType(id, null, projectId, null))
                     .withRel(ApiRel.CHANGE_TYPE));
+            // Songs and notes both archive: unlike the export and share rels
+            // there is nothing song-shaped about putting a document aside.
+            links.add(linkTo(methodOn(TextDocumentRestController.class).archive(id, projectId, null))
+                    .withRel(ApiRel.ARCHIVE));
             if (TextDocument.TYPE_SONG.equalsIgnoreCase(type)) {
                 links.add(linkTo(methodOn(TextDocumentRestController.class).shareEmail(id, null, null))
                         .withRel(ApiRel.SHARE_EMAIL));

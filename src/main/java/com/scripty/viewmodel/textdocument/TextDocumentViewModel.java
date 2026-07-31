@@ -19,6 +19,8 @@ public class TextDocumentViewModel {
     private LocalDateTime deletedAt;
     /** When the purge job will remove this trashed document for good. */
     private LocalDateTime purgesAt;
+    /** Set only for archived documents. Nothing expires it. */
+    private LocalDateTime archivedAt;
 
     public Integer getId() {
         return id;
@@ -122,5 +124,13 @@ public class TextDocumentViewModel {
 
     public void setPurgesAt(LocalDateTime purgesAt) {
         this.purgesAt = purgesAt;
+    }
+
+    public LocalDateTime getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(LocalDateTime archivedAt) {
+        this.archivedAt = archivedAt;
     }
 }

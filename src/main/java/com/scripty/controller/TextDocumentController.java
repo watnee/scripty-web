@@ -420,6 +420,88 @@ public class TextDocumentController {
         return "redirect:" + trashUrl(projectId, isSong);
     }
 
+    @RequestMapping(value = "/archive-document", method = RequestMethod.POST)
+    public String archiveDocument(@RequestParam Integer id,
+                                  @RequestParam Integer projectId,
+                                  @RequestParam(required = false) String type,
+                                  Principal principal,
+                                  RedirectAttributes redirectAttributes) {
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        TextDocument archived = textDocumentService.archive(id, projectId, currentUser(principal));
+        if (archived != null) {
+            // documentArchiveMessage rather than the trash's: the banner it feeds
+            // links to the archive, and "moved to the trash" would misdescribe it.
+            redirectAttributes.addFlashAttribute(
+                    "documentArchiveMessage",
+                    "Archived \"" + archived.getTitle() + "\".");
+        } else {
+            redirectAttributes.addFlashAttribute(
+                    "documentArchiveMessage",
+                    "Could not archive that item. It may already be archived.");
+        }
+        return "redirect:" + listUrl(projectId, isSong);
+    }
+
+    @RequestMapping(value = "/archive")
+    public String archive(@RequestParam Integer projectId,
+                          @RequestParam(required = false) String type,
+                          Model model,
+                          Principal principal) {
+        TextDocumentListViewModel viewModel =
+                textDocumentService.getArchiveViewModel(projectId, currentUser(principal));
+        if (viewModel == null) {
+            return "redirect:/project/list";
+        }
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        model.addAttribute("viewModel", viewModel);
+        model.addAttribute("listType", isSong ? TextDocument.TYPE_SONG : TextDocument.TYPE_NOTES);
+        model.addAttribute("isSongList", isSong);
+        model.addAttribute("documents", isSong ? viewModel.getSongs() : viewModel.getDrafts());
+        model.addAttribute("otherCount", isSong ? viewModel.getDrafts().size() : viewModel.getSongs().size());
+        return "project/documents/archive";
+    }
+
+    @RequestMapping(value = "/unarchive", method = RequestMethod.POST)
+    public String unarchive(@RequestParam Integer id,
+                            @RequestParam Integer projectId,
+                            @RequestParam(required = false) String type,
+                            Principal principal,
+                            RedirectAttributes redirectAttributes) {
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        TextDocument restored = textDocumentService.unarchive(id, projectId, currentUser(principal));
+        if (restored == null) {
+            redirectAttributes.addFlashAttribute(
+                    "documentArchiveMessage",
+                    "Could not bring that item back. It may already be out of the archive.");
+            return "redirect:" + archiveUrl(projectId, isSong);
+        }
+        redirectAttributes.addFlashAttribute(
+                "documentArchiveMessage",
+                "Brought \"" + restored.getTitle() + "\" back from the archive.");
+        return "redirect:" + listUrl(projectId, isSong);
+    }
+
+    @RequestMapping(value = "/archive-documents", method = RequestMethod.POST)
+    public String archiveDocuments(@RequestParam(name = "id", required = false) List<Integer> ids,
+                                   @RequestParam Integer projectId,
+                                   @RequestParam(required = false) String type,
+                                   Principal principal,
+                                   RedirectAttributes redirectAttributes) {
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        int archived = textDocumentService.archiveDocuments(ids, projectId, currentUser(principal));
+        if (archived > 0) {
+            String noun = isSong
+                    ? (archived == 1 ? " song" : " songs")
+                    : (archived == 1 ? " note" : " notes");
+            redirectAttributes.addFlashAttribute(
+                    "documentArchiveMessage", "Archived " + archived + noun + ".");
+        } else {
+            redirectAttributes.addFlashAttribute(
+                    "documentShareMessage", "Could not archive those items.");
+        }
+        return "redirect:" + listUrl(projectId, isSong);
+    }
+
     @RequestMapping(value = "/delete-songs", method = RequestMethod.POST)
     public String deleteSongs(@RequestParam(name = "id", required = false) List<Integer> ids,
                               @RequestParam Integer projectId,
@@ -551,6 +633,11 @@ public class TextDocumentController {
 
     private static String trashUrl(Integer projectId, boolean isSong) {
         return "/project/documents/trash?projectId=" + projectId
+                + "&type=" + (isSong ? TextDocument.TYPE_SONG : TextDocument.TYPE_NOTES);
+    }
+
+    private static String archiveUrl(Integer projectId, boolean isSong) {
+        return "/project/documents/archive?projectId=" + projectId
                 + "&type=" + (isSong ? TextDocument.TYPE_SONG : TextDocument.TYPE_NOTES);
     }
 

@@ -1,12 +1,12 @@
 /**
- * Song selection for the Export menu, the Email button, and the Delete button on
- * the songs list.
+ * Song selection for the Export menu, the Email button, and the Archive and
+ * Delete buttons on the songs list.
  *
  * Selecting nothing acts on every song for Export and Email, so both still work
- * for anyone who never touches the checkboxes. Delete is the exception: it stays
- * disabled until songs are picked, so an empty selection can never wipe a project.
- * Selection follows the search filter: a hidden card is not part of "all", and
- * cannot be picked by "Select all".
+ * for anyone who never touches the checkboxes. Archive and Delete are the
+ * exceptions: both stay disabled until songs are picked, so an empty selection
+ * can never empty a project. Selection follows the search filter: a hidden card
+ * is not part of "all", and cannot be picked by "Select all".
  */
 (function () {
     'use strict';
@@ -26,6 +26,8 @@
         var emailForm = document.getElementById('songs-email-form');
         var deleteBtn = document.getElementById('songs-delete-selected');
         var deleteForm = document.getElementById('songs-delete-form');
+        var archiveBtn = document.getElementById('songs-archive-selected');
+        var archiveForm = document.getElementById('songs-archive-form');
 
         function visibleCheckboxes() {
             return Array.prototype.slice
@@ -82,6 +84,13 @@
                     ? 'Delete ' + plural(chosen.length, 'selected song')
                     : 'Select songs to delete';
                 deleteBtn.disabled = chosen.length === 0;
+            }
+            if (archiveBtn) {
+                archiveBtn.textContent = chosen.length ? 'Archive (' + chosen.length + ')' : 'Archive';
+                archiveBtn.title = chosen.length
+                    ? 'Archive ' + plural(chosen.length, 'selected song')
+                    : 'Select songs to archive';
+                archiveBtn.disabled = chosen.length === 0;
             }
             if (selectAll) {
                 selectAll.checked = visible.length > 0 && chosen.length === visible.length;
@@ -163,6 +172,26 @@
                     deleteForm.appendChild(field);
                 });
                 deleteForm.submit();
+            });
+        }
+
+        if (archiveBtn && archiveForm) {
+            archiveBtn.addEventListener('click', function () {
+                var ids = selectedIds();
+                if (!ids.length) return;
+
+                // No confirm dialog, unlike Delete: archiving loses nothing and
+                // the archive page puts any of it back in one click.
+                Array.prototype.slice.call(archiveForm.querySelectorAll('input[name="id"]'))
+                    .forEach(function (old) { old.remove(); });
+                ids.forEach(function (id) {
+                    var field = document.createElement('input');
+                    field.type = 'hidden';
+                    field.name = 'id';
+                    field.value = id;
+                    archiveForm.appendChild(field);
+                });
+                archiveForm.submit();
             });
         }
 

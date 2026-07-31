@@ -52,6 +52,14 @@ public class TextDocument {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * When set, the document is archived: kept out of the list but otherwise
+     * whole. Unlike {@link #deletedAt} nothing ever expires it, and the document
+     * stays openable, exportable and part of a project bundle.
+     */
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
     public Integer getId() {
         return id;
     }
@@ -126,6 +134,18 @@ public class TextDocument {
 
     public boolean isDeleted() {
         return deletedAt != null;
+    }
+
+    public LocalDateTime getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(LocalDateTime archivedAt) {
+        this.archivedAt = archivedAt;
+    }
+
+    public boolean isArchived() {
+        return archivedAt != null;
     }
 
     public static String typeLabelFor(String type) {

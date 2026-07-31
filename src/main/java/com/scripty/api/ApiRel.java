@@ -160,6 +160,15 @@ public final class ApiRel {
     public static final String REORDER = "reorder";
     public static final String DUPLICATE = "duplicate";
     public static final String CHANGE_TYPE = "changeType";
+    // Archiving. Separate from the trash: nothing here expires, and an archived
+    // document is still whole — ARCHIVED is the collection it went to, ARCHIVE
+    // and UNARCHIVE the two directions, BULK_ARCHIVE the selection form.
+    public static final String ARCHIVE = "archive";
+    public static final String UNARCHIVE = "unarchive";
+    public static final String ARCHIVED = "archived";
+    public static final String BULK_ARCHIVE = "bulkArchive";
+    public static final String ARCHIVED_DOCUMENT = "archivedDocument";
+    public static final String ARCHIVED_DOCUMENTS = "archivedDocuments";
     public static final String TOGGLE_DEFAULT = "toggleDefault";
     public static final String IMPORT_PROJECT = "importProject";
     public static final String VERSIONS = "versions";

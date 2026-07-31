@@ -56,6 +56,14 @@
                th:text="${isSongList} ? 'View deleted songs' : 'View deleted notes'">View trash</a>
         </p>
 
+        <p class="text-document-import-banner"
+           th:if="${documentArchiveMessage != null}"
+           role="status">
+            <span th:text="${documentArchiveMessage}">Archived.</span>
+            <a th:href="@{/project/documents/archive(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
+               th:text="${isSongList} ? 'View archived songs' : 'View archived notes'">View archive</a>
+        </p>
+
         <section class="text-documents-section"
                  th:classappend="${isSongList} ? ' text-documents-section--songs' : ' text-documents-section--drafts'"
                  th:attr="aria-labelledby=${isSongList} ? 'songs-heading' : 'drafts-heading'">
@@ -132,11 +140,26 @@
                             th:if="${isSongList and !#lists.isEmpty(documents)}"
                             title="Email every song in this project">Email</button>
                     <button type="button"
+                            id="songs-archive-selected"
+                            class="project-list-action-btn project-list-action-btn--secondary"
+                            th:if="${isSongList and !#lists.isEmpty(documents)}"
+                            title="Select songs to archive"
+                            disabled>Archive</button>
+                    <button type="button"
                             id="songs-delete-selected"
                             class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn"
                             th:if="${isSongList and !#lists.isEmpty(documents)}"
                             title="Select songs to delete"
                             disabled>Delete</button>
+                    <!-- th:if is evaluated before th:with, so the count is inlined in both
+                         rather than bound to a local. Unlike Trash this link hides when the
+                         archive is empty: nothing lands there by accident, so an empty one
+                         is not a place anybody needs offering. -->
+                    <a th:href="@{/project/documents/archive(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
+                       class="project-list-action-btn project-list-action-btn--secondary"
+                       th:if="${(isSongList ? viewModel.archivedSongCount : viewModel.archivedDraftCount) > 0}"
+                       th:title="${isSongList} ? 'Songs you have put aside' : 'Notes you have put aside'"
+                       th:text="'Archive (' + ${isSongList ? viewModel.archivedSongCount : viewModel.archivedDraftCount} + ')'">Archive</a>
                     <a th:href="@{/project/documents/trash(projectId=${viewModel.projectId}, type=${isSongList} ? 'SONG' : 'NOTES')}"
                        class="project-list-action-btn project-list-action-btn--secondary"
                        th:with="trashCount=${isSongList ? viewModel.trashedSongCount : viewModel.trashedDraftCount}"
@@ -165,6 +188,16 @@
                   hx-boost="false"
                   hidden>
                 <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+            </form>
+
+            <form id="songs-archive-form"
+                  th:if="${isSongList and !#lists.isEmpty(documents)}"
+                  th:action="@{/project/documents/archive-documents}"
+                  method="post"
+                  hx-boost="false"
+                  hidden>
+                <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
             </form>
 
             <form id="import-doc-form"
@@ -333,6 +366,21 @@
                                     th:title="${isSongList} ? 'Insert as Lyrics blocks at end of script' : 'Insert as Note blocks at end of script'">
                                 Insert
                             </button>
+                        </form>
+                        <!-- Archiving is offered on notes as well as songs: unlike Email
+                             and Share there is nothing song-shaped about putting one aside.
+                             No confirm dialog — it takes one click to undo. -->
+                        <form th:if="${canEditScript}"
+                              th:action="@{/project/documents/archive-document}"
+                              method="post"
+                              class="text-document-archive-form"
+                              hx-boost="false">
+                            <input type="hidden" name="id" th:value="${doc.id}" />
+                            <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                            <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--secondary"
+                                    th:title="${isSongList} ? 'Put this song aside without deleting it' : 'Put this note aside without deleting it'">Archive</button>
                         </form>
                         <form th:action="@{/project/documents/delete}"
                               method="post"

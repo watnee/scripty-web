@@ -84,7 +84,8 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         vm.setProjectTitle(project.getTitle());
         List<TextDocumentViewModel> songs = new ArrayList<>();
         List<TextDocumentViewModel> drafts = new ArrayList<>();
-        for (TextDocument doc : textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(projectId)) {
+        for (TextDocument doc : textDocumentRepository
+                .findByProjectIdAndDeletedAtIsNullAndArchivedAtIsNullOrderBySortOrderAscUpdatedAtDesc(projectId)) {
             TextDocumentViewModel docVm = toViewModel(doc, project, false);
             if (TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
                 songs.add(docVm);
@@ -101,6 +102,13 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         vm.setTrashedSongCount(trashedSongs);
         vm.setTrashedDraftCount(
                 textDocumentRepository.countByProjectIdAndDeletedAtIsNotNull(projectId) - trashedSongs);
+        int archivedSongs = textDocumentRepository
+                .countByProjectIdAndDocumentTypeAndArchivedAtIsNotNullAndDeletedAtIsNull(
+                        projectId, TextDocument.TYPE_SONG);
+        vm.setArchivedSongCount(archivedSongs);
+        vm.setArchivedDraftCount(
+                textDocumentRepository.countByProjectIdAndArchivedAtIsNotNullAndDeletedAtIsNull(projectId)
+                        - archivedSongs);
         return vm;
     }
 
@@ -354,6 +362,10 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         }
         LocalDateTime now = LocalDateTime.now();
         doc.setDeletedAt(null);
+        // Something archived and then trashed comes back into the list, not into
+        // the archive: "restore" is answered by the document reappearing where
+        // the writer is looking, and the archive is one action away again.
+        doc.setArchivedAt(null);
         // Send it back to the end of the list: its old sort_order may well belong to
         // another document by now, and ties only affect ordering within the list.
         doc.setSortOrder(textDocumentRepository.countByProjectIdAndDeletedAtIsNull(projectId));
@@ -442,6 +454,131 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             deleted++;
         }
         return deleted;
+    }
+
+    @Override
+    @Transactional
+    public TextDocument archive(Integer id, Integer projectId, User currentUser) {
+        if (id == null || projectId == null || currentUser == null) {
+            return null;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return null;
+        }
+        // Only something in the working list can be archived: already-archived is
+        // a no-op, and trashed belongs to the trash, which has its own way back.
+        TextDocument doc = textDocumentRepository
+                .findByIdAndProjectIdAndArchivedAtIsNullAndDeletedAtIsNull(id, projectId).orElse(null);
+        if (doc == null) {
+            return null;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        doc.setArchivedAt(now);
+        TextDocument saved = textDocumentRepository.save(doc);
+
+        Project project = doc.getProject();
+        if (project != null) {
+            project.setLastEdited(now);
+            projectRepository.save(project);
+        }
+        projectActivityService.record(
+                projectId,
+                currentUser.getId(),
+                ProjectActivity.ACTION_DOCUMENT_ARCHIVED,
+                "archived \"" + saved.getTitle() + "\"",
+                ProjectActivity.ENTITY_DOCUMENT,
+                saved.getId());
+        return saved;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TextDocumentListViewModel getArchiveViewModel(Integer projectId, User currentUser) {
+        Project project = requireAccessibleProject(projectId, currentUser);
+        if (project == null) {
+            return null;
+        }
+        TextDocumentListViewModel vm = new TextDocumentListViewModel();
+        vm.setProjectId(project.getId());
+        vm.setProjectTitle(project.getTitle());
+        List<TextDocumentViewModel> songs = new ArrayList<>();
+        List<TextDocumentViewModel> drafts = new ArrayList<>();
+        for (TextDocument doc : textDocumentRepository
+                .findByProjectIdAndArchivedAtIsNotNullAndDeletedAtIsNullOrderByArchivedAtDesc(projectId)) {
+            TextDocumentViewModel docVm = toViewModel(doc, project, false);
+            docVm.setArchivedAt(doc.getArchivedAt());
+            if (TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+                songs.add(docVm);
+            } else {
+                drafts.add(docVm);
+            }
+        }
+        // Nothing ever expires out of the archive, so there is no purge date to
+        // report — the flag the trash page reads stays true here by definition.
+        vm.setRetentionUnlimited(true);
+        vm.setSongs(songs);
+        vm.setDrafts(drafts);
+        return vm;
+    }
+
+    @Override
+    @Transactional
+    public TextDocument unarchive(Integer id, Integer projectId, User currentUser) {
+        if (id == null || projectId == null || currentUser == null) {
+            return null;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return null;
+        }
+        TextDocument doc = textDocumentRepository
+                .findByIdAndProjectIdAndArchivedAtIsNotNullAndDeletedAtIsNull(id, projectId).orElse(null);
+        if (doc == null) {
+            return null;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        doc.setArchivedAt(null);
+        // Send it back to the end of the list, the same way a restore does: its
+        // old sort_order may well belong to another document by now.
+        doc.setSortOrder(textDocumentRepository.countByProjectIdAndDeletedAtIsNull(projectId));
+        TextDocument saved = textDocumentRepository.save(doc);
+
+        Project project = doc.getProject();
+        if (project != null) {
+            project.setLastEdited(now);
+            projectRepository.save(project);
+        }
+        projectActivityService.record(
+                projectId,
+                currentUser.getId(),
+                ProjectActivity.ACTION_DOCUMENT_UNARCHIVED,
+                "brought \"" + saved.getTitle() + "\" back from the archive",
+                ProjectActivity.ENTITY_DOCUMENT,
+                saved.getId());
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public int archiveDocuments(List<Integer> ids, Integer projectId, User currentUser) {
+        if (ids == null || ids.isEmpty() || projectId == null || currentUser == null) {
+            return 0;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return 0;
+        }
+        int archived = 0;
+        Set<Integer> seen = new LinkedHashSet<>();
+        for (Integer id : ids) {
+            if (id == null || !seen.add(id)) {
+                continue;
+            }
+            // archive() re-checks the id itself and returns null for anything
+            // outside the project or already archived, so nothing extra to skip.
+            if (archive(id, projectId, currentUser) != null) {
+                archived++;
+            }
+        }
+        return archived;
     }
 
     @Override

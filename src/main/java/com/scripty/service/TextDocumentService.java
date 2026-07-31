@@ -80,6 +80,35 @@ public interface TextDocumentService {
     int deleteSongs(List<Integer> ids, Integer projectId, User currentUser);
 
     /**
+     * Archives a document: takes it out of the list without deleting it. Unlike
+     * {@link #delete} nothing expires it, and the document stays readable and
+     * editable by id — the archive is where finished work goes, not a bin.
+     * @return the archived document, or null if it wasn't found in the list
+     */
+    TextDocument archive(Integer id, Integer projectId, User currentUser);
+
+    /**
+     * Lists the project's archived documents, most recently archived first.
+     * @return the archive, or null if the project isn't accessible
+     */
+    TextDocumentListViewModel getArchiveViewModel(Integer projectId, User currentUser);
+
+    /**
+     * Brings an archived document back into the list, at the end of its section.
+     * @return the document, or null if it isn't in this project's archive
+     */
+    TextDocument unarchive(Integer id, Integer projectId, User currentUser);
+
+    /**
+     * Archives several of a project's documents at once. Ids that are missing,
+     * outside the project, or already archived are skipped, so a stale selection
+     * is harmless. Unlike {@link #deleteSongs} this takes notes as well as songs:
+     * archiving does nothing type-specific.
+     * @return the number of documents actually archived
+     */
+    int archiveDocuments(List<Integer> ids, Integer projectId, User currentUser);
+
+    /**
      * Reassigns the sort order of a project's documents to match {@code orderedIds}.
      * Every id must belong to the project; the client typically sends one type's
      * list (songs or notes), which is enough because the list view splits by type.

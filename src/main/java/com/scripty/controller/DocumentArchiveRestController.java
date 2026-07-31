@@ -123,6 +123,11 @@ public class DocumentArchiveRestController {
                 // and read in place, so say where it lives.
                 linkTo(methodOn(TextDocumentRestController.class).show(id, null))
                         .withRel(ApiRel.DOCUMENT),
+                // Deciding an archived piece is finished with for good should not
+                // mean unarchiving it first. This is the ordinary soft delete, so
+                // it still lands in the trash — matching the web archive page.
+                linkTo(methodOn(TextDocumentRestController.class).delete(id, projectId, null))
+                        .withRel(ApiRel.DELETE),
                 linkTo(methodOn(DocumentArchiveRestController.class).list(projectId, null))
                         .withRel(ApiRel.ARCHIVED)
         };

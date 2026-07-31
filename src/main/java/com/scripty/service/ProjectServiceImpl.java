@@ -89,7 +89,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectListViewModel getProjectListViewModel() {
         ProjectListViewModel vm = new ProjectListViewModel();
-        List<Project> projects = new ArrayList<>(projectRepository.findAllWithTeams());
+        List<Project> projects = new ArrayList<>(projectRepository.findUnarchivedWithTeams());
         vm.setProjects(mapProjectViewModels(projects));
         return vm;
     }
@@ -97,7 +97,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectListViewModel getProjectListViewModel(String userTeam) {
         ProjectListViewModel vm = new ProjectListViewModel();
-        List<Project> projects = new ArrayList<>(projectRepository.findAllWithTeams());
+        List<Project> projects = new ArrayList<>(projectRepository.findUnarchivedWithTeams());
 
         if (userTeam != null && !userTeam.isEmpty()) {
             List<Project> filtered = new ArrayList<>();
@@ -553,6 +553,66 @@ public class ProjectServiceImpl implements ProjectService {
         userRepository.clearDefaultProject(id);
         project.setDeletedAt(LocalDateTime.now());
         return projectRepository.save(project);
+    }
+
+    @Override
+    @Transactional
+    public Project archiveProject(Integer id) {
+        Project project = id == null ? null : projectRepository.findById(id).orElse(null);
+        if (project == null || project.isArchived()) {
+            return null;
+        }
+        // Same reasoning as deleteProject: a default project nobody can find in
+        // the list is a trap, and landing on it every time is worse than losing
+        // the star.
+        userRepository.clearDefaultProject(id);
+        project.setArchivedAt(LocalDateTime.now());
+        return projectRepository.save(project);
+    }
+
+    @Override
+    @Transactional
+    public Project unarchiveProject(Integer id) {
+        Project project = id == null ? null : projectRepository.findById(id).orElse(null);
+        if (project == null || !project.isArchived()) {
+            return null;
+        }
+        project.setArchivedAt(null);
+        return projectRepository.save(project);
+    }
+
+    @Override
+    public List<Project> getArchivedProjects(User user) {
+        if (user == null || !user.isEnabled()) {
+            return List.of();
+        }
+        List<Project> archived = projectRepository.findArchivedWithTeams();
+        if (hasProjectWideAccess(user)) {
+            return archived;
+        }
+        // Archived rows load through ordinary JPQL with their teams, so unlike
+        // the trash this can ask the one access rule directly rather than
+        // needing a team-shaped native query of its own.
+        List<Project> visible = new ArrayList<>();
+        for (Project project : archived) {
+            if (canUserAccessProject(project, user)) {
+                visible.add(project);
+            }
+        }
+        return visible;
+    }
+
+    @Override
+    public Project getArchivedProject(Integer id, User user) {
+        if (id == null || user == null) {
+            return null;
+        }
+        for (Project project : getArchivedProjects(user)) {
+            if (id.equals(project.getId())) {
+                return project;
+            }
+        }
+        return null;
     }
 
     @Override

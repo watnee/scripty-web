@@ -54,6 +54,15 @@ public class Project {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * A second, independent stamp meaning "put aside on purpose". Deliberately
+     * not covered by the {@link SQLRestriction} above: an archived project is
+     * still whole and openable by id, so only the project <em>list</em> filters
+     * it out. Nothing purges it, and there is no window to run out.
+     */
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "project_team",
@@ -91,6 +100,18 @@ public class Project {
 
     public void setDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    public LocalDateTime getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(LocalDateTime archivedAt) {
+        this.archivedAt = archivedAt;
+    }
+
+    public boolean isArchived() {
+        return archivedAt != null;
     }
 
     public String getScreenplayTitle() {

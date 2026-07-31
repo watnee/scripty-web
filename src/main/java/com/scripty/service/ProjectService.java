@@ -48,6 +48,32 @@ public interface ProjectService {
      */
     Project deleteProject(Integer id);
 
+    /**
+     * Puts the project aside: it leaves the project list but stays whole,
+     * openable by id and part of a bundle export. Nothing expires. Returns null
+     * if there is no such live project.
+     *
+     * <p>Like {@link #deleteProject}, this drops the project as anyone's default,
+     * so nobody is left landing on a screenplay they can no longer see listed.
+     * Unarchiving does not put the star back — that is the reader's call.
+     */
+    Project archiveProject(Integer id);
+
+    /** Brings an archived project back into the list. Null if it is not archived. */
+    Project unarchiveProject(Integer id);
+
+    /**
+     * Archived projects the user is allowed to see, most recently archived
+     * first. Applies the same team rule as the live project list.
+     */
+    List<Project> getArchivedProjects(User user);
+
+    /**
+     * An archived project the user is allowed to act on, or null if it is not
+     * archived or is out of their reach.
+     */
+    Project getArchivedProject(Integer id, User user);
+
     /** Every trashed project, most recently deleted first. Not access-scoped. */
     List<Project> getTrashedProjects();
 

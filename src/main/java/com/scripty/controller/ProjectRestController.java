@@ -333,6 +333,28 @@ public class ProjectRestController {
         return ResponseEntity.ok(projectResourceAssembler.toModel(viewModel));
     }
 
+    /**
+     * Puts a screenplay aside: it leaves the project list but stays whole and
+     * openable. Answers with the refreshed collection, so a client never has to
+     * guess what left it.
+     *
+     * <p>Gated exactly like {@link #delete} rather than on edit rights, since it
+     * sits beside it and reaches no further: both take a project off the list,
+     * and this one is the reversible of the two.
+     */
+    @RequestMapping(value = "/{id}/archive", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> archive(@PathVariable Integer id, Principal principal) {
+        if (!projectAccess.canAccessProject(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (projectService.archiveProject(id) == null) {
+            return new ResponseEntity<>(
+                    java.util.Map.of("id", "That project is not in the list."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        return list(principal);
+    }
+
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<ProjectResource>> delete(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessProject(id, principal)) {

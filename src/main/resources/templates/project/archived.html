@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title>Scripty - Archived Projects</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('projects')}"></div>
+    <main class="text-documents-page text-documents-page--drafts">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li aria-current="page">Archive</li>
+                </ol>
+            </nav>
+        </div>
+
+        <p class="text-document-import-banner"
+           th:if="${archiveMessage != null}"
+           th:text="${archiveMessage}"
+           role="status"></p>
+
+        <section class="text-documents-section text-documents-section--drafts">
+            <div class="text-documents-section-header">
+                <div class="text-documents-section-intro">
+                    <span class="text-documents-section-mark text-documents-section-mark--draft" aria-hidden="true">📦</span>
+                    <div>
+                        <div class="text-documents-heading-row">
+                            <h2 id="archive-heading">Archived Projects</h2>
+                        </div>
+                        <p class="muted">
+                            Nothing here is on a clock. An archived screenplay keeps its script,
+                            songs, notes and versions, and you can still open and edit it from here.
+                        </p>
+                    </div>
+                </div>
+                <div class="text-documents-section-actions">
+                    <a th:href="@{/project/list}"
+                       class="project-list-action-btn project-list-action-btn--primary">Back to Projects</a>
+                </div>
+            </div>
+
+            <div class="text-documents-empty-state" th:if="${#lists.isEmpty(projects)}">
+                <p class="text-documents-empty-title">No archived projects</p>
+                <p class="muted">
+                    Archiving is for a production you have wrapped but do not want to delete.
+                    It leaves the project list and waits here — no purge date, nothing lost.
+                </p>
+            </div>
+
+            <ul class="text-documents-list" th:if="${!#lists.isEmpty(projects)}">
+                <li th:each="project, iter : ${projects}"
+                    class="text-document-card text-document-card--draft"
+                    th:style="'--card-i:' + ${iter.index}">
+                    <div class="text-document-card-main">
+                        <a class="text-document-card-title"
+                           th:href="@{/project/show(id=${project.id})}"
+                           th:text="${project.title}">Untitled</a>
+                        <div class="text-document-card-meta">
+                            <span class="text-document-type-badge">Project</span>
+                            <span class="muted"
+                                  th:if="${project.archivedAt != null}"
+                                  th:title="${#temporals.format(project.archivedAt, 'MMM d, yyyy, h:mm a')}">
+                                Archived <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.archivedAt})}"></span>
+                            </span>
+                            <span class="muted"
+                                  th:if="${project.lastEdited != null}"
+                                  th:title="${#temporals.format(project.lastEdited, 'MMM d, yyyy, h:mm a')}">
+                                Last edited <span th:replace="~{fragments/lastEditedTime :: relativeTime(${project.lastEdited})}"></span>
+                            </span>
+                            <span class="muted"
+                                  th:if="${!#lists.isEmpty(project.teams)}"
+                                  th:text="${#strings.listJoin(project.teams, ', ')}">Teams</span>
+                        </div>
+                    </div>
+                    <div class="text-document-card-actions">
+                        <form th:action="@{/project/unarchive}" method="post" hx-boost="false">
+                            <input type="hidden" name="id" th:value="${project.id}">
+                            <button type="submit"
+                                    class="project-list-action-btn project-list-action-btn--primary"
+                                    title="Put this project back in the list">Unarchive</button>
+                        </form>
+                        <!-- Deleting from here is the ordinary soft delete, so it lands in the
+                             trash and stays recoverable — the same confirm modal the project
+                             list uses, since what goes with it is the same. -->
+                        <button type="button"
+                                class="project-list-action-btn project-list-action-btn--ghost text-document-delete-btn project-list-delete-btn"
+                                th:attr="data-delete-id=${project.id}, data-delete-title=${project.title}">Delete</button>
+                    </div>
+                </li>
+            </ul>
+        </section>
+    </main>
+    <!-- The confirm modal itself rides on the nav fragment above, along with the
+         handler that opens it. -->
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+</body>
+</html>

@@ -27,6 +27,13 @@
             <a th:href="@{/project/trash}">View deleted projects</a>
         </p>
 
+        <p class="text-document-import-banner"
+           th:if="${projectArchiveMessage != null}"
+           role="status">
+            <span th:text="${projectArchiveMessage}">Archived.</span>
+            <a th:href="@{/project/archived}">View the archive</a>
+        </p>
+
         <div class="project-list-header">
             <div class="project-list-header-intro">
                 <span class="project-list-header-mark" aria-hidden="true">
@@ -63,6 +70,11 @@
                         </span>
                         <span class="project-list-import-label">Import Project</span>
                     </button>
+                    <a th:if="${hasArchivedProjects}"
+                       th:href="@{/project/archived}"
+                       class="project-list-action-btn project-list-action-btn--secondary"
+                       title="Screenplays you have put aside"
+                       th:text="'Archive (' + ${archivedCount} + ')'">Archive</a>
                     <a th:if="${hasTrashedProjects}"
                        th:href="@{/project/trash}"
                        class="project-list-action-btn project-list-action-btn--secondary"

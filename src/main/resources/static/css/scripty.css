@@ -5403,6 +5403,13 @@ html.scripty-script-readonly .project-script [hx-get*="/block/edit"] {
     display: inline-flex;
 }
 
+/* The archive button posts a form, so the form itself must not take part in
+   the actions row's layout. */
+.project-list-archive-form {
+    margin: 0;
+    display: inline-flex;
+}
+
 .project-title-container {
     display: flex;
     justify-content: space-between;

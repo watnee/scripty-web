@@ -1,6 +1,7 @@
 package com.scripty.api;
 
 import com.scripty.controller.ActorRestController;
+import com.scripty.controller.ArchivedProjectRestController;
 import com.scripty.controller.BlockRestController;
 import com.scripty.config.FeatureFlag;
 import com.scripty.config.FeatureFlags;
@@ -110,7 +111,11 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 .add(linkTo(methodOn(ProjectRestController.class).importProject(null)).withRel(ApiRel.IMPORT_PROJECT))
                 // Deleting a project is a soft delete, so the collection also
                 // points at where the deleted ones went.
-                .add(linkTo(methodOn(ProjectTrashRestController.class).list(null)).withRel(ApiRel.TRASH));
+                .add(linkTo(methodOn(ProjectTrashRestController.class).list(null)).withRel(ApiRel.TRASH))
+                // Advertised even when the archive is empty — and especially
+                // then, since a project list can be empty *because* everything
+                // in it has been archived.
+                .add(linkTo(methodOn(ArchivedProjectRestController.class).list(null)).withRel(ApiRel.ARCHIVED));
     }
 
     private ProjectResource toResource(ProjectViewModel project) {
@@ -164,6 +169,10 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(ProjectRestController.class).list(null)).withRel(ApiRel.PROJECTS),
                 linkTo(methodOn(ProjectRestController.class).update(id, null, null, null)).withRel(ApiRel.UPDATE),
                 linkTo(methodOn(ProjectRestController.class).delete(id, null)).withRel(ApiRel.DELETE),
+                // Beside delete, and the reversible one of the pair: archiving
+                // takes a wrapped production off the list without putting it on
+                // a clock.
+                linkTo(methodOn(ProjectRestController.class).archive(id, null)).withRel(ApiRel.ARCHIVE),
                 linkTo(methodOn(ProjectRestController.class).toggleDefault(id, null)).withRel(ApiRel.TOGGLE_DEFAULT),
                 linkTo(methodOn(BlockRestController.class).list(id, null, null)).withRel(ApiRel.BLOCKS),
                 linkTo(methodOn(PersonRestController.class).list(id, null)).withRel(ApiRel.CHARACTERS),

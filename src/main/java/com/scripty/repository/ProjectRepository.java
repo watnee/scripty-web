@@ -15,9 +15,29 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
     @EntityGraph(attributePaths = "teams")
     List<Project> findAllByOrderByTitleAsc();
 
+    /**
+     * Every live project, archived or not. Still the right list for working out
+     * what a user may reach, since an archived project stays openable — only the
+     * project list itself hides them, via {@link #findUnarchivedWithTeams}.
+     */
     @EntityGraph(attributePaths = "teams")
     @Query("SELECT p FROM Project p")
     List<Project> findAllWithTeams();
+
+    /** The working list: not archived (and not trashed, per the @SQLRestriction). */
+    @EntityGraph(attributePaths = "teams")
+    @Query("SELECT p FROM Project p WHERE p.archivedAt IS NULL")
+    List<Project> findUnarchivedWithTeams();
+
+    /**
+     * The archive, most recently archived first. Nothing expires out of it, so
+     * unlike the trash there is no cutoff finder beside this one. A project that
+     * was archived and then deleted is not here — the @SQLRestriction drops it,
+     * which is the "deleted_at wins" rule the migration describes.
+     */
+    @EntityGraph(attributePaths = "teams")
+    @Query("SELECT p FROM Project p WHERE p.archivedAt IS NOT NULL ORDER BY p.archivedAt DESC")
+    List<Project> findArchivedWithTeams();
 
     @EntityGraph(attributePaths = "teams")
     Optional<Project> findWithTeamsById(Integer id);
@@ -54,8 +74,15 @@ public interface ProjectRepository extends JpaRepository<Project, Integer> {
             nativeQuery = true)
     Optional<Project> findTrashedById(@Param("id") Integer id);
 
+    /**
+     * Brings a trashed project back into the list — including one that had been
+     * archived before it was deleted, hence clearing {@code archived_at} too.
+     * "Restore" is answered by the project reappearing where the person looking
+     * for it is looking; archiving it again is one action away.
+     */
     @Modifying
-    @Query(value = "UPDATE project SET deleted_at = NULL WHERE id = :id AND deleted_at IS NOT NULL",
+    @Query(value = "UPDATE project SET deleted_at = NULL, archived_at = NULL"
+            + " WHERE id = :id AND deleted_at IS NOT NULL",
             nativeQuery = true)
     int restoreById(@Param("id") Integer id);
 

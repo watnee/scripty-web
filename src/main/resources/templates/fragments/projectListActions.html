@@ -59,6 +59,21 @@
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
         </svg>
     </button>
+    <!-- No confirmation: nothing is lost, nothing is on a clock, and the way
+         back is one click on the archive page. Deleting keeps its modal. -->
+    <form th:action="@{/project/archive}" method="post" hx-boost="false" class="project-list-archive-form">
+        <input type="hidden" name="id" th:value="${project.id}" />
+        <button type="submit"
+                class="project-list-action-btn project-list-action-btn--icon"
+                aria-label="Archive project"
+                title="Archive project">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="4" width="20" height="5" rx="1"></rect>
+                <path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"></path>
+                <line x1="10" y1="13" x2="14" y2="13"></line>
+            </svg>
+        </button>
+    </form>
     <button type="button"
             class="project-list-action-btn project-list-action-btn--icon project-list-delete-btn"
             th:attr="data-delete-id=${project.id}"

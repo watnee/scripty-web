@@ -169,6 +169,13 @@ public final class ApiRel {
     public static final String BULK_ARCHIVE = "bulkArchive";
     public static final String ARCHIVED_DOCUMENT = "archivedDocument";
     public static final String ARCHIVED_DOCUMENTS = "archivedDocuments";
+    // The same three verbs one level up, for a whole screenplay. ARCHIVE and
+    // UNARCHIVE are reused as-is — they read the same on either resource, and a
+    // client follows the link it was handed rather than matching on the noun.
+    // Only the embed keys have to differ, since a project and a song are not
+    // interchangeable in a list.
+    public static final String ARCHIVED_PROJECT = "archivedProject";
+    public static final String ARCHIVED_PROJECTS = "archivedProjects";
     public static final String TOGGLE_DEFAULT = "toggleDefault";
     public static final String IMPORT_PROJECT = "importProject";
     public static final String VERSIONS = "versions";

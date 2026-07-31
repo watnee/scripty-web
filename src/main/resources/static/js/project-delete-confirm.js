@@ -71,9 +71,14 @@
             e.stopPropagation();
 
             pendingId = btn.dataset.deleteId;
-            var row = btn.closest('.project-list-row, .project-title-container, h1');
-            var titleEl = row ? row.querySelector('.project-list-title, span') : null;
-            var title = titleEl && titleEl.textContent ? titleEl.textContent.trim() : 'this project';
+            // The archive page's cards are not project-list rows, so they name
+            // the project on the button rather than leaving it to be found.
+            var title = btn.dataset.deleteTitle;
+            if (!title) {
+                var row = btn.closest('.project-list-row, .project-title-container, h1');
+                var titleEl = row ? row.querySelector('.project-list-title, span') : null;
+                title = titleEl && titleEl.textContent ? titleEl.textContent.trim() : 'this project';
+            }
             if (nameEl) nameEl.textContent = title;
             modal.hidden = false;
             if (confirmBtn) confirmBtn.focus();

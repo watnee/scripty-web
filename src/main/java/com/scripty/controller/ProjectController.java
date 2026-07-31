@@ -16,6 +16,7 @@ import com.scripty.viewmodel.project.projectlist.ProjectTeamViewModel;
 import com.scripty.viewmodel.project.projectlist.ProjectViewModel;
 import com.scripty.viewmodel.project.projectprofile.ProjectProfileViewModel;
 import com.scripty.viewmodel.project.stats.ScriptStatsViewModel;
+import com.scripty.viewmodel.project.archive.ArchivedProjectViewModel;
 import com.scripty.viewmodel.project.trash.TrashedProjectViewModel;
 import com.scripty.service.DocxExportService;
 import com.scripty.service.EpubExportService;
@@ -170,6 +171,12 @@ public class ProjectController {
         int trashedCount = projectService.getTrashedProjects(currentUser).size();
         model.addAttribute("hasTrashedProjects", trashedCount > 0);
         model.addAttribute("trashedCount", trashedCount);
+        // Same rule for the archive, with one difference: the link stays only
+        // while there is something in it, since an empty archive is not a place
+        // worth visiting.
+        int archivedCount = projectService.getArchivedProjects(currentUser).size();
+        model.addAttribute("hasArchivedProjects", archivedCount > 0);
+        model.addAttribute("archivedCount", archivedCount);
 
         return "project/list";
     }
@@ -423,6 +430,67 @@ public class ProjectController {
                     "Moved \"" + deleted.getTitle() + "\" to the trash.");
         }
         return "redirect:/project/list";
+    }
+
+    /**
+     * Puts a screenplay aside. Gated exactly like {@link #delete} beside it:
+     * both take a project off the list, and this is the one nothing expires out
+     * of.
+     */
+    @RequestMapping(value = "/archive", method = RequestMethod.POST)
+    public String archive(@RequestParam Integer id, Principal principal, RedirectAttributes redirectAttributes) {
+        if (denyProjectAccess(id, principal)) {
+            return "redirect:/project/list";
+        }
+        Project archived = projectService.archiveProject(id);
+        if (archived != null) {
+            redirectAttributes.addFlashAttribute("projectArchiveMessage",
+                    "Archived \"" + archived.getTitle() + "\".");
+        }
+        return "redirect:/project/list";
+    }
+
+    /**
+     * The archive page. Unlike the trash routes below, an archived project is
+     * an ordinary live row — {@link #denyProjectAccess} can see it, and the
+     * lookups load teams the usual way — so this needs no native queries of its
+     * own. It still resolves through the user-scoped
+     * {@code getArchivedProject(id, user)} so the access rule has one home.
+     */
+    @RequestMapping(value = "/archived")
+    public String archived(Model model, Principal principal) {
+        User currentUser = currentUser(principal);
+        if (currentUser == null) {
+            return "redirect:/project/list";
+        }
+        List<ArchivedProjectViewModel> viewModels = new ArrayList<>();
+        for (Project project : projectService.getArchivedProjects(currentUser)) {
+            viewModels.add(new ArchivedProjectViewModel(
+                    project.getId(),
+                    project.getTitle(),
+                    project.getLastEdited(),
+                    project.getArchivedAt(),
+                    project.getTeamNames()));
+        }
+        model.addAttribute("projects", viewModels);
+        return "project/archived";
+    }
+
+    @RequestMapping(value = "/unarchive", method = RequestMethod.POST)
+    public String unarchive(@RequestParam Integer id, Principal principal, RedirectAttributes redirectAttributes) {
+        User currentUser = currentUser(principal);
+        if (currentUser == null) {
+            return "redirect:/project/list";
+        }
+        Project project = projectService.getArchivedProject(id, currentUser);
+        if (project == null || projectService.unarchiveProject(id) == null) {
+            redirectAttributes.addFlashAttribute("archiveMessage",
+                    "That project is no longer in the archive.");
+            return "redirect:/project/archived";
+        }
+        redirectAttributes.addFlashAttribute("archiveMessage",
+                "Moved \"" + project.getTitle() + "\" back to your projects.");
+        return "redirect:/project/archived";
     }
 
     /**
@@ -907,22 +975,32 @@ public class ProjectController {
                 .body(bundle);
     }
 
+    /**
+     * Everything the user could export, which is deliberately more than the
+     * project list shows: the archived ones go in too. A bundle export is a
+     * backup, and a backup that quietly dropped a wrapped production would not
+     * be one. Naming an archived project by id exports it as well, since
+     * {@link #denyProjectAccess} sees archived rows like any other.
+     */
     private List<Integer> accessibleProjectIds(Principal principal) {
         String userTeam = null;
-        if (principal != null) {
-            User currentUser = userService.readByUsername(principal.getName());
-            if (currentUser != null
-                    && !currentUser.isAdmin() && !currentUser.isDirector() && !currentUser.isProducer()
-                    && !currentUser.isWriter() && !currentUser.isActor() && !currentUser.isCrew()
-                    && !currentUser.isDirectorOfPhotography() && !currentUser.isCastingDirector()) {
-                userTeam = currentUser.getTeam();
-            }
+        User currentUser = principal != null ? userService.readByUsername(principal.getName()) : null;
+        if (currentUser != null
+                && !currentUser.isAdmin() && !currentUser.isDirector() && !currentUser.isProducer()
+                && !currentUser.isWriter() && !currentUser.isActor() && !currentUser.isCrew()
+                && !currentUser.isDirectorOfPhotography() && !currentUser.isCastingDirector()) {
+            userTeam = currentUser.getTeam();
         }
         ProjectListViewModel viewModel = projectService.getProjectListViewModel(userTeam);
         List<Integer> ids = new ArrayList<>();
         if (viewModel != null && viewModel.getProjects() != null) {
             for (ProjectViewModel project : viewModel.getProjects()) {
                 ids.add(project.getId());
+            }
+        }
+        for (Project archived : projectService.getArchivedProjects(currentUser)) {
+            if (!ids.contains(archived.getId())) {
+                ids.add(archived.getId());
             }
         }
         return ids;

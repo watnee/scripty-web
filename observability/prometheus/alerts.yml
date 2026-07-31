@@ -163,3 +163,44 @@ groups:
           description: >-
             {{ $value | humanizePercentage }} of sign-in attempts failed over 10
             minutes. Check Cloudflare for a spike in requests to /login.
+
+  - name: scripty-scheduled-tasks
+    rules:
+      # The nightly purge jobs are the only code here with no user to notice it broke.
+      # Nothing calls them, nothing reads their result, and a run that stopped firing
+      # looks exactly like a run that found nothing to purge — so both the "it failed"
+      # and the "it hasn't happened" cases need their own rule.
+      - alert: ScriptyScheduledTaskFailing
+        expr: |
+          increase(scripty_scheduled_task_seconds_count{job="scripty",outcome="failure"}[6h]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scheduled task {{ $labels.task }} is failing"
+          description: >-
+            {{ $labels.task }} threw on its last run. The purge jobs are idempotent,
+            so one failure is not data loss — but they only run nightly, so a failure
+            left alone means trash accumulates for another day. Railway log search
+            `@task:{{ $labels.task }}` has the run's own log lines.
+
+      - alert: ScriptyScheduledTaskStale
+        # 36h: every scheduled task here is nightly, so one skipped run trips this
+        # while a normal 24h gap does not.
+        #
+        # The gauge is only registered after a task's first success, so it goes
+        # missing on restart until that task next runs — deliberately, since an
+        # epoch-zero series would page on every deploy. The cost is that this rule
+        # cannot catch "never ran since boot"; ScriptyScheduledTaskFailing covers the
+        # case where it ran and threw.
+        expr: |
+          time() - scripty_scheduled_task_last_success_timestamp_seconds{job="scripty"} > 129600
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scheduled task {{ $labels.task }} has not succeeded in over 36h"
+          description: >-
+            Last success was {{ $value | humanizeDuration }} ago. Either the cron
+            expression changed, the scheduler thread is wedged, or the task is
+            throwing before it records a success.

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/pwaMeta :: pwaMeta}"></th:block>
+    <meta charset="UTF-8">
+    <title th:text="'Scripty - All Notes - ' + ${projectTitle}">Scripty - All Notes</title>
+    <link rel="stylesheet" href="/css/missing.min.css">
+    <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" type="image/x-icon">
+</head>
+<body hx-boost="true">
+    <div th:replace="~{fragments/nav :: nav('')}"></div>
+    <main class="text-documents-page song-workspace-page">
+        <div class="top-bar">
+            <nav aria-label="Breadcrumb">
+                <ol>
+                    <li><a th:href="@{/project/list}">Projects</a></li>
+                    <li><a th:href="@{/project/show(id=${projectId})}" th:text="${projectTitle}">Project</a></li>
+                    <li><a th:href="@{/project/documents/notes(projectId=${projectId})}">Notes</a></li>
+                    <li aria-current="page">All notes</li>
+                </ol>
+            </nav>
+        </div>
+
+        <p class="song-workspace-intro muted">
+            Every note in this project, on one page. Open as many as you like and
+            edit them side by side &mdash; each one saves as you type.
+        </p>
+
+        <div class="song-workspace-toolbar" th:if="${!#lists.isEmpty(panes)}">
+            <div class="project-list-search-wrap song-workspace-search-wrap">
+                <label class="visually-hidden" for="song-workspace-search">Search notes</label>
+                <input type="search"
+                       id="song-workspace-search"
+                       class="project-list-search"
+                       placeholder="Filter notes..."
+                       autocomplete="off"
+                       enterkeyhint="search" />
+            </div>
+            <div class="song-workspace-toolbar-actions">
+                <button type="button"
+                        class="project-list-action-btn project-list-action-btn--secondary"
+                        id="song-workspace-expand-all">Expand all</button>
+                <button type="button"
+                        class="project-list-action-btn project-list-action-btn--secondary"
+                        id="song-workspace-collapse-all">Collapse all</button>
+            </div>
+        </div>
+
+        <div class="text-documents-empty-state" th:if="${#lists.isEmpty(panes)}">
+            <span class="text-documents-empty-mark text-documents-empty-mark--draft" aria-hidden="true">&para;</span>
+            <p class="text-documents-empty-title">No notes yet</p>
+            <p class="muted">Create a note and it will show up here alongside the rest.</p>
+            <div class="text-documents-empty-actions">
+                <a th:href="@{/project/documents/create(projectId=${projectId}, type='NOTES')}"
+                   class="project-list-action-btn project-list-action-btn--primary">New Note</a>
+            </div>
+        </div>
+
+        <div class="song-workspace-list"
+             id="song-workspace-list"
+             th:if="${!#lists.isEmpty(panes)}"
+             th:attr="data-project-id=${projectId},data-can-reorder=${canEditScript},data-doc-noun=note">
+            <section th:each="pane : ${panes}"
+                     class="song-workspace-item note-workspace-item"
+                     th:attr="data-song-id=${pane.id},data-song-title=${#strings.toLowerCase(pane.title)}">
+                <div class="song-workspace-item-header">
+                    <!--/* The same handle the songs workspace uses, wired by the
+                           same delegated drag in song-workspace.js — document
+                           reordering was never song-specific on the server. */-->
+                    <button type="button"
+                            th:if="${canEditScript}"
+                            class="song-workspace-drag-handle"
+                            draggable="true"
+                            title="Drag to reorder notes (or focus and press the up/down arrows)"
+                            th:attr="aria-label='Reorder ' + ${pane.title}">&#8942;&#8942;</button>
+                    <button type="button"
+                            class="song-workspace-toggle"
+                            aria-expanded="false"
+                            th:attr="aria-controls='song-workspace-body-' + ${pane.id},
+                                     aria-label='Show ' + ${pane.title}">
+                        <span class="song-workspace-chevron" aria-hidden="true">&#9656;</span>
+                    </button>
+                    <label class="song-workspace-title-label">
+                        <span class="visually-hidden">Note title</span>
+                        <input type="text"
+                               class="song-workspace-title note-workspace-title auto-grow"
+                               th:value="${pane.title}"
+                               th:attr="data-song-id=${pane.id},data-project-id=${projectId}"
+                               th:readonly="${!canEditScript}"
+                               placeholder="Note title"
+                               autocomplete="off"
+                               spellcheck="true"
+                               maxlength="200" />
+                    </label>
+                    <div class="song-workspace-item-meta">
+                        <span class="muted song-workspace-line-count">
+                            <span class="note-workspace-word-count" th:text="${pane.wordCount}">0</span>
+                            <span th:text="${pane.wordCount} == 1 ? 'word' : 'words'">words</span>
+                        </span>
+                        <span class="muted note-workspace-status" role="status" aria-live="polite"></span>
+                        <a class="project-list-action-btn project-list-action-btn--secondary"
+                           th:href="@{/project/documents/edit(id=${pane.id})}"
+                           title="Open this note in the full editor (formatting, export, insert)">Open</a>
+                    </div>
+                </div>
+                <!--/* Collapsed bodies stay in the DOM so expanding is instant; the
+                       textarea is sized on first expand, when it finally has a
+                       width to measure against. Same rule the songs workspace
+                       applies to its block editors. */-->
+                <div class="song-workspace-body"
+                     th:id="'song-workspace-body-' + ${pane.id}"
+                     hidden>
+                    <label class="text-document-content-label">
+                        <span class="visually-hidden">Content</span>
+                        <textarea class="text-document-content note-workspace-content"
+                                  rows="12"
+                                  th:text="${pane.content}"
+                                  th:attr="data-song-id=${pane.id},data-project-id=${projectId},aria-label=${pane.title}"
+                                  th:readonly="${!canEditScript}"
+                                  placeholder="Write notes or scratch text here…"
+                                  autocomplete="off"
+                                  spellcheck="true"></textarea>
+                    </label>
+                </div>
+            </section>
+        </div>
+
+        <p class="song-workspace-status" id="song-workspace-status" role="status" aria-live="polite"></p>
+
+        <p class="song-workspace-no-matches muted" id="song-workspace-no-matches" hidden>
+            No notes match that filter.
+        </p>
+    </main>
+    <script src="/js/htmx.min.js"></script>
+    <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/_hyperscript.min.js}"></script>
+    <script th:src="@{/js/notes-workspace.js(v=${assetVersion})}"></script>
+</body>
+</html>

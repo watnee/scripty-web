@@ -59,6 +59,10 @@
 
     var SCENE_HEADING = /^(?:INT\.?|EXT\.?|EST\.?|INT\.?\/EXT\.?|I\/E\.?)\s+.+/i;
     var SCENE_PREFIX = /^(?:INT\.?|EXT\.?|EST\.?|INT\.?\/EXT\.?|I\/E\.?)\b/i;
+    // A prefix typed out in full with the location begun after it. The trailing
+    // space is the whole point: it is what separates a writer who has committed
+    // to a heading from one who has typed "I".
+    var SCENE_HEADING_STARTED = /^(?:INT\.?\/EXT\.?|I\/E\.?|INT\.?|EXT\.?|EST\.?)[ \t]/i;
     var SCENE_PREFIX_SUGGESTIONS = [
         { name: 'INT. ' },
         { name: 'EXT. ' },
@@ -791,7 +795,7 @@
             hideAutocomplete();
             return false;
         }
-        // Prefer scene suggestions when ACTION looks like a scene heading stub
+        // Prefer scene suggestions when ACTION is already writing a heading
         if (type === 'ACTION' && !forcedCue && looksLikeSceneTyping(value, type)) {
             return false;
         }
@@ -959,17 +963,17 @@
         return combined.slice(0, 8);
     }
 
+    // Choosing the element is what opens the heading list. On anything else the
+    // writer has to say so: the `.` force marker, or a prefix typed out in full
+    // with the location started after it. A stub is not enough — an ACTION line
+    // beginning "I" is far more often "It was raining" than the start of INT.,
+    // and offering INT./EXT. over every such line is noise.
     function looksLikeSceneTyping(value, type) {
-        var trimmed = (value || '').trim();
-        if (!trimmed) return type === 'SCENE';
-        if (trimmed.charAt(0) === '.') return true;
         if (type === 'SCENE') return true;
-        if (SCENE_PREFIX.test(trimmed)) return true;
-        // Short INT/EXT stubs while still on ACTION (before live detect flips type)
-        if (/^(?:I|IN|INT|INT\.|E|EX|EXT|EXT\.|ES|EST|EST\.|I\/|I\/E|I\/E\.|INT\.?\/|INT\.?\/E|INT\.?\/EX|INT\.?\/EXT|INT\.?\/EXT\.?)$/i.test(trimmed)) {
-            return true;
-        }
-        return false;
+        // Leading space only: the trailing one is what SCENE_HEADING_STARTED needs.
+        var started = String(value || '').replace(/\u00a0/g, ' ').replace(/^[ \t]+/, '');
+        if (started.charAt(0) === '.') return true;
+        return SCENE_HEADING_STARTED.test(started);
     }
 
     function maybeShowSceneAutocomplete(textarea) {
@@ -993,7 +997,8 @@
             hideAutocomplete();
             return true;
         }
-        // ACTION with only a short stub and no prior scenes: still show INT./EXT. prefixes
+        // Nothing to offer. A SCENE row still claims the line — an empty heading
+        // is not a character cue, so the cue list must not take it over.
         if (!matches.length) {
             hideAutocomplete();
             return type === 'SCENE';

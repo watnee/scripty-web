@@ -1,11 +1,14 @@
 /**
- * Songs workspace: every song in a project stacked as an expandable block
- * editor on one page (/project/documents/songs/workspace).
+ * The workspace pages: every song — or every note — in a project stacked as an
+ * expandable section on one page (/project/documents/songs/workspace, with
+ * `type` choosing which).
  *
- * The lyric editing itself is song-blocks.js — each section wraps its own
- * .song-blocks-editor, which that script now scopes per editor. This file only
- * owns the page-level chrome: expand/collapse (remembered per project), the
- * filter box, and inline title renames.
+ * The editing itself belongs to whichever kind is on screen: song-blocks.js for
+ * lyric lines, notes-workspace.js for a note's textarea. This file owns only the
+ * page-level chrome the two share, which turned out to be nearly all of it —
+ * expand/collapse (remembered per project), the filter box, reordering, and
+ * inline title renames. `data-doc-noun` on the list is what lets one copy say
+ * "song" on one page and "note" on the other.
  *
  * Loaded from nav.html so it survives HTMX-boosted navigation.
  */
@@ -31,6 +34,17 @@
     function projectId() {
         var el = list();
         return el ? el.getAttribute('data-project-id') : null;
+    }
+
+    /** "song" or "note" — what this page's sections hold. */
+    function noun() {
+        var el = list();
+        return (el && el.getAttribute('data-doc-noun')) || 'song';
+    }
+
+    /** The document type the save endpoints want for this page. */
+    function documentType() {
+        return noun() === 'note' ? 'NOTES' : 'SONG';
     }
 
     function projectKey() {
@@ -210,7 +224,7 @@
             if (previous) {
                 restoreItems(previous);
             }
-            announce('Could not save the new song order. Put back as it was.');
+            announce('Could not save the new ' + noun() + ' order. Put back as it was.');
         });
     }
 
@@ -349,7 +363,7 @@
             return;
         }
         var body = new URLSearchParams({
-            id: id, projectId: projectId, type: 'SONG', title: title
+            id: id, projectId: projectId, type: documentType(), title: title
         });
         // window.fetch is CSRF-patched in csrf.js.
         fetch('/project/documents/rename', {

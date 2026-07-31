@@ -1,12 +1,18 @@
 package com.scripty.service;
 
+import com.scripty.dto.TextDocument;
 import com.scripty.dto.User;
 import java.util.List;
 
 /**
- * Downloads of song lyrics, either one song or every song in a project.
- * Unlike the screenplay exporters, lyrics carry no element types, so the
- * formats here are plain document formats rather than screenplay formats.
+ * Downloads of a project's text documents, either one of them or every one of
+ * a kind. Unlike the screenplay exporters, neither lyrics nor notes carry
+ * element types, so the formats here are plain document formats rather than
+ * screenplay formats — which is why the same renderer serves both: a note is a
+ * title and its lines, exactly as a song is.
+ *
+ * <p>The one format that is not shared is MusicXML. That is a score rather
+ * than a document, and a page of scene notes is not a thing to set to music.
  */
 public interface SongExportService {
 
@@ -59,7 +65,10 @@ public interface SongExportService {
     }
 
     /**
-     * @return the rendered song, or null if it isn't found, isn't accessible, or isn't a song
+     * One song or note, rendered on its own.
+     *
+     * @return the rendered document, or null if it isn't found, isn't
+     *         accessible, or is a note asked for as MusicXML
      */
     SongExport exportSong(Integer documentId, Format format, User currentUser);
 
@@ -80,5 +89,24 @@ public interface SongExportService {
      * @return the rendered songs, or null if the project isn't found or
      *         accessible, or if songIds was given but matched no song here
      */
-    SongExport exportSongs(Integer projectId, List<Integer> songIds, Format format, User currentUser);
+    default SongExport exportSongs(Integer projectId, List<Integer> songIds, Format format, User currentUser) {
+        return exportDocuments(projectId, songIds, TextDocument.TYPE_SONG, format, currentUser);
+    }
+
+    /**
+     * The project's documents of one kind as a single file, in list order —
+     * the songbook, or the same thing made of notes.
+     *
+     * @param ids          the documents to include; null or empty means every
+     *                     one of that kind. Ids outside this project are
+     *                     ignored rather than trusted, so a tampered link
+     *                     cannot pull in another project's writing.
+     * @param documentType the kind to gather; null means songs, which is what
+     *                     every caller meant before notes could be exported
+     * @return the rendered documents, or null if the project isn't found or
+     *         accessible, if ids was given but matched nothing here, or if
+     *         notes were asked for as MusicXML
+     */
+    SongExport exportDocuments(Integer projectId, List<Integer> ids, String documentType,
+                               Format format, User currentUser);
 }

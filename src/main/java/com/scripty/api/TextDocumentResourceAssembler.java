@@ -66,36 +66,55 @@ public class TextDocumentResourceAssembler {
                 .add(self)
                 .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null))
                         .withRel(ApiRel.PROJECT));
-        // A songbook of the whole project, offered only where there is a song
-        // to put in it. Exporting is a read, so it sits outside the edit gate.
+        // A songbook of the whole project, and the same gathering made of
+        // notes — each offered only where there is something to put in it.
+        // Exporting is a read, so these sit outside the edit gate.
         boolean hasSong = false;
+        boolean hasNote = false;
         for (TextDocumentViewModel document : documents) {
             if (TextDocument.TYPE_SONG.equalsIgnoreCase(document.getDocumentType())) {
                 hasSong = true;
-                break;
+            } else {
+                hasNote = true;
             }
         }
         if (hasSong) {
             collection.add(linkTo(methodOn(TextDocumentController.class)
-                    .exportSongs(projectId, "txt", null, null)).withRel(ApiRel.EXPORT_SONGS_TXT));
+                    .exportSongs(projectId, "txt", null, null, null)).withRel(ApiRel.EXPORT_SONGS_TXT));
             collection.add(linkTo(methodOn(TextDocumentController.class)
-                    .exportSongs(projectId, "pdf", null, null)).withRel(ApiRel.EXPORT_SONGS_PDF));
+                    .exportSongs(projectId, "pdf", null, null, null)).withRel(ApiRel.EXPORT_SONGS_PDF));
             collection.add(linkTo(methodOn(TextDocumentController.class)
-                    .exportSongs(projectId, "docx", null, null)).withRel(ApiRel.EXPORT_SONGS_DOCX));
+                    .exportSongs(projectId, "docx", null, null, null)).withRel(ApiRel.EXPORT_SONGS_DOCX));
             collection.add(linkTo(methodOn(TextDocumentController.class)
-                    .exportSongs(projectId, "epub", null, null)).withRel(ApiRel.EXPORT_SONGS_EPUB));
+                    .exportSongs(projectId, "epub", null, null, null)).withRel(ApiRel.EXPORT_SONGS_EPUB));
             collection.add(linkTo(methodOn(TextDocumentController.class)
-                    .exportSongs(projectId, "musicxml", null, null)).withRel(ApiRel.EXPORT_SONGS_MUSICXML));
+                    .exportSongs(projectId, "musicxml", null, null, null))
+                    .withRel(ApiRel.EXPORT_SONGS_MUSICXML));
         }
-        if (hasSong && canEdit(projectId)) {
-            // Deleting a selection is songs-only, as the web's checkbox column
-            // is: TextDocumentService.deleteSongs skips anything that is not a
-            // song, so offering this on a project of notes would promise
-            // nothing.
+        if (hasNote) {
+            // The same four document formats, with `type` naming the other
+            // list. No MusicXML: the endpoint refuses notes a score.
+            collection.add(linkTo(methodOn(TextDocumentController.class)
+                    .exportSongs(projectId, "txt", null, TextDocument.TYPE_NOTES, null))
+                    .withRel(ApiRel.EXPORT_NOTES_TXT));
+            collection.add(linkTo(methodOn(TextDocumentController.class)
+                    .exportSongs(projectId, "pdf", null, TextDocument.TYPE_NOTES, null))
+                    .withRel(ApiRel.EXPORT_NOTES_PDF));
+            collection.add(linkTo(methodOn(TextDocumentController.class)
+                    .exportSongs(projectId, "docx", null, TextDocument.TYPE_NOTES, null))
+                    .withRel(ApiRel.EXPORT_NOTES_DOCX));
+            collection.add(linkTo(methodOn(TextDocumentController.class)
+                    .exportSongs(projectId, "epub", null, TextDocument.TYPE_NOTES, null))
+                    .withRel(ApiRel.EXPORT_NOTES_EPUB));
+        }
+        if (!documents.isEmpty() && canEdit(projectId)) {
+            // Deleting and emailing a selection used to be songs-only, because
+            // the services behind them skipped anything that was not a song.
+            // They no longer do: a selection of notes deletes and emails
+            // exactly as a selection of songs does, so the only question left
+            // is whether there is anything at all to select.
             collection.add(linkTo(methodOn(TextDocumentRestController.class)
                     .bulkDelete(projectId, null, null)).withRel(ApiRel.BULK_DELETE));
-            // Emailing a selection is songs-only for the same reason, and sits
-            // behind the same edit gate the single-song `shareEmail` does.
             collection.add(linkTo(methodOn(TextDocumentRestController.class)
                     .bulkShareEmail(projectId, null, null)).withRel(ApiRel.BULK_SHARE_EMAIL));
         }
@@ -169,18 +188,21 @@ public class TextDocumentResourceAssembler {
                     .withRel(ApiRel.PROJECT));
         }
         // Exporting is a read, so it sits outside the edit gate — a
-        // collaborator with view-only access can still take a copy away.
-        // Song-only, matching the web menu: SongExportService lays lyrics out
-        // as a song, which is not what a note wants.
+        // collaborator with view-only access can still take a copy away. Not
+        // song-only any more: SongExportService lays out a title and its lines,
+        // which is what a note is too, and it already fell back to the
+        // document's own text for songs with no blocks.
+        links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "txt", null))
+                .withRel(ApiRel.EXPORT_SONG_TXT));
+        links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "pdf", null))
+                .withRel(ApiRel.EXPORT_SONG_PDF));
+        links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "docx", null))
+                .withRel(ApiRel.EXPORT_SONG_DOCX));
+        links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "epub", null))
+                .withRel(ApiRel.EXPORT_SONG_EPUB));
+        // The exception. A score is not a document, and the endpoint refuses a
+        // note one — advertising it here would offer a download that 404s.
         if (TextDocument.TYPE_SONG.equalsIgnoreCase(type)) {
-            links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "txt", null))
-                    .withRel(ApiRel.EXPORT_SONG_TXT));
-            links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "pdf", null))
-                    .withRel(ApiRel.EXPORT_SONG_PDF));
-            links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "docx", null))
-                    .withRel(ApiRel.EXPORT_SONG_DOCX));
-            links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "epub", null))
-                    .withRel(ApiRel.EXPORT_SONG_EPUB));
             links.add(linkTo(methodOn(TextDocumentController.class).exportSong(id, "musicxml", null))
                     .withRel(ApiRel.EXPORT_SONG_MUSICXML));
         }
@@ -199,10 +221,11 @@ public class TextDocumentResourceAssembler {
             // there is nothing song-shaped about putting a document aside.
             links.add(linkTo(methodOn(TextDocumentRestController.class).archive(id, projectId, null))
                     .withRel(ApiRel.ARCHIVE));
-            if (TextDocument.TYPE_SONG.equalsIgnoreCase(type)) {
-                links.add(linkTo(methodOn(TextDocumentRestController.class).shareEmail(id, null, null))
-                        .withRel(ApiRel.SHARE_EMAIL));
-            }
+            // Emailing a note to a collaborator is the same act as emailing a
+            // song: a title and the words under it, in one message. The share
+            // service no longer skips notes, so nothing here has to either.
+            links.add(linkTo(methodOn(TextDocumentRestController.class).shareEmail(id, null, null))
+                    .withRel(ApiRel.SHARE_EMAIL));
         }
         return links.toArray(org.springframework.hateoas.Link[]::new);
     }

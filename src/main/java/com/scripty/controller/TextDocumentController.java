@@ -14,6 +14,7 @@ import com.scripty.service.SongExportService;
 import com.scripty.service.SongVersionService;
 import com.scripty.service.TextDocumentService;
 import com.scripty.service.UserService;
+import com.scripty.viewmodel.textdocument.NoteWorkspacePaneViewModel;
 import com.scripty.viewmodel.textdocument.SongWorkspacePaneViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
@@ -90,13 +91,28 @@ public class TextDocumentController {
     }
 
     /**
-     * Every song in the project on one page, each as an expandable block editor,
-     * so lyrics can be reworked across songs without bouncing back to the list.
-     * Editing goes through the same /song/block/* endpoints the single-song
-     * editor uses; this route only assembles the initial render.
+     * Every song — or every note — in the project on one page, so a run of
+     * edits that spans several of them does not mean bouncing back to the list
+     * between each.
+     *
+     * <p>Two renders rather than one, because the two kinds are genuinely
+     * different underneath: a song pane is a stacked block editor over an
+     * edition, and a note pane is a title and a textarea. Editing goes through
+     * the endpoints each kind already uses — /song/block/* for lyrics, the
+     * ordinary document save for notes — so this route only assembles the
+     * initial render.
+     *
+     * <p>{@code type} is optional and defaults to songs: this route was the
+     * songs workspace before notes had one, and the links that still point at
+     * it without a type mean what they always did.
      */
     @RequestMapping(value = "/songs/workspace")
-    public String songsWorkspace(@RequestParam Integer projectId, Model model, Principal principal) {
+    public String songsWorkspace(@RequestParam Integer projectId,
+                                 @RequestParam(required = false) String type,
+                                 Model model, Principal principal) {
+        if (TextDocument.TYPE_NOTES.equalsIgnoreCase(type)) {
+            return notesWorkspace(projectId, model, principal);
+        }
         User user = currentUser(principal);
         TextDocumentListViewModel viewModel = textDocumentService.getListViewModel(projectId, user);
         if (viewModel == null) {
@@ -124,6 +140,37 @@ public class TextDocumentController {
         model.addAttribute("panes", panes);
         model.addAttribute("canEditScript", canEditScript);
         return "project/documents/songsWorkspace";
+    }
+
+    /**
+     * Every note in the project on one page.
+     *
+     * <p>Unlike the songs workspace this needs the documents' full content, and
+     * the list view model only carries previews — so each pane is fetched in
+     * turn. That is one query per note where the songs workspace is one per
+     * song for its blocks, so the shape of the cost is the same.
+     */
+    private String notesWorkspace(Integer projectId, Model model, Principal principal) {
+        User user = currentUser(principal);
+        TextDocumentListViewModel viewModel = textDocumentService.getListViewModel(projectId, user);
+        if (viewModel == null) {
+            return "redirect:/project/list";
+        }
+        List<NoteWorkspacePaneViewModel> panes = new ArrayList<>();
+        for (TextDocumentViewModel note : viewModel.getDrafts()) {
+            TextDocumentViewModel full = textDocumentService.getViewModel(note.getId(), user);
+            NoteWorkspacePaneViewModel pane = new NoteWorkspacePaneViewModel();
+            pane.setId(note.getId());
+            pane.setTitle(note.getTitle());
+            pane.setUpdatedAt(note.getUpdatedAt());
+            pane.setContent(full != null ? full.getContent() : null);
+            panes.add(pane);
+        }
+        model.addAttribute("projectId", projectId);
+        model.addAttribute("projectTitle", viewModel.getProjectTitle());
+        model.addAttribute("panes", panes);
+        model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
+        return "project/documents/notesWorkspace";
     }
 
     @RequestMapping(value = "/notes")
@@ -241,13 +288,20 @@ public class TextDocumentController {
         return serve(export);
     }
 
+    /**
+     * A project's songs — or its notes — as one file.
+     *
+     * <p>{@code type} is optional and defaults to songs, so every link minted
+     * before notes could be exported still means what it did.
+     */
     @RequestMapping(value = "/export-songs", method = RequestMethod.GET)
     public ResponseEntity<byte[]> exportSongs(@RequestParam Integer projectId,
                                               @RequestParam(required = false) String format,
                                               @RequestParam(required = false) List<Integer> ids,
+                                              @RequestParam(required = false) String type,
                                               Principal principal) {
-        SongExportService.SongExport export = songExportService.exportSongs(
-                projectId, ids, SongExportService.parseFormat(format), currentUser(principal));
+        SongExportService.SongExport export = songExportService.exportDocuments(
+                projectId, ids, type, SongExportService.parseFormat(format), currentUser(principal));
         return serve(export);
     }
 
@@ -502,31 +556,46 @@ public class TextDocumentController {
         return "redirect:" + listUrl(projectId, isSong);
     }
 
+    /**
+     * The list's ticked rows, to the trash.
+     *
+     * <p>{@code type} says which list they were ticked on, so the redirect and
+     * the wording land back where the writer is. It is optional and defaults to
+     * songs — the only list that could post here before notes had checkboxes.
+     */
     @RequestMapping(value = "/delete-songs", method = RequestMethod.POST)
-    public String deleteSongs(@RequestParam(name = "id", required = false) List<Integer> ids,
+    public String deleteDocuments(@RequestParam(name = "id", required = false) List<Integer> ids,
                               @RequestParam Integer projectId,
+                              @RequestParam(required = false) String type,
                               Principal principal,
                               RedirectAttributes redirectAttributes) {
-        int deleted = textDocumentService.deleteSongs(ids, projectId, currentUser(principal));
+        boolean isSong = !TextDocument.TYPE_NOTES.equalsIgnoreCase(type);
+        String one = isSong ? " song" : " note";
+        String many = isSong ? " songs" : " notes";
+        int deleted = textDocumentService.deleteDocuments(ids, projectId, currentUser(principal));
         if (deleted > 0) {
             // documentTrashMessage, not documentShareMessage: it carries the link
             // back to the trash, which is the whole point of the softer wording.
             redirectAttributes.addFlashAttribute(
                     "documentTrashMessage",
-                    "Moved " + deleted + (deleted == 1 ? " song" : " songs") + " to the trash.");
+                    "Moved " + deleted + (deleted == 1 ? one : many) + " to the trash.");
         } else {
-            redirectAttributes.addFlashAttribute("documentShareMessage", "Could not delete those songs.");
+            redirectAttributes.addFlashAttribute("documentShareMessage",
+                    "Could not delete those" + many + ".");
         }
-        return "redirect:" + listUrl(projectId, true);
+        return "redirect:" + listUrl(projectId, isSong);
     }
 
     @RequestMapping(value = "/share-email", method = RequestMethod.POST)
     public String shareEmail(@RequestParam(name = "id", required = false) List<Integer> ids,
                              @RequestParam Integer projectId,
+                             @RequestParam(required = false) String type,
                              @RequestParam String email,
                              Principal principal,
                              RedirectAttributes redirectAttributes) {
-        List<TextDocument> shared = textDocumentService.shareSongsByEmail(ids, email, currentUser(principal));
+        boolean isSong = !TextDocument.TYPE_NOTES.equalsIgnoreCase(type);
+        String many = isSong ? " songs" : " notes";
+        List<TextDocument> shared = textDocumentService.shareDocumentsByEmail(ids, email, currentUser(principal));
         if (shared.size() == 1) {
             redirectAttributes.addFlashAttribute(
                     "documentShareMessage",
@@ -534,13 +603,13 @@ public class TextDocumentController {
         } else if (!shared.isEmpty()) {
             redirectAttributes.addFlashAttribute(
                     "documentShareMessage",
-                    "Emailed " + shared.size() + " songs to " + email.trim() + ".");
+                    "Emailed " + shared.size() + many + " to " + email.trim() + ".");
         } else {
             redirectAttributes.addFlashAttribute(
                     "documentShareMessage",
-                    "Could not email those songs. Check the address and try again.");
+                    "Could not email those" + many + ". Check the address and try again.");
         }
-        return "redirect:" + listUrl(projectId, true);
+        return "redirect:" + listUrl(projectId, isSong);
     }
 
     @RequestMapping(value = "/insert", method = RequestMethod.POST)

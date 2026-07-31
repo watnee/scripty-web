@@ -187,10 +187,10 @@ public class TextDocumentRestController {
     }
 
     /**
-     * Moves several songs to the trash in one call, the way the web list's
-     * checkbox column does. Songs only: {@link TextDocumentService#deleteSongs}
-     * skips any id that is not a song of this project, so a mixed selection
-     * quietly deletes the songs in it and leaves the notes alone.
+     * Moves several documents to the trash in one call, the way the web list's
+     * checkbox column does. Songs, notes, or a mix of the two:
+     * {@link TextDocumentService#deleteDocuments} skips only ids that are
+     * missing or belong to another project.
      *
      * <p>Answers with the refreshed collection rather than a count, so a client
      * that just deleted half a list does not have to ask again for the other
@@ -207,12 +207,12 @@ public class TextDocumentRestController {
         }
         if (request == null || request.ids() == null || request.ids().isEmpty()) {
             return new ResponseEntity<>(
-                    Map.of("ids", "Choose at least one song to delete."), HttpStatus.BAD_REQUEST);
+                    Map.of("ids", "Choose at least one song or note to delete."), HttpStatus.BAD_REQUEST);
         }
-        int deleted = textDocumentService.deleteSongs(request.ids(), projectId, currentUser(principal));
+        int deleted = textDocumentService.deleteDocuments(request.ids(), projectId, currentUser(principal));
         if (deleted == 0) {
             return new ResponseEntity<>(
-                    Map.of("ids", "Those songs could not be deleted."), HttpStatus.BAD_REQUEST);
+                    Map.of("ids", "Those documents could not be deleted."), HttpStatus.BAD_REQUEST);
         }
         return list(projectId, null, principal);
     }
@@ -280,11 +280,10 @@ public class TextDocumentRestController {
      * column does — its "Email selected" posts the ticked ids to the same
      * service call this uses.
      *
-     * <p>Songs only, like every other bulk action here:
-     * {@link TextDocumentService#shareSongsByEmail} skips anything that is not
-     * a song, so a mixed selection sends the songs in it and leaves the notes
-     * alone. Answers with how many actually went and their titles, since a
-     * selection can be partly refused and a bare "sent" would overstate it.
+     * <p>Songs, notes, or a mix: {@link TextDocumentService#shareDocumentsByEmail}
+     * names in the subject line whichever kind it is holding. Answers with how
+     * many actually went and their titles, since a selection can be partly
+     * refused and a bare "sent" would overstate it.
      */
     @RequestMapping(value = "/bulk/share-email", method = RequestMethod.POST,
             consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
@@ -297,17 +296,17 @@ public class TextDocumentRestController {
         }
         if (request == null || request.ids() == null || request.ids().isEmpty()) {
             return new ResponseEntity<>(
-                    Map.of("ids", "Choose at least one song to email."), HttpStatus.BAD_REQUEST);
+                    Map.of("ids", "Choose at least one song or note to email."), HttpStatus.BAD_REQUEST);
         }
         if (request.email() == null || request.email().isBlank()) {
             return new ResponseEntity<>(
                     Map.of("email", "You must supply a recipient address."), HttpStatus.BAD_REQUEST);
         }
-        List<TextDocument> shared = textDocumentService.shareSongsByEmail(
+        List<TextDocument> shared = textDocumentService.shareDocumentsByEmail(
                 request.ids(), request.email(), currentUser(principal));
         if (shared.isEmpty()) {
             return new ResponseEntity<>(
-                    Map.of("email", "Could not email those songs. Check the address and try again."),
+                    Map.of("email", "Could not email those documents. Check the address and try again."),
                     HttpStatus.BAD_REQUEST);
         }
         List<String> titles = new ArrayList<>();
@@ -401,7 +400,7 @@ public class TextDocumentRestController {
         return ResponseEntity.ok(response);
     }
 
-    /** Emails a song's lyrics to a recipient (songs only). */
+    /** Emails a song's lyrics — or a note's text — to a recipient. */
     @RequestMapping(value = "/{id}/share-email", method = RequestMethod.POST,
             consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> shareEmail(
@@ -412,11 +411,11 @@ public class TextDocumentRestController {
             return new ResponseEntity<>(Map.of("email", "You must supply a recipient address."),
                     HttpStatus.BAD_REQUEST);
         }
-        List<TextDocument> shared = textDocumentService.shareSongsByEmail(
+        List<TextDocument> shared = textDocumentService.shareDocumentsByEmail(
                 List.of(id), request.email(), currentUser(principal));
         if (shared.isEmpty()) {
             return new ResponseEntity<>(
-                    Map.of("email", "Could not email that song. Check the address and try again."),
+                    Map.of("email", "Could not email that document. Check the address and try again."),
                     HttpStatus.BAD_REQUEST);
         }
         return ResponseEntity.ok(Map.of(

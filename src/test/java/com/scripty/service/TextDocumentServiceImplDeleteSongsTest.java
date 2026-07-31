@@ -74,7 +74,7 @@ class TextDocumentServiceImplDeleteSongsTest {
         when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(43, 7)).thenReturn(Optional.of(otherSong));
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
-        assertEquals(2, service.deleteSongs(List.of(42, 43), 7, user));
+        assertEquals(2, service.deleteDocuments(List.of(42, 43), 7, user));
 
         // A bulk delete is still recoverable: it trashes rather than destroys.
         assertTrue(song.isDeleted());
@@ -89,21 +89,26 @@ class TextDocumentServiceImplDeleteSongsTest {
         when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(42, 7)).thenReturn(Optional.of(song));
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
-        assertEquals(1, service.deleteSongs(List.of(42, 42), 7, user));
+        assertEquals(1, service.deleteDocuments(List.of(42, 42), 7, user));
     }
 
+    /**
+     * Notes are deleted alongside songs now — the notes list has the same
+     * checkbox column, and a selection made on it has to do something. What is
+     * still skipped is an id this project does not have.
+     */
     @Test
-    void deleteSongsSkipsMissingAndNonSongIdsButTrashesTheRest() {
+    void deleteDocumentsTrashesNotesAndSongsAlikeAndSkipsMissingIds() {
         otherSong.setDocumentType(TextDocument.TYPE_NOTES);
         when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(42, 7)).thenReturn(Optional.of(song));
         when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(43, 7)).thenReturn(Optional.of(otherSong));
         when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(99, 7)).thenReturn(Optional.empty());
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
-        assertEquals(1, service.deleteSongs(Arrays.asList(42, 43, 99, null), 7, user));
+        assertEquals(2, service.deleteDocuments(Arrays.asList(42, 43, 99, null), 7, user));
 
         assertTrue(song.isDeleted());
-        assertFalse(otherSong.isDeleted(), "a stale selection must not take a note with it");
+        assertTrue(otherSong.isDeleted(), "a ticked note must go to the trash too");
     }
 
     @Test
@@ -111,7 +116,7 @@ class TextDocumentServiceImplDeleteSongsTest {
         when(textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(42, 7)).thenReturn(Optional.of(song));
         when(projectService.canUserAccessProject(7, user)).thenReturn(false);
 
-        assertEquals(0, service.deleteSongs(List.of(42), 7, user));
+        assertEquals(0, service.deleteDocuments(List.of(42), 7, user));
 
         verify(textDocumentRepository, never()).save(any(TextDocument.class));
         verify(textDocumentRepository, never()).delete(any(TextDocument.class));
@@ -119,10 +124,10 @@ class TextDocumentServiceImplDeleteSongsTest {
 
     @Test
     void deleteSongsRejectsEmptySelection() {
-        assertEquals(0, service.deleteSongs(List.of(), 7, user));
-        assertEquals(0, service.deleteSongs(null, 7, user));
-        assertEquals(0, service.deleteSongs(List.of(42), null, user));
-        assertEquals(0, service.deleteSongs(List.of(42), 7, null));
+        assertEquals(0, service.deleteDocuments(List.of(), 7, user));
+        assertEquals(0, service.deleteDocuments(null, 7, user));
+        assertEquals(0, service.deleteDocuments(List.of(42), null, user));
+        assertEquals(0, service.deleteDocuments(List.of(42), 7, null));
 
         verify(textDocumentRepository, never()).save(any(TextDocument.class));
         verify(textDocumentRepository, never()).delete(any(TextDocument.class));

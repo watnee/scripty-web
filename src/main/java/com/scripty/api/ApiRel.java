@@ -105,7 +105,10 @@ public final class ApiRel {
      * collection it exports; `ids` narrows it to a selection.
      */
     public static final String EXPORT_PROJECTS = "exportProjects";
-    // A song exports on its own, in the formats SongExportService offers.
+    // A document exports on its own, in the formats SongExportService offers.
+    // Named for songs because songs had them first; a note now carries the same
+    // four, since the renderer only ever laid out a title and its lines and a
+    // note has both. MusicXML below is the one that stays song-only.
     public static final String EXPORT_SONG_TXT = "exportSongTxt";
     public static final String EXPORT_SONG_PDF = "exportSongPdf";
     public static final String EXPORT_SONG_DOCX = "exportSongDocx";
@@ -126,6 +129,16 @@ public final class ApiRel {
     public static final String EXPORT_SONGS_EPUB = "exportSongsEpub";
     /** Every song as sections of one score; MusicXML has no second piece. */
     public static final String EXPORT_SONGS_MUSICXML = "exportSongsMusicXml";
+    // The same gathering made of notes. Rels of their own rather than a shared
+    // set, because the two lists are exported separately and a client showing
+    // one of them has to be able to tell which href belongs to it — the href
+    // differs only by its `type`, which a rel name is exactly the right place
+    // to record. No MusicXML: a page of scene notes is not a thing to set to
+    // music, and the endpoint refuses it.
+    public static final String EXPORT_NOTES_TXT = "exportNotesTxt";
+    public static final String EXPORT_NOTES_PDF = "exportNotesPdf";
+    public static final String EXPORT_NOTES_DOCX = "exportNotesDocx";
+    public static final String EXPORT_NOTES_EPUB = "exportNotesEpub";
     // Which characters an actor auditions for, within a project. The ids ride on
     // the project-scoped actor resource; `setAuditions` is the action that
     // replaces the set. Per-project, so it is advertised only on a project-scoped

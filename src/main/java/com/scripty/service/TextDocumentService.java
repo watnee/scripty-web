@@ -73,11 +73,12 @@ public interface TextDocumentService {
     int purgeExpired();
 
     /**
-     * Deletes several of a project's songs at once. Ids that are missing, outside the
-     * project, or not songs are skipped, so a stale selection can never take a note with it.
-     * @return the number of songs actually deleted
+     * Deletes several of a project's documents at once — songs, notes, or both.
+     * Ids that are missing or outside the project are skipped, so a stale
+     * selection can never reach into another project.
+     * @return the number of documents actually deleted
      */
-    int deleteSongs(List<Integer> ids, Integer projectId, User currentUser);
+    int deleteDocuments(List<Integer> ids, Integer projectId, User currentUser);
 
     /**
      * Archives a document: takes it out of the list without deleting it. Unlike
@@ -102,7 +103,7 @@ public interface TextDocumentService {
     /**
      * Archives several of a project's documents at once. Ids that are missing,
      * outside the project, or already archived are skipped, so a stale selection
-     * is harmless. Unlike {@link #deleteSongs} this takes notes as well as songs:
+     * is harmless. Unlike {@link #deleteDocuments} this takes notes as well as songs:
      * archiving does nothing type-specific.
      * @return the number of documents actually archived
      */
@@ -146,11 +147,14 @@ public interface TextDocumentService {
     boolean syncInsertedBlocks(Integer documentId, User currentUser);
 
     /**
-     * Emails the titles and lyrics of one or more songs to a recipient as a single message. Songs only.
-     * Ids that are missing, inaccessible, or not songs are skipped; nothing is sent if none are left.
-     * @return the shared songs, in the order given; empty if the address is invalid or no id was shareable
+     * Emails the titles and text of one or more documents to a recipient as a
+     * single message — songs, notes, or a mix, which the subject line names
+     * honestly. Ids that are missing or inaccessible are skipped; nothing is
+     * sent if none are left.
+     * @return the shared documents, in the order given; empty if the address is
+     *         invalid or no id was shareable
      */
-    List<TextDocument> shareSongsByEmail(List<Integer> ids, String email, User currentUser);
+    List<TextDocument> shareDocumentsByEmail(List<Integer> ids, String email, User currentUser);
 
     /**
      * Import a text/Word file as a new song or draft document.

@@ -430,7 +430,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
 
     @Override
     @Transactional
-    public int deleteSongs(List<Integer> ids, Integer projectId, User currentUser) {
+    public int deleteDocuments(List<Integer> ids, Integer projectId, User currentUser) {
         if (ids == null || ids.isEmpty() || projectId == null || currentUser == null) {
             return 0;
         }
@@ -445,11 +445,11 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             }
             TextDocument doc = textDocumentRepository.findByIdAndProjectIdAndDeletedAtIsNull(id, projectId)
                     .orElse(null);
-            if (doc == null || !TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+            if (doc == null) {
                 continue;
             }
-            // Delegates to the single-song delete, so a bulk delete lands in the
-            // trash the same way and stays restorable.
+            // Delegates to the single-document delete, so a bulk delete lands in
+            // the trash the same way and stays restorable.
             delete(id, projectId, currentUser);
             deleted++;
         }
@@ -807,7 +807,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
 
     @Override
     @Transactional
-    public List<TextDocument> shareSongsByEmail(List<Integer> ids, String email, User currentUser) {
+    public List<TextDocument> shareDocumentsByEmail(List<Integer> ids, String email, User currentUser) {
         String recipient = email == null ? "" : email.trim();
         if (recipient.isEmpty() || !recipient.contains("@") || ids == null || ids.isEmpty()) {
             return List.of();
@@ -819,8 +819,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
                 continue;
             }
             TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(id).orElse(null);
-            if (doc == null || doc.getProject() == null
-                    || !TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+            if (doc == null || doc.getProject() == null) {
                 continue;
             }
             if (!projectService.canUserAccessProject(doc.getProject().getId(), currentUser)) {
@@ -847,17 +846,28 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         return songs;
     }
 
+    /**
+     * The share email, named for what is actually in it.
+     *
+     * <p>A selection can now be all songs, all notes, or a mix of the two, so
+     * the subject line asks the list rather than assuming: "a song", "a note",
+     * or — where they are mixed — the neutral "documents", which is the only
+     * honest word for an envelope holding both.
+     */
     private void sendSongShareEmail(List<TextDocument> songs, String recipient, User sharedBy) {
         String senderName = formatSenderName(sharedBy);
+        String one = kindWord(songs);              // song / note / document
+        String many = one + "s";
         String subject = songs.size() == 1
-                ? senderName + " shared a song with you: " + songTitle(songs.get(0))
-                : senderName + " shared " + songs.size() + " songs with you";
+                ? senderName + " shared a " + one + " with you: " + songTitle(songs.get(0))
+                : senderName + " shared " + songs.size() + " " + many + " with you";
         String intro = songs.size() == 1
-                ? "<p><strong>%s</strong> shared the song <strong>%s</strong> with you from Scripty.</p>".formatted(
+                ? "<p><strong>%s</strong> shared the %s <strong>%s</strong> with you from Scripty.</p>".formatted(
                         HtmlUtils.htmlEscape(senderName),
+                        one,
                         HtmlUtils.htmlEscape(songTitle(songs.get(0))))
-                : "<p><strong>%s</strong> shared %d songs with you from Scripty.</p>".formatted(
-                        HtmlUtils.htmlEscape(senderName), songs.size());
+                : "<p><strong>%s</strong> shared %d %s with you from Scripty.</p>".formatted(
+                        HtmlUtils.htmlEscape(senderName), songs.size(), many);
 
         StringBuilder sections = new StringBuilder();
         for (TextDocument doc : songs) {
@@ -880,8 +890,34 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         emailService.send(recipient, subject, body);
     }
 
+    /**
+     * What to call the documents in one share: their own kind where they agree,
+     * and "document" where they do not. Singular — callers add the s.
+     */
+    private static String kindWord(List<TextDocument> documents) {
+        boolean anySong = false;
+        boolean anyNote = false;
+        for (TextDocument doc : documents) {
+            if (TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
+                anySong = true;
+            } else {
+                anyNote = true;
+            }
+        }
+        if (anySong && anyNote) {
+            return "document";
+        }
+        return anyNote ? "note" : "song";
+    }
+
     private String songTitle(TextDocument doc) {
-        return doc.getTitle() != null && !doc.getTitle().isBlank() ? doc.getTitle() : "Untitled Song";
+        if (doc.getTitle() != null && !doc.getTitle().isBlank()) {
+            return doc.getTitle();
+        }
+        // The very name the list draws beside an unnamed document, so a share
+        // reads the same way the screen it came from did.
+        return TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())
+                ? "Untitled Song" : "Untitled Notes";
     }
 
     private String formatSenderName(User sharedBy) {

@@ -77,14 +77,16 @@ class DocumentArchiveRelTest {
 
     @Test
     void aProjectOfNotesAloneIsStillOfferedBoth() {
-        // The point of departure from bulkDelete/bulkShareEmail, which both
-        // require a song because their services skip anything that is not one.
         when(projectAccess.canEditScriptForCurrentUser(any())).thenReturn(true);
 
         var collection = collection(document(3, TextDocument.TYPE_NOTES));
         assertTrue(collection.getLink(ApiRel.ARCHIVED).isPresent());
         assertTrue(collection.getLink(ApiRel.BULK_ARCHIVE).isPresent());
-        assertFalse(collection.getLink(ApiRel.BULK_DELETE).isPresent());
+        // As is bulk delete, since the parity round: the notes list has the
+        // same checkbox column and the service behind it no longer skips a
+        // ticked note. The archive's remaining point of departure is the empty
+        // project below, not the kind of document in it.
+        assertTrue(collection.getLink(ApiRel.BULK_DELETE).isPresent());
     }
 
     @Test

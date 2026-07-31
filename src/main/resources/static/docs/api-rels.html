@@ -162,6 +162,10 @@
     <tr id="exportSongsDocx"><td>exportSongsDocx</td><td class="method">GET</td><td>Download the project's songs as one Word (.docx) songbook.</td></tr>
     <tr id="exportSongsEpub"><td>exportSongsEpub</td><td class="method">GET</td><td>Download the project's songs as one EPUB songbook.</td></tr>
     <tr id="exportSongsMusicXml"><td>exportSongsMusicXml</td><td class="method">GET</td><td>Download the project's songs as one MusicXML score, each song a titled section on its own page. Add <code>ids</code> to narrow it to a selection.</td></tr>
+    <tr id="exportNotesTxt"><td>exportNotesTxt</td><td class="method">GET</td><td>Download the project's notes as one text file. Add <code>ids</code> to narrow it to a selection. Advertised on the document collection once it holds a note — the notes counterpart of <code>exportSongsTxt</code>.</td></tr>
+    <tr id="exportNotesPdf"><td>exportNotesPdf</td><td class="method">GET</td><td>Download the project's notes as one PDF.</td></tr>
+    <tr id="exportNotesDocx"><td>exportNotesDocx</td><td class="method">GET</td><td>Download the project's notes as one Word (.docx) file.</td></tr>
+    <tr id="exportNotesEpub"><td>exportNotesEpub</td><td class="method">GET</td><td>Download the project's notes as one EPUB. There is deliberately no MusicXML twin: a score of scene notes is not a thing, and the endpoint refuses one.</td></tr>
     <tr id="addComment"><td>addComment</td><td class="method">POST</td><td>Leave a comment on an element.</td></tr>
     <tr id="sendInvitation"><td>sendInvitation</td><td class="method">POST</td><td>Invite someone to a project by email. A collaborator invitation must name a <code>teamId</code> from <code>inviteTeams</code>; a <code>viewOnly</code> one must not.</td></tr>
     <tr id="inviteTeams"><td>inviteTeams</td><td class="method">GET</td><td>The teams a collaborator may be invited into: the ones this project is assigned to. An empty collection means the project can take no collaborators until it is assigned a team.</td></tr>

@@ -158,12 +158,71 @@ class SongExportServiceImplTest {
     }
 
     @Test
-    void exportSongRejectsNotes() {
+    void exportsASingleNoteTheSameWayItExportsASong() {
+        TextDocument doc = song(1, "Scene 4 research", "First paragraph\n\nSecond paragraph");
+        doc.setDocumentType(TextDocument.TYPE_NOTES);
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
+
+        SongExportService.SongExport export =
+                service.exportSong(1, SongExportService.Format.TXT, user);
+
+        assertNotNull(export);
+        assertEquals("Scene-4-research.txt", export.filename());
+        String body = new String(export.content(), StandardCharsets.UTF_8);
+        assertTrue(body.contains("Scene 4 research"));
+        assertTrue(body.contains("First paragraph\n\nSecond paragraph"));
+    }
+
+    @Test
+    void untitledNoteIsHeadedTheNameItsListDraws() {
+        TextDocument doc = song(1, "  ", "Something jotted down");
+        doc.setDocumentType(TextDocument.TYPE_NOTES);
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
+
+        SongExportService.SongExport export =
+                service.exportSong(1, SongExportService.Format.TXT, user);
+
+        assertNotNull(export);
+        assertEquals("Untitled-Notes.txt", export.filename());
+        assertTrue(new String(export.content(), StandardCharsets.UTF_8).contains("Untitled Notes"));
+    }
+
+    /**
+     * The one format a note cannot have: MusicXML is a score, and a page of
+     * scene notes is not a thing to set to music.
+     */
+    @Test
+    void exportRefusesMusicXmlForNotes() {
         TextDocument doc = song(1, "Not a song", "body");
         doc.setDocumentType(TextDocument.TYPE_NOTES);
         when(textDocumentRepository.findByIdAndDeletedAtIsNull(1)).thenReturn(Optional.of(doc));
 
-        assertNull(service.exportSong(1, SongExportService.Format.TXT, user));
+        assertNull(service.exportSong(1, SongExportService.Format.MUSICXML, user));
+        assertNull(service.exportDocuments(PROJECT_ID, null, TextDocument.TYPE_NOTES,
+                SongExportService.Format.MUSICXML, user));
+    }
+
+    @Test
+    void exportDocumentsGathersTheNotesAndLeavesTheSongsOut() {
+        TextDocument songOne = song(1, "Hold The Line", "verse");
+        TextDocument noteOne = song(2, "Research", "notes body");
+        noteOne.setDocumentType(TextDocument.TYPE_NOTES);
+        TextDocument noteTwo = song(3, "Scraps", "more notes");
+        noteTwo.setDocumentType(TextDocument.TYPE_NOTES);
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project("My Musical")));
+        when(textDocumentRepository
+                .findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(PROJECT_ID))
+                .thenReturn(List.of(songOne, noteOne, noteTwo));
+
+        SongExportService.SongExport export = service.exportDocuments(
+                PROJECT_ID, null, TextDocument.TYPE_NOTES, SongExportService.Format.TXT, user);
+
+        assertNotNull(export);
+        assertEquals("My-Musical-Notes.txt", export.filename());
+        String body = new String(export.content(), StandardCharsets.UTF_8);
+        assertTrue(body.contains("Research"), "note missing; got:\n" + body);
+        assertTrue(body.contains("Scraps"), "note missing; got:\n" + body);
+        assertFalse(body.contains("Hold The Line"), "song leaked into the notes; got:\n" + body);
     }
 
     @Test

@@ -16,7 +16,7 @@
         { id: 'offline-editing', title: 'Offline Editing', keywords: 'offline sync cache airplane' },
         { id: 'adding-blocks', title: 'Adding Blocks', keywords: 'insert create plus enter' },
         { id: 'fountain-features', title: 'Fountain Power Features', keywords: 'tab element autocomplete outline scene list page view import export pdf fountain paste shortcut keyboard' },
-        { id: 'songs-drafts', title: 'Songs & Notes', keywords: 'lyrics notes music documents' },
+        { id: 'songs-drafts', title: 'Songs & Notes', keywords: 'lyrics notes music documents export email share archive select workspace' },
         { id: 'drag-drop', title: 'Drag & Drop Reordering', keywords: 'move reorder handle' },
         { id: 'bookmarks-pins', title: 'Bookmarks & Pinned Blocks', keywords: 'star pin favorite outline bookmark list panel' },
         { id: 'bulk-actions', title: 'Bulk Tagging & Deletions', keywords: 'select checkbox tags delete' },

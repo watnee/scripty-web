@@ -118,7 +118,7 @@ class TextDocumentServiceImplArchiveTest {
 
     @Test
     void archiveAcceptsANoteAsReadilyAsASong() {
-        // Unlike deleteSongs, archiving does nothing type-specific — the bulk
+        // Unlike deleteDocuments, archiving does nothing type-specific — the bulk
         // rel is advertised on projects of notes for exactly this reason.
         when(textDocumentRepository.findByIdAndProjectIdAndArchivedAtIsNullAndDeletedAtIsNull(NOTE_ID, PROJECT_ID))
                 .thenReturn(Optional.of(note));

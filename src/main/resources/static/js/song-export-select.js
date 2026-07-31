@@ -1,10 +1,15 @@
 /**
- * Song selection for the Export menu, the Email button, and the Archive and
- * Delete buttons on the songs list.
+ * Row selection for the Export menu, the Email button, and the Archive and
+ * Delete buttons — on the notes list as much as the songs list, since the
+ * parity round gave both the same checkbox column.
  *
- * Selecting nothing acts on every song for Export and Email, so both still work
+ * Every label this writes takes its noun from the list's own `data-doc-noun`,
+ * so the same code says "3 songs selected" on one page and "3 notes selected"
+ * on the other. Nothing here needs to know which page it is.
+ *
+ * Selecting nothing acts on every row for Export and Email, so both still work
  * for anyone who never touches the checkboxes. Archive and Delete are the
- * exceptions: both stay disabled until songs are picked, so an empty selection
+ * exceptions: both stay disabled until rows are picked, so an empty selection
  * can never empty a project. Selection follows the search filter: a hidden card
  * is not part of "all", and cannot be picked by "Select all".
  */
@@ -29,6 +34,11 @@
         var archiveBtn = document.getElementById('songs-archive-selected');
         var archiveForm = document.getElementById('songs-archive-form');
 
+        // "song" or "note" — whichever list this is. Everything below builds
+        // its wording out of these two.
+        var noun = listEl.getAttribute('data-doc-noun') || 'song';
+        var nouns = noun + 's';
+
         function visibleCheckboxes() {
             return Array.prototype.slice
                 .call(listEl.querySelectorAll('.text-document-select-checkbox'))
@@ -52,7 +62,7 @@
             var cb = listEl.querySelector('.text-document-select-checkbox[value="' + id + '"]');
             var card = cb && cb.closest('.text-document-card');
             var link = card && card.querySelector('.text-document-card-title');
-            return link ? link.textContent.trim() : 'this song';
+            return link ? link.textContent.trim() : 'this ' + noun;
         }
 
         function refresh() {
@@ -61,35 +71,35 @@
 
             if (scopeEl) {
                 scopeEl.textContent = chosen.length
-                    ? plural(chosen.length, 'song') + ' selected'
-                    : 'All songs (' + visible.length + ')';
+                    ? plural(chosen.length, noun) + ' selected'
+                    : 'All ' + nouns + ' (' + visible.length + ')';
             }
             if (toggleBtn) {
                 toggleBtn.textContent = chosen.length ? 'Export (' + chosen.length + ')' : 'Export';
                 toggleBtn.title = chosen.length
-                    ? 'Export ' + plural(chosen.length, 'selected song')
-                    : 'Export every song in this project';
+                    ? 'Export ' + plural(chosen.length, 'selected ' + noun)
+                    : 'Export every ' + noun + ' in this project';
             }
             if (emailBtn) {
                 emailBtn.textContent = chosen.length ? 'Email (' + chosen.length + ')' : 'Email';
                 emailBtn.title = chosen.length
-                    ? 'Email ' + plural(chosen.length, 'selected song') + ' in one message'
-                    : 'Email every song in this project';
-                // Nothing visible means "all songs" resolves to nothing to send.
+                    ? 'Email ' + plural(chosen.length, 'selected ' + noun) + ' in one message'
+                    : 'Email every ' + noun + ' in this project';
+                // Nothing visible means "all of them" resolves to nothing to send.
                 emailBtn.disabled = visible.length === 0;
             }
             if (deleteBtn) {
                 deleteBtn.textContent = chosen.length ? 'Delete (' + chosen.length + ')' : 'Delete';
                 deleteBtn.title = chosen.length
-                    ? 'Delete ' + plural(chosen.length, 'selected song')
-                    : 'Select songs to delete';
+                    ? 'Delete ' + plural(chosen.length, 'selected ' + noun)
+                    : 'Select ' + nouns + ' to delete';
                 deleteBtn.disabled = chosen.length === 0;
             }
             if (archiveBtn) {
                 archiveBtn.textContent = chosen.length ? 'Archive (' + chosen.length + ')' : 'Archive';
                 archiveBtn.title = chosen.length
-                    ? 'Archive ' + plural(chosen.length, 'selected song')
-                    : 'Select songs to archive';
+                    ? 'Archive ' + plural(chosen.length, 'selected ' + noun)
+                    : 'Select ' + nouns + ' to archive';
                 archiveBtn.disabled = chosen.length === 0;
             }
             if (selectAll) {
@@ -110,15 +120,15 @@
             });
         }
 
-        // Filtering can hide a checked song; recount so the menu never promises
-        // songs the export will not include.
+        // Filtering can hide a checked row; recount so the menu never promises
+        // documents the export will not include.
         if (searchInput) {
             searchInput.addEventListener('input', function () { window.setTimeout(refresh, 0); });
         }
 
         if (emailBtn && emailForm) {
             emailBtn.addEventListener('click', function () {
-                // Selecting nothing emails every visible song, matching Export.
+                // Selecting nothing emails every visible row, matching Export.
                 var ids = selectedIds();
                 var sending = ids.length
                     ? ids
@@ -127,7 +137,7 @@
 
                 var label = sending.length === 1
                     ? '"' + titleOf(sending[0]) + '"'
-                    : plural(sending.length, 'song');
+                    : plural(sending.length, noun);
                 var address = window.prompt('Email ' + label + ' to:', '');
                 if (address === null) return;
                 address = address.trim();
@@ -157,7 +167,7 @@
 
                 var label = ids.length === 1
                     ? '"' + titleOf(ids[0]) + '"'
-                    : plural(ids.length, 'song');
+                    : plural(ids.length, noun);
                 var pronoun = ids.length === 1 ? 'it' : 'them';
                 if (!window.confirm('Move ' + label + ' to the trash? You can restore '
                         + pronoun + ' from there at any time.')) return;

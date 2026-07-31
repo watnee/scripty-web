@@ -86,7 +86,7 @@ class TextDocumentServiceImplShareByEmailTest {
         when(textDocumentRepository.findByIdAndDeletedAtIsNull(42)).thenReturn(Optional.of(song));
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
-        List<TextDocument> shared = service.shareSongsByEmail(List.of(42), " friend@example.com ", user);
+        List<TextDocument> shared = service.shareDocumentsByEmail(List.of(42), " friend@example.com ", user);
 
         assertEquals(List.of(song), shared);
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
@@ -108,7 +108,7 @@ class TextDocumentServiceImplShareByEmailTest {
         when(textDocumentRepository.findByIdAndDeletedAtIsNull(43)).thenReturn(Optional.of(otherSong));
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
-        List<TextDocument> shared = service.shareSongsByEmail(List.of(42, 43), "friend@example.com", user);
+        List<TextDocument> shared = service.shareDocumentsByEmail(List.of(42, 43), "friend@example.com", user);
 
         assertEquals(List.of(song, otherSong), shared);
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
@@ -127,15 +127,17 @@ class TextDocumentServiceImplShareByEmailTest {
                 eq(ProjectActivity.ENTITY_DOCUMENT), anyInt());
     }
 
+    /**
+     * What is skipped is an id with nothing behind it. A note is no longer one
+     * of those — it rides along, and the subject line widens to say so.
+     */
     @Test
     void shareSongsByEmailSkipsUnshareableIdsButSendsTheRest() {
-        otherSong.setDocumentType(TextDocument.TYPE_NOTES);
         when(textDocumentRepository.findByIdAndDeletedAtIsNull(42)).thenReturn(Optional.of(song));
-        when(textDocumentRepository.findByIdAndDeletedAtIsNull(43)).thenReturn(Optional.of(otherSong));
         when(textDocumentRepository.findByIdAndDeletedAtIsNull(99)).thenReturn(Optional.empty());
         when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
-        List<TextDocument> shared = service.shareSongsByEmail(Arrays.asList(42, 43, 99, null), "friend@example.com", user);
+        List<TextDocument> shared = service.shareDocumentsByEmail(Arrays.asList(42, 99, null), "friend@example.com", user);
 
         assertEquals(List.of(song), shared);
         verify(emailService).send(
@@ -146,26 +148,52 @@ class TextDocumentServiceImplShareByEmailTest {
 
     @Test
     void shareSongsByEmailRejectsInvalidAddress() {
-        assertTrue(service.shareSongsByEmail(List.of(42), "not-an-email", user).isEmpty());
-        assertTrue(service.shareSongsByEmail(List.of(42), "   ", user).isEmpty());
-        assertTrue(service.shareSongsByEmail(List.of(42), null, user).isEmpty());
+        assertTrue(service.shareDocumentsByEmail(List.of(42), "not-an-email", user).isEmpty());
+        assertTrue(service.shareDocumentsByEmail(List.of(42), "   ", user).isEmpty());
+        assertTrue(service.shareDocumentsByEmail(List.of(42), null, user).isEmpty());
         verify(emailService, never()).send(anyString(), anyString(), anyString());
     }
 
     @Test
     void shareSongsByEmailRejectsEmptySelection() {
-        assertTrue(service.shareSongsByEmail(List.of(), "friend@example.com", user).isEmpty());
-        assertTrue(service.shareSongsByEmail(null, "friend@example.com", user).isEmpty());
+        assertTrue(service.shareDocumentsByEmail(List.of(), "friend@example.com", user).isEmpty());
+        assertTrue(service.shareDocumentsByEmail(null, "friend@example.com", user).isEmpty());
         verify(emailService, never()).send(anyString(), anyString(), anyString());
     }
 
+    /**
+     * A note goes out the same way a song does, and the subject line says
+     * "note" — the one thing that would have been wrong about reusing the song
+     * wording wholesale.
+     */
     @Test
-    void shareSongsByEmailRejectsNonSongDocuments() {
+    void shareDocumentsByEmailSendsANoteAndCallsItOne() {
         song.setDocumentType(TextDocument.TYPE_NOTES);
         when(textDocumentRepository.findByIdAndDeletedAtIsNull(42)).thenReturn(Optional.of(song));
+        when(projectService.canUserAccessProject(7, user)).thenReturn(true);
 
-        assertTrue(service.shareSongsByEmail(List.of(42), "friend@example.com", user).isEmpty());
-        verify(emailService, never()).send(anyString(), anyString(), anyString());
+        assertEquals(1, service.shareDocumentsByEmail(List.of(42), "friend@example.com", user).size());
+
+        ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
+        verify(emailService).send(eq("friend@example.com"), subject.capture(), anyString());
+        assertTrue(subject.getValue().contains("shared a note with you"),
+                "subject should name a note; got: " + subject.getValue());
+    }
+
+    /** All songs, all notes, or — where they are mixed — the neutral word. */
+    @Test
+    void shareDocumentsByEmailCallsAMixedSelectionDocuments() {
+        otherSong.setDocumentType(TextDocument.TYPE_NOTES);
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(42)).thenReturn(Optional.of(song));
+        when(textDocumentRepository.findByIdAndDeletedAtIsNull(43)).thenReturn(Optional.of(otherSong));
+        when(projectService.canUserAccessProject(7, user)).thenReturn(true);
+
+        assertEquals(2, service.shareDocumentsByEmail(List.of(42, 43), "friend@example.com", user).size());
+
+        ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
+        verify(emailService).send(eq("friend@example.com"), subject.capture(), anyString());
+        assertTrue(subject.getValue().contains("shared 2 documents with you"),
+                "subject should stay neutral over a mix; got: " + subject.getValue());
     }
 
     @Test
@@ -173,7 +201,7 @@ class TextDocumentServiceImplShareByEmailTest {
         when(textDocumentRepository.findByIdAndDeletedAtIsNull(42)).thenReturn(Optional.of(song));
         when(projectService.canUserAccessProject(7, user)).thenReturn(false);
 
-        assertTrue(service.shareSongsByEmail(List.of(42), "friend@example.com", user).isEmpty());
+        assertTrue(service.shareDocumentsByEmail(List.of(42), "friend@example.com", user).isEmpty());
         verify(emailService, never()).send(anyString(), anyString(), anyString());
     }
 }

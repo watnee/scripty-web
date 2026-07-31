@@ -35,7 +35,6 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.savedrequest.RequestCache;
-import org.springframework.security.web.util.matcher.AndRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialRpEntity;
 import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredentialUserEntityRepository;
@@ -217,12 +216,21 @@ public class SecurityConfig {
             .httpBasic(org.springframework.security.config.Customizer.withDefaults())
             // Native API clients (e.g. the SwiftUI app) authenticate each request
             // with an Authorization header, which browsers cannot attach cross-site,
-            // so CSRF tokens add nothing for them. Cookie-authenticated /api calls
-            // (HTMX) keep full CSRF protection.
+            // so CSRF tokens add nothing for them. Cookie-authenticated calls
+            // (HTMX) keep full CSRF protection: forgery rides on the cookie a
+            // browser sends by itself, and a request that carries credentials of
+            // its own is not that request.
+            //
+            // Deliberately not scoped to /api: the API's own hypermedia sends
+            // native clients outside it. The screenplay editor's undo and redo
+            // are advertised as /project/undo and /project/redo — the same
+            // handlers the web UI posts to — and while this exemption was
+            // /api-scoped every undo from the app was rejected as a forgery, so
+            // taking back a deleted element answered "You don't have permission
+            // to do that". Same shape as the export links, which live outside
+            // /api and needed the bearer filter widened to match.
             .csrf(csrf -> csrf.ignoringRequestMatchers(
-                    new AndRequestMatcher(
-                            new AntPathRequestMatcher("/api/**"),
-                            request -> request.getHeader(HttpHeaders.AUTHORIZATION) != null),
+                    request -> request.getHeader(HttpHeaders.AUTHORIZATION) != null,
                     // Password recovery has no session to carry a token and no
                     // credentials to send — the caller is signed out, which is
                     // the whole point of it. Nothing here acts on behalf of a

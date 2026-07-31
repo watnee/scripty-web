@@ -31,8 +31,11 @@ public class SongBlockTrashPurgeJob {
                 log.info("Purged {} expired song line(s) from the trash", purged);
             }
         } catch (RuntimeException e) {
-            // Never let a bad run kill the scheduler thread — the next one retries.
-            log.error("Failed to purge expired song lines from the trash", e);
+            // Rethrown so ScheduledJobMetricsAspect records the run as a failure; see
+            // BlockTrashPurgeJob. Spring's scheduler logs the trace and still fires the
+            // next cron run.
+            log.error("Failed to purge expired song lines from the trash: {}", e.toString());
+            throw e;
         }
     }
 }

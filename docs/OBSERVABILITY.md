@@ -48,7 +48,12 @@ field. Every request gets a `request_id` MDC field, taken from Cloudflare's
 `CF-Ray` header when present (so app logs correlate with Cloudflare logs) and
 echoed back to clients as `X-Request-Id`.
 
-Example Railway log queries: `@log.level:ERROR`, `@request_id:<cf-ray>`.
+Scheduled jobs have no request to correlate against, so they get a `task` MDC
+field instead — `@task:BlockTrashPurgeJob.purgeExpiredBlocks` returns one job's
+whole history.
+
+Example Railway log queries: `@log.level:ERROR`, `@request_id:<cf-ray>`,
+`@task:*PurgeJob*`.
 
 ## Metrics
 
@@ -69,11 +74,41 @@ an unbounded tag would grow the registry without limit.
 | `scripty_email_sent_total` | `transport`, `outcome` | Are password resets and invitations actually going out? `transport` separates the Cloudflare Worker from SMTP; `disabled` means no transport is configured. |
 | `scripty_auth_events_total` | `event` | Sign-in success/failure ratio. |
 | `scripty_errors_unhandled_total` | `exception`, `status` | Which exception types are reaching users. |
+| `scripty_scheduled_task_seconds` | `task`, `outcome` | Did the nightly purge jobs run, and did they work? |
+| `scripty_scheduled_task_last_success_timestamp_seconds` | `task` | When each job last succeeded — the series a staleness alert subtracts from `time()`. |
 
 Exports and imports are instrumented by `ExportMetricsAspect`, which matches
 service beans by name (`*ExportServiceImpl`, `*ImportServiceImpl`). A new
 exporter is therefore instrumented the moment it is added — there is no
 annotation to remember.
+
+### Scheduled jobs
+
+The nightly purge jobs are the only code in the app with no user to notice it
+broke. Nothing calls them, nothing reads their result, and a run that stopped
+firing looks exactly like a run that found nothing to purge.
+
+`ScheduledJobMetricsAspect` times every `@Scheduled` method — matched by the
+annotation, so a new job is instrumented the moment it is written — and records
+the run under `task="ClassName.methodName"`. Two rules watch it:
+`ScriptyScheduledTaskFailing` (it ran and threw) and `ScriptyScheduledTaskStale`
+(it has not succeeded in 36h, one skipped nightly run).
+
+Two things are worth knowing before trusting the staleness rule:
+
+- The last-success gauge is **only registered after a job's first success**, so it
+  is missing for a few hours after every deploy rather than reading as
+  "last succeeded in 1970". The cost is that the rule cannot catch a job that has
+  never run since boot; `ScriptyScheduledTaskFailing` covers the case where it ran
+  and threw.
+- The purge jobs log their own failure **and rethrow**. Swallowing the exception,
+  as they used to, made a permanently broken purge indistinguishable from a quiet
+  one. Spring's scheduler logs the trace and suppresses it, so the next cron run
+  still fires.
+
+The tag is `task`, not `job`: Prometheus reserves `job` as a target label and
+renames a conflicting one to `exported_job` on ingest, which no dashboard query
+would think to ask for.
 
 ## Tracing
 
@@ -98,8 +133,9 @@ MDC automatically, so every ECS log line carries `trace_id` alongside
 ## Alerting
 
 `observability/prometheus/alerts.yml` holds the rules: app down, 5xx rate, p99
-latency, Hikari pool exhaustion, heap pressure, low disk, and the domain rules
-(exports failing, email failing, unhandled-error spike, login-failure spike).
+latency, Hikari pool exhaustion, heap pressure, low disk, the domain rules
+(exports failing, email failing, unhandled-error spike, login-failure spike), and
+the scheduled-task rules (a job failing, a job gone stale).
 
 One file serves both environments — the local Prometheus loads it via
 `rule_files`, so a threshold can be tried at <http://localhost:9090/alerts>
@@ -159,5 +195,19 @@ The token file starts empty, which is fine for the dev profile; put a real
 `METRICS_TOKEN` in `observability/prometheus/token` to scrape a prod-like
 instance.
 
-Good starter dashboards to import in Grafana: **4701** (JVM Micrometer) and
-**17175** (Spring Boot 3 HTTP observability).
+## Dashboards
+
+Three dashboards are provisioned from
+`observability/grafana/provisioning/dashboards/`, so they appear in both the
+local stack and the deployed Grafana with no import step — the image copies the
+whole provisioning directory:
+
+| Dashboard | Source | Answers |
+|---|---|---|
+| **Scripty — Domain** | `scripty-domain.json`, written here | Does the product work? Exports, imports, email, sign-ins, unhandled errors, scheduled jobs. |
+| **JVM (Micrometer)** | community dashboard 4701 | Is the JVM healthy? Heap, GC, threads. |
+| **Spring Boot 3 HTTP** | community dashboard 17175 | Is the HTTP layer healthy? Rate, latency, status mix. |
+
+The domain dashboard is the one to open first when an alert fires: every rule
+under `scripty-domain` or `scripty-scheduled-tasks` has a panel there, and the
+panel descriptions name the alert and its threshold.

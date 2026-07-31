@@ -1,9 +1,14 @@
 package com.scripty.observability;
 
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Component;
 
 /**
@@ -27,6 +32,13 @@ public class ScriptyMetrics {
     public static final String OUTCOME_FAILURE = "failure";
 
     private final MeterRegistry registry;
+
+    /**
+     * Backing values for the per-task "last succeeded at" gauges. Micrometer holds a
+     * weak reference to whatever a gauge reads, so the {@link AtomicLong} has to be
+     * kept alive here or the gauge starts reporting NaN once it is collected.
+     */
+    private final Map<String, AtomicLong> lastScheduledTaskSuccess = new ConcurrentHashMap<>();
 
     public ScriptyMetrics(MeterRegistry registry) {
         this.registry = registry;
@@ -73,6 +85,46 @@ public class ScriptyMetrics {
                 .tag("event", event)
                 .register(registry)
                 .increment();
+    }
+
+    /**
+     * Records a completed run of a {@code @Scheduled} task.
+     *
+     * <p>The nightly purge jobs have no user watching them: nothing calls them, they
+     * return nothing anyone reads, and a run that stops happening looks exactly like
+     * a run that found nothing to purge. The timer answers "did it run, and did it
+     * work"; the last-success gauge answers "when did it last work", which is the one
+     * a stale-task alert needs.
+     *
+     * <p>The tag is {@code task}, not {@code job}: Prometheus reserves {@code job} as
+     * a target label, and a scraped metric carrying one gets renamed to
+     * {@code exported_job}, which no dashboard query would think to ask for.
+     *
+     * <p>The gauge is only registered on the first success, so a task that has never
+     * completed has no series rather than a misleading epoch-zero one. That also
+     * means the series disappears on restart until the next successful run — an
+     * alert on it has to tolerate the gap.
+     */
+    public void scheduledTaskCompleted(String task, String outcome, long durationNanos) {
+        Timer.builder("scripty.scheduled.task")
+                .description("Scheduled task runs by task name and outcome")
+                .tag("task", task)
+                .tag("outcome", outcome)
+                .register(registry)
+                .record(durationNanos, TimeUnit.NANOSECONDS);
+
+        if (OUTCOME_SUCCESS.equals(outcome)) {
+            lastScheduledTaskSuccess.computeIfAbsent(task, name -> {
+                AtomicLong epochSeconds = new AtomicLong();
+                Gauge.builder("scripty.scheduled.task.last.success.timestamp", epochSeconds,
+                                AtomicLong::doubleValue)
+                        .description("Unix time at which each scheduled task last succeeded")
+                        .baseUnit("seconds")
+                        .tag("task", name)
+                        .register(registry);
+                return epochSeconds;
+            }).set(Instant.now().getEpochSecond());
+        }
     }
 
     /**

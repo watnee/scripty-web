@@ -29,8 +29,13 @@ public class BlockTrashPurgeJob {
                 log.info("Purged {} expired block(s) from the trash", purged);
             }
         } catch (RuntimeException e) {
-            // Never let a bad run kill the scheduler thread — the next one retries.
-            log.error("Failed to purge expired blocks from the trash", e);
+            // Rethrown so ScheduledJobMetricsAspect records the run as a failure —
+            // swallowing it here made a permanently broken purge look identical to a
+            // nightly run with nothing to purge. Spring's scheduler error handler logs
+            // the stack trace and suppresses it, so the next cron run still fires; the
+            // trace is left to that handler rather than printed twice.
+            log.error("Failed to purge expired blocks from the trash: {}", e.toString());
+            throw e;
         }
     }
 }

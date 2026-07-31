@@ -31,8 +31,11 @@ public class TextDocumentTrashPurgeJob {
                 log.info("Purged {} expired document(s) from the trash", purged);
             }
         } catch (RuntimeException e) {
-            // Never let a bad run kill the scheduler thread — the next one retries.
-            log.error("Failed to purge expired documents from the trash", e);
+            // Rethrown so ScheduledJobMetricsAspect records the run as a failure; see
+            // BlockTrashPurgeJob. Spring's scheduler logs the trace and still fires the
+            // next cron run.
+            log.error("Failed to purge expired documents from the trash: {}", e.toString());
+            throw e;
         }
     }
 }

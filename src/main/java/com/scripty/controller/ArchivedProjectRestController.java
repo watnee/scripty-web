@@ -10,6 +10,7 @@ import com.scripty.service.ProjectService;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -18,6 +19,7 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -80,14 +82,54 @@ public class ArchivedProjectRestController {
         return ResponseEntity.ok(collection(user));
     }
 
+    /**
+     * Brings several screenplays back into the list in one call.
+     *
+     * <p>There is no bulk archive to mirror one level up — screenplays are put
+     * aside one production at a time, as they finish — but coming back is the
+     * other way round: a writer opening this sheet after a season is looking at
+     * a shelf, and wants a handful of it back at once. Ids that are not archived
+     * projects this user can reach are skipped.
+     */
+    @RequestMapping(value = "/bulk/unarchive", method = RequestMethod.POST,
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkUnarchive(@RequestBody(required = false) BulkUnarchiveProjectsRequest request,
+                                           Principal principal) {
+        User user = projectAccess.currentUser(principal);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request == null || request.ids() == null || request.ids().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Choose at least one screenplay to bring back."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        if (projectService.unarchiveProjects(request.ids(), user) == 0) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Those screenplays could not be brought back."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(collection(user));
+    }
+
+    /** The ticked ids, in the order the archive showed them. */
+    public record BulkUnarchiveProjectsRequest(List<Integer> ids) {
+    }
+
     private CollectionModel<EntityModel<ArchivedProjectResource>> collection(User user) {
         List<EntityModel<ArchivedProjectResource>> resources = new ArrayList<>();
         for (Project project : projectService.getArchivedProjects(user)) {
             resources.add(EntityModel.of(toResource(project), itemLinks(project.getId())));
         }
-        return CollectionModel.of(resources)
+        CollectionModel<EntityModel<ArchivedProjectResource>> collection = CollectionModel.of(resources)
                 .add(linkTo(methodOn(ArchivedProjectRestController.class).list(null)).withSelfRel())
                 .add(linkTo(methodOn(ProjectRestController.class).list(null)).withRel(ApiRel.PROJECTS));
+        // Only worth offering when there is something here to tick.
+        if (!resources.isEmpty()) {
+            collection.add(linkTo(methodOn(ArchivedProjectRestController.class)
+                    .bulkUnarchive(null, null)).withRel(ApiRel.BULK_UNARCHIVE));
+        }
+        return collection;
     }
 
     private ArchivedProjectResource toResource(Project project) {

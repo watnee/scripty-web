@@ -31,8 +31,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -579,6 +581,31 @@ public class ProjectServiceImpl implements ProjectService {
         }
         project.setArchivedAt(null);
         return projectRepository.save(project);
+    }
+
+    @Override
+    @Transactional
+    public int unarchiveProjects(List<Integer> ids, User currentUser) {
+        if (ids == null || ids.isEmpty() || currentUser == null) {
+            return 0;
+        }
+        int unarchived = 0;
+        Set<Integer> seen = new LinkedHashSet<>();
+        for (Integer id : ids) {
+            if (id == null || !seen.add(id)) {
+                continue;
+            }
+            // Reachability is checked per id rather than trusted from the
+            // selection, exactly as the single unarchive does it: the archive
+            // this list was ticked in may not be the archive that still exists.
+            if (getArchivedProject(id, currentUser) == null) {
+                continue;
+            }
+            if (unarchiveProject(id) != null) {
+                unarchived++;
+            }
+        }
+        return unarchived;
     }
 
     @Override

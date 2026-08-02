@@ -110,6 +110,15 @@ public interface TextDocumentService {
     int archiveDocuments(List<Integer> ids, Integer projectId, User currentUser);
 
     /**
+     * Brings several of a project's archived documents back at once — the way
+     * out of the archive that {@link #archiveDocuments} is the way into. Ids
+     * that are missing, outside the project, or not archived are skipped, so a
+     * selection made before someone else emptied the archive is harmless.
+     * @return the number of documents actually brought back
+     */
+    int unarchiveDocuments(List<Integer> ids, Integer projectId, User currentUser);
+
+    /**
      * Reassigns the sort order of a project's documents to match {@code orderedIds}.
      * Every id must belong to the project; the client typically sends one type's
      * list (songs or notes), which is enough because the list view splits by type.

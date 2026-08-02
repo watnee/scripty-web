@@ -506,7 +506,6 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         for (TextDocument doc : textDocumentRepository
                 .findByProjectIdAndArchivedAtIsNotNullAndDeletedAtIsNullOrderByArchivedAtDesc(projectId)) {
             TextDocumentViewModel docVm = toViewModel(doc, project, false);
-            docVm.setArchivedAt(doc.getArchivedAt());
             if (TextDocument.TYPE_SONG.equalsIgnoreCase(doc.getDocumentType())) {
                 songs.add(docVm);
             } else {
@@ -579,6 +578,32 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             }
         }
         return archived;
+    }
+
+    @Override
+    @Transactional
+    public int unarchiveDocuments(List<Integer> ids, Integer projectId, User currentUser) {
+        if (ids == null || ids.isEmpty() || projectId == null || currentUser == null) {
+            return 0;
+        }
+        if (!projectService.canUserAccessProject(projectId, currentUser)) {
+            return 0;
+        }
+        int unarchived = 0;
+        Set<Integer> seen = new LinkedHashSet<>();
+        for (Integer id : ids) {
+            if (id == null || !seen.add(id)) {
+                continue;
+            }
+            // unarchive() re-checks the id itself and returns null for anything
+            // outside the project or not archived, so nothing extra to skip.
+            // Each one lands at the end of the list in the order given, which is
+            // the order the archive showed them in.
+            if (unarchive(id, projectId, currentUser) != null) {
+                unarchived++;
+            }
+        }
+        return unarchived;
     }
 
     @Override
@@ -1104,6 +1129,11 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         vm.setSortOrder(doc.getSortOrder());
         vm.setCreatedAt(doc.getCreatedAt());
         vm.setUpdatedAt(doc.getUpdatedAt());
+        // Carried on every document rather than only on the archive's own view
+        // model: a document fetched by id may well be an archived one — the
+        // archive opens them in place — and that is the case where whoever is
+        // looking at it needs to be told.
+        vm.setArchivedAt(doc.getArchivedAt());
         String content = doc.getContent() != null ? doc.getContent() : "";
         if (includeFullContent) {
             vm.setContent(content);

@@ -25,6 +25,13 @@ public class TextDocumentResource extends RepresentationModel<TextDocumentResour
     private Integer sortOrder;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    /**
+     * When this was put aside, or null — omitted from the JSON entirely for
+     * anything in the list. An archived document is still fetched, read and
+     * written by id, so a client editing one has no other way to know it is
+     * looking at something the list no longer shows.
+     */
+    private OffsetDateTime archivedAt;
 
     public Integer getId() {
         return id;
@@ -112,5 +119,13 @@ public class TextDocumentResource extends RepresentationModel<TextDocumentResour
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public OffsetDateTime getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(OffsetDateTime archivedAt) {
+        this.archivedAt = archivedAt;
     }
 }

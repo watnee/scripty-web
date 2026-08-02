@@ -63,6 +63,14 @@ public interface ProjectService {
     Project unarchiveProject(Integer id);
 
     /**
+     * Brings several archived projects back at once, skipping any id that is not
+     * an archived project this user can reach — so a selection that went stale
+     * while the archive was open still does what it can.
+     * @return the number of projects actually brought back
+     */
+    int unarchiveProjects(List<Integer> ids, User currentUser);
+
+    /**
      * Archived projects the user is allowed to see, most recently archived
      * first. Applies the same team rule as the live project list.
      */

@@ -11,6 +11,7 @@ import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -19,6 +20,7 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -73,6 +75,45 @@ public class DocumentArchiveRestController {
         return ResponseEntity.ok(collection(projectId, principal));
     }
 
+    /**
+     * Brings several archived documents back in one call.
+     *
+     * <p>The mirror of {@code bulkArchive}, and deliberately not on the same
+     * resource as it: a selection to archive is made in the list, a selection to
+     * bring back is made here. Ids not in this archive are skipped, so a
+     * selection that went stale while the sheet was open still does what it can.
+     *
+     * <p>Answers with the refreshed archive rather than the list, unlike its
+     * mirror — this is the collection the caller is looking at, and it is the
+     * one that shrank.
+     */
+    @RequestMapping(value = "/bulk/unarchive", method = RequestMethod.POST,
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkUnarchive(@RequestParam Integer projectId,
+                                           @RequestBody(required = false) BulkUnarchiveDocumentsRequest request,
+                                           Principal principal) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request == null || request.ids() == null || request.ids().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Choose at least one song or note to bring back."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        int unarchived = textDocumentService.unarchiveDocuments(
+                request.ids(), projectId, projectAccess.currentUser(principal));
+        if (unarchived == 0) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Those documents could not be brought back."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        return ResponseEntity.ok(collection(projectId, principal));
+    }
+
+    /** The ticked ids, in the order the archive showed them. */
+    public record BulkUnarchiveDocumentsRequest(List<Integer> ids) {
+    }
+
     private CollectionModel<EntityModel<ArchivedDocumentResource>> collection(
             Integer projectId, Principal principal) {
         User user = projectAccess.currentUser(principal);
@@ -86,11 +127,20 @@ public class DocumentArchiveRestController {
             addAll(resources, viewModel.getDrafts(), projectId);
         }
 
-        return CollectionModel.of(resources)
+        CollectionModel<EntityModel<ArchivedDocumentResource>> collection = CollectionModel.of(resources)
                 .add(linkTo(methodOn(DocumentArchiveRestController.class).list(projectId, null)).withSelfRel())
                 .add(linkTo(methodOn(TextDocumentRestController.class).list(projectId, null, null))
                         .withRel(ApiRel.DOCUMENTS))
                 .add(linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT));
+        // Unlike the archive itself, which is advertised empty so a client has
+        // somewhere to send the first document, this is worth offering only when
+        // there is something in here to tick. Everything reaching this point can
+        // already edit — the list gate above covers it.
+        if (!resources.isEmpty()) {
+            collection.add(linkTo(methodOn(DocumentArchiveRestController.class)
+                    .bulkUnarchive(projectId, null, null)).withRel(ApiRel.BULK_UNARCHIVE));
+        }
+        return collection;
     }
 
     private void addAll(List<EntityModel<ArchivedDocumentResource>> into,

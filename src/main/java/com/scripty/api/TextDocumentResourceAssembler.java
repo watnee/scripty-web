@@ -38,7 +38,7 @@ public class TextDocumentResourceAssembler {
     public EntityModel<TextDocumentResource> toModel(TextDocumentViewModel document) {
         return EntityModel.of(toResource(document, true))
                 .add(documentLinks(document.getId(), document.getProjectId(),
-                        document.getDocumentType()));
+                        document.getDocumentType(), document.getArchivedAt() != null));
     }
 
     public EntityModel<TextDocumentResource> toDeleteModel(Integer projectId) {
@@ -141,7 +141,7 @@ public class TextDocumentResourceAssembler {
     private EntityModel<TextDocumentResource> toSummaryModel(TextDocumentViewModel document) {
         return EntityModel.of(toResource(document, false))
                 .add(documentLinks(document.getId(), document.getProjectId(),
-                        document.getDocumentType()));
+                        document.getDocumentType(), document.getArchivedAt() != null));
     }
 
     private TextDocumentResource toResource(TextDocumentViewModel document, boolean includeContent) {
@@ -156,13 +156,17 @@ public class TextDocumentResourceAssembler {
         resource.setSortOrder(document.getSortOrder());
         resource.setCreatedAt(ApiDates.toOffset(document.getCreatedAt()));
         resource.setUpdatedAt(ApiDates.toOffset(document.getUpdatedAt()));
+        // Null for everything in the list, by definition — it is only ever set
+        // on a document fetched by id out of the archive, which is exactly the
+        // case an editor needs to be able to tell.
+        resource.setArchivedAt(ApiDates.toOffset(document.getArchivedAt()));
         if (includeContent) {
             resource.setContent(document.getContent());
         }
         return resource;
     }
 
-    private Link[] documentLinks(int id, Integer projectId, String type) {
+    private Link[] documentLinks(int id, Integer projectId, String type, boolean archived) {
         List<Link> links = new ArrayList<>();
         Link self = linkTo(methodOn(TextDocumentRestController.class).show(id, null)).withSelfRel();
         if (canEdit(projectId)) {
@@ -219,8 +223,24 @@ public class TextDocumentResourceAssembler {
                     .withRel(ApiRel.CHANGE_TYPE));
             // Songs and notes both archive: unlike the export and share rels
             // there is nothing song-shaped about putting a document aside.
-            links.add(linkTo(methodOn(TextDocumentRestController.class).archive(id, projectId, null))
-                    .withRel(ApiRel.ARCHIVE));
+            //
+            // One direction or the other, never both. An archived document is
+            // still opened and edited by id — that is the whole point of the
+            // archive — so an editor can be looking at one, and the only useful
+            // thing to offer there is the way back. Archiving it again is what
+            // the endpoint would refuse anyway.
+            if (archived) {
+                // Needs the project id the way the archive's own rows do: the
+                // endpoint scopes the lookup by it, since an archived row sits
+                // outside the query that normally scopes a project's list.
+                if (projectId != null) {
+                    links.add(linkTo(methodOn(DocumentArchiveRestController.class)
+                            .unarchive(id, projectId, null)).withRel(ApiRel.UNARCHIVE));
+                }
+            } else {
+                links.add(linkTo(methodOn(TextDocumentRestController.class).archive(id, projectId, null))
+                        .withRel(ApiRel.ARCHIVE));
+            }
             // Emailing a note to a collaborator is the same act as emailing a
             // song: a title and the words under it, in one message. The share
             // service no longer skips notes, so nothing here has to either.

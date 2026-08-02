@@ -175,11 +175,15 @@ public final class ApiRel {
     public static final String CHANGE_TYPE = "changeType";
     // Archiving. Separate from the trash: nothing here expires, and an archived
     // document is still whole — ARCHIVED is the collection it went to, ARCHIVE
-    // and UNARCHIVE the two directions, BULK_ARCHIVE the selection form.
+    // and UNARCHIVE the two directions, BULK_ARCHIVE and BULK_UNARCHIVE the
+    // selection forms of each. The two selection rels do not sit on the same
+    // resource: one rides the list, the other the archive, because that is
+    // where each one's selection is made.
     public static final String ARCHIVE = "archive";
     public static final String UNARCHIVE = "unarchive";
     public static final String ARCHIVED = "archived";
     public static final String BULK_ARCHIVE = "bulkArchive";
+    public static final String BULK_UNARCHIVE = "bulkUnarchive";
     public static final String ARCHIVED_DOCUMENT = "archivedDocument";
     public static final String ARCHIVED_DOCUMENTS = "archivedDocuments";
     // The same three verbs one level up, for a whole screenplay. ARCHIVE and

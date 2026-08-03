@@ -45,6 +45,15 @@
                     </div>
                 </div>
                 <div class="text-documents-section-actions">
+                    <!-- Disabled until rows are picked, like Archive and Delete on the
+                         list: an empty selection here would be a button that empties the
+                         whole archive by accident. -->
+                    <button type="button"
+                            id="archive-unarchive-selected"
+                            class="project-list-action-btn project-list-action-btn--primary"
+                            th:if="${!#lists.isEmpty(documents)}"
+                            th:title="${isSongList} ? 'Select songs to bring back' : 'Select notes to bring back'"
+                            disabled>Unarchive</button>
                     <a th:href="@{/project/documents/archive(projectId=${viewModel.projectId}, type=${isSongList} ? 'NOTES' : 'SONG')}"
                        class="project-list-action-btn project-list-action-btn--secondary"
                        th:if="${otherCount > 0}"
@@ -64,10 +73,40 @@
                 </p>
             </div>
 
-            <ul class="text-documents-list" th:if="${!#lists.isEmpty(documents)}">
+            <!-- Select all sits above the rows rather than in a toolbar: this page
+                 has no search or sort to share one with, and one action is all the
+                 selection feeds. `data-doc-noun` is what the script calls these rows
+                 in every label it writes, exactly as the list's own column does. -->
+            <label class="text-documents-select-all"
+                   th:if="${!#lists.isEmpty(documents)}">
+                <input type="checkbox" id="archive-select-all" />
+                <span>Select all</span>
+            </label>
+
+            <form id="archive-unarchive-form"
+                  th:if="${!#lists.isEmpty(documents)}"
+                  th:action="@{/project/documents/unarchive-documents}"
+                  method="post"
+                  hx-boost="false"
+                  hidden>
+                <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+            </form>
+
+            <ul class="text-documents-list" id="archive-documents-list"
+                th:if="${!#lists.isEmpty(documents)}"
+                th:attr="data-doc-noun=${isSongList} ? 'song' : 'note'">
                 <li th:each="doc, iter : ${documents}"
                     class="text-document-card"
                     th:style="'--card-i:' + ${iter.index}">
+                    <span class="text-document-card-lead">
+                        <span class="text-document-select">
+                            <input type="checkbox"
+                                   class="text-document-select-checkbox"
+                                   th:value="${doc.id}"
+                                   th:attr="aria-label='Select ' + ${doc.title}" />
+                        </span>
+                    </span>
                     <div class="text-document-card-main">
                         <a class="text-document-card-title"
                            th:href="@{/project/documents/edit(id=${doc.id})}"
@@ -112,5 +151,6 @@
     </main>
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/archive-select.js(v=${assetVersion})}"></script>
 </body>
 </html>

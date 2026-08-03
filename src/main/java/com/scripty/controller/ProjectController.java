@@ -494,6 +494,40 @@ public class ProjectController {
     }
 
     /**
+     * The archive's ticked rows, back into the project list.
+     *
+     * <p>There is no bulk archive on the list to mirror — a production is put
+     * aside on the day it wraps, one at a time — but coming back is the other
+     * way round: someone opening this after a season is looking at a shelf and
+     * wants a handful of it back. Ids that are not archived projects this user
+     * can reach are skipped, so a page left open while another device emptied
+     * the archive still does what it can.
+     *
+     * <p>Stays on the archive, unlike the single unarchive's sibling on the
+     * document side: what is left here is what the writer is still deciding
+     * about, and after a bulk action that remainder is the useful thing to see.
+     */
+    @RequestMapping(value = "/unarchive-projects", method = RequestMethod.POST)
+    public String unarchiveProjects(@RequestParam(name = "id", required = false) List<Integer> ids,
+                                    Principal principal,
+                                    RedirectAttributes redirectAttributes) {
+        User currentUser = currentUser(principal);
+        if (currentUser == null) {
+            return "redirect:/project/list";
+        }
+        int restored = projectService.unarchiveProjects(ids, currentUser);
+        if (restored == 0) {
+            redirectAttributes.addFlashAttribute("archiveMessage",
+                    "Those projects are no longer in the archive.");
+        } else {
+            redirectAttributes.addFlashAttribute("archiveMessage",
+                    "Moved " + restored + (restored == 1 ? " project" : " projects")
+                            + " back to your projects.");
+        }
+        return "redirect:/project/archived";
+    }
+
+    /**
      * Trashed projects are invisible to {@link #denyProjectAccess} — the entity's
      * @SQLRestriction hides them — so the trash routes resolve the project through
      * the repository's native queries and re-apply the access rule themselves, via

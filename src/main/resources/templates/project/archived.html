@@ -40,6 +40,16 @@
                     </div>
                 </div>
                 <div class="text-documents-section-actions">
+                    <!-- Disabled until rows are picked. There is no bulk *archive* on the
+                         project list to mirror — screenplays are put aside one production
+                         at a time, as they wrap — but coming back is the other way round:
+                         someone opening this after a season wants a handful at once. -->
+                    <button type="button"
+                            id="archive-unarchive-selected"
+                            class="project-list-action-btn project-list-action-btn--primary"
+                            th:if="${!#lists.isEmpty(projects)}"
+                            title="Select screenplays to bring back"
+                            disabled>Unarchive</button>
                     <a th:href="@{/project/list}"
                        class="project-list-action-btn project-list-action-btn--primary">Back to Projects</a>
                 </div>
@@ -53,10 +63,33 @@
                 </p>
             </div>
 
-            <ul class="text-documents-list" th:if="${!#lists.isEmpty(projects)}">
+            <label class="text-documents-select-all"
+                   th:if="${!#lists.isEmpty(projects)}">
+                <input type="checkbox" id="archive-select-all" />
+                <span>Select all</span>
+            </label>
+
+            <form id="archive-unarchive-form"
+                  th:if="${!#lists.isEmpty(projects)}"
+                  th:action="@{/project/unarchive-projects}"
+                  method="post"
+                  hx-boost="false"
+                  hidden></form>
+
+            <ul class="text-documents-list" id="archive-projects-list"
+                th:if="${!#lists.isEmpty(projects)}"
+                data-doc-noun="screenplay">
                 <li th:each="project, iter : ${projects}"
                     class="text-document-card text-document-card--draft"
                     th:style="'--card-i:' + ${iter.index}">
+                    <span class="text-document-card-lead">
+                        <span class="text-document-select">
+                            <input type="checkbox"
+                                   class="text-document-select-checkbox"
+                                   th:value="${project.id}"
+                                   th:attr="aria-label='Select ' + ${project.title}" />
+                        </span>
+                    </span>
                     <div class="text-document-card-main">
                         <a class="text-document-card-title"
                            th:href="@{/project/show(id=${project.id})}"
@@ -100,5 +133,6 @@
          handler that opens it. -->
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>
+    <script th:src="@{/js/archive-select.js(v=${assetVersion})}"></script>
 </body>
 </html>

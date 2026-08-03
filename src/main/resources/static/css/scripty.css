@@ -5793,6 +5793,24 @@ a.project-list-team:hover {
     color: var(--fg, inherit);
 }
 
+/* The selection buttons — Archive, Delete, Unarchive — start disabled and stay
+   that way until rows are ticked, and until now a disabled one was pixel for
+   pixel an enabled one: full opacity, pointing cursor, primary blue. The only
+   way to learn it did nothing was to press it. Nothing here is per-variant, so
+   the primary form stops shouting for a press it will not accept. */
+.project-list-action-btn:disabled,
+.project-list-action-btn[disabled] {
+    opacity: 0.45;
+    cursor: default;
+    box-shadow: none;
+}
+
+.project-list-action-btn:disabled:hover,
+.project-list-action-btn[disabled]:hover {
+    border-color: inherit;
+    background: inherit;
+}
+
 .project-list-action-btn--icon {
     width: 2rem;
     height: 2rem;
@@ -7136,6 +7154,55 @@ body:has(main.text-documents-page) > main.text-documents-page {
     border: 1px solid var(--td-line);
     border-radius: var(--border-radius, 0.5rem);
     font-size: 0.92rem;
+}
+
+/* Says an open document is in the archive rather than the list, and carries the
+   way back. Reads like the import banner above — same padding, same border —
+   but lays its parts out in a row, because unlike that one it ends in a button.
+   The iPad client wears the same strip in the same place. */
+.text-document-archived-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0 0 1rem;
+    padding: 0.55rem 1rem;
+    background: color-mix(in srgb, var(--td-draft, #b45309) 10%, transparent);
+    border: 1px solid var(--td-line);
+    border-radius: var(--border-radius, 0.5rem);
+    font-size: 0.9rem;
+}
+
+.text-document-archived-mark {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+/* The toolbar row below carries a negative top margin so it tucks up under the
+   breadcrumb bar's trailing space. With this strip in between, that pull lands
+   on the strip instead and the menus render straight through it. Whatever the
+   row is tucking under, it is no longer the one that left room for it. */
+.text-document-archived-banner + .text-document-toolbar-row {
+    margin-top: 0;
+}
+
+/* Takes the room so the button sits at the trailing edge, where the archive
+   page keeps its own Unarchive. */
+.text-document-archived-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.text-document-archived-banner form {
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+/* Standing on its own above an archive's rows rather than sharing a toolbar
+   with a search and a sort, as it does on the list — those pages have neither,
+   so it needs its own gap. */
+.text-documents-list + .text-documents-select-all,
+.text-documents-section > .text-documents-select-all {
+    margin-bottom: 0.75rem;
 }
 
 .text-documents-list {

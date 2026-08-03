@@ -224,6 +224,10 @@ public class TextDocumentController {
         model.addAttribute("commandModel", commandModel);
         model.addAttribute("isNew", true);
         model.addAttribute("isSong", isSong);
+        // Nothing being written for the first time is archived. Bound anyway so
+        // the strip below reads one attribute on both paths rather than relying
+        // on a missing one being falsy.
+        model.addAttribute("isArchived", false);
         model.addAttribute("listPath", listPath(isSong));
         model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
         return "project/documents/edit";
@@ -248,6 +252,10 @@ public class TextDocumentController {
         model.addAttribute("updatedAt", viewModel.getUpdatedAt());
         model.addAttribute("isNew", false);
         model.addAttribute("isSong", isSong);
+        // An archived document opens here in place — that is the difference
+        // between the archive and the trash — so this page can be the only thing
+        // on screen when the question of where it lives comes up.
+        model.addAttribute("isArchived", viewModel.getArchivedAt() != null);
         if (isSong) {
             // Writers may browse every version; everyone else is pinned to the
             // published one, matching the screenplay's edition access rule.
@@ -532,6 +540,41 @@ public class TextDocumentController {
         redirectAttributes.addFlashAttribute(
                 "documentArchiveMessage",
                 "Brought \"" + restored.getTitle() + "\" back from the archive.");
+        return "redirect:" + listUrl(projectId, isSong);
+    }
+
+    /**
+     * The archive's ticked rows, back into the list.
+     *
+     * <p>The mirror of {@link #archiveDocuments}, and the reason the archive
+     * page has a checkbox column at all: a writer archives a batch at the end of
+     * a draft and then wants a handful of it back. Ids that are not in this
+     * archive are skipped, so a page left open while another device emptied it
+     * still does what it can.
+     *
+     * <p>Redirects to the list rather than back here, as the single unarchive
+     * does — what came back is what the writer is now looking for.
+     */
+    @RequestMapping(value = "/unarchive-documents", method = RequestMethod.POST)
+    public String unarchiveDocuments(@RequestParam(name = "id", required = false) List<Integer> ids,
+                                     @RequestParam Integer projectId,
+                                     @RequestParam(required = false) String type,
+                                     Principal principal,
+                                     RedirectAttributes redirectAttributes) {
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        int restored = textDocumentService.unarchiveDocuments(ids, projectId, currentUser(principal));
+        if (restored == 0) {
+            redirectAttributes.addFlashAttribute(
+                    "documentArchiveMessage",
+                    "Could not bring those back. They may already be out of the archive.");
+            return "redirect:" + archiveUrl(projectId, isSong);
+        }
+        String noun = isSong
+                ? (restored == 1 ? " song" : " songs")
+                : (restored == 1 ? " note" : " notes");
+        redirectAttributes.addFlashAttribute(
+                "documentArchiveMessage",
+                "Brought " + restored + noun + " back from the archive.");
         return "redirect:" + listUrl(projectId, isSong);
     }
 

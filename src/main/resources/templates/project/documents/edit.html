@@ -46,6 +46,38 @@
             </div>
         </div>
 
+        <!--/* Says where this document lives, and offers the way back.
+
+               An archived song or note opens here in place, so a writer can be
+               typing into something the list no longer shows with nothing on
+               screen to say so — and the way back was a trip out to the archive
+               page to find the row. The iPad client wears the same strip in the
+               same place, in the same words.
+
+               The button goes only to someone who may edit: the sentence is for
+               everyone, the action is not. Unarchiving from here redirects to
+               the list, as it does from the archive page — what came back is
+               what you are now looking for. */-->
+        <div class="text-document-archived-banner" th:if="${isArchived}" role="status">
+            <span class="text-document-archived-mark" aria-hidden="true">📦</span>
+            <span class="text-document-archived-text">
+                <strong>Archived</strong>
+                <span class="muted"
+                      th:text="${isSong} ? '— not in your songs' : '— not in your notes'">— put aside</span>
+            </span>
+            <form th:action="@{/project/documents/unarchive}"
+                  method="post"
+                  hx-boost="false"
+                  th:if="${canEditScript}">
+                <input type="hidden" name="id" th:value="${commandModel.id}" />
+                <input type="hidden" name="projectId" th:value="${projectId}" />
+                <input type="hidden" name="type" th:value="${isSong} ? 'SONG' : 'NOTES'" />
+                <button type="submit"
+                        class="project-list-action-btn project-list-action-btn--primary"
+                        th:title="${isSong} ? 'Put this song back in the list' : 'Put this note back in the list'">Unarchive</button>
+            </form>
+        </div>
+
         <!--/* The song editor puts its menus on their own row under the breadcrumb,
                like the screenplay's toolbar row. The info popover lives in the
                breadcrumb bar above for both songs and notes. */-->

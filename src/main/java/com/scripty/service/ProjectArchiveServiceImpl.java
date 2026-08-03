@@ -121,6 +121,7 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
             entry.documentType = document.getDocumentType();
             entry.content = document.getContent();
             entry.sortOrder = document.getSortOrder();
+            entry.archived = document.isArchived();
             archive.documents.add(entry);
         }
 
@@ -182,19 +183,7 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
     @Override
     @Transactional
     public List<Project> importProjects(MultipartFile file) throws ScriptImportException {
-        if (file == null || file.isEmpty()) {
-            throw new ScriptImportException("No file selected. Choose a .scripty.json file exported from Scripty.");
-        }
-
-        JsonNode root;
-        try {
-            root = objectMapper.readTree(file.getBytes());
-        } catch (IOException e) {
-            throw new ScriptImportException(BAD_FILE_MESSAGE, e);
-        }
-        if (root == null || !root.isObject()) {
-            throw new ScriptImportException(BAD_FILE_MESSAGE);
-        }
+        JsonNode root = readRoot(file);
 
         String format = root.path("format").asText(null);
         if (ProjectArchiveBundle.FORMAT.equals(format)) {
@@ -227,6 +216,106 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
         return List.of(importArchive(archive));
     }
 
+    @Override
+    @Transactional
+    public Project replaceProject(Integer projectId, MultipartFile file) throws ScriptImportException {
+        // The file is read and vetted before anything is touched, so a project
+        // is never half-emptied on behalf of a file that turns out not to be a
+        // Scripty one.
+        ProjectArchive archive = readSingleArchive(file);
+        Project project = projectId == null ? null : projectRepository.findById(projectId).orElse(null);
+        if (project == null || project.getDeletedAt() != null) {
+            return null;
+        }
+
+        // Everything here now, kept: the version history is where the writer
+        // goes to find a draft this replaced, and it has to be written before
+        // the blocks it describes are gone.
+        ScriptEdition edition = scriptEditionService.ensureDefaultEdition(projectId);
+        if (edition != null) {
+            projectVersionService.autoSaveVersion(projectId, edition.getId());
+        } else {
+            projectVersionService.autoSaveVersion(projectId);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        applyInfo(project, archive.project, now);
+        project = projectRepository.save(project);
+
+        // Only this edition's script. Another draft of the same screenplay is
+        // not what the file describes, and wiping it would be a surprise nobody
+        // asked for — which is also why the file's own editions are ignored.
+        List<Block> existingBlocks = edition != null
+                ? blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(edition.getId())
+                : blockRepository.findByProjectIdOrderByOrderAscIdAsc(projectId);
+        blockRepository.deleteAll(existingBlocks);
+        List<Person> existingPeople = edition != null
+                ? personRepository.findByScriptEditionIdOrderByNameAsc(edition.getId())
+                : personRepository.findByProjectIdOrderByNameAsc(projectId);
+        personRepository.deleteAll(existingPeople);
+
+        // Songs and notes go to the trash rather than out of the database: a
+        // song has lyric lines, versions and editions hanging off it, and the
+        // trash is where this app has always put a document whose absence might
+        // turn out to be a mistake.
+        for (TextDocument document
+                : textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(projectId)) {
+            document.setDeletedAt(now);
+            textDocumentRepository.save(document);
+        }
+
+        fillContents(project, archive, new HashMap<>(), edition, now);
+
+        projectActivityService.recordForCurrentUser(
+                projectId,
+                ProjectActivity.ACTION_SCRIPT_IMPORTED,
+                "replaced the project from a file",
+                ProjectActivity.ENTITY_PROJECT,
+                projectId);
+        return project;
+    }
+
+    /** The one project a replace is about: a single-project file, or a bundle's first. */
+    private ProjectArchive readSingleArchive(MultipartFile file) throws ScriptImportException {
+        JsonNode root = readRoot(file);
+        String format = root.path("format").asText(null);
+        if (ProjectArchiveBundle.FORMAT.equals(format)) {
+            ProjectArchiveBundle bundle = convert(root, ProjectArchiveBundle.class);
+            checkVersion(bundle.formatVersion, ProjectArchiveBundle.CURRENT_VERSION);
+            ProjectArchive first = bundle.projects == null
+                    ? null
+                    : bundle.projects.stream().filter(a -> a != null).findFirst().orElse(null);
+            if (first == null) {
+                throw new ScriptImportException("That project file doesn't contain any projects.");
+            }
+            // A bundle vouches for its entries, exactly as importing one does.
+            checkVersion(first.formatVersion > 0 ? first.formatVersion : 1, ProjectArchive.CURRENT_VERSION);
+            return first;
+        }
+        if (!ProjectArchive.FORMAT.equals(format)) {
+            throw new ScriptImportException(BAD_FILE_MESSAGE);
+        }
+        ProjectArchive archive = convert(root, ProjectArchive.class);
+        checkVersion(archive.formatVersion, ProjectArchive.CURRENT_VERSION);
+        return archive;
+    }
+
+    private JsonNode readRoot(MultipartFile file) throws ScriptImportException {
+        if (file == null || file.isEmpty()) {
+            throw new ScriptImportException("No file selected. Choose a .scripty.json file exported from Scripty.");
+        }
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(file.getBytes());
+        } catch (IOException e) {
+            throw new ScriptImportException(BAD_FILE_MESSAGE, e);
+        }
+        if (root == null || !root.isObject()) {
+            throw new ScriptImportException(BAD_FILE_MESSAGE);
+        }
+        return root;
+    }
+
     private <T> T convert(JsonNode root, Class<T> type) throws ScriptImportException {
         try {
             return objectMapper.treeToValue(root, type);
@@ -248,14 +337,7 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
     private Project importArchive(ProjectArchive archive) {
         LocalDateTime now = LocalDateTime.now();
         Project project = new Project();
-        ProjectArchive.Info info = archive.project != null ? archive.project : new ProjectArchive.Info();
-        String title = clean(info.title, 100);
-        project.setTitle(title != null && !title.isBlank() ? title : "Imported Project");
-        project.setScreenplayTitle(clean(info.screenplayTitle, 255));
-        project.setWriters(clean(info.writers, 255));
-        project.setContactInfo(truncate(PlainTextSanitizer.sanitize(info.contactInfo), 1000));
-        project.setScreenplayVersion(clean(info.screenplayVersion, 255));
-        project.setLastEdited(now);
+        applyInfo(project, archive.project, now);
         project = projectRepository.save(project);
 
         Map<Integer, ScriptEdition> editionsByKey = new HashMap<>();
@@ -293,6 +375,44 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
             defaultEdition = scriptEditionService.ensureDefaultEdition(project.getId());
         }
 
+        fillContents(project, archive, editionsByKey, defaultEdition, now);
+
+        if (defaultEdition != null) {
+            projectVersionService.autoSaveVersion(project.getId(), defaultEdition.getId());
+        } else {
+            projectVersionService.autoSaveVersion(project.getId());
+        }
+        projectActivityService.recordForCurrentUser(
+                project.getId(),
+                ProjectActivity.ACTION_PROJECT_CREATED,
+                "imported the project from a file",
+                ProjectActivity.ENTITY_PROJECT,
+                project.getId());
+        return project;
+    }
+
+    /** The title page, common to importing a file and replacing a project with one. */
+    private void applyInfo(Project project, ProjectArchive.Info source, LocalDateTime now) {
+        ProjectArchive.Info info = source != null ? source : new ProjectArchive.Info();
+        String title = clean(info.title, 100);
+        project.setTitle(title != null && !title.isBlank() ? title : "Imported Project");
+        project.setScreenplayTitle(clean(info.screenplayTitle, 255));
+        project.setWriters(clean(info.writers, 255));
+        project.setContactInfo(truncate(PlainTextSanitizer.sanitize(info.contactInfo), 1000));
+        project.setScreenplayVersion(clean(info.screenplayVersion, 255));
+        project.setLastEdited(now);
+    }
+
+    /**
+     * Everything the file says a project contains — its songs and notes, its
+     * characters and its script — written into a project that is ready for
+     * them. Shared by importing a file into a new project and reading one back
+     * into a project that already exists; the difference between those two is
+     * what happened before this ran, not what it does.
+     */
+    private void fillContents(Project project, ProjectArchive archive,
+                              Map<Integer, ScriptEdition> editionsByKey,
+                              ScriptEdition defaultEdition, LocalDateTime now) {
         Map<Integer, TextDocument> documentsByKey = new HashMap<>();
         int documentSequence = 0;
         if (archive.documents != null) {
@@ -311,6 +431,10 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
                                 : TextDocument.TYPE_OTHER);
                 document.setContent(PlainTextSanitizer.sanitize(entry.content));
                 document.setSortOrder(entry.sortOrder != null ? entry.sortOrder : documentSequence);
+                // A song put aside stays put aside through the round trip. Files
+                // written before the flag existed carry false, which is what
+                // they all meant.
+                document.setArchivedAt(entry.archived ? now : null);
                 document.setCreatedAt(now);
                 document.setUpdatedAt(now);
                 document = textDocumentRepository.save(document);
@@ -386,19 +510,6 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
                 }
             }
         }
-
-        if (defaultEdition != null) {
-            projectVersionService.autoSaveVersion(project.getId(), defaultEdition.getId());
-        } else {
-            projectVersionService.autoSaveVersion(project.getId());
-        }
-        projectActivityService.recordForCurrentUser(
-                project.getId(),
-                ProjectActivity.ACTION_PROJECT_CREATED,
-                "imported the project from a file",
-                ProjectActivity.ENTITY_PROJECT,
-                project.getId());
-        return project;
     }
 
     private static ScriptEdition resolveEdition(

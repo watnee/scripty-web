@@ -46,6 +46,8 @@ class ProjectResourceLinkGatingIntegrationTest {
     private static final String IMPORT_SCRIPT_REL = "$._links.['scripty:importScript']";
     /** Team management is editor-only, gated the same way as script import. */
     private static final String PROJECT_TEAMS_REL = "$._links.['scripty:projectTeams']";
+    /** Reading an archive back into this project is editor-only for the same reason. */
+    private static final String REPLACE_FROM_ARCHIVE_REL = "$._links.['scripty:replaceFromArchive']";
 
     @Autowired
     private MockMvc mockMvc;
@@ -98,6 +100,27 @@ class ProjectResourceLinkGatingIntegrationTest {
                 .andExpect(jsonPath(IMPORT_SCRIPT_REL).exists())
                 .andExpect(jsonPath(IMPORT_SCRIPT_REL + ".href",
                         org.hamcrest.Matchers.containsString("/api/project/" + projectId + "/import-script")));
+    }
+
+    @Test
+    void writerIsOfferedTheArchiveReplaceLink() throws Exception {
+        mockMvc.perform(get("/api/project/" + projectId)
+                        .accept(MediaTypes.HAL_FORMS_JSON)
+                        .with(user(WRITER).roles("USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(REPLACE_FROM_ARCHIVE_REL).exists())
+                .andExpect(jsonPath(REPLACE_FROM_ARCHIVE_REL + ".href",
+                        org.hamcrest.Matchers.containsString(
+                                "/api/project/" + projectId + "/replace-from-archive")));
+    }
+
+    @Test
+    void readerIsNotOfferedTheArchiveReplaceLink() throws Exception {
+        mockMvc.perform(get("/api/project/" + projectId)
+                        .accept(MediaTypes.HAL_FORMS_JSON)
+                        .with(user(READER).roles("USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(REPLACE_FROM_ARCHIVE_REL).doesNotExist());
     }
 
     /**

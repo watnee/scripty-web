@@ -100,6 +100,21 @@ public final class ApiRel {
     /** The whole project as a re-importable .scripty.json archive. */
     public static final String EXPORT_ARCHIVE = "exportArchive";
     /**
+     * The other direction of {@link #EXPORT_ARCHIVE}: an archive read back into
+     * the project that is already here, rather than into a new one.
+     *
+     * <p>This is what lets a copy kept somewhere else stay the same screenplay.
+     * A device that wrote without an account keeps its own copy after handing
+     * one to the account, goes on writing in it while signed out, and needs
+     * somewhere to put those words that is not a second screenplay —
+     * {@link #IMPORT_PROJECT} can only ever make one of those.
+     *
+     * <p>Advertised to editors only, and never a way to lose work: the script
+     * as it stands is saved to the version history before the incoming one
+     * replaces it.
+     */
+    public static final String REPLACE_FROM_ARCHIVE = "replaceFromArchive";
+    /**
      * Every project the caller can see, as one re-importable bundle. Advertised
      * on the project collection rather than on a project, because it is the
      * collection it exports; `ids` narrows it to a selection.

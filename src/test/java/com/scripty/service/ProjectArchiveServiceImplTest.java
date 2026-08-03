@@ -282,4 +282,142 @@ class ProjectArchiveServiceImplTest {
 
         verify(projectVersionService).autoSaveVersion(imported.getId(), edition.getId());
     }
+
+    @Test
+    void replaceProjectKeepsTheProjectAndSwapsWhatIsInIt() throws Exception {
+        Project project = new Project();
+        project.setId(7);
+        project.setTitle("Was Called This");
+
+        ScriptEdition edition = new ScriptEdition();
+        edition.setId(3);
+        edition.setName("Original");
+        edition.setDefault(true);
+        edition.setPublished(true);
+        edition.setProject(project);
+
+        Block stale = new Block();
+        stale.setId(41);
+        stale.setContent("INT. OLD PLACE - DAY");
+        Person staleCharacter = new Person();
+        staleCharacter.setId(42);
+        TextDocument staleNote = new TextDocument();
+        staleNote.setId(43);
+        staleNote.setProject(project);
+
+        when(projectRepository.findById(7)).thenReturn(Optional.of(project));
+        when(projectRepository.save(any(Project.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(scriptEditionService.ensureDefaultEdition(7)).thenReturn(edition);
+        when(blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(3)).thenReturn(List.of(stale));
+        when(personRepository.findByScriptEditionIdOrderByNameAsc(3)).thenReturn(List.of(staleCharacter));
+        when(textDocumentRepository
+                .findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(7))
+                .thenReturn(List.of(staleNote));
+        when(textDocumentRepository.save(any(TextDocument.class))).thenAnswer(inv -> {
+            TextDocument d = inv.getArgument(0);
+            if (d.getId() == null) {
+                d.setId(idSequence.incrementAndGet());
+            }
+            return d;
+        });
+        when(blockRepository.save(any(Block.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        String json = """
+                {
+                  "format": "scripty-project",
+                  "formatVersion": 1,
+                  "project": { "title": "Written On The Train" },
+                  "documents": [
+                    { "key": 21, "title": "Verse", "documentType": "SONG",
+                      "content": "New words", "sortOrder": 0, "archived": true }
+                  ],
+                  "blocks": [
+                    { "order": 1, "type": "SCENE", "content": "INT. NEW PLACE - NIGHT" }
+                  ]
+                }
+                """;
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "p.scripty.json", "application/json", json.getBytes(StandardCharsets.UTF_8));
+
+        Project replaced = service.replaceProject(7, file);
+
+        // The same screenplay, holding what the file holds.
+        assertEquals(7, replaced.getId());
+        assertEquals("Written On The Train", replaced.getTitle());
+
+        // Nothing it replaced went out of reach: the script is in the version
+        // history and the note is in the document trash.
+        verify(projectVersionService).autoSaveVersion(7, 3);
+        assertTrue(staleNote.isDeleted());
+
+        verify(blockRepository).deleteAll(List.of(stale));
+        verify(personRepository).deleteAll(List.of(staleCharacter));
+
+        ArgumentCaptor<Block> blockCaptor = ArgumentCaptor.forClass(Block.class);
+        verify(blockRepository).save(blockCaptor.capture());
+        assertEquals("INT. NEW PLACE - NIGHT", blockCaptor.getValue().getContent());
+        assertEquals(edition.getId(), blockCaptor.getValue().getScriptEdition().getId());
+
+        // A song put aside on the device is still put aside here.
+        ArgumentCaptor<TextDocument> documentCaptor = ArgumentCaptor.forClass(TextDocument.class);
+        verify(textDocumentRepository, org.mockito.Mockito.atLeastOnce()).save(documentCaptor.capture());
+        TextDocument written = documentCaptor.getAllValues().stream()
+                .filter(d -> "Verse".equals(d.getTitle()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(written.isArchived());
+    }
+
+    @Test
+    void replaceProjectAnswersNothingForAProjectThatIsNotThere() {
+        when(projectRepository.findById(404)).thenReturn(Optional.empty());
+        String json = "{\"format\":\"scripty-project\",\"formatVersion\":1}";
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "p.scripty.json", "application/json", json.getBytes(StandardCharsets.UTF_8));
+        assertNull(assertDoesNotThrow(() -> service.replaceProject(404, file)));
+    }
+
+    @Test
+    void replaceProjectRefusesAFileItCannotReadBeforeTouchingAnything() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "notes.json", "application/json", "{\"foo\":1}".getBytes(StandardCharsets.UTF_8));
+        ScriptImportException e =
+                assertThrows(ScriptImportException.class, () -> service.replaceProject(7, file));
+        assertTrue(e.getUserMessage().contains("isn't a Scripty project file"));
+        // Read before anything is cleared, so a bad file cannot empty a project.
+        verify(blockRepository, org.mockito.Mockito.never()).deleteAll(any());
+    }
+
+    @Test
+    void replaceProjectReadsTheFirstProjectOutOfABundle() throws Exception {
+        Project project = new Project();
+        project.setId(7);
+        ScriptEdition edition = new ScriptEdition();
+        edition.setId(3);
+        edition.setProject(project);
+
+        when(projectRepository.findById(7)).thenReturn(Optional.of(project));
+        when(projectRepository.save(any(Project.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(scriptEditionService.ensureDefaultEdition(7)).thenReturn(edition);
+        when(blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(3)).thenReturn(List.of());
+        when(personRepository.findByScriptEditionIdOrderByNameAsc(3)).thenReturn(List.of());
+        when(textDocumentRepository
+                .findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(7))
+                .thenReturn(List.of());
+
+        String json = """
+                {
+                  "format": "scripty-projects",
+                  "formatVersion": 1,
+                  "projects": [
+                    { "format": "scripty-project", "formatVersion": 1,
+                      "project": { "title": "From A Bundle" } }
+                  ]
+                }
+                """;
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "p.scripty.json", "application/json", json.getBytes(StandardCharsets.UTF_8));
+
+        assertEquals("From A Bundle", service.replaceProject(7, file).getTitle());
+    }
 }

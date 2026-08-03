@@ -58,6 +58,12 @@ public class ProjectArchive {
         public String documentType;
         public String content;
         public Integer sortOrder;
+        /**
+         * Whether this song or note was put aside rather than listed. Added
+         * after the format was first written, so a file without it simply reads
+         * as "not archived" — which is what every older export meant.
+         */
+        public boolean archived;
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

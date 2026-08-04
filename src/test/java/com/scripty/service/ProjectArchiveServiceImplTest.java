@@ -13,6 +13,7 @@ import com.scripty.dto.Block;
 import com.scripty.dto.Person;
 import com.scripty.dto.Project;
 import com.scripty.dto.ScriptEdition;
+import com.scripty.dto.SongEdition;
 import com.scripty.dto.TextDocument;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
@@ -50,6 +51,12 @@ class ProjectArchiveServiceImplTest {
     private ProjectVersionService projectVersionService;
     @Mock
     private ProjectActivityService projectActivityService;
+    @Mock
+    private SongEditionService songEditionService;
+    @Mock
+    private SongVersionService songVersionService;
+    @Mock
+    private SongBlockService songBlockService;
 
     @InjectMocks
     private ProjectArchiveServiceImpl service;
@@ -386,6 +393,165 @@ class ProjectArchiveServiceImplTest {
         assertTrue(e.getUserMessage().contains("isn't a Scripty project file"));
         // Read before anything is cleared, so a bad file cannot empty a project.
         verify(blockRepository, org.mockito.Mockito.never()).deleteAll(any());
+    }
+
+    @Test
+    void replaceProjectWritesIntoTheSongTheFileNamesRatherThanReplacingIt() throws Exception {
+        Project project = new Project();
+        project.setId(7);
+
+        ScriptEdition edition = new ScriptEdition();
+        edition.setId(3);
+        edition.setProject(project);
+
+        // The song the account already holds, and the one it does not.
+        TextDocument song = new TextDocument();
+        song.setId(21);
+        song.setUid("song-uid");
+        song.setTitle("Verse");
+        song.setDocumentType(TextDocument.TYPE_SONG);
+        song.setContent("Old words");
+        song.setProject(project);
+        TextDocument strayNote = new TextDocument();
+        strayNote.setId(22);
+        strayNote.setUid("note-uid");
+        strayNote.setProject(project);
+
+        SongEdition songEdition = new SongEdition();
+        songEdition.setId(9);
+
+        when(projectRepository.findById(7)).thenReturn(Optional.of(project));
+        when(projectRepository.save(any(Project.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(scriptEditionService.ensureDefaultEdition(7)).thenReturn(edition);
+        when(blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(3)).thenReturn(List.of());
+        when(personRepository.findByScriptEditionIdOrderByNameAsc(3)).thenReturn(List.of());
+        when(textDocumentRepository
+                .findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(7))
+                .thenReturn(List.of(song, strayNote));
+        when(textDocumentRepository.save(any(TextDocument.class))).thenAnswer(inv -> {
+            TextDocument d = inv.getArgument(0);
+            if (d.getId() == null) {
+                d.setId(idSequence.incrementAndGet());
+            }
+            return d;
+        });
+        when(songEditionService.ensureDefaultEdition(21)).thenReturn(songEdition);
+
+        String json = """
+                {
+                  "format": "scripty-project",
+                  "formatVersion": 1,
+                  "project": { "title": "Same Screenplay" },
+                  "documents": [
+                    { "key": 99, "uid": "song-uid", "title": "Verse",
+                      "documentType": "SONG", "content": "New words", "sortOrder": 0 }
+                  ]
+                }
+                """;
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "p.scripty.json", "application/json", json.getBytes(StandardCharsets.UTF_8));
+
+        service.replaceProject(7, file);
+
+        // The same song, written into where it stands. Its id is what the open
+        // editor, the widgets and the bookmarks all name it by.
+        assertEquals(21, song.getId());
+        assertEquals("New words", song.getContent());
+        assertTrue(!song.isDeleted());
+
+        // Its lyric lines follow the text, and what they said first is kept.
+        verify(songVersionService).autoSaveVersion(21, 9);
+        verify(songBlockService).replaceLinesFromContent(21, "New words");
+
+        // Only what the file did not name goes to the trash.
+        assertTrue(strayNote.isDeleted());
+    }
+
+    @Test
+    void replaceProjectLeavesAnUnchangedLyricAlone() throws Exception {
+        Project project = new Project();
+        project.setId(7);
+        ScriptEdition edition = new ScriptEdition();
+        edition.setId(3);
+        edition.setProject(project);
+
+        TextDocument song = new TextDocument();
+        song.setId(21);
+        song.setUid("song-uid");
+        song.setDocumentType(TextDocument.TYPE_SONG);
+        song.setContent("Same words");
+        song.setProject(project);
+
+        when(projectRepository.findById(7)).thenReturn(Optional.of(project));
+        when(projectRepository.save(any(Project.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(scriptEditionService.ensureDefaultEdition(7)).thenReturn(edition);
+        when(blockRepository.findByScriptEditionIdOrderByOrderAscIdAsc(3)).thenReturn(List.of());
+        when(personRepository.findByScriptEditionIdOrderByNameAsc(3)).thenReturn(List.of());
+        when(textDocumentRepository
+                .findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(7))
+                .thenReturn(List.of(song));
+        when(textDocumentRepository.save(any(TextDocument.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        String json = """
+                {
+                  "format": "scripty-project",
+                  "formatVersion": 1,
+                  "documents": [
+                    { "uid": "song-uid", "title": "Verse", "documentType": "SONG",
+                      "content": "Same words" }
+                  ]
+                }
+                """;
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "p.scripty.json", "application/json", json.getBytes(StandardCharsets.UTF_8));
+
+        service.replaceProject(7, file);
+
+        // A device that sent up a screenplay it changed elsewhere should not
+        // cost this song its lines, its tints or a spurious version entry.
+        verify(songBlockService, org.mockito.Mockito.never())
+                .replaceLinesFromContent(org.mockito.ArgumentMatchers.anyInt(), any());
+        verify(songVersionService, org.mockito.Mockito.never())
+                .autoSaveVersion(org.mockito.ArgumentMatchers.eq(21),
+                        org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    void importKeepsTheFilesUidSoTheNextCrossingCanFindTheSong() throws Exception {
+        when(projectRepository.save(any(Project.class))).thenAnswer(inv -> {
+            Project p = inv.getArgument(0);
+            if (p.getId() == null) {
+                p.setId(7);
+            }
+            return p;
+        });
+        when(scriptEditionService.ensureDefaultEdition(7)).thenReturn(null);
+        when(textDocumentRepository.save(any(TextDocument.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        String json = """
+                {
+                  "format": "scripty-project",
+                  "formatVersion": 1,
+                  "documents": [
+                    { "uid": "from-the-device", "title": "Verse", "documentType": "SONG",
+                      "content": "La" },
+                    { "uid": "from-the-device", "title": "Same Name Twice",
+                      "documentType": "NOTES", "content": "Hm" }
+                  ]
+                }
+                """;
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "p.scripty.json", "application/json", json.getBytes(StandardCharsets.UTF_8));
+
+        service.importProjects(file);
+
+        ArgumentCaptor<TextDocument> captor = ArgumentCaptor.forClass(TextDocument.class);
+        verify(textDocumentRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        // The first entry keeps the name the device knows the song by — that is
+        // what makes the *next* sign-in find it rather than copy it.
+        assertEquals("from-the-device", captor.getAllValues().get(0).getUid());
+        // The second cannot have it as well. Left unset, so the entity mints one.
+        assertNull(captor.getAllValues().get(1).getUid());
     }
 
     @Test

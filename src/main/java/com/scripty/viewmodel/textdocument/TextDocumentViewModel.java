@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 public class TextDocumentViewModel {
 
     private Integer id;
+    /** See {@link com.scripty.dto.TextDocument#getUid()}. */
+    private String uid;
     private Integer projectId;
     private String projectTitle;
     private String title;
@@ -28,6 +30,14 @@ public class TextDocumentViewModel {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
     }
 
     public Integer getProjectId() {

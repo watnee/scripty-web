@@ -1119,6 +1119,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
     private TextDocumentViewModel toViewModel(TextDocument doc, Project project, boolean includeFullContent) {
         TextDocumentViewModel vm = new TextDocumentViewModel();
         vm.setId(doc.getId());
+        vm.setUid(doc.getUid());
         if (project != null) {
             vm.setProjectId(project.getId());
             vm.setProjectTitle(project.getTitle());

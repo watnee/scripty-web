@@ -103,4 +103,18 @@ public interface SongBlockService {
      * taken by {@link #snapshotLines}. Keeps at least one (empty) block.
      */
     void replaceLines(Integer documentId, Integer editionId, List<LineSnapshot> lines);
+
+    /**
+     * Re-splits a song's default version into lines from free text, in place.
+     *
+     * For the one caller that arrives with the text and not the lines: reading a
+     * project archive back into a song that already exists. Seeding only ever
+     * runs on a song with no lines at all, so without this the lyric on screen
+     * would go on showing what it said before the file arrived while the text
+     * underneath it said something else.
+     *
+     * The tints go, because free text carries none — which is what an archive
+     * has always meant by a song.
+     */
+    void replaceLinesFromContent(Integer documentId, String content);
 }

@@ -368,6 +368,15 @@ public class SongBlockServiceImpl implements SongBlockService {
         rebuildDocumentContent(doc, edition, blocks);
     }
 
+    @Override
+    @Transactional
+    public void replaceLinesFromContent(Integer documentId, String content) {
+        List<LineSnapshot> lines = splitContentIntoLines(content).stream()
+                .map(line -> new LineSnapshot(line, null))
+                .collect(Collectors.toList());
+        replaceLines(documentId, null, lines);
+    }
+
     private SongBlock move(Integer blockId, int delta) {
         SongBlock block = read(blockId);
         if (block == null || block.getTextDocument() == null) {

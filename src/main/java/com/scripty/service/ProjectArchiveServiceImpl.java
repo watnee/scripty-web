@@ -9,6 +9,7 @@ import com.scripty.dto.Person;
 import com.scripty.dto.Project;
 import com.scripty.dto.ProjectActivity;
 import com.scripty.dto.ScriptEdition;
+import com.scripty.dto.SongEdition;
 import com.scripty.dto.TextDocument;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
@@ -22,9 +23,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +66,15 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
 
     @Autowired
     private ProjectActivityService projectActivityService;
+
+    @Autowired
+    private SongEditionService songEditionService;
+
+    @Autowired
+    private SongVersionService songVersionService;
+
+    @Autowired
+    private SongBlockService songBlockService;
 
     @Override
     @Transactional(readOnly = true)
@@ -117,6 +130,7 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
         for (TextDocument document : textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(projectId)) {
             ProjectArchive.Document entry = new ProjectArchive.Document();
             entry.key = document.getId();
+            entry.uid = document.getUid();
             entry.title = document.getTitle();
             entry.documentType = document.getDocumentType();
             entry.content = document.getContent();
@@ -254,17 +268,31 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
                 : personRepository.findByProjectIdOrderByNameAsc(projectId);
         personRepository.deleteAll(existingPeople);
 
-        // Songs and notes go to the trash rather than out of the database: a
-        // song has lyric lines, versions and editions hanging off it, and the
-        // trash is where this app has always put a document whose absence might
-        // turn out to be a mistake.
+        // The songs and notes already here, offered to the file by uid. Whatever
+        // it claims is written where it stands — same id, same lyric lines, same
+        // version history — because a file coming back into the project it was
+        // exported from is describing these documents, not replacements for
+        // them. That is the whole of what makes a song survive a writer signing
+        // out and back in as the same song.
+        Map<String, TextDocument> existingByUid = new LinkedHashMap<>();
         for (TextDocument document
                 : textDocumentRepository.findByProjectIdAndDeletedAtIsNullOrderBySortOrderAscUpdatedAtDesc(projectId)) {
+            existingByUid.put(document.getUid(), document);
+        }
+
+        fillContents(project, archive, new HashMap<>(), edition, now, existingByUid);
+
+        // What the file did not claim. Songs and notes go to the trash rather
+        // than out of the database: a song has lyric lines, versions and
+        // editions hanging off it, and the trash is where this app has always
+        // put a document whose absence might turn out to be a mistake. A file
+        // written before uids existed claims nothing, so everything lands here
+        // and the replace behaves exactly as it did before this — whole, and
+        // recoverable.
+        for (TextDocument document : existingByUid.values()) {
             document.setDeletedAt(now);
             textDocumentRepository.save(document);
         }
-
-        fillContents(project, archive, new HashMap<>(), edition, now);
 
         projectActivityService.recordForCurrentUser(
                 projectId,
@@ -375,7 +403,12 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
             defaultEdition = scriptEditionService.ensureDefaultEdition(project.getId());
         }
 
-        fillContents(project, archive, editionsByKey, defaultEdition, now);
+        // Nothing to claim: this project was made a moment ago. The file's uids
+        // are still honoured, though, which is what makes the *first* crossing
+        // work — a song kept from a signed-out device arrives in the account
+        // under the name the device knows it by, so the next crossing can find
+        // it again.
+        fillContents(project, archive, editionsByKey, defaultEdition, now, new LinkedHashMap<>());
 
         if (defaultEdition != null) {
             projectVersionService.autoSaveVersion(project.getId(), defaultEdition.getId());
@@ -389,6 +422,25 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
                 ProjectActivity.ENTITY_PROJECT,
                 project.getId());
         return project;
+    }
+
+    /**
+     * Writes a song's lyric to match the text a file brought, keeping what it
+     * said first.
+     *
+     * The snapshot is the point. A replace happens when the client believes the
+     * account's copy has not moved since the two were last in step, and that
+     * belief is deliberately coarse — the project's own edit date does not move
+     * for a song. So the case this guards is real: someone wrote a verse in a
+     * browser, the device could not know, and the words are one restore away
+     * rather than gone.
+     */
+    private void replaceLyric(TextDocument document, String content) {
+        SongEdition edition = songEditionService.ensureDefaultEdition(document.getId());
+        if (edition != null) {
+            songVersionService.autoSaveVersion(document.getId(), edition.getId());
+        }
+        songBlockService.replaceLinesFromContent(document.getId(), content);
     }
 
     /** The title page, common to importing a file and replacing a project with one. */
@@ -412,16 +464,42 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
      */
     private void fillContents(Project project, ProjectArchive archive,
                               Map<Integer, ScriptEdition> editionsByKey,
-                              ScriptEdition defaultEdition, LocalDateTime now) {
+                              ScriptEdition defaultEdition, LocalDateTime now,
+                              Map<String, TextDocument> claimable) {
         Map<Integer, TextDocument> documentsByKey = new HashMap<>();
+        // Every uid this project will answer to once the loop is done: the ones
+        // still waiting to be claimed, plus the ones already written. A second
+        // entry naming a uid one of those holds is not that document — it is a
+        // file describing the same song twice — and must not be given its name.
+        Set<String> spokenFor = new HashSet<>(claimable.keySet());
         int documentSequence = 0;
         if (archive.documents != null) {
             for (ProjectArchive.Document entry : archive.documents) {
                 if (entry == null) {
                     continue;
                 }
-                TextDocument document = new TextDocument();
-                document.setProject(project);
+                // A file that names a song already in this project is talking
+                // about that song. Claiming it takes it off the list of things
+                // this replace is about to trash, and everything below writes
+                // into the document that is already there.
+                String uid = clean(entry.uid, 64);
+                if (uid != null && uid.isBlank()) {
+                    uid = null;
+                }
+                TextDocument document = uid != null ? claimable.remove(uid) : null;
+                boolean isNew = document == null;
+                if (isNew) {
+                    document = new TextDocument();
+                    document.setProject(project);
+                    document.setCreatedAt(now);
+                    // Keep the file's name for it where nothing here answers to
+                    // that name yet — that is how a song written on a signed-out
+                    // device goes on being the same song once it is in an
+                    // account. A name already spoken for belongs to a document
+                    // this entry is not describing, so that one starts afresh
+                    // (assignUid mints it).
+                    document.setUid(uid != null && spokenFor.add(uid) ? uid : null);
+                }
                 String docTitle = clean(entry.title, 200);
                 document.setTitle(docTitle != null && !docTitle.isBlank() ? docTitle : "Untitled");
                 String docType = entry.documentType != null ? entry.documentType.trim().toUpperCase() : null;
@@ -429,15 +507,27 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
                         docType != null && TextDocument.DOCUMENT_TYPES.contains(docType)
                                 ? docType
                                 : TextDocument.TYPE_OTHER);
-                document.setContent(PlainTextSanitizer.sanitize(entry.content));
+                String content = PlainTextSanitizer.sanitize(entry.content);
+                boolean lyricChanged = !isNew
+                        && TextDocument.TYPE_SONG.equals(document.getDocumentType())
+                        && !Objects.equals(content, document.getContent());
+                document.setContent(content);
                 document.setSortOrder(entry.sortOrder != null ? entry.sortOrder : documentSequence);
                 // A song put aside stays put aside through the round trip. Files
                 // written before the flag existed carry false, which is what
                 // they all meant.
                 document.setArchivedAt(entry.archived ? now : null);
-                document.setCreatedAt(now);
                 document.setUpdatedAt(now);
                 document = textDocumentRepository.save(document);
+                // A new song's lines are seeded from this text the first time
+                // anything asks for them. One that already exists has lines
+                // already, and seeding skips a song that has any — so its lyric
+                // would go on showing what it said before the file arrived,
+                // while the text underneath said something else. Rewrite them,
+                // keeping what they said in the song's own version history.
+                if (lyricChanged) {
+                    replaceLyric(document, content);
+                }
                 if (entry.key != null) {
                     documentsByKey.put(entry.key, document);
                 }

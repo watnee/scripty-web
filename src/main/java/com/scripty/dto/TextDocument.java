@@ -8,9 +8,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(name = "text_document")
@@ -29,6 +31,27 @@ public class TextDocument {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
+
+    /**
+     * What this song or note is, as against where it is stored.
+     *
+     * The database id names a row; this names the work. They come apart the
+     * moment the same song exists in two places — an account and a device that
+     * was signed out when it was written — because each of those numbers its
+     * documents from 1 and neither can adopt the other's number. Carried in the
+     * project archive, it is what lets a file coming back in say "this is the
+     * song you already have" rather than "here is another song", so a lyric
+     * keeps its id, its versions and its lines across a sign-out and back.
+     *
+     * Unique within a project, not globally: it is only ever matched against
+     * the documents of the project being written into, and demanding more would
+     * mean refusing a file exported from one account and imported into another.
+     *
+     * Nullable only for rows written before this column existed, which
+     * V58 fills in; everything created since gets one in {@link #assignUid()}.
+     */
+    @Column(name = "uid", length = 64)
+    private String uid;
 
     @Column(nullable = false, length = 200)
     private String title;
@@ -74,6 +97,29 @@ public class TextDocument {
 
     public void setProject(Project project) {
         this.project = project;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
+    /**
+     * Gives a new document its {@link #getUid() uid} unless it arrived with one.
+     *
+     * On the entity rather than in the services that create documents, because
+     * there are several of those and a song that reached the database without a
+     * uid would look identical to one that has always had it — right up until a
+     * sign-out, when it would come back as a second song.
+     */
+    @PrePersist
+    void assignUid() {
+        if (uid == null || uid.isBlank()) {
+            uid = UUID.randomUUID().toString();
+        }
     }
 
     public String getTitle() {

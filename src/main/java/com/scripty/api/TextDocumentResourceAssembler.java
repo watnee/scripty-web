@@ -147,6 +147,7 @@ public class TextDocumentResourceAssembler {
     private TextDocumentResource toResource(TextDocumentViewModel document, boolean includeContent) {
         TextDocumentResource resource = new TextDocumentResource();
         resource.setId(document.getId());
+        resource.setUid(document.getUid());
         resource.setProjectId(document.getProjectId());
         resource.setProjectTitle(document.getProjectTitle());
         resource.setTitle(document.getTitle());

@@ -158,6 +158,27 @@ up` those; Railway builds them from the repo when their watch patterns match.
   `CLOUDFLARE_BOOTSTRAP_TOKEN` is seeded (CI self-provisions).
 - Drift check any time: `npm run deploy:doctor` and `npm run cf:sync:check`.
 
+### Migrations that must not be reverted
+
+Rolling the app back is ordinary; dropping a column a client keeps its own copy
+of is not. One migration is currently in that class:
+
+- **`V58__add_text_document_uid.sql`** — `text_document.uid` is the name a song
+  or note is known by *outside* this database. The Scripty app stores the same
+  name against its local copy, and a `.scripty.json` archive crossing between
+  the two is matched on it, which is what makes a song written on a signed-out
+  device stay one song rather than becoming a copy on every sign-in.
+
+  Dropping the column and re-applying the migration re-mints every uid as
+  `legacy-<id>`. Nothing is lost — both copies of every song still exist — but
+  no device that had already crossed will recognise its own songs again, so the
+  next sign-in quietly adds a second copy of each. Restoring from a `mysqldump`
+  taken *after* V58 keeps the uids and is safe; see [BACKUP.md](BACKUP.md).
+
+  Rolling the *application* back to a build older than V58 is fine on its own:
+  an older build ignores the column, and the client falls back to replacing
+  whole projects the way it did before uids existed.
+
 ## Related docs
 
 - [FEATURE_FLAGS.md](FEATURE_FLAGS.md) — turning behaviour on/off from a

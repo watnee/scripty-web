@@ -155,6 +155,42 @@ public class ProjectRestController {
         }
     }
 
+    /**
+     * Reads a .scripty.json archive back into this project instead of into a
+     * new one, so a copy kept somewhere else can come home as the same
+     * screenplay rather than as a second one. The uploaded file is the "file"
+     * multipart part, as it is for import.
+     *
+     * <p>The script it replaces is saved to the version history first and its
+     * songs and notes go to the document trash, so nothing here is a one-way
+     * door.
+     */
+    @RequestMapping(value = "/{id}/replace-from-archive", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> replaceFromArchive(
+            @PathVariable Integer id,
+            @RequestPart("file") MultipartFile file,
+            Principal principal) {
+        if (projectService.read(id) == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!projectAccess.canEditScript(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        try {
+            Project replaced = projectArchiveService.replaceProject(id, file);
+            if (replaced == null) {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (ScriptImportException e) {
+            return new ResponseEntity<>(java.util.Map.of("file", e.getUserMessage()), HttpStatus.BAD_REQUEST);
+        }
+        ProjectProfileViewModel viewModel = projectService.getProjectProfileViewModel(id);
+        if (viewModel == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(projectResourceAssembler.toModel(viewModel));
+    }
+
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<EntityModel<ProjectResource>> show(@PathVariable Integer id, Principal principal) {
         if (!projectAccess.canAccessProject(id, principal)) {

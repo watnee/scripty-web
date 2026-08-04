@@ -54,10 +54,30 @@ public class ProjectArchive {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Document {
         public Integer key;
+        /**
+         * What this song or note is, across every place it is kept — see
+         * {@link com.scripty.dto.TextDocument#getUid()}.
+         *
+         * Unlike {@code key}, which only wires up references inside this file
+         * and is thrown away on import, this travels: a file read back into the
+         * project it came from matches its documents on this and updates them
+         * where they stand, so a song keeps its id, its lyric lines and its
+         * version history instead of being replaced by a copy of itself.
+         *
+         * Absent in files written before it existed. Those simply match nothing,
+         * which is exactly the behaviour they had.
+         */
+        public String uid;
         public String title;
         public String documentType;
         public String content;
         public Integer sortOrder;
+        /**
+         * Whether this song or note was put aside rather than listed. Added
+         * after the format was first written, so a file without it simply reads
+         * as "not archived" — which is what every older export meant.
+         */
+        public boolean archived;
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

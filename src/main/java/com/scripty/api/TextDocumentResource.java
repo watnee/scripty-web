@@ -15,6 +15,16 @@ import org.springframework.hateoas.server.core.Relation;
 public class TextDocumentResource extends RepresentationModel<TextDocumentResource> {
 
     private Integer id;
+    /**
+     * What this song or note is, across every place it is kept — see
+     * {@link com.scripty.dto.TextDocument#getUid()}.
+     *
+     * Published because a client can hold the same song in two workspaces at
+     * once: one on a device that was signed out when it was written, one here.
+     * The ids differ and always will, so this is the only thing that lets it say
+     * "the song I was in is that one" after a sign-in or a sign-out.
+     */
+    private String uid;
     private Integer projectId;
     private String projectTitle;
     private String title;
@@ -39,6 +49,14 @@ public class TextDocumentResource extends RepresentationModel<TextDocumentResour
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
     }
 
     public Integer getProjectId() {

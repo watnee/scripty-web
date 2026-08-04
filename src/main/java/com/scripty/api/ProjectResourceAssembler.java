@@ -144,6 +144,11 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         if (canEditScript(id)) {
             links.add(linkTo(methodOn(ProjectRestController.class).importScript(id, null, null, null))
                     .withRel(ApiRel.IMPORT_SCRIPT));
+            // Reading a whole archive back into this project — the way a copy
+            // kept on a signed-out device stays the same screenplay. An editor's
+            // affordance for the same reason importing a script is.
+            links.add(linkTo(methodOn(ProjectRestController.class).replaceFromArchive(id, null, null))
+                    .withRel(ApiRel.REPLACE_FROM_ARCHIVE));
             // Managing which teams a project belongs to is an editor's call, so
             // a reader is never shown the picker. The write still rides on
             // `update`; this only advertises where to read the current choices.

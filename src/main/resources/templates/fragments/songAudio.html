@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/* The recordings kept with a song: the voice memo the tune was first sung
+       into, the demo, the reference track being chased.
+
+       Rendered as an empty shell and filled by song-audio.js from
+       /api/song/audio — the same endpoints the iPhone app follows, rather than
+       a second server-rendered list that would have to be kept in step with
+       them. It also means the panel costs the page nothing until it is opened:
+       a <details> that has never been unfolded has fetched no list and, more
+       to the point, no audio.
+
+       Only for a song that exists. A song being typed for the first time has
+       no id to hang a recording on, and the panel appears the moment it does. */-->
+<section th:fragment="panel(documentId, canEdit)"
+         class="song-audio"
+         th:attr="data-document-id=${documentId},data-can-edit=${canEdit}">
+    <details class="song-audio-details">
+        <summary class="song-audio-summary">
+            <span class="song-audio-summary-label">Recordings</span>
+            <span class="song-audio-count muted" data-song-audio-count aria-live="polite"></span>
+        </summary>
+
+        <p class="song-audio-error" role="alert" data-song-audio-error hidden></p>
+
+        <ol class="song-audio-list" data-song-audio-list></ol>
+
+        <p class="song-audio-empty muted" data-song-audio-empty hidden>
+            Nothing here yet. Add the demo, the voice memo, whatever this song sounds like.
+        </p>
+
+        <!--/* A file input dressed as a button. The label is the control — the
+               input itself is off-screen rather than display:none, so it stays
+               reachable from the keyboard. */-->
+        <div class="song-audio-actions" th:if="${canEdit}">
+            <label class="song-audio-add">
+                <span class="song-audio-add-label">Add Recording</span>
+                <input type="file"
+                       class="visually-hidden"
+                       data-song-audio-file
+                       accept="audio/*,.mp3,.m4a,.wav,.aiff,.aif,.flac,.ogg,.opus,.caf" />
+            </label>
+            <span class="song-audio-progress muted" data-song-audio-progress role="status" hidden></span>
+        </div>
+    </details>
+</section>
+</body>
+</html>

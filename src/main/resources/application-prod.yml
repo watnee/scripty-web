@@ -51,9 +51,11 @@ spring:
   flyway:
     baseline-on-migrate: true
   servlet:
+    # Sized for a song's recordings, which are the largest thing anyone uploads
+    # here — a headshot is capped at 5 MB by its own service and is unaffected.
     multipart:
-      max-file-size: 5MB
-      max-request-size: 6MB
+      max-file-size: 25MB
+      max-request-size: 27MB
   mail:
     host: ${MAIL_HOST:}
     port: ${MAIL_PORT:587}
@@ -76,6 +78,9 @@ logging:
 
 app:
   headshot-max-bytes: 5242880
+  # See application-dev.yml: 25 MB, a whisker under the multipart cap so an
+  # oversized recording is refused with a sentence rather than by the container.
+  song-audio-max-bytes: ${APP_SONG_AUDIO_MAX_BYTES:26214400}
   base-url: ${APP_BASE_URL:}
   mail-from: ${MAIL_FROM:Scripty <noreply@localhost>}
   # Where "if this wasn't you" sends someone. Unlike mail-from this has to be an
@@ -88,4 +93,4 @@ app:
   # above are ignored; MAIL_ENABLED is not required.
   email-worker-url: ${EMAIL_WORKER_URL:}
   email-worker-secret: ${EMAIL_WORKER_SECRET:}
-  asset-version: ${APP_ASSET_VERSION:255}
+  asset-version: ${APP_ASSET_VERSION:256}

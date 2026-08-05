@@ -168,6 +168,12 @@
                 </div>
             </div>
 
+            <!--/* What this song sounds like, under the words it is made of.
+                   Only for a song that exists: a new one has no id yet to hang
+                   a recording on, and the panel appears as soon as it does. */-->
+            <th:block th:if="${isSong and !isNew}"
+                      th:replace="~{fragments/songAudio :: panel(${commandModel.id}, ${canEditScript})}"></th:block>
+
             <!--/* Songs render these on the toolbar row above instead. */-->
             <div class="text-document-meta-bar" th:unless="${isSong}">
                 <th:block th:replace="~{fragments/textDocumentMeta :: meta(${updatedAt})}"></th:block>
@@ -178,5 +184,6 @@
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:src="@{/js/text-document-edit.js(v=${assetVersion})}"></script>
+    <script th:if="${isSong}" th:src="@{/js/song-audio.js(v=${assetVersion})}"></script>
 </body>
 </html>

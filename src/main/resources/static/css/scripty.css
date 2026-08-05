@@ -15229,3 +15229,150 @@ html.scripty-no-caps-shot .block-content.block-type-shot .block-input-textarea,
 html.scripty-no-caps-shot .block-content.block-type-shot textarea {
     text-transform: none !important;
 }
+
+/* ---------------------------------------------------------------------------
+   Recordings kept with a song.
+
+   Sits under the lyric lines in the song editor, folded away until asked for:
+   a writer who came to write should meet words, not a rack of players. Open, it
+   is a plain list — a name, how long it plays, how big it is, and the browser's
+   own audio control, which already knows how to scrub, change speed and keep
+   playing while the tab is in the background.
+   --------------------------------------------------------------------------- */
+.song-audio {
+    width: 100%;
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--graphical-fg, #e2e8f0);
+    padding-top: 0.75rem;
+}
+
+.song-audio-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+    padding: 0.25rem 0;
+}
+
+/* The disclosure triangle drawn by hand, so it reads the same in both engines
+   and turns with the panel. */
+.song-audio-summary::-webkit-details-marker {
+    display: none;
+}
+
+.song-audio-summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted-fg, #64748b);
+    transition: transform 0.12s ease-in-out;
+}
+
+.song-audio-details[open] > .song-audio-summary::before {
+    transform: rotate(90deg);
+}
+
+.song-audio-count {
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+
+.song-audio-list {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.song-audio-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--graphical-fg, #e2e8f0);
+    border-radius: 8px;
+}
+
+.song-audio-item-head {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.song-audio-title {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.song-audio-meta {
+    font-size: 0.85rem;
+}
+
+.song-audio-player {
+    width: 100%;
+    max-width: 30rem;
+}
+
+/* The controls line up in a row of their own, in an inline-flex wrapper for
+   the reason every other control group here has one: missing.css does not make
+   a button, a link and a label agree on a baseline by themselves. */
+.song-audio-item-actions,
+.song-audio-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    vertical-align: middle;
+}
+
+.song-audio-actions {
+    margin-top: 0.75rem;
+}
+
+.song-audio-btn,
+.song-audio-add-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--graphical-fg, #cbd5e1);
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.song-audio-btn:hover,
+.song-audio-add:hover .song-audio-add-label,
+.song-audio-add:focus-within .song-audio-add-label {
+    background-color: color-mix(in srgb, var(--fg, #0f172a) 6%, transparent);
+}
+
+.song-audio-btn--danger {
+    color: var(--danger-fg, #b91c1c);
+    border-color: color-mix(in srgb, var(--danger-fg, #b91c1c) 40%, transparent);
+}
+
+.song-audio-add {
+    display: inline-flex;
+    cursor: pointer;
+}
+
+.song-audio-empty,
+.song-audio-progress {
+    font-size: 0.9rem;
+    margin: 0.5rem 0 0;
+}
+
+.song-audio-error {
+    margin: 0.5rem 0 0;
+    color: var(--danger-fg, #b91c1c);
+    font-size: 0.9rem;
+}

@@ -129,6 +129,21 @@
                     <button type="button" class="note-format-btn" data-note-format="h3"
                             title="Heading 3" aria-label="Heading 3">H3</button>
                     <span class="note-format-divider" aria-hidden="true"></span>
+                    <!--/* The editing lock (document-lock.js). A note is the shot
+                           list held up on set and the production notes open on a
+                           stand — read from in the places a stray thumb costs
+                           something. Device-local, like the screenplay's. */-->
+                    <button type="button"
+                            class="note-format-btn document-lock-toggle"
+                            th:if="${canEditScript}"
+                            data-document-lock
+                            aria-pressed="false"
+                            aria-label="Lock editing"
+                            title="Close this to typing on this device">
+                        <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
+                        <span data-document-lock-label>Lock</span>
+                    </button>
+                    <span class="note-format-divider" aria-hidden="true"></span>
                     <!--/* Read aloud (read-aloud.js). A note is prose with the
                            prefixes this toolbar writes, and the reading takes
                            them off rather than saying "hash Act One". The button

@@ -462,6 +462,11 @@
                             <span class="text-document-folder-badge"
                                   th:if="${doc.folderId != null}"
                                   th:text="${doc.folderName}">Folder</span>
+                            <!-- Drawn only while the lock is on; document-lock.js
+                                 shows and hides it against localStorage. -->
+                            <span class="text-document-locked-badge" hidden>
+                                <span aria-hidden="true">&#128274;</span> Locked
+                            </span>
                             <span class="muted"
                                   th:if="${doc.updatedAt != null}"
                                   th:title="${#temporals.format(doc.updatedAt, 'MMM d, yyyy, h:mm a')}">
@@ -508,6 +513,17 @@
                                     class="project-list-action-btn project-list-action-btn--secondary"
                                     th:title="${isSongList} ? 'Rename this song' : 'Rename this note'">Rename</button>
                         </form>
+                        <!-- The editing lock, offered here as well as in the editor:
+                             a book of songs is finished one at a time, and going
+                             into each one to close it is the long way round.
+                             Device-local (document-lock.js), so nothing is posted. -->
+                        <button type="button"
+                                th:if="${canEditScript}"
+                                class="project-list-action-btn project-list-action-btn--secondary document-lock-toggle"
+                                data-document-lock
+                                aria-pressed="false"
+                                aria-label="Lock editing"
+                                th:title="${isSongList} ? 'Close this song to typing on this device' : 'Close this note to typing on this device'"><span data-document-lock-label>Lock</span></button>
                         <button type="button"
                                 class="project-list-action-btn project-list-action-btn--secondary text-document-share-btn"
                                 th:attr="data-share-url=@{/project/documents/text(id=${doc.id})},data-share-title=${doc.title},data-doc-noun=${isSongList} ? 'song' : 'note'"

@@ -44,6 +44,14 @@
                 <button type="button"
                         class="project-list-action-btn project-list-action-btn--secondary"
                         id="song-workspace-collapse-all">Collapse all</button>
+                <!--/* Closes every note on the page to typing, one card's lock at
+                       a time rather than a flag of its own — so unlocking the one
+                       being rewritten leaves the rest closed. */-->
+                <button type="button"
+                        th:if="${canEditScript}"
+                        class="project-list-action-btn project-list-action-btn--secondary"
+                        data-document-lock-all
+                        title="Close every one of these to typing on this device">Lock all</button>
             </div>
         </div>
 
@@ -105,6 +113,14 @@
                                 class="project-list-action-btn project-list-action-btn--secondary"
                                 data-read-aloud-entry
                                 th:attr="title='Read ' + ${pane.title} + ' aloud',aria-label='Read ' + ${pane.title} + ' aloud'">Read aloud</button>
+                        <!--/* This note's editing lock (document-lock.js). */-->
+                        <button type="button"
+                                th:if="${canEditScript}"
+                                class="project-list-action-btn project-list-action-btn--secondary document-lock-toggle"
+                                data-document-lock
+                                aria-pressed="false"
+                                aria-label="Lock editing"
+                                th:attr="title='Close ' + ${pane.title} + ' to typing on this device'"><span data-document-lock-label>Lock</span></button>
                         <a class="project-list-action-btn project-list-action-btn--secondary"
                            th:href="@{/project/documents/edit(id=${pane.id})}"
                            title="Open this note in the full editor (formatting, export, insert)">Open</a>

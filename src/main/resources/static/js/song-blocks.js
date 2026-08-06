@@ -199,6 +199,11 @@
         if (!t || !t.classList || !t.classList.contains('song-block-textarea') || !editorEl(t)) {
             return;
         }
+        // A read-only field is read-only for the Enter key too: typing is
+        // blocked by the browser, but adding a line below is this handler's
+        // doing, and the editing lock (document-lock.js) works by making these
+        // fields read-only.
+        if (t.readOnly) return;
         if (e.key === 'Enter' && !e.shiftKey) {
             // Enter splits to a new line below, mirroring the screenplay editor.
             e.preventDefault();

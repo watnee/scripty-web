@@ -15657,3 +15657,101 @@ body:has(.screenplay-page-bar:not([hidden])) .read-aloud-bar {
 .scripty-no-read-aloud [data-read-aloud-entry] {
     display: none !important;
 }
+
+/* ---------------------------------------------------------------------------
+   The song/note editing lock
+
+   A locked document keeps its words and loses its handles: the line controls,
+   the drag handle and the formatting buttons go, and the fields themselves are
+   made read-only by document-lock.js (read-only rather than disabled, so a
+   locked lyric can still be read out and selected).
+
+   The strip over a locked editor is the only thing here that is not a
+   subtraction — a locked lyric looks exactly like an unlocked one, so without
+   it a click that does nothing has nothing to say for itself.
+   --------------------------------------------------------------------------- */
+.document-lock-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    margin: 0 0 0.6rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid color-mix(in srgb, var(--muted-fg, #64748b) 35%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--muted-fg, #64748b) 12%, transparent);
+    color: var(--fg, #0f172a);
+    font-family: system-ui, sans-serif;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.document-lock-banner:hover {
+    background: color-mix(in srgb, var(--muted-fg, #64748b) 18%, transparent);
+}
+
+.document-lock-banner .muted {
+    font-weight: 400;
+}
+
+/* Hidden rather than removed: a locked card sitting beside an unlocked one
+   should not jump half an inch sideways, and the line the writer was looking at
+   should stay where they left it. */
+.is-edit-locked .song-block-controls,
+.is-edit-locked .song-workspace-drag-handle {
+    visibility: hidden;
+}
+
+/* An editor page holds one document, and its controls are spread across the
+   page rather than gathered inside it, so the page carries the state — the same
+   footing as the screenplay's .scripty-block-edit-locked. */
+.scripty-document-edit-locked .note-format-toolbar [data-note-format],
+.scripty-document-edit-locked .note-format-btn--icon {
+    display: none;
+}
+
+/* Locked fields keep the page's colours rather than the browser's grey-out:
+   this is a document being read, not a form that has gone away. */
+.is-edit-locked .song-block-textarea,
+.is-edit-locked .text-document-content {
+    background: transparent;
+    cursor: default;
+}
+
+.text-document-locked-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    vertical-align: middle;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--muted-fg, #64748b) 15%, transparent);
+    color: var(--muted-fg, #64748b);
+    font-size: 0.78rem;
+}
+
+.text-document-locked-badge[hidden] {
+    display: none;
+}
+
+/* A pressed lock reads as on, the way the screenplay's does. */
+.document-lock-toggle[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--accent, #2563eb) 14%, transparent);
+}
+
+.document-lock-toggle .lock-icon {
+    display: none;
+}
+
+.document-lock-toggle .lock-icon--unlocked {
+    display: inline-block;
+}
+
+.document-lock-toggle[aria-pressed="true"] .lock-icon--unlocked {
+    display: none;
+}
+
+.document-lock-toggle[aria-pressed="true"] .lock-icon--locked {
+    display: inline-block;
+}

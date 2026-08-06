@@ -6818,6 +6818,9 @@
     <!-- Song editor Tools menu (live word count): loaded from nav for the same
          reason as song-blocks.js above. -->
     <script th:src="@{/js/song-tools-menu.js(v=${assetVersion})}"></script>
+    <!-- The song/note editing lock: on the list, the workspace and the editor,
+         so it is loaded from nav like the rest of them. -->
+    <script th:src="@{/js/document-lock.js(v=${assetVersion})}"></script>
     <!-- Read aloud (screenplay, song and note, one voice between them): loaded
          from nav so every surface that can be read reaches the same narrator,
          and so it survives HTMX-boosted navigation. -->

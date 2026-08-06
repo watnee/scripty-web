@@ -50,6 +50,22 @@
                 <span>Word count</span>
             </button>
             <button th:replace="~{fragments/spellcheckToggle :: menuItem}"></button>
+            <!--/* The editing lock (document-lock.js), which the screenplay has
+                   had since it shipped: a finished lyric being read from at a
+                   rehearsal should not gain a stray character. Device-local, and
+                   per edition when the song has more than one. */-->
+            <button type="button"
+                    class="nav-dropdown-item document-lock-toggle"
+                    role="menuitemcheckbox"
+                    th:if="${canEditScript}"
+                    data-document-lock
+                    aria-pressed="false"
+                    aria-checked="false"
+                    aria-label="Lock editing"
+                    title="Close this to typing on this device">
+                <span th:replace="~{fragments/lockIcon :: toolbarIcon}"></span>
+                <span><span data-document-lock-label>Lock</span> editing</span>
+            </button>
             <!--/* Read aloud reads the lyric lines in this editor, in the same
                    voice and at the same speed the screenplay is read in — those
                    are the writer's preferences, not the document's. The entry

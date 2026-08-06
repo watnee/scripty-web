@@ -22,6 +22,7 @@
         { id: 'bulk-actions', title: 'Bulk Tagging & Deletions', keywords: 'select checkbox tags delete' },
         { id: 'reader-view', title: 'Safari Reader & Read Script', keywords: 'reader read-only distraction free' },
         { id: 'text-size', title: 'Text Size Controls', keywords: 'font zoom larger smaller' },
+        { id: 'read-aloud', title: 'Read Aloud', keywords: 'speak speech voice narration listen hear text to speech tts table read run lines speed rate' },
         { id: 'spellcheck', title: 'Spellcheck & Suggestions', keywords: 'spelling typo dictionary' },
         { id: 'undo-redo', title: 'Undo, Redo & Snapshot History', keywords: 'history undo redo clock' },
         { id: 'snapshot-history', title: 'Snapshot History', keywords: 'version restore backup revision publish share team' },

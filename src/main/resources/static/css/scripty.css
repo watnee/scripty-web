@@ -15442,3 +15442,195 @@ html.scripty-no-caps-shot .block-content.block-type-shot textarea {
     color: var(--danger-fg, #b91c1c);
     font-size: 0.9rem;
 }
+
+/* ---------------------------------------------------------------------------
+   Read aloud
+
+   The transport bar read-aloud.js builds and appends to <body>, so it is
+   positioned against the viewport and stays put as the script scrolls — the
+   same footing as the page control bar, and the same glass surface, so the two
+   read as one family. When page view has its bar out, this one sits above it
+   rather than on top of it.
+
+   The highlight is a tint on the element being read, not a border: a border
+   would move the text a pixel on every line and the whole page would twitch its
+   way through a scene.
+   --------------------------------------------------------------------------- */
+.read-aloud-bar {
+    position: fixed;
+    left: 50%;
+    bottom: 1.25rem;
+    transform: translateX(-50%);
+    z-index: 41;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 1.1rem;
+    border: 1px solid color-mix(in srgb, var(--muted-fg) 45%, transparent);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    backdrop-filter: blur(12px) saturate(1.4);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.5) inset,
+        0 4px 12px rgba(0, 0, 0, 0.1),
+        0 12px 32px rgba(0, 0, 0, 0.16);
+    font-family: system-ui, sans-serif;
+    font-size: 0.84rem;
+    max-width: calc(100vw - 1.5rem);
+}
+
+.read-aloud-bar[hidden] {
+    display: none;
+}
+
+body:has(.screenplay-page-bar:not([hidden])) .read-aloud-bar {
+    bottom: 4.6rem;
+}
+
+.read-aloud-main {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.read-aloud-transport,
+.read-aloud-settings {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    vertical-align: middle;
+}
+
+.read-aloud-settings {
+    gap: 0.5rem;
+}
+
+.read-aloud-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.95rem;
+    min-height: 1.95rem;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--fg);
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+/* The transport is drawn in glyphs rather than icons, and at the label's size a
+   stop square reads as a speck. */
+.read-aloud-transport .read-aloud-btn {
+    font-size: 1rem;
+}
+
+.read-aloud-btn--wide {
+    min-width: 2.4rem;
+    padding: 0 0.5rem;
+}
+
+.read-aloud-btn--play {
+    background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+.read-aloud-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--fg) 14%, transparent);
+}
+
+.read-aloud-btn:focus-visible {
+    outline: 2px solid var(--accent, #475569);
+    outline-offset: 1px;
+}
+
+.read-aloud-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* The line being read, or who is reading it. Fixed width so a long line does
+   not make the bar grow and shrink under the writer's hand. */
+.read-aloud-now {
+    margin: 0;
+    min-width: 9rem;
+    max-width: 18rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted-fg);
+}
+
+.read-aloud-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    vertical-align: middle;
+    color: var(--muted-fg);
+}
+
+.read-aloud-select {
+    padding: 0.1rem 0.25rem;
+    border: 1px solid color-mix(in srgb, var(--muted-fg) 45%, transparent);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--fg);
+    font: inherit;
+    max-width: 11rem;
+}
+
+.read-aloud-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem 0.9rem;
+    padding-top: 0.3rem;
+    border-top: 1px solid color-mix(in srgb, var(--muted-fg) 30%, transparent);
+}
+
+.read-aloud-options[hidden] {
+    display: none;
+}
+
+.read-aloud-options label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    vertical-align: middle;
+    color: var(--muted-fg);
+}
+
+/* The voice picker is the first thing to go when the window is narrow: the
+   speed and the transport are what a reading is steered with. */
+@media (max-width: 34rem) {
+    .read-aloud-field--voice {
+        display: none;
+    }
+
+    .read-aloud-now {
+        min-width: 6rem;
+        max-width: 10rem;
+    }
+}
+
+.block-row.is-reading-aloud .block-content,
+.song-block-row.is-reading-aloud {
+    background-color: color-mix(in srgb, var(--accent, #2563eb) 14%, transparent);
+    border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .block-row.is-reading-aloud .block-content,
+    .song-block-row.is-reading-aloud {
+        transition: background-color 150ms ease;
+    }
+}
+
+/* Nothing to offer without a voice on the device. */
+.scripty-no-read-aloud [data-read-aloud-entry] {
+    display: none !important;
+}

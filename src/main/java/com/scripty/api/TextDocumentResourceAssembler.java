@@ -1,6 +1,7 @@
 package com.scripty.api;
 
 import com.scripty.controller.ProjectRestController;
+import com.scripty.controller.SongAudioRestController;
 import com.scripty.controller.SongBlockRestController;
 import com.scripty.controller.SongEditionRestController;
 import com.scripty.controller.SongVersionRestController;
@@ -208,6 +209,12 @@ public class TextDocumentResourceAssembler {
                     .withRel(ApiRel.VERSIONS));
             links.add(linkTo(methodOn(SongEditionRestController.class).list(id, null))
                     .withRel(ApiRel.EDITIONS));
+            // The recordings kept with this song. Advertised to readers as well
+            // as editors, and whether or not there are any: hearing the demo
+            // needs no permission to write, and a song with none is exactly
+            // where a client wants to offer adding the first.
+            links.add(linkTo(methodOn(SongAudioRestController.class).list(id, null))
+                    .withRel(ApiRel.AUDIO_RECORDINGS));
         }
         if (projectId != null) {
             links.add(linkTo(methodOn(TextDocumentRestController.class).list(projectId, null, null))

@@ -201,6 +201,23 @@ public final class ApiRel {
     public static final String SONG = "song";
     public static final String SONG_BLOCKS = "songBlocks";
     public static final String SET_HIGHLIGHT = "setHighlight";
+    // Recordings kept with a song — the voice memo the tune was first sung
+    // into, the demo, the reference track.
+    //
+    // AUDIO_RECORDINGS is the collection, hung off the song document and off
+    // songs only: a note has nothing to hear. UPLOAD_AUDIO rides on that
+    // collection behind the edit gate. On each recording, AUDIO_FILE is the
+    // bytes — the one href in the whole vocabulary that answers with something
+    // other than JSON, which is why it is a link of its own rather than a
+    // field: a client plays it, downloads it or hands it to a share sheet
+    // without ever building a path. RENAME_AUDIO and DELETE_AUDIO are the two
+    // writes, also gated, so a reader sees the takes and cannot touch them.
+    public static final String AUDIO_RECORDING = "audioRecording";
+    public static final String AUDIO_RECORDINGS = "audioRecordings";
+    public static final String UPLOAD_AUDIO = "uploadAudio";
+    public static final String AUDIO_FILE = "audioFile";
+    public static final String RENAME_AUDIO = "renameAudio";
+    public static final String DELETE_AUDIO = "deleteAudio";
     public static final String NOTES = "notes";
     public static final String INSERT = "insert";
     public static final String SHARE_EMAIL = "shareEmail";

@@ -7,6 +7,8 @@
             <h1 class="entry-title"
                 th:text="${#strings.isEmpty(viewModel.screenplay.title) || #strings.isEmpty(viewModel.screenplay.title.trim()) ? 'Untitled Project' : viewModel.screenplay.title}">Project</h1>
             <p class="script-reader-byline">Shared with you as a view-only screenplay.</p>
+            <!--/* An actor sent a screenplay can hear it as well as read it. */-->
+            <button th:replace="~{fragments/scriptReader :: readAloudButton}"></button>
             <th:block th:replace="~{fragments/scriptReader :: scenes(${viewModel.screenplay.scenes})}"></th:block>
         </article>
         <article th:unless="${viewModel.valid}" class="entry-content" role="article">
@@ -15,5 +17,6 @@
             <p class="muted">Ask the person who shared the screenplay to send you a fresh invitation.</p>
         </article>
     </main>
+    <th:block th:replace="~{fragments/scriptReader :: readAloudScript}"></th:block>
 </body>
 </html>

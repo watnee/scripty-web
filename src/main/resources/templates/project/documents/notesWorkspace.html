@@ -99,6 +99,12 @@
                             <span th:text="${pane.wordCount} == 1 ? 'word' : 'words'">words</span>
                         </span>
                         <span class="muted note-workspace-status" role="status" aria-live="polite"></span>
+                        <!--/* As on the songs page: this note, unfolded and read,
+                               and asking another one ends this one. */-->
+                        <button type="button"
+                                class="project-list-action-btn project-list-action-btn--secondary"
+                                data-read-aloud-entry
+                                th:attr="title='Read ' + ${pane.title} + ' aloud',aria-label='Read ' + ${pane.title} + ' aloud'">Read aloud</button>
                         <a class="project-list-action-btn project-list-action-btn--secondary"
                            th:href="@{/project/documents/edit(id=${pane.id})}"
                            title="Open this note in the full editor (formatting, export, insert)">Open</a>

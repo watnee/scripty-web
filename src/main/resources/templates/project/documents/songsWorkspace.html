@@ -101,6 +101,14 @@
                         <span class="muted song-workspace-edition"
                               th:if="${pane.editionName != null}"
                               th:text="${pane.editionName}">Version</span>
+                        <!--/* Read aloud reads this song, not the page: the reading
+                               belongs to whichever card was asked, and asking a
+                               second one ends the first. Unfolds the card first,
+                               so the highlight has something to land on. */-->
+                        <button type="button"
+                                class="project-list-action-btn project-list-action-btn--secondary"
+                                data-read-aloud-entry
+                                th:attr="title='Read ' + ${pane.title} + ' aloud',aria-label='Read ' + ${pane.title} + ' aloud'">Read aloud</button>
                         <a class="project-list-action-btn project-list-action-btn--secondary"
                            th:href="@{/project/documents/edit(id=${pane.id})}"
                            title="Open this song in the full editor (versions, export, undo)">Open</a>

@@ -11,5 +11,6 @@
         </article>
     </main>
     <footer th:replace="~{fragments/scriptReader :: projectFooter(${viewModel.id}, ${viewModel.editionId})}"></footer>
+    <th:block th:replace="~{fragments/scriptReader :: readAloudScript}"></th:block>
 </body>
 </html>

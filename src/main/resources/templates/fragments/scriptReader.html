@@ -16,26 +16,36 @@
         .script-reader-byline { color: #666; font-style: italic; margin: -1rem 0 1.5rem; }
         footer { max-width: 40rem; margin: 0 auto; padding: 0 1.25rem 2rem; font-family: system-ui, sans-serif; font-size: 0.9rem; }
         footer a { color: #475569; }
-        .script-reader-header { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0.75rem max(1.25rem, calc((100% - 42.5rem) / 2 + 1.25rem)); font-family: system-ui, sans-serif; font-size: 0.9rem; }
+        .script-reader-header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0.75rem max(1.25rem, calc((100% - 42.5rem) / 2 + 1.25rem)); font-family: system-ui, sans-serif; font-size: 0.9rem; }
+        .script-reader-read-aloud { display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle; padding: 0.25rem 0.6rem; border: 1px solid #cbd5e1; border-radius: 999px; background: transparent; color: #475569; font: inherit; cursor: pointer; }
+        .script-reader-read-aloud:hover { background: rgba(0, 0, 0, 0.04); }
+        .script-reader-page article > .script-reader-read-aloud { margin: 0 0 1.5rem; }
         .script-reader-header .script-reader-back { display: inline-flex; align-items: center; gap: 0.4rem; color: #475569; text-decoration: none; }
         .script-reader-header .script-reader-back:hover { text-decoration: underline; }
         .script-reader-page main { padding-top: 1.5rem; }
-        @media print { .script-reader-header { display: none; } }
+        @media print { .script-reader-header, .script-reader-read-aloud { display: none; } }
     </style>
     <link th:href="@{/css/scripty.css(v=${assetVersion})}" rel="stylesheet">
 </head>
 <body>
 
+<!--/* The type and the id ride along on every element the reader draws, so the
+       page can be read aloud (read-aloud.js) as well as read: the voice needs
+       to know a heading from a line of dialogue, and the highlight needs
+       something to point at. They are inert otherwise. */-->
 <th:block th:fragment="blocks(blocks)">
     <th:block th:each="block : ${blocks}">
         <th:block th:if="${block.type == 'SCENE'}">
             <h2 class="scene-header reader-visible-content"
+                th:attr="data-block-id=${block.id},data-block-type=${block.type}"
                 th:text="${#strings.isEmpty(block.content) ? 'Untitled Scene' : block.content}">Scene</h2>
         </th:block>
         <th:block th:if="${block.type == 'SECTION'}">
-            <h3 th:text="${#strings.isEmpty(block.content) ? 'Section' : block.content}">Section</h3>
+            <h3 th:attr="data-block-id=${block.id},data-block-type=${block.type}"
+                th:text="${#strings.isEmpty(block.content) ? 'Section' : block.content}">Section</h3>
         </th:block>
         <div th:if="${block.type != 'SCENE' and block.type != 'SECTION' and block.type != 'SYNOPSIS' and block.type != 'NOTE'}"
+             th:attr="data-block-id=${block.id},data-block-type=${block.type}"
              class="script-block block-content"
              th:classappend="${(block.type != null ? ' block-type-' + #strings.toLowerCase(block.type) : '') + (block.textAlign != null ? ' block-text-align-' + #strings.toLowerCase(block.textAlign) : '') + (block.font != null ? ' block-font-' + #strings.replace(#strings.toLowerCase(block.font),'_','-') : '') + (block.highlight != null ? ' block-highlight-' + #strings.toLowerCase(block.highlight) : '') + (block.textBold ? ' block-text-bold' : '') + (block.textItalic ? ' block-text-italic' : '') + (block.textUnderline ? ' block-text-underline' : '') + (block.type == 'DIALOGUE' ? ' script-block--dialogue' : ' script-block--action')}">
             <p th:if="${not #strings.isEmpty(block.personName) and block.type != 'CHARACTER' and block.type != 'DUAL_DIALOGUE'}" class="script-character-name">
@@ -56,7 +66,31 @@
     <a class="script-reader-back"
        th:href="@{/project/show(id=${projectId}, editionId=${editionId})}"
        aria-label="Back to project">← Back to project</a>
+    <span th:replace="~{fragments/scriptReader :: readAloudButton}"></span>
 </header>
+
+<!--/* Hear the page instead of reading it. The button hides itself where the
+       browser has no speech voices (.scripty-no-read-aloud), and does nothing
+       until read-aloud.js is loaded, so a reader page that leaves the script
+       out simply never shows it. */-->
+<button th:fragment="readAloudButton"
+        type="button"
+        class="script-reader-read-aloud"
+        data-read-aloud-entry
+        title="Read this aloud"
+        aria-label="Read aloud">
+    <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+        <path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
+    </svg>
+    <span>Read aloud</span>
+</button>
+
+<!--/* Reader pages stand on their own — no nav, so no shared script tags. */-->
+<th:block th:fragment="readAloudScript">
+    <script th:src="@{/js/read-aloud.js(v=${assetVersion})}" defer></script>
+</th:block>
 
 <footer th:fragment="projectFooter(projectId, editionId)" class="script-reader-footer">
     <p><a th:href="@{/project/show(id=${projectId}, editionId=${editionId})}">← Back to project</a></p>

@@ -329,68 +329,145 @@
         return textOf(row.querySelector('.script-character-name strong')).trim();
     }
 
+    /** A lyric, wherever its lines are: one editor, or one card of a stack. */
+    function lyricSource(key, title, editor, prepare) {
+        return {
+            kind: 'lyric',
+            key: key,
+            noun: 'Line',
+            title: title,
+            prepare: prepare,
+            read: function () {
+                var lines = [];
+                editor.querySelectorAll('.song-block-textarea').forEach(function (area) {
+                    lines.push({ id: area.getAttribute('data-block-id'), text: area.value });
+                });
+                return lyricCues(lines);
+            },
+            element: function (id) {
+                return document.getElementById('song-block-' + id);
+            }
+        };
+    }
+
+    /** A note: one textarea, and nothing on screen for a cue to point at. */
+    function noteSource(key, title, area, prepare) {
+        return {
+            kind: 'note',
+            key: key,
+            noun: 'Line',
+            title: title,
+            prepare: prepare,
+            read: function () { return noteCues(area.value); },
+            element: function () { return null; }
+        };
+    }
+
     /**
-     * What this page can read, or null. One page offers one document: the
-     * screenplay editor, the song editor, or the note editor.
+     * A screenplay, from either of the two places it is drawn: the editor's
+     * block rows, and the reader page's article — which carries the same type
+     * and id on every element for exactly this reason.
      */
-    function detectSource() {
+    function scriptSource(key, title, root, selector, text) {
+        function rows() {
+            return root.querySelectorAll(selector + '[data-block-type]');
+        }
+        return {
+            kind: 'script',
+            key: key,
+            noun: 'Element',
+            title: title,
+            read: function (options) {
+                var blocks = [];
+                rows().forEach(function (element) {
+                    blocks.push({
+                        id: element.getAttribute('data-block-id'),
+                        type: element.getAttribute('data-block-type'),
+                        content: text(element),
+                        personName: blockPerson(element)
+                    });
+                });
+                return scriptCues(blocks, options);
+            },
+            element: function (id) {
+                var found = null;
+                rows().forEach(function (element) {
+                    if (!found && element.getAttribute('data-block-id') === String(id)) found = element;
+                });
+                return found;
+            }
+        };
+    }
+
+    /**
+     * What the button that was pressed asks to have read, or null.
+     *
+     * Most pages hold one document and the answer is the page. The two
+     * workspaces hold a stack of them, and there the reading belongs to the
+     * card whose button was pressed — which is why this takes the trigger
+     * rather than looking at the page alone.
+     */
+    function detectSource(trigger) {
+        var card = trigger && trigger.closest ? trigger.closest('.song-workspace-item') : null;
+        if (card) return workspaceSource(card);
+
         var song = document.querySelector('.song-blocks-editor .song-blocks');
         if (song) {
-            return {
-                kind: 'lyric',
-                noun: 'Line',
-                title: documentTitle('Song'),
-                read: function () {
-                    var lines = [];
-                    song.querySelectorAll('.song-block-textarea').forEach(function (area) {
-                        lines.push({
-                            id: area.getAttribute('data-block-id'),
-                            text: area.value
-                        });
-                    });
-                    return lyricCues(lines);
-                },
-                element: function (id) {
-                    return document.getElementById('song-block-' + id);
-                }
-            };
+            return lyricSource('song:' + (documentId() || 'open'), documentTitle('Song'), song);
         }
 
         var note = document.getElementById('text-document-content');
         if (note) {
-            return {
-                kind: 'note',
-                noun: 'Line',
-                title: documentTitle('Note'),
-                read: function () { return noteCues(note.value); },
-                element: function () { return null; }
-            };
+            return noteSource('note:' + (documentId() || 'open'), documentTitle('Note'), note);
         }
 
         var script = document.querySelector('.project-script');
         if (script) {
-            return {
-                kind: 'script',
-                noun: 'Element',
-                title: textOf(document.querySelector('.project-header-name')).trim() || 'Screenplay',
-                read: function (options) {
-                    var blocks = [];
-                    script.querySelectorAll('.block-row[data-block-id]').forEach(function (row) {
-                        blocks.push({
-                            id: row.getAttribute('data-block-id'),
-                            type: row.getAttribute('data-block-type'),
-                            content: blockText(row),
-                            personName: blockPerson(row)
-                        });
-                    });
-                    return scriptCues(blocks, options);
-                },
-                element: function (id) {
-                    return script.querySelector('.block-row[data-block-id="' + id + '"]');
-                }
-            };
+            return scriptSource('script',
+                textOf(document.querySelector('.project-header-title')).trim() || 'Screenplay',
+                script, '.block-row[data-block-id]', blockText);
+        }
+
+        var reader = document.querySelector('.script-reader-page article');
+        if (reader) {
+            return scriptSource('reader',
+                textOf(reader.querySelector('h1')).trim() || 'Screenplay',
+                reader, '[data-block-id]', function (element) {
+                    var text = element.querySelector('.script-block-text');
+                    return textOf(text || element);
+                });
         }
         return null;
+    }
+
+    /**
+     * One card of the songs or notes workspace. A collapsed card is unfolded
+     * first: a reading whose highlight is inside something hidden is a voice
+     * with nothing to follow.
+     */
+    function workspaceSource(card) {
+        var id = card.getAttribute('data-song-id');
+        var title = card.querySelector('.song-workspace-title');
+        var name = title ? String(title.value || '').trim() : '';
+        var prepare = function () {
+            var toggle = card.querySelector('.song-workspace-toggle');
+            if (toggle && toggle.getAttribute('aria-expanded') === 'false') toggle.click();
+        };
+
+        var note = card.querySelector('.note-workspace-content');
+        if (note) return noteSource('note:' + id, name || 'Note', note, prepare);
+
+        var editor = card.querySelector('.song-blocks-editor');
+        if (editor) return lyricSource('song:' + id, name || 'Song', editor, prepare);
+        return null;
+    }
+
+    /** Which song or note the open editor is of, for telling one reading from another. */
+    function documentId() {
+        var editor = document.querySelector('.song-blocks-editor[data-document-id]');
+        if (editor) return editor.getAttribute('data-document-id');
+        var field = document.querySelector('#text-document-form input[name="id"]');
+        return field ? field.value : null;
     }
 
     function documentTitle(fallback) {
@@ -573,6 +650,8 @@
     function start(source) {
         stop(true);
         state.source = source;
+        // A card that has to be unfolded before it can be followed says so here.
+        if (source.prepare) source.prepare();
         state.cues = source.read(prefs) || [];
         if (!state.cues.length) {
             showBar();
@@ -757,7 +836,10 @@
             '    <button type="button" class="read-aloud-btn" data-read-aloud="next" title="Next" aria-label="Next">&#9197;</button>' +
             '    <button type="button" class="read-aloud-btn" data-read-aloud="stop" title="Stop" aria-label="Stop">&#9209;</button>' +
             '  </div>' +
-            '  <p class="read-aloud-now" role="status" aria-live="polite"></p>' +
+            '  <p class="read-aloud-reading">' +
+            '    <span class="read-aloud-title"></span>' +
+            '    <span class="read-aloud-now" role="status" aria-live="polite"></span>' +
+            '  </p>' +
             '  <div class="read-aloud-settings">' +
             '    <label class="read-aloud-field"><span>Speed</span>' +
             '      <select class="read-aloud-select" data-read-aloud="speed" aria-label="Reading speed"></select>' +
@@ -918,6 +1000,12 @@
             box.checked = !!prefs[box.getAttribute('data-read-aloud-option')];
         });
 
+        // Which document the voice is reading. On a page with one it is only a
+        // label; on a stack of songs it is the answer to "which one is that?".
+        var title = bar.querySelector('.read-aloud-title');
+        title.textContent = state.source ? state.source.title : '';
+        title.hidden = !title.textContent;
+
         var label = bar.querySelector('.read-aloud-now');
         if (state.playing) {
             var position = state.cues.length
@@ -929,14 +1017,19 @@
 
     // ------------------------------------------------------------- wiring
 
-    function toggle() {
-        if (state.playing) {
+    /**
+     * The button's own document: pressed again it stops, and pressed on a
+     * different song it reads that one instead — one voice in the room, and the
+     * second ask is an ask for something else rather than a request to be quiet.
+     */
+    function toggle(trigger) {
+        var source = detectSource(trigger);
+        if (!source) return;
+        if (state.playing && state.source && state.source.key === source.key) {
             stop(false);
             hideBar();
             return;
         }
-        var source = detectSource();
-        if (!source) return;
         start(source);
     }
 
@@ -944,7 +1037,7 @@
         var trigger = event.target.closest && event.target.closest('[data-read-aloud-entry]');
         if (!trigger) return;
         event.preventDefault();
-        toggle();
+        toggle(trigger);
     });
 
     // Escape stops the reading, as it closes everything else here.

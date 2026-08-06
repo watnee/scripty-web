@@ -8,6 +8,7 @@ import com.scripty.dto.Block;
 import com.scripty.dto.TextDocument;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.ProjectRepository;
+import com.scripty.repository.TextDocumentFolderRepository;
 import com.scripty.repository.TextDocumentRepository;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,6 +28,7 @@ class TextDocumentServiceImplSplitBlocksTest {
     void setUp() {
         service = new TextDocumentServiceImpl(
                 mock(TextDocumentRepository.class),
+                mock(TextDocumentFolderRepository.class),
                 mock(ProjectRepository.class),
                 mock(BlockRepository.class),
                 mock(BlockService.class),

@@ -12,6 +12,10 @@ public class TextDocumentViewModel {
     private String title;
     private String documentType;
     private String documentTypeLabel;
+    /** The folder this is filed under, or null for an unfiled document. */
+    private Integer folderId;
+    /** That folder's name, so a row can say where it is without a second lookup. */
+    private String folderName;
     private String content;
     private Integer sortOrder;
     private LocalDateTime createdAt;
@@ -78,6 +82,22 @@ public class TextDocumentViewModel {
 
     public void setDocumentTypeLabel(String documentTypeLabel) {
         this.documentTypeLabel = documentTypeLabel;
+    }
+
+    public Integer getFolderId() {
+        return folderId;
+    }
+
+    public void setFolderId(Integer folderId) {
+        this.folderId = folderId;
+    }
+
+    public String getFolderName() {
+        return folderName;
+    }
+
+    public void setFolderName(String folderName) {
+        this.folderName = folderName;
     }
 
     public String getContent() {

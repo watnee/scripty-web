@@ -78,6 +78,20 @@ public class ProjectArchive {
          * as "not archived" — which is what every older export meant.
          */
         public boolean archived;
+        /**
+         * The folder this song or note was filed under, by name.
+         *
+         * A name rather than a key, because that is the whole of what a folder
+         * is — and because it is what lets an arrangement survive a crossing
+         * between two workspaces that number their folders separately, the same
+         * problem {@link #uid} solves for the documents themselves. On the way
+         * in, a folder of that name in this document's list is used, and one is
+         * made where there is none.
+         *
+         * Absent in files written before folders existed, and absent for an
+         * unfiled document, which reads the same way: not in a folder.
+         */
+        public String folder;
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

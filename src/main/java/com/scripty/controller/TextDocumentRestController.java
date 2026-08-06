@@ -11,6 +11,7 @@ import com.scripty.dto.User;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.ScriptImportException;
+import com.scripty.service.TextDocumentFolderService;
 import com.scripty.service.TextDocumentService;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
@@ -49,6 +50,9 @@ public class TextDocumentRestController {
 
     @Autowired
     TextDocumentService textDocumentService;
+
+    @Autowired
+    TextDocumentFolderService textDocumentFolderService;
 
     @Autowired
     ProjectVersionService projectVersionService;
@@ -319,6 +323,76 @@ public class TextDocumentRestController {
                 "email", request.email().trim()));
     }
 
+    /**
+     * Files one song or note under a folder, or takes it out of the one it is
+     * in — which is what a missing {@code folderId} means.
+     *
+     * <p>On the document rather than on the folder: a folder holds nothing, and
+     * what changes here is one column of this document. Answers with the
+     * refreshed collection, like {@link #archive}, because the caller's next
+     * question is what the list looks like now — and a move rearranges two
+     * headings at once.
+     *
+     * <p>Refuses a folder belonging to the other list (a notes folder for a
+     * song) rather than quietly unfiling: the caller asked for somewhere
+     * specific, and silently doing something else is how a client ends up
+     * showing a move that never happened.
+     */
+    @RequestMapping(value = "/{id}/folder", method = RequestMethod.POST,
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> moveToFolder(
+            @PathVariable Integer id,
+            @RequestBody(required = false) MoveToFolderRequest request,
+            @RequestParam(required = false) Integer projectId,
+            Principal principal) {
+        User user = currentUser(principal);
+        TextDocumentViewModel viewModel = textDocumentService.getViewModel(id, user);
+        if (viewModel == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Integer resolvedProjectId = projectId != null ? projectId : viewModel.getProjectId();
+        if (!projectAccess.canEditScript(resolvedProjectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Integer folderId = request != null ? request.folderId() : null;
+        if (textDocumentFolderService.moveDocument(id, resolvedProjectId, folderId, user) == null) {
+            return new ResponseEntity<>(
+                    Map.of("folderId", "That folder is not one this document can go in."),
+                    HttpStatus.BAD_REQUEST);
+        }
+        return list(resolvedProjectId, null, principal);
+    }
+
+    /**
+     * Files the ticked documents under one folder, or takes them all out of
+     * theirs.
+     *
+     * <p>Ids that are missing, from another project, or of the wrong list for
+     * this folder are skipped — a selection made before someone else changed a
+     * song into a note still moves everything it can.
+     */
+    @RequestMapping(value = "/bulk/folder", method = RequestMethod.POST,
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkMoveToFolder(
+            @RequestParam Integer projectId,
+            @RequestBody(required = false) BulkMoveToFolderRequest request,
+            Principal principal) {
+        if (!projectAccess.canEditScript(projectId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request == null || request.ids() == null || request.ids().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Choose at least one song or note to move."), HttpStatus.BAD_REQUEST);
+        }
+        int moved = textDocumentFolderService.moveDocuments(
+                request.ids(), projectId, request.folderId(), currentUser(principal));
+        if (moved == 0) {
+            return new ResponseEntity<>(
+                    Map.of("ids", "Those documents could not be moved."), HttpStatus.BAD_REQUEST);
+        }
+        return list(projectId, null, principal);
+    }
+
     /** Copies a song or note into a new document titled "… (copy)". */
     @RequestMapping(value = "/{id}/duplicate", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> duplicate(
@@ -491,5 +565,12 @@ public class TextDocumentRestController {
     }
 
     public record BulkShareEmailRequest(List<Integer> ids, String email) {
+    }
+
+    /** A null {@code folderId} means "take it out of its folder". */
+    public record MoveToFolderRequest(Integer folderId) {
+    }
+
+    public record BulkMoveToFolderRequest(List<Integer> ids, Integer folderId) {
     }
 }

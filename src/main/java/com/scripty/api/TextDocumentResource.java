@@ -30,6 +30,19 @@ public class TextDocumentResource extends RepresentationModel<TextDocumentResour
     private String title;
     private String documentType;
     private String documentTypeLabel;
+    /**
+     * The folder this is filed under, or omitted entirely for an unfiled one.
+     *
+     * <p>An id rather than an embedded folder: a client showing the list has
+     * the folders already (they are their own collection), and a document
+     * carrying its whole folder would send the same four fields once per song.
+     */
+    private Integer folderId;
+    /**
+     * That folder's name, so a single document fetched on its own can say where
+     * it lives without also fetching the folder list.
+     */
+    private String folderName;
     private String content;
     private String preview;
     private Integer sortOrder;
@@ -97,6 +110,22 @@ public class TextDocumentResource extends RepresentationModel<TextDocumentResour
 
     public void setDocumentTypeLabel(String documentTypeLabel) {
         this.documentTypeLabel = documentTypeLabel;
+    }
+
+    public Integer getFolderId() {
+        return folderId;
+    }
+
+    public void setFolderId(Integer folderId) {
+        this.folderId = folderId;
+    }
+
+    public String getFolderName() {
+        return folderName;
+    }
+
+    public void setFolderName(String folderName) {
+        this.folderName = folderName;
     }
 
     public String getContent() {

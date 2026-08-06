@@ -53,6 +53,23 @@ public class TextDocument {
     @Column(name = "uid", length = 64)
     private String uid;
 
+    /**
+     * The folder this song or note is filed under, or null for an unfiled one.
+     *
+     * <p>Null is not a lesser state: a project with no folders at all has every
+     * document here, and the list shows them exactly as it always has. The
+     * folder must belong to the same project and to the same list — a song is
+     * never filed under a notes folder — which
+     * {@link com.scripty.service.TextDocumentFolderService} is what enforces.
+     *
+     * <p>Kept when the document is trashed or archived, so coming back out of
+     * either puts it where it was. If the folder was deleted meanwhile the
+     * column is already null (ON DELETE SET NULL), and it comes back unfiled.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id")
+    private TextDocumentFolder folder;
+
     @Column(nullable = false, length = 200)
     private String title;
 
@@ -120,6 +137,19 @@ public class TextDocument {
         if (uid == null || uid.isBlank()) {
             uid = UUID.randomUUID().toString();
         }
+    }
+
+    public TextDocumentFolder getFolder() {
+        return folder;
+    }
+
+    public void setFolder(TextDocumentFolder folder) {
+        this.folder = folder;
+    }
+
+    /** The folder's id without loading the folder, or null when unfiled. */
+    public Integer getFolderId() {
+        return folder != null ? folder.getId() : null;
     }
 
     public String getTitle() {

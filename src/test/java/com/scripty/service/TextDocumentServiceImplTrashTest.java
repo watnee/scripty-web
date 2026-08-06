@@ -19,6 +19,7 @@ import com.scripty.dto.TextDocument;
 import com.scripty.dto.User;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.ProjectRepository;
+import com.scripty.repository.TextDocumentFolderRepository;
 import com.scripty.repository.TextDocumentRepository;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -52,6 +53,7 @@ class TextDocumentServiceImplTrashTest {
         projectActivityService = mock(ProjectActivityService.class);
         service = new TextDocumentServiceImpl(
                 textDocumentRepository,
+                mock(TextDocumentFolderRepository.class),
                 projectRepository,
                 mock(BlockRepository.class),
                 mock(BlockService.class),

@@ -7434,6 +7434,72 @@ body:has(main.text-documents-page) > main.text-documents-page {
     border-color: color-mix(in srgb, var(--td-song) 24%, transparent);
 }
 
+/* Folders: the chip bar that narrows the list, and the badge that says where a
+   card is filed. Quieter than the type badge on purpose — where a song lives is
+   worth knowing at a glance and never the first thing on the card. */
+.text-document-folders {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin: 0 0 1rem;
+}
+
+.text-document-folder-chips {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.text-document-folder-chip {
+    font: inherit;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    color: var(--muted-fg, #64748b);
+    background: transparent;
+    border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+    border-radius: 999px;
+    padding: 0.3rem 0.75rem;
+    cursor: pointer;
+}
+
+.text-document-folder-chip:hover {
+    color: inherit;
+}
+
+.text-document-folder-chip.is-active {
+    color: inherit;
+    font-weight: 600;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+    border-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.text-document-folder-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.text-document-folder-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    color: var(--muted-fg, #64748b);
+    border: 1px solid color-mix(in srgb, var(--muted-fg, #64748b) 25%, transparent);
+    border-radius: 999px;
+    padding: 0.12rem 0.5rem;
+}
+
+/* The per-card and per-selection folder pickers. Sized down to sit in a row of
+   buttons without becoming the widest thing in it. */
+.text-document-folder-select,
+#songs-folder-selected {
+    font-size: 0.85rem;
+    max-width: 10rem;
+}
+
 .text-document-preview {
     margin: 0;
     font-size: 0.92rem;

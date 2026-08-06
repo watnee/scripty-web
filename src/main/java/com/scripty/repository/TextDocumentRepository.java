@@ -26,6 +26,21 @@ public interface TextDocumentRepository extends JpaRepository<TextDocument, Inte
     List<TextDocument> findByProjectIdAndDeletedAtIsNullAndArchivedAtIsNullOrderBySortOrderAscUpdatedAtDesc(
             Integer projectId);
 
+    /**
+     * Everything filed under one folder, whatever state it is in.
+     *
+     * <p>Deliberately not narrowed to the working list: deleting a folder has
+     * to unfile a document sitting in the trash or the archive too, or it would
+     * come back pointing at a folder that no longer exists.
+     *
+     * <p>Spelled {@code Folder_Id} rather than {@code FolderId}: the entity's
+     * attribute is the folder itself, and the plain spelling asks for a
+     * {@code folderId} attribute that does not exist — which fails at startup,
+     * taking every bean that depends on this repository with it. The underscore
+     * is what says "the id of the folder".
+     */
+    List<TextDocument> findByFolder_Id(Integer folderId);
+
     Optional<TextDocument> findByIdAndDeletedAtIsNull(Integer id);
 
     Optional<TextDocument> findByIdAndProjectIdAndDeletedAtIsNull(Integer id, Integer projectId);

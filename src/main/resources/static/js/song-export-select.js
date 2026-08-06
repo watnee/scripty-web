@@ -33,6 +33,9 @@
         var deleteForm = document.getElementById('songs-delete-form');
         var archiveBtn = document.getElementById('songs-archive-selected');
         var archiveForm = document.getElementById('songs-archive-form');
+        // The folder script owns what this does; all it needs from here is to
+        // be enabled and disabled with the rest of the selection controls.
+        var folderSelect = document.getElementById('songs-folder-selected');
 
         // "song" or "note" — whichever list this is. Everything below builds
         // its wording out of these two.
@@ -102,11 +105,28 @@
                     : 'Select ' + nouns + ' to archive';
                 archiveBtn.disabled = chosen.length === 0;
             }
+            if (folderSelect) {
+                // Deliberately not the "acts on everything when nothing is
+                // ticked" rule Export and Email follow: filing a whole list in
+                // one gesture is not something anyone means to do by accident.
+                folderSelect.disabled = chosen.length === 0;
+                folderSelect.title = chosen.length
+                    ? 'File ' + plural(chosen.length, 'selected ' + noun) + ' under a folder'
+                    : 'Select ' + nouns + ' to file';
+            }
             if (selectAll) {
                 selectAll.checked = visible.length > 0 && chosen.length === visible.length;
                 selectAll.indeterminate = chosen.length > 0 && chosen.length < visible.length;
             }
         }
+
+        // What the folder chips call after narrowing the list, and where the
+        // bulk "Move to…" reads its ids from — the ticked rows are this
+        // script's to know about, and the folder script's only borrowing.
+        window.scriptyDocumentSelection = {
+            refresh: refresh,
+            selectedIds: selectedIds
+        };
 
         listEl.addEventListener('change', function (e) {
             if (e.target.classList.contains('text-document-select-checkbox')) refresh();

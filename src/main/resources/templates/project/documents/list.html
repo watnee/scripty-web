@@ -62,6 +62,11 @@
         </p>
 
         <p class="text-document-import-banner"
+           th:if="${documentFolderMessage != null}"
+           th:text="${documentFolderMessage}"
+           role="status"></p>
+
+        <p class="text-document-import-banner"
            th:if="${documentArchiveMessage != null}"
            role="status">
             <span th:text="${documentArchiveMessage}">Archived.</span>
@@ -153,6 +158,23 @@
                             class="project-list-action-btn project-list-action-btn--secondary"
                             th:if="${!#lists.isEmpty(documents)}"
                             th:title="${isSongList} ? 'Email every song in this project' : 'Email every note in this project'">Email</button>
+                    <!-- Filing the ticked rows. A select like the per-card one,
+                         disabled until something is ticked, so it can never
+                         move a list nobody chose. -->
+                    <label class="text-document-folder-bulk"
+                           th:if="${canEditScript and !#lists.isEmpty(folders) and !#lists.isEmpty(documents)}">
+                        <span class="visually-hidden">Move selected to folder</span>
+                        <select id="songs-folder-selected"
+                                class="project-list-sort"
+                                th:title="${isSongList} ? 'Select songs to file' : 'Select notes to file'"
+                                disabled>
+                            <option value="" selected>Move to…</option>
+                            <option value="none">No folder</option>
+                            <option th:each="folder : ${folders}"
+                                    th:value="${folder.id}"
+                                    th:text="${folder.name}">Folder</option>
+                        </select>
+                    </label>
                     <button type="button"
                             id="songs-archive-selected"
                             class="project-list-action-btn project-list-action-btn--secondary"
@@ -277,6 +299,105 @@
                 </div>
             </div>
 
+            <!-- Folders.
+                 A filter rather than a set of sections: the cards below are one
+                 draggable, sortable, searchable list, and cutting them into
+                 groups would mean a drag container per folder and a sort that
+                 has to run inside each. Filtering is the thing this page
+                 already does well — the chips hide cards exactly as the search
+                 box does, through the same function, so a folder and a search
+                 term narrow together.
+
+                 Shown when there is a folder or when this reader could make
+                 one; a view-only collaborator looking at a project with no
+                 folders sees nothing here at all. -->
+            <div class="text-document-folders"
+                 id="text-document-folders"
+                 th:if="${canEditScript or !#lists.isEmpty(folders)}"
+                 th:attr="data-folder-count=${#lists.size(folders)}">
+                <div class="text-document-folder-chips" role="group" aria-label="Filter by folder">
+                    <button type="button"
+                            class="text-document-folder-chip is-active"
+                            data-folder-filter="all"
+                            aria-pressed="true">All</button>
+                    <button type="button"
+                            class="text-document-folder-chip"
+                            data-folder-filter="none"
+                            th:if="${!#lists.isEmpty(folders)}"
+                            aria-pressed="false"
+                            th:text="'Unfiled (' + ${#lists.size(unfiledDocuments)} + ')'">Unfiled</button>
+                    <button type="button"
+                            class="text-document-folder-chip"
+                            th:each="folder : ${folders}"
+                            th:attr="data-folder-filter=${folder.id}, data-folder-name=${folder.name}"
+                            aria-pressed="false"
+                            th:text="${folder.name} + ' (' + ${folder.documentCount} + ')'">Folder</button>
+                </div>
+                <div class="text-document-folder-actions" th:if="${canEditScript}">
+                    <!-- Both act on whichever chip is showing, and both stay
+                         hidden until that is a folder: there is nothing to
+                         rename about "All", and nothing to remove. -->
+                    <button type="button"
+                            id="text-document-folder-rename"
+                            class="project-list-action-btn project-list-action-btn--secondary"
+                            hidden>Rename Folder</button>
+                    <button type="button"
+                            id="text-document-folder-delete"
+                            class="project-list-action-btn project-list-action-btn--ghost"
+                            hidden>Remove Folder</button>
+                    <button type="button"
+                            id="text-document-folder-new"
+                            class="project-list-action-btn project-list-action-btn--secondary"
+                            th:title="${isSongList} ? 'Group some of these songs under a name' : 'Group some of these notes under a name'">New Folder</button>
+                </div>
+            </div>
+
+            <!-- The three folder forms. Posted by the buttons above and by the
+                 per-card Move control, so the page needs one of each rather
+                 than one per card. -->
+            <th:block th:if="${canEditScript}">
+                <form id="text-document-folder-create-form"
+                      th:action="@{/project/documents/folder/create}"
+                      method="post"
+                      hx-boost="false"
+                      hidden>
+                    <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                    <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                    <input type="hidden" name="name" />
+                </form>
+                <form id="text-document-folder-rename-form"
+                      th:action="@{/project/documents/folder/rename}"
+                      method="post"
+                      hx-boost="false"
+                      hidden>
+                    <input type="hidden" name="id" />
+                    <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                    <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                    <input type="hidden" name="name" />
+                </form>
+                <form id="text-document-folder-delete-form"
+                      th:action="@{/project/documents/folder/delete}"
+                      method="post"
+                      hx-boost="false"
+                      hidden>
+                    <input type="hidden" name="id" />
+                    <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                    <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                </form>
+                <!-- One move form for both the per-card control and the ticked
+                     selection: the endpoint takes a list of ids either way, and
+                     a list of one is a list. -->
+                <form id="text-document-folder-move-form"
+                      th:action="@{/project/documents/folder/move}"
+                      method="post"
+                      hx-boost="false"
+                      hidden>
+                    <input type="hidden" name="projectId" th:value="${viewModel.projectId}" />
+                    <input type="hidden" name="type" th:value="${isSongList} ? 'SONG' : 'NOTES'" />
+                    <input type="hidden" name="folderId" />
+                </form>
+            </th:block>
+
             <div class="text-documents-empty-state" th:if="${#lists.isEmpty(documents)}">
                 <span class="text-documents-empty-mark"
                       th:classappend="${!isSongList} ? ' text-documents-empty-mark--draft'"
@@ -310,7 +431,7 @@
                     class="text-document-card"
                     th:classappend="${isSongList} ? ' text-document-card--song' : ' text-document-card--draft'"
                     th:style="'--card-i:' + ${iter.index}"
-                    th:attr="data-doc-id=${doc.id}, data-doc-title=${#strings.toLowerCase(doc.title)}, data-sort-edited=${doc.updatedAt != null ? #temporals.format(doc.updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}">
+                    th:attr="data-doc-id=${doc.id}, data-doc-title=${#strings.toLowerCase(doc.title)}, data-sort-edited=${doc.updatedAt != null ? #temporals.format(doc.updatedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}, data-folder-id=${doc.folderId != null ? doc.folderId : ''}">
                     <span class="text-document-card-lead">
                         <button type="button"
                                 th:if="${canEditScript}"
@@ -334,6 +455,13 @@
                             <span class="text-document-type-badge"
                                   th:classappend="${isSongList} ? ' text-document-type-badge--song'"
                                   th:text="${isSongList} ? 'Song' : ${doc.documentTypeLabel}">Type</span>
+                            <!-- Where this one is filed, drawn beside what it
+                                 is. On the card rather than only in the chip
+                                 bar, so the unfiltered list still says which
+                                 folder each row belongs to. -->
+                            <span class="text-document-folder-badge"
+                                  th:if="${doc.folderId != null}"
+                                  th:text="${doc.folderName}">Folder</span>
                             <span class="muted"
                                   th:if="${doc.updatedAt != null}"
                                   th:title="${#temporals.format(doc.updatedAt, 'MMM d, yyyy, h:mm a')}">
@@ -348,6 +476,26 @@
                     <div class="text-document-card-actions">
                         <a th:href="@{/project/documents/edit(id=${doc.id})}"
                            class="project-list-action-btn project-list-action-btn--secondary">Edit</a>
+                        <!-- Filing one row. A select rather than a button, so
+                             the choice and the action are one gesture; it posts
+                             the shared move form on change. Only drawn once
+                             there is a folder to move into — with none, the
+                             only choice would be the one it is already on. -->
+                        <label class="text-document-folder-move"
+                               th:if="${canEditScript and !#lists.isEmpty(folders)}">
+                            <span class="visually-hidden"
+                                  th:text="'Folder for ' + ${doc.title}">Folder</span>
+                            <select class="text-document-folder-select"
+                                    th:attr="data-doc-id=${doc.id}"
+                                    th:title="${isSongList} ? 'File this song under a folder' : 'File this note under a folder'">
+                                <option value=""
+                                        th:selected="${doc.folderId == null}">No folder</option>
+                                <option th:each="folder : ${folders}"
+                                        th:value="${folder.id}"
+                                        th:selected="${doc.folderId != null and doc.folderId == folder.id}"
+                                        th:text="${folder.name}">Folder</option>
+                            </select>
+                        </label>
                         <form th:action="@{/project/documents/rename}"
                               method="post"
                               class="text-document-rename-form"
@@ -420,12 +568,23 @@
                 No <span th:text="${isSongList} ? 'songs' : 'notes'">documents</span> match
                 <strong id="text-documents-search-query"></strong>.
             </p>
+            <!-- Its own line rather than the one above, because an empty folder
+                 is not a failed search: nothing is wrong, there is simply
+                 nothing in it yet. -->
+            <p class="text-documents-no-results" id="text-documents-folder-empty" hidden>
+                Nothing in <strong id="text-documents-folder-empty-name"></strong> yet. Use the
+                folder control on a <span th:text="${isSongList} ? 'song' : 'note'">document</span>
+                to file it here.
+            </p>
         </section>
     </main>
     <script src="/js/htmx.min.js"></script>
     <script src="/js/htmx-security.js"></script>
     <script th:src="@{/js/_hyperscript.min.js}"></script>
     <script th:src="@{/js/song-export-select.js(v=${assetVersion})}"></script>
+    <!-- After the selection script, not before: both wait for DOMContentLoaded,
+         and the folder chips read the ticked rows from what that one publishes. -->
+    <script th:src="@{/js/document-folders.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/song-order.js(v=${assetVersion})}" defer></script>
     <script>
         (function() {
@@ -517,6 +676,8 @@
             var searchWrap = document.getElementById('text-documents-search-wrap');
             var noResultsEl = document.getElementById('text-documents-no-results');
             var noResultsQueryEl = document.getElementById('text-documents-search-query');
+            var folderEmptyEl = document.getElementById('text-documents-folder-empty');
+            var folderEmptyNameEl = document.getElementById('text-documents-folder-empty-name');
             var listEl = document.getElementById('text-documents-list');
             var sortSelect = document.getElementById('text-documents-sort');
             if (!searchInput || !listEl) return;
@@ -567,6 +728,14 @@
                     searchWrap.classList.toggle('has-value', !!query);
                 }
 
+                // Which folder chip is showing, if the folder script is on the
+                // page: '' for All, 'none' for the unfiled, otherwise an id.
+                // Read here rather than applied there so one function owns
+                // `hidden` — a search and a folder narrow the same list, and
+                // two writers of the same property would undo each other.
+                var folderFilter = (window.scriptyDocumentFolders
+                    && window.scriptyDocumentFolders.activeFilter()) || '';
+
                 var cards = listEl.querySelectorAll('.text-document-card');
                 var visibleCount = 0;
 
@@ -577,6 +746,10 @@
                         titleText = titleLink ? titleLink.textContent.toLowerCase() : '';
                     }
                     var matches = !normalizedQuery || titleText.indexOf(normalizedQuery) !== -1;
+                    if (matches && folderFilter) {
+                        var cardFolder = card.getAttribute('data-folder-id') || '';
+                        matches = folderFilter === 'none' ? !cardFolder : cardFolder === folderFilter;
+                    }
                     card.hidden = !matches;
                     if (matches) visibleCount++;
                 });
@@ -587,7 +760,27 @@
                 if (noResultsQueryEl) {
                     noResultsQueryEl.textContent = query ? '"' + query + '"' : '';
                 }
+                if (folderEmptyEl) {
+                    // Only when the folder is what emptied it: with a search
+                    // term in the box the line above is the true explanation.
+                    var folderIsEmpty = visibleCount === 0 && !!folderFilter && !query;
+                    folderEmptyEl.hidden = !folderIsEmpty;
+                    if (folderIsEmpty && folderEmptyNameEl) {
+                        folderEmptyNameEl.textContent = window.scriptyDocumentFolders
+                            ? window.scriptyDocumentFolders.activeName()
+                            : 'this folder';
+                    }
+                }
+                // The selection bar counts only what is on screen, so a folder
+                // change has to make it recount — the same call the search box
+                // already makes for itself.
+                if (window.scriptyDocumentSelection) {
+                    window.scriptyDocumentSelection.refresh();
+                }
             }
+
+            // What the folder chips call after changing which one is showing.
+            window.scriptyDocumentSearch = { refresh: performSearch };
 
             searchInput.addEventListener('input', performSearch);
             searchInput.addEventListener('keydown', function(e) {

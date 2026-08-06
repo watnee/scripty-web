@@ -18,6 +18,7 @@ import com.scripty.dto.TextDocument;
 import com.scripty.dto.User;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.ProjectRepository;
+import com.scripty.repository.TextDocumentFolderRepository;
 import com.scripty.repository.TextDocumentRepository;
 import java.util.Arrays;
 import java.util.List;
@@ -47,6 +48,7 @@ class TextDocumentServiceImplShareByEmailTest {
         emailService = mock(EmailService.class);
         service = new TextDocumentServiceImpl(
                 textDocumentRepository,
+                mock(TextDocumentFolderRepository.class),
                 mock(ProjectRepository.class),
                 mock(BlockRepository.class),
                 mock(BlockService.class),

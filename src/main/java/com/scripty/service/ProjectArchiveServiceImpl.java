@@ -11,10 +11,12 @@ import com.scripty.dto.ProjectActivity;
 import com.scripty.dto.ScriptEdition;
 import com.scripty.dto.SongEdition;
 import com.scripty.dto.TextDocument;
+import com.scripty.dto.TextDocumentFolder;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.ScriptEditionRepository;
+import com.scripty.repository.TextDocumentFolderRepository;
 import com.scripty.repository.TextDocumentRepository;
 import com.scripty.util.PlainTextSanitizer;
 import java.io.IOException;
@@ -57,6 +59,9 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
 
     @Autowired
     private TextDocumentRepository textDocumentRepository;
+
+    @Autowired
+    private TextDocumentFolderRepository textDocumentFolderRepository;
 
     @Autowired
     private ScriptEditionService scriptEditionService;
@@ -136,6 +141,9 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
             entry.content = document.getContent();
             entry.sortOrder = document.getSortOrder();
             entry.archived = document.isArchived();
+            // By name, so the arrangement can be rebuilt in a workspace that
+            // has never heard of this project's folder ids.
+            entry.folder = document.getFolder() != null ? document.getFolder().getName() : null;
             archive.documents.add(entry);
         }
 
@@ -435,6 +443,43 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
      * browser, the device could not know, and the words are one restore away
      * rather than gone.
      */
+    /**
+     * The folder a document entry names, made if this project has not got one.
+     *
+     * <p>Null for an entry that names none, which is also what clears a folder
+     * off a document being written into: the file is the whole truth about
+     * where its songs sit.
+     *
+     * <p>Scoped by list as everywhere else — a song named "Act One" and a note
+     * named "Act One" ask for two different folders, and the unique index says
+     * the same.
+     */
+    private TextDocumentFolder folderNamed(String name, String documentType, Project project,
+                                           Map<String, TextDocumentFolder> foldersByKey,
+                                           LocalDateTime now) {
+        String clean = clean(name, TextDocumentFolder.NAME_MAX_LENGTH);
+        if (clean == null || clean.isBlank()) {
+            return null;
+        }
+        String listType = TextDocument.TYPE_SONG.equalsIgnoreCase(documentType)
+                ? TextDocument.TYPE_SONG
+                : TextDocument.TYPE_NOTES;
+        return foldersByKey.computeIfAbsent(folderKey(listType, clean), key -> {
+            TextDocumentFolder folder = new TextDocumentFolder();
+            folder.setProject(project);
+            folder.setDocumentType(listType);
+            folder.setName(clean);
+            folder.setCreatedAt(now);
+            folder.setUpdatedAt(now);
+            return textDocumentFolderRepository.save(folder);
+        });
+    }
+
+    /** Case-insensitive, matching the name check the folder service makes. */
+    private String folderKey(String documentType, String name) {
+        return documentType + " " + name.toLowerCase();
+    }
+
     private void replaceLyric(TextDocument document, String content) {
         SongEdition edition = songEditionService.ensureDefaultEdition(document.getId());
         if (edition != null) {
@@ -467,6 +512,16 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
                               ScriptEdition defaultEdition, LocalDateTime now,
                               Map<String, TextDocument> claimable) {
         Map<Integer, TextDocument> documentsByKey = new HashMap<>();
+        // The folders this file's documents ask for, keyed by list and name, so
+        // twenty songs filed under "Act One" make one folder rather than twenty.
+        // Seeded from what the project already has, so reading a file back into
+        // the project it came from files its songs into the folders that are
+        // already there instead of a second set beside them.
+        Map<String, TextDocumentFolder> foldersByKey = new HashMap<>();
+        for (TextDocumentFolder existing
+                : textDocumentFolderRepository.findByProjectIdOrderByDocumentTypeAscNameAsc(project.getId())) {
+            foldersByKey.put(folderKey(existing.getDocumentType(), existing.getName()), existing);
+        }
         // Every uid this project will answer to once the loop is done: the ones
         // still waiting to be claimed, plus the ones already written. A second
         // entry naming a uid one of those holds is not that document — it is a
@@ -517,6 +572,12 @@ public class ProjectArchiveServiceImpl implements ProjectArchiveService {
                 // written before the flag existed carry false, which is what
                 // they all meant.
                 document.setArchivedAt(entry.archived ? now : null);
+                // The folder it was filed under, by name — made here if this
+                // project has no folder of that name in that list yet. Cleared
+                // where the file names none, so a document that was taken out
+                // of its folder before the export does not go back into one.
+                document.setFolder(folderNamed(entry.folder, document.getDocumentType(),
+                                               project, foldersByKey, now));
                 document.setUpdatedAt(now);
                 document = textDocumentRepository.save(document);
                 // A new song's lines are seeded from this text the first time

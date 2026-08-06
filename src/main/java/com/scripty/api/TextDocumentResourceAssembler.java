@@ -7,6 +7,7 @@ import com.scripty.controller.SongVersionRestController;
 import com.scripty.controller.DocumentArchiveRestController;
 import com.scripty.controller.DocumentTrashRestController;
 import com.scripty.controller.TextDocumentController;
+import com.scripty.controller.TextDocumentFolderRestController;
 import com.scripty.controller.TextDocumentRestController;
 import com.scripty.dto.TextDocument;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
@@ -118,9 +119,27 @@ public class TextDocumentResourceAssembler {
             collection.add(linkTo(methodOn(TextDocumentRestController.class)
                     .bulkShareEmail(projectId, null, null)).withRel(ApiRel.BULK_SHARE_EMAIL));
         }
+        // The list's folders. Advertised to anyone who can see the list, not
+        // only to editors: a folder is part of how the list reads, and a
+        // view-only collaborator looking at a project filed into acts should
+        // see the acts. `createFolder` is inside the folder collection's own
+        // edit gate, so nothing here lets them make one.
+        //
+        // Scoped by `type`, since a folder belongs to Songs or to Notes. When
+        // the caller asked for both lists at once there is no one list to
+        // scope to, so the link points at the Songs folders — the same default
+        // every other type-less document route takes.
+        collection.add(linkTo(methodOn(TextDocumentFolderRestController.class)
+                .list(projectId, type, null)).withRel(ApiRel.FOLDERS));
         if (canEdit(projectId)) {
             collection.add(linkTo(methodOn(TextDocumentRestController.class)
                     .importFile(null, null, null, null)).withRel(ApiRel.IMPORT_DOCUMENT));
+            // Filing a ticked selection, beside the other bulk rels. Offered
+            // whether or not there is a folder yet: a client can move a
+            // selection *out* of folders with the same call, and it is the
+            // link that tells it the affordance exists at all.
+            collection.add(linkTo(methodOn(TextDocumentRestController.class)
+                    .bulkMoveToFolder(projectId, null, null)).withRel(ApiRel.BULK_MOVE_TO_FOLDER));
             collection.add(linkTo(methodOn(TextDocumentRestController.class)
                     .reorder(projectId, null, null)).withRel(ApiRel.REORDER));
             // Deleting a song or note is recoverable; say where it went.
@@ -153,6 +172,10 @@ public class TextDocumentResourceAssembler {
         resource.setTitle(document.getTitle());
         resource.setDocumentType(document.getDocumentType());
         resource.setDocumentTypeLabel(document.getDocumentTypeLabel());
+        // Omitted for an unfiled document rather than sent as null: absent is
+        // how the rest of this resource says "there isn't one".
+        resource.setFolderId(document.getFolderId());
+        resource.setFolderName(document.getFolderName());
         resource.setPreview(document.getPreview());
         resource.setSortOrder(document.getSortOrder());
         resource.setCreatedAt(ApiDates.toOffset(document.getCreatedAt()));
@@ -222,6 +245,11 @@ public class TextDocumentResourceAssembler {
                     .withRel(ApiRel.DUPLICATE));
             links.add(linkTo(methodOn(TextDocumentRestController.class).changeType(id, null, projectId, null))
                     .withRel(ApiRel.CHANGE_TYPE));
+            // Which folder this is filed under is a write to the document, so
+            // it rides here rather than on a folder. One rel for both
+            // directions: the same call with no folder id takes it out.
+            links.add(linkTo(methodOn(TextDocumentRestController.class).moveToFolder(id, null, projectId, null))
+                    .withRel(ApiRel.MOVE_TO_FOLDER));
             // Songs and notes both archive: unlike the export and share rels
             // there is nothing song-shaped about putting a document aside.
             //

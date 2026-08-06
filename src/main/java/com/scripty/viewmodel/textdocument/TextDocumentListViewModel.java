@@ -9,6 +9,20 @@ public class TextDocumentListViewModel {
     private String projectTitle;
     private List<TextDocumentViewModel> songs = new ArrayList<>();
     private List<TextDocumentViewModel> drafts = new ArrayList<>();
+    /**
+     * The two lists' folders, each with the documents filed under it.
+     *
+     * <p>A view of {@link #songs} / {@link #drafts} rather than a second set of
+     * documents: everything here is also in the flat list above, which is what
+     * the exports, the counts and the REST listing read. Folders are shown even
+     * when empty — a folder made a moment ago with nothing in it yet is exactly
+     * the folder a writer is about to drag something into.
+     */
+    private List<TextDocumentFolderViewModel> songFolders = new ArrayList<>();
+    private List<TextDocumentFolderViewModel> draftFolders = new ArrayList<>();
+    /** What is left over: the documents in no folder at all. */
+    private List<TextDocumentViewModel> unfiledSongs = new ArrayList<>();
+    private List<TextDocumentViewModel> unfiledDrafts = new ArrayList<>();
     /** How many songs are sitting in the trash, so the list can offer a way back to them. */
     private int trashedSongCount;
     /** How many notes are sitting in the trash. */
@@ -49,6 +63,38 @@ public class TextDocumentListViewModel {
 
     public void setDrafts(List<TextDocumentViewModel> drafts) {
         this.drafts = drafts != null ? drafts : new ArrayList<>();
+    }
+
+    public List<TextDocumentFolderViewModel> getSongFolders() {
+        return songFolders;
+    }
+
+    public void setSongFolders(List<TextDocumentFolderViewModel> songFolders) {
+        this.songFolders = songFolders != null ? songFolders : new ArrayList<>();
+    }
+
+    public List<TextDocumentFolderViewModel> getDraftFolders() {
+        return draftFolders;
+    }
+
+    public void setDraftFolders(List<TextDocumentFolderViewModel> draftFolders) {
+        this.draftFolders = draftFolders != null ? draftFolders : new ArrayList<>();
+    }
+
+    public List<TextDocumentViewModel> getUnfiledSongs() {
+        return unfiledSongs;
+    }
+
+    public void setUnfiledSongs(List<TextDocumentViewModel> unfiledSongs) {
+        this.unfiledSongs = unfiledSongs != null ? unfiledSongs : new ArrayList<>();
+    }
+
+    public List<TextDocumentViewModel> getUnfiledDrafts() {
+        return unfiledDrafts;
+    }
+
+    public void setUnfiledDrafts(List<TextDocumentViewModel> unfiledDrafts) {
+        this.unfiledDrafts = unfiledDrafts != null ? unfiledDrafts : new ArrayList<>();
     }
 
     public int getTrashedSongCount() {

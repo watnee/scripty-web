@@ -4,14 +4,17 @@ import com.scripty.commandmodel.textdocument.TextDocumentCommandModel;
 import com.scripty.dto.Block;
 import com.scripty.dto.SongEdition;
 import com.scripty.dto.TextDocument;
+import com.scripty.dto.TextDocumentFolder;
 import com.scripty.dto.User;
 import com.scripty.security.ProjectAccessSupport;
+import com.scripty.service.DocumentFolderException;
 import com.scripty.service.ProjectVersionService;
 import com.scripty.service.ScriptImportException;
 import com.scripty.service.SongBlockService;
 import com.scripty.service.SongEditionService;
 import com.scripty.service.SongExportService;
 import com.scripty.service.SongVersionService;
+import com.scripty.service.TextDocumentFolderService;
 import com.scripty.service.TextDocumentService;
 import com.scripty.service.UserService;
 import com.scripty.viewmodel.textdocument.NoteWorkspacePaneViewModel;
@@ -51,6 +54,9 @@ public class TextDocumentController {
 
     @Autowired
     TextDocumentService textDocumentService;
+
+    @Autowired
+    TextDocumentFolderService textDocumentFolderService;
 
     @Autowired
     SongBlockService songBlockService;
@@ -194,6 +200,13 @@ public class TextDocumentController {
         model.addAttribute("listType", isSong ? TextDocument.TYPE_SONG : TextDocument.TYPE_NOTES);
         model.addAttribute("isSongList", isSong);
         model.addAttribute("documents", isSong ? viewModel.getSongs() : viewModel.getDrafts());
+        // The same documents again, gathered under this list's folders. The
+        // flat `documents` above stays what the page's counts, exports and
+        // select-all read, so nothing that predates folders has to know about
+        // them.
+        model.addAttribute("folders", isSong ? viewModel.getSongFolders() : viewModel.getDraftFolders());
+        model.addAttribute("unfiledDocuments",
+                isSong ? viewModel.getUnfiledSongs() : viewModel.getUnfiledDrafts());
         model.addAttribute("canEditScript", projectAccess.canEditScript(projectId, principal));
         return "project/documents/list";
     }
@@ -720,6 +733,101 @@ public class TextDocumentController {
                     "Could not import that file. Check access and try a .txt, .fountain, .docx, .doc, .fdx, .epub, .pdf, or .musicxml file.");
             return "redirect:" + listUrl(projectId, isSong);
         }
+    }
+
+    // Folders. Four posts and no page of their own: a folder is a heading on
+    // the list, and everything you can do to one is done from there.
+
+    @RequestMapping(value = "/folder/create", method = RequestMethod.POST)
+    public String createFolder(@RequestParam Integer projectId,
+                               @RequestParam(required = false) String type,
+                               @RequestParam String name,
+                               Principal principal,
+                               RedirectAttributes redirectAttributes) {
+        String listType = normalizeListType(type);
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(listType);
+        try {
+            TextDocumentFolder created = textDocumentFolderService.create(
+                    projectId, listType, name, currentUser(principal));
+            redirectAttributes.addFlashAttribute("documentFolderMessage", created != null
+                    ? "Added the folder \"" + created.getName() + "\"."
+                    : "Could not add that folder.");
+        } catch (DocumentFolderException e) {
+            redirectAttributes.addFlashAttribute("documentFolderMessage", e.getMessage());
+        }
+        return "redirect:" + listUrl(projectId, isSong);
+    }
+
+    @RequestMapping(value = "/folder/rename", method = RequestMethod.POST)
+    public String renameFolder(@RequestParam Integer id,
+                               @RequestParam Integer projectId,
+                               @RequestParam(required = false) String type,
+                               @RequestParam String name,
+                               Principal principal,
+                               RedirectAttributes redirectAttributes) {
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        try {
+            TextDocumentFolder renamed = textDocumentFolderService.rename(
+                    id, projectId, name, currentUser(principal));
+            if (renamed == null) {
+                redirectAttributes.addFlashAttribute(
+                        "documentFolderMessage", "Could not rename that folder.");
+            }
+        } catch (DocumentFolderException e) {
+            redirectAttributes.addFlashAttribute("documentFolderMessage", e.getMessage());
+        }
+        return "redirect:" + listUrl(projectId, isSong);
+    }
+
+    /**
+     * Removes a folder. Says how many documents it let go, because the one
+     * thing a writer needs to know here is that they are still in the list.
+     */
+    @RequestMapping(value = "/folder/delete", method = RequestMethod.POST)
+    public String deleteFolder(@RequestParam Integer id,
+                               @RequestParam Integer projectId,
+                               @RequestParam(required = false) String type,
+                               Principal principal,
+                               RedirectAttributes redirectAttributes) {
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        int unfiled = textDocumentFolderService.delete(id, projectId, currentUser(principal));
+        String message;
+        if (unfiled < 0) {
+            message = "Could not remove that folder.";
+        } else if (unfiled == 0) {
+            message = "Removed the folder.";
+        } else {
+            message = "Removed the folder. "
+                    + (unfiled == 1 ? "Its document is" : "Its " + unfiled + " documents are")
+                    + " still in the list.";
+        }
+        redirectAttributes.addFlashAttribute("documentFolderMessage", message);
+        return "redirect:" + listUrl(projectId, isSong);
+    }
+
+    /**
+     * Files one document, or the ticked ones, under a folder — or takes them
+     * out of theirs, which is what a blank {@code folderId} means.
+     *
+     * <p>One handler for the row menu and the selection bar: the row menu sends
+     * a single id and the bar sends several, and the service treats a list of
+     * one as a list.
+     */
+    @RequestMapping(value = "/folder/move", method = RequestMethod.POST)
+    public String moveToFolder(@RequestParam(name = "id") List<Integer> ids,
+                               @RequestParam Integer projectId,
+                               @RequestParam(required = false) String type,
+                               @RequestParam(required = false) Integer folderId,
+                               Principal principal,
+                               RedirectAttributes redirectAttributes) {
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(normalizeListType(type));
+        int moved = textDocumentFolderService.moveDocuments(
+                ids, projectId, folderId, currentUser(principal));
+        if (moved == 0) {
+            redirectAttributes.addFlashAttribute(
+                    "documentFolderMessage", "Nothing was moved.");
+        }
+        return "redirect:" + listUrl(projectId, isSong);
     }
 
     private static String normalizeListType(String type) {

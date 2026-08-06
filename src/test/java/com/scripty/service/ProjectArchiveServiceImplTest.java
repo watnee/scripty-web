@@ -19,6 +19,7 @@ import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.ScriptEditionRepository;
+import com.scripty.repository.TextDocumentFolderRepository;
 import com.scripty.repository.TextDocumentRepository;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -45,6 +46,8 @@ class ProjectArchiveServiceImplTest {
     private BlockRepository blockRepository;
     @Mock
     private TextDocumentRepository textDocumentRepository;
+    @Mock
+    private TextDocumentFolderRepository textDocumentFolderRepository;
     @Mock
     private ScriptEditionService scriptEditionService;
     @Mock

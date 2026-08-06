@@ -7,17 +7,22 @@ import com.scripty.dto.Project;
 import com.scripty.dto.ScriptEdition;
 import com.scripty.dto.ProjectActivity;
 import com.scripty.dto.TextDocument;
+import com.scripty.dto.TextDocumentFolder;
 import com.scripty.dto.User;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.ProjectRepository;
+import com.scripty.repository.TextDocumentFolderRepository;
 import com.scripty.repository.TextDocumentRepository;
 import com.scripty.util.PlainTextSanitizer;
+import com.scripty.viewmodel.textdocument.TextDocumentFolderViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentViewModel;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +34,7 @@ import org.springframework.web.util.HtmlUtils;
 public class TextDocumentServiceImpl implements TextDocumentService {
 
     private final TextDocumentRepository textDocumentRepository;
+    private final TextDocumentFolderRepository textDocumentFolderRepository;
     private final ProjectRepository projectRepository;
     private final BlockRepository blockRepository;
     private final BlockService blockService;
@@ -48,6 +54,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
 
     @Autowired
     public TextDocumentServiceImpl(TextDocumentRepository textDocumentRepository,
+                                    TextDocumentFolderRepository textDocumentFolderRepository,
                                     ProjectRepository projectRepository,
                                     BlockRepository blockRepository,
                                     BlockService blockService,
@@ -57,6 +64,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
                                     ScriptEditionService scriptEditionService,
                                     EmailService emailService) {
         this.textDocumentRepository = textDocumentRepository;
+        this.textDocumentFolderRepository = textDocumentFolderRepository;
         this.projectRepository = projectRepository;
         this.blockRepository = blockRepository;
         this.blockService = blockService;
@@ -95,6 +103,7 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         }
         vm.setSongs(songs);
         vm.setDrafts(drafts);
+        applyFolders(vm, projectId, songs, drafts);
         // Drafts are "everything that isn't a song", so count them by subtraction
         // rather than trying to enumerate the note-ish types here.
         int trashedSongs = textDocumentRepository
@@ -666,6 +675,10 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         copy.setProject(project);
         copy.setTitle(copyTitle(source.getTitle()));
         copy.setDocumentType(source.getDocumentType());
+        // The copy lands beside what it was copied from. A duplicate that
+        // appeared at the bottom of the list, outside the folder the original
+        // is in, would have to be filed by hand every time.
+        copy.setFolder(source.getFolder());
         copy.setContent(source.getContent());
         copy.setSortOrder(textDocumentRepository.countByProjectIdAndDeletedAtIsNull(projectId));
         copy.setCreatedAt(now);
@@ -705,6 +718,11 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         String oldLabel = TextDocument.typeLabelFor(doc.getDocumentType());
         LocalDateTime now = LocalDateTime.now();
         doc.setDocumentType(normalized);
+        // A folder belongs to one list, so a document crossing between them
+        // cannot take its folder along — the new list has never heard of it.
+        // Unfiled rather than matched to a folder of the same name over there,
+        // which would be a guess about what the writer meant.
+        doc.setFolder(null);
         doc.setUpdatedAt(now);
         Project project = doc.getProject();
         if (project != null) {
@@ -1109,6 +1127,63 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         return Block.TYPE_ACTION;
     }
 
+    /**
+     * Gathers each list's documents under its folders, leaving the flat lists
+     * exactly as they were.
+     *
+     * <p>Every folder appears, empty or not, and the documents inside one keep
+     * the order the flat list already had them in — filing a song does not
+     * rearrange anything, it only decides which heading the row is drawn under.
+     */
+    private void applyFolders(TextDocumentListViewModel vm, Integer projectId,
+                              List<TextDocumentViewModel> songs, List<TextDocumentViewModel> drafts) {
+        List<TextDocumentFolder> folders =
+                textDocumentFolderRepository.findByProjectIdOrderByDocumentTypeAscNameAsc(projectId);
+        Map<Integer, TextDocumentFolderViewModel> byId = new LinkedHashMap<>();
+        List<TextDocumentFolderViewModel> songFolders = new ArrayList<>();
+        List<TextDocumentFolderViewModel> draftFolders = new ArrayList<>();
+        for (TextDocumentFolder folder : folders) {
+            TextDocumentFolderViewModel folderVm = new TextDocumentFolderViewModel();
+            folderVm.setId(folder.getId());
+            folderVm.setName(folder.getName());
+            folderVm.setDocumentType(folder.getDocumentType());
+            byId.put(folder.getId(), folderVm);
+            if (TextDocument.TYPE_SONG.equalsIgnoreCase(folder.getDocumentType())) {
+                songFolders.add(folderVm);
+            } else {
+                draftFolders.add(folderVm);
+            }
+        }
+        vm.setSongFolders(songFolders);
+        vm.setDraftFolders(draftFolders);
+        vm.setUnfiledSongs(fileInto(songs, byId));
+        vm.setUnfiledDrafts(fileInto(drafts, byId));
+    }
+
+    /**
+     * Puts each document under its folder and hands back the ones with none.
+     *
+     * <p>A document whose folder is missing from the map is treated as unfiled.
+     * That is not a defensive nicety: a folder of the other list can only be
+     * reached that way, and it is what a document changed from song to note
+     * looks like for the moment before {@code changeType} unfiles it.
+     */
+    private List<TextDocumentViewModel> fileInto(List<TextDocumentViewModel> documents,
+                                                 Map<Integer, TextDocumentFolderViewModel> byId) {
+        List<TextDocumentViewModel> unfiled = new ArrayList<>();
+        for (TextDocumentViewModel document : documents) {
+            TextDocumentFolderViewModel folder = document.getFolderId() != null
+                    ? byId.get(document.getFolderId())
+                    : null;
+            if (folder != null) {
+                folder.getDocuments().add(document);
+            } else {
+                unfiled.add(document);
+            }
+        }
+        return unfiled;
+    }
+
     private String normalizeDocumentType(String type) {
         if (type != null && TextDocument.DOCUMENT_TYPES.contains(type.toUpperCase())) {
             return type.toUpperCase();
@@ -1127,6 +1202,11 @@ public class TextDocumentServiceImpl implements TextDocumentService {
         vm.setTitle(doc.getTitle());
         vm.setDocumentType(doc.getDocumentType());
         vm.setDocumentTypeLabel(TextDocument.typeLabelFor(doc.getDocumentType()));
+        TextDocumentFolder folder = doc.getFolder();
+        if (folder != null) {
+            vm.setFolderId(folder.getId());
+            vm.setFolderName(folder.getName());
+        }
         vm.setSortOrder(doc.getSortOrder());
         vm.setCreatedAt(doc.getCreatedAt());
         vm.setUpdatedAt(doc.getUpdatedAt());

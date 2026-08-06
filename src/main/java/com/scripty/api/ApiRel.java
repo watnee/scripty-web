@@ -176,6 +176,27 @@ public final class ApiRel {
     public static final String RESET_PASSWORD = "resetPassword";
     public static final String DOCUMENTS = "documents";
     public static final String DOCUMENT = "document";
+    // Folders, the headings a writer files a list's songs or notes under.
+    //
+    // FOLDERS is the collection, advertised on the document collection and
+    // scoped by `type`, because a folder belongs to Songs or to Notes and
+    // neither list is ever handed the other's. CREATE_FOLDER rides on that
+    // collection; RENAME and DELETE ride on a folder, so a client draws the two
+    // controls only where the server would take them.
+    //
+    // MOVE_TO_FOLDER is on the *document*, not on the folder: it is a write to
+    // the document (which folder it is in), the folder itself holds nothing.
+    // BULK_MOVE_TO_FOLDER is the selection form, on the document collection
+    // beside the other bulk rels. Both take a folder id, and both read a
+    // missing one as "take it out of its folder" — there is no separate unfile
+    // rel, since a document out of every folder is the ordinary state.
+    public static final String FOLDER = "folder";
+    public static final String FOLDERS = "folders";
+    public static final String CREATE_FOLDER = "createFolder";
+    public static final String RENAME_FOLDER = "renameFolder";
+    public static final String DELETE_FOLDER = "deleteFolder";
+    public static final String MOVE_TO_FOLDER = "moveToFolder";
+    public static final String BULK_MOVE_TO_FOLDER = "bulkMoveToFolder";
     public static final String SONGS = "songs";
     public static final String SONG = "song";
     public static final String SONG_BLOCKS = "songBlocks";

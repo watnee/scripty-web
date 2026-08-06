@@ -6,6 +6,8 @@ import com.scripty.controller.ProjectRestController;
 import com.scripty.controller.SongBlockController;
 import com.scripty.controller.SongBlockRestController;
 import com.scripty.controller.TextDocumentRestController;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
@@ -19,12 +21,14 @@ public final class HypermediaSupport {
     private HypermediaSupport() {
     }
 
-    public static EntityModel<Map<String, Object>> projectSyncStatus(Map<String, Object> body, Integer projectId, Long since) {
-        return projectSyncStatus(body, projectId, since, null);
-    }
-
-    public static EntityModel<Map<String, Object>> projectSyncStatus(Map<String, Object> body, Integer projectId, Long since, Integer editionId) {
-        return EntityModel.of(body).add(projectSyncLinks(projectId, since, editionId));
+    /**
+     * The polling client's view of the project. {@code canEdit} decides whether
+     * the history is advertised alongside it: the stacks are an editor's
+     * affordance, and this response reaches readers too.
+     */
+    public static EntityModel<Map<String, Object>> projectSyncStatus(Map<String, Object> body, Integer projectId,
+                                                                     Long since, Integer editionId, boolean canEdit) {
+        return EntityModel.of(body).add(projectSyncLinks(projectId, since, editionId, canEdit));
     }
 
     public static EntityModel<Map<String, Object>> projectUndoRedo(Map<String, Object> body, Integer projectId, boolean undo) {
@@ -83,12 +87,15 @@ public final class HypermediaSupport {
         return Link.of(uri.toUriString(), rel);
     }
 
-    private static Link[] projectSyncLinks(Integer projectId, Long since, Integer editionId) {
-        return new Link[]{
+    private static Link[] projectSyncLinks(Integer projectId, Long since, Integer editionId, boolean canEdit) {
+        List<Link> links = new ArrayList<>(List.of(
                 linkTo(methodOn(ProjectController.class).syncStatus(projectId, since, editionId, null)).withSelfRel(),
-                linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT),
-                linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null, null)).withRel(ApiRel.UNDO_REDO_STATUS)
-        };
+                linkTo(methodOn(ProjectRestController.class).show(projectId, null)).withRel(ApiRel.PROJECT)));
+        if (canEdit) {
+            links.add(linkTo(methodOn(ProjectController.class).undoRedoStatus(projectId, null, null))
+                    .withRel(ApiRel.UNDO_REDO_STATUS));
+        }
+        return links.toArray(new Link[0]);
     }
 
     private static Link[] projectActionLinks(Integer projectId) {

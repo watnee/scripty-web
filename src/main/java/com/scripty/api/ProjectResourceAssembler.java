@@ -144,6 +144,14 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
         if (canEditScript(id)) {
             links.add(linkTo(methodOn(ProjectRestController.class).importScript(id, null, null, null))
                     .withRel(ApiRel.IMPORT_SCRIPT));
+            // Only an editor has a stack to walk — the checkpoints are recorded
+            // by their own edits — and only an editor may step through it, which
+            // is what `undo` and `redo` have always enforced. Advertised outside
+            // this gate, a reader's client armed the pair off a status it could
+            // read and was refused on every press. The song editor's collection
+            // has always kept the rel inside its own edit gate.
+            links.add(linkTo(methodOn(ProjectController.class).undoRedoStatus(id, null, null))
+                    .withRel(ApiRel.UNDO_REDO_STATUS));
             // Reading a whole archive back into this project — the way a copy
             // kept on a signed-out device stays the same screenplay. An editor's
             // affordance for the same reason importing a script is.
@@ -195,7 +203,6 @@ public class ProjectResourceAssembler implements RepresentationModelAssembler<Pr
                 linkTo(methodOn(ContactSuggestionRestController.class).suggest(id, null, null))
                         .withRel(ApiRel.CONTACT_SUGGESTIONS),
                 linkTo(methodOn(ProjectController.class).syncStatus(id, null, null, null)).withRel(ApiRel.SYNC_STATUS),
-                linkTo(methodOn(ProjectController.class).undoRedoStatus(id, null, null)).withRel(ApiRel.UNDO_REDO_STATUS),
                 linkTo(methodOn(ProjectController.class).exportScript(id, "fountain", null, null, null, null)).withRel(ApiRel.EXPORT),
                 linkTo(methodOn(ProjectController.class).exportScript(id, "pdf", null, null, null, null)).withRel(ApiRel.EXPORT_PDF),
                 linkTo(methodOn(ProjectController.class).exportScript(id, "docx", null, null, null, null)).withRel(ApiRel.EXPORT_DOCX),

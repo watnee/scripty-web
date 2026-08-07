@@ -48,6 +48,8 @@ class ProjectResourceLinkGatingIntegrationTest {
     private static final String PROJECT_TEAMS_REL = "$._links.['scripty:projectTeams']";
     /** Reading an archive back into this project is editor-only for the same reason. */
     private static final String REPLACE_FROM_ARCHIVE_REL = "$._links.['scripty:replaceFromArchive']";
+    /** So is the undo history — see {@link #readOnlyUserIsNotOfferedTheUndoHistory}. */
+    private static final String UNDO_REDO_STATUS_REL = "$._links.['scripty:undoRedoStatus']";
 
     @Autowired
     private MockMvc mockMvc;
@@ -168,6 +170,56 @@ class ProjectResourceLinkGatingIntegrationTest {
                         .with(user(READER).roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(IMPORT_SCRIPT_REL).doesNotExist());
+    }
+
+    @Test
+    void writerIsOfferedTheUndoHistory() throws Exception {
+        mockMvc.perform(get("/api/project/" + projectId)
+                        .accept(MediaTypes.HAL_FORMS_JSON)
+                        .with(user(WRITER).roles("USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(UNDO_REDO_STATUS_REL).exists())
+                .andExpect(jsonPath(UNDO_REDO_STATUS_REL + ".href",
+                        org.hamcrest.Matchers.containsString("/project/undoRedoStatus")));
+    }
+
+    /**
+     * Undo and redo have always required editing, but the status that arms them
+     * was advertised to anyone who could open the project and answered anyone
+     * who could read it. A native client takes an advertised, armed status for
+     * an available button — so a reader got an Undo they could press, and every
+     * press came back 403, rendered as "You don't have permission to do that"
+     * over an affordance the API itself had offered.
+     */
+    @Test
+    void readOnlyUserIsNotOfferedTheUndoHistory() throws Exception {
+        mockMvc.perform(get("/api/project/" + projectId)
+                        .accept(MediaTypes.HAL_FORMS_JSON)
+                        .with(user(READER).roles("USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(UNDO_REDO_STATUS_REL).doesNotExist());
+    }
+
+    /** And cannot reach it by guessing the URL the writer was given. */
+    @Test
+    void readOnlyUserIsRefusedTheUndoStatusItself() throws Exception {
+        mockMvc.perform(get("/project/undoRedoStatus")
+                        .param("projectId", String.valueOf(projectId))
+                        .accept(MediaTypes.HAL_JSON)
+                        .with(user(READER).roles("USER")))
+                .andExpect(status().isForbidden());
+    }
+
+    /** The writer's own status still answers, which is what keeps the gate honest. */
+    @Test
+    void writerCanStillReadTheUndoStatus() throws Exception {
+        mockMvc.perform(get("/project/undoRedoStatus")
+                        .param("projectId", String.valueOf(projectId))
+                        .accept(MediaTypes.HAL_JSON)
+                        .with(user(WRITER).roles("USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.canUndo").exists())
+                .andExpect(jsonPath("$.canRedo").exists());
     }
 
     /**

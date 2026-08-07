@@ -258,15 +258,16 @@ public class ProjectController {
         if (denyProjectAccess(id, principal)) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
+        boolean canBrowseEditions = projectAccess.canEditScript(id, principal);
         Project project = projectService.read(id);
         Map<String, Object> body = new HashMap<>();
         if (project == null) {
             body.put("exists", false);
             body.put("revision", since != null ? since : 0L);
             body.put("changed", false);
-            return ResponseEntity.ok(HypermediaSupport.projectSyncStatus(body, id, since, editionId));
+            return ResponseEntity.ok(
+                    HypermediaSupport.projectSyncStatus(body, id, since, editionId, canBrowseEditions));
         }
-        boolean canBrowseEditions = projectAccess.canEditScript(id, principal);
         ScriptEdition edition = scriptEditionService.resolveForAccess(id, editionId, canBrowseEditions);
         long revision = projectRevision(
                 edition != null && edition.getLastEdited() != null
@@ -277,7 +278,8 @@ public class ProjectController {
         body.put("title", project.getTitle());
         body.put("changed", since == null || since < revision);
         Integer resolvedEditionId = edition != null ? edition.getId() : editionId;
-        return ResponseEntity.ok(HypermediaSupport.projectSyncStatus(body, id, since, resolvedEditionId));
+        return ResponseEntity.ok(
+                HypermediaSupport.projectSyncStatus(body, id, since, resolvedEditionId, canBrowseEditions));
     }
 
     @RequestMapping(value = "/showScript")
@@ -356,12 +358,23 @@ public class ProjectController {
         return ResponseEntity.ok(HypermediaSupport.projectUndoRedo(buildUndoRedoResponse(result, projectId, editionId), projectId, false));
     }
 
+    /**
+     * Whether there is anywhere to step, so a client can grey the pair out
+     * rather than discover the answer by pressing them.
+     *
+     * <p>Gated on editing, not merely on access, because {@link #undo} and
+     * {@link #redo} are — and a status a reader could read said "yes, there is
+     * something to undo" about a stack they may not touch. A native client
+     * takes that for an armed button, and every press came back 403: "You don't
+     * have permission to do that", over an affordance the API had offered them.
+     * The song editor's counterpart has always gated this way.
+     */
     @RequestMapping(value = "/undoRedoStatus", produces = MediaTypes.HAL_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<EntityModel<Map<String, Object>>> undoRedoStatus(@RequestParam Integer projectId,
                                                                            @RequestParam(required = false) Integer editionId,
                                                                            Principal principal) {
-        if (denyProjectAccess(projectId, principal)) {
+        if (denyScriptEdit(projectId, principal)) {
             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
         }
         Map<String, Object> status = new HashMap<>();

@@ -261,9 +261,10 @@ public class SongBlockRestController {
     // through undoRedoStatus and never step through them; these return the
     // rewound block collection, which is what the caller was reading anyway.
     //
-    // The stacks are session-scoped and per song version, so two clients signed
-    // in as the same writer do not share them — the same rule the screenplay's
-    // undo has always followed.
+    // The stacks are per (song version, writer) and persisted, so a client that
+    // keeps no session — every API client, this app's own iOS one included —
+    // still finds the history its edits made. The same rule the screenplay's
+    // undo follows.
 
     @RequestMapping(value = "/undo", method = RequestMethod.POST, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
     public ResponseEntity<?> undo(@RequestParam Integer documentId,

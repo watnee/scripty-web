@@ -1,10 +1,11 @@
 package com.scripty.service;
 
 /**
- * Session-scoped undo/redo for the song block editor, mirroring
- * {@link ProjectUndoRedoService} for the screenplay. A checkpoint snapshots the
- * song's lyric lines; undo/redo swaps the snapshot back in, so the stacks live
- * for as long as the user's session and are per song document.
+ * Undo/redo for the song block editor, mirroring {@link ProjectUndoRedoService}
+ * for the screenplay. A checkpoint snapshots the song's lyric lines; undo/redo
+ * swaps the snapshot back in. The stacks are per (document, edition, user) and
+ * persisted, so they survive the session an API client never keeps — see
+ * {@link com.scripty.dto.SongUndoState}.
  */
 public interface SongUndoRedoService {
 

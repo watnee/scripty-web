@@ -14,7 +14,8 @@ import java.time.LocalDateTime;
 /**
  * A restorable snapshot of a song, mirroring {@link ProjectVersion} for the
  * screenplay. Songs are edited as {@link SongBlock} lines whose undo/redo stacks
- * are session-scoped, so these snapshots are what survive a closed tab.
+ * ({@link SongUndoState}) hold only the last fifty steps, so these snapshots are
+ * the labelled, long-lived history beside them.
  */
 @Entity
 @Table(name = "song_version")

@@ -254,8 +254,8 @@ public class SongBlockController {
     // --- undo / redo ------------------------------------------------------
     //
     // Mirrors the screenplay's Edit menu (/project/undo, /project/redo,
-    // /project/undoRedoStatus): the stacks are session-scoped snapshots, so they
-    // last for the session and are per song version.
+    // /project/undoRedoStatus): the stacks are snapshots kept per song version
+    // and per writer, persisted rather than held in the session.
 
     @RequestMapping(value = "/undo", method = RequestMethod.POST)
     public String undo(@RequestParam Integer documentId,

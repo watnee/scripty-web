@@ -53,7 +53,7 @@ ADMIN_USERNAME: admin
 ADMIN_PASSWORD: admin
 
 app:
-  asset-version: 263
+  asset-version: 264
   headshot-max-bytes: 5242880
   # 25 MB: a four-minute demo at any sane bitrate, a voice memo many times
   # over, and short of a lossless bounce — which is not what a lyric sheet is

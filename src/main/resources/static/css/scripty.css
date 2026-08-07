@@ -15975,3 +15975,10 @@ body:has(.screenplay-page-bar:not([hidden])) .read-aloud-bar {
 .project-save-state-sync[hidden] {
     display: none;
 }
+
+/* Edit screenplay is greyed while the plain writing column is already up — the
+   same way the history buttons say there is nothing to take back. */
+.nav-dropdown-item#nav-edit-screenplay.is-unavailable {
+    opacity: 0.55;
+    cursor: not-allowed;
+}

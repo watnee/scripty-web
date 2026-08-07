@@ -28,6 +28,7 @@
         { id: 'snapshot-history', title: 'Snapshot History', keywords: 'version restore backup revision publish share team' },
         { id: 'casting', title: 'Actor Casting', keywords: 'actors casting roles' },
         { id: 'characters', title: 'Characters & Roles', keywords: 'character dialogue profile' },
+        { id: 'comments', title: 'Comments', keywords: 'comment thread feedback discussion reply review note' },
         { id: 'teams', title: 'Team Collaboration', keywords: 'share collaborate members' },
         { id: 'shortcuts', title: 'Keyboard Shortcuts', keywords: 'keyboard shortcut keys hotkeys', href: '/shortcuts' }
     ];

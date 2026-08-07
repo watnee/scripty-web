@@ -15231,6 +15231,19 @@ html.scripty-block-selecting .song-block-row ::selection {
     color: var(--muted-fg, #64748b);
 }
 
+/* Said only when something did not happen — a send that failed, a delete that
+   did not take — so it is drawn in the colour of a warning rather than a hint. */
+.block-comments-status {
+    margin: 0.25rem 0 0;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    color: var(--danger-fg, #b91c1c);
+}
+
+.block-comments-status[hidden] {
+    display: none;
+}
+
 .block-comments-submit {
     border: 1px solid var(--accent, #2563eb);
     background: var(--accent, #2563eb);

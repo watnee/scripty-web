@@ -143,6 +143,7 @@
             '<div class="block-comments-list" aria-live="polite"></div>' +
             '<form class="block-comments-form">' +
                 '<textarea class="block-comments-input" rows="2" placeholder="Add a comment…" aria-label="Add a comment"></textarea>' +
+                '<p class="block-comments-status" role="status" aria-live="polite" hidden></p>' +
                 '<div class="block-comments-form-actions">' +
                     '<span class="block-comments-hint">⌘/Ctrl + Enter</span>' +
                     '<button type="submit" class="block-comments-submit">Comment</button>' +
@@ -155,6 +156,9 @@
             e.preventDefault();
             submitComment();
         });
+        el.querySelector('.block-comments-input').addEventListener('input', function () {
+            setStatus('');
+        });
         el.querySelector('.block-comments-input').addEventListener('keydown', function (e) {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                 e.preventDefault();
@@ -162,6 +166,19 @@
             }
         });
         return el;
+    }
+
+    /**
+     * What the composer has to say for itself. Only ever a failure: a comment
+     * that sent says so by appearing in the thread above, and a second message
+     * saying the same thing would be noise.
+     */
+    function setStatus(message) {
+        if (!popover) return;
+        var status = popover.querySelector('.block-comments-status');
+        if (!status) return;
+        status.textContent = message || '';
+        status.hidden = !message;
     }
 
     function renderComments(comments) {
@@ -250,6 +267,7 @@
         var list = popover.querySelector('.block-comments-list');
         list.innerHTML = '<div class="block-comments-empty">Loading…</div>';
         popover.querySelector('.block-comments-input').value = '';
+        setStatus('');
         popover.hidden = false;
         positionPopover(row);
 
@@ -309,6 +327,7 @@
             return;
         }
         submit.disabled = true;
+        setStatus('');
 
         var params = new URLSearchParams();
         params.set('id', activeBlockId);
@@ -337,7 +356,13 @@
             if (typeof data.count === 'number') setCount(activeBlockId, data.count);
             input.focus();
         }).catch(function () {
-            /* leave text in place so the writer can retry */
+            // The words stay in the box — they are the writer's, and a dropped
+            // connection is no reason to take them away — but a composer that
+            // silently keeps them looks exactly like one that has sent them and
+            // cleared nothing. So it says which of the two just happened.
+            setStatus(navigator.onLine === false
+                ? 'Not sent — you are offline. Your comment is still here.'
+                : 'Not sent. Your comment is still here — try again.');
         }).finally(function () {
             submit.disabled = false;
         });
@@ -365,7 +390,12 @@
             if (list && !list.querySelector('.block-comment')) {
                 list.innerHTML = '<div class="block-comments-empty">No comments yet.</div>';
             }
-        }).catch(function () { /* keep comment visible on failure */ });
+        }).catch(function () {
+            // The comment is still there, which is the right outcome and the
+            // wrong-looking one: nothing moved, so nothing happened as far as
+            // the writer can tell.
+            setStatus('Not deleted. That comment is still here — try again.');
+        });
     }
 
     function closePopover() {

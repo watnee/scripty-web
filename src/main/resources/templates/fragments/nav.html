@@ -6758,6 +6758,10 @@
     <script th:src="@{/js/contact-autofill.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/page-chrome.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/last-edited-times.js(v=${assetVersion})}"></script>
+    <!-- Press for one step, hold to keep going: the behaviour behind the undo
+         and redo buttons in all three editors. Loaded before them, since that is
+         when they ask for it. -->
+    <script th:src="@{/js/hold-repeat.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/undo-redo.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/editor-position.js(v=${assetVersion})}"></script>
     <script th:src="@{/js/scroll-position.js(v=${assetVersion})}"></script>

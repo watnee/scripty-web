@@ -24,7 +24,7 @@
         { id: 'text-size', title: 'Text Size Controls', keywords: 'font zoom larger smaller' },
         { id: 'read-aloud', title: 'Read Aloud', keywords: 'speak speech voice narration listen hear text to speech tts table read run lines speed rate' },
         { id: 'spellcheck', title: 'Spellcheck & Suggestions', keywords: 'spelling typo dictionary' },
-        { id: 'undo-redo', title: 'Undo, Redo & Snapshot History', keywords: 'history undo redo clock' },
+        { id: 'undo-redo', title: 'Undo, Redo & Snapshot History', keywords: 'history undo redo clock hold repeat keep going several steps' },
         { id: 'snapshot-history', title: 'Snapshot History', keywords: 'version restore backup revision publish share team' },
         { id: 'casting', title: 'Actor Casting', keywords: 'actors casting roles' },
         { id: 'characters', title: 'Characters & Roles', keywords: 'character dialogue profile' },

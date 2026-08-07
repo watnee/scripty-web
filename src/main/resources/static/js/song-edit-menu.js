@@ -102,7 +102,7 @@
     function performHistoryAction(action) {
         closeEditDropdown();
         var docId = documentId();
-        if (!docId) return;
+        if (!docId) return Promise.resolve(false);
 
         // Save whatever line is being edited first, so its text is part of the
         // snapshot the server is about to restore over.
@@ -111,7 +111,11 @@
             active.blur();
         }
 
-        fetch('/song/block/' + action, {
+        // Answered with a promise so a held button can wait for this step before
+        // asking for the next one: a step is a round trip that ends in the whole
+        // lyric being read back, and two in flight together would leave whichever
+        // answered last on screen rather than whichever was asked for last.
+        return fetch('/song/block/' + action, {
             method: 'POST',
             credentials: 'same-origin',
             cache: 'no-store',
@@ -123,8 +127,8 @@
                 return res.text();
             })
             .then(replaceList)
-            .catch(function () { /* leave the list as-is */ })
-            .then(refreshButtons);
+            .then(function () { refreshButtons(); return true; },
+                  function () { refreshButtons(); return false; });
     }
 
     // --- search ----------------------------------------------------------
@@ -196,9 +200,23 @@
 
     // --- wiring ----------------------------------------------------------
 
+    /**
+     * Holding Undo or Redo keeps stepping through the lyric's history, as a held
+     * key repeats — see hold-repeat.js. The run stops when the button dims,
+     * which is the same question the button's own state asks.
+     */
+    function holdToRepeat(button, action) {
+        if (!button || typeof window.scriptyHoldToRepeat !== 'function') return;
+        window.scriptyHoldToRepeat(button, function () {
+            return performHistoryAction(action);
+        });
+    }
+
     function syncLabels() {
         var undoBtn = document.getElementById('song-nav-undo');
         var redoBtn = document.getElementById('song-nav-redo');
+        holdToRepeat(undoBtn, 'undo');
+        holdToRepeat(redoBtn, 'redo');
         var searchItem = document.getElementById('song-nav-search');
         var mac = isMac();
         var hints = {

@@ -159,10 +159,30 @@
     window.scriptyNoteToggleList = toggleList;
     window.scriptyNoteToggleHeading = toggleHeading;
 
-    /** Labels the notes toolbar with the platform's own modifier keys. */
+    /**
+     * One step of the note's own history. A note has no server-side history, so
+     * this is the shared text stack in undo-redo.js; the promise it hands back
+     * says whether the stack had anything left, which is what ends a held run.
+     */
+    function stepHistory(action) {
+        if (typeof window.scriptyPerformHistoryAction !== 'function') {
+            return Promise.resolve(false);
+        }
+        return Promise.resolve(window.scriptyPerformHistoryAction(action));
+    }
+
+    /** Labels the notes toolbar with the platform's own modifier keys, and makes
+     *  a held Undo or Redo keep stepping (hold-repeat.js). */
     function syncNoteToolbarHints() {
         var toolbar = document.querySelector('.note-format-toolbar');
         if (!toolbar || toolbar.dataset.scriptyHintsSynced === '1') return;
+        ['note-undo', 'note-redo'].forEach(function (id) {
+            var button = document.getElementById(id);
+            if (!button || typeof window.scriptyHoldToRepeat !== 'function') return;
+            window.scriptyHoldToRepeat(button, function () {
+                return stepHistory(id === 'note-redo' ? 'redo' : 'undo');
+            });
+        });
         var isMac = typeof window.scriptyIsMac === 'function'
             ? window.scriptyIsMac()
             : /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent || '');
@@ -195,9 +215,7 @@
         var historyBtn = target.closest('#note-undo, #note-redo');
         if (historyBtn) {
             e.preventDefault();
-            if (typeof window.scriptyPerformHistoryAction === 'function') {
-                window.scriptyPerformHistoryAction(historyBtn.id === 'note-redo' ? 'redo' : 'undo');
-            }
+            stepHistory(historyBtn.id === 'note-redo' ? 'redo' : 'undo');
             return;
         }
 

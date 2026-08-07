@@ -312,6 +312,11 @@
     /**
      * Routes an undo/redo to the narrowest thing that can service it: our own
      * text stack, then the browser's native field history, then project history.
+     *
+     * Answers with a promise for one caller only: holding the button (see
+     * hold-repeat.js) takes a step at a time and has to know when this one has
+     * landed, and whether it landed at all — false says the stack had nothing
+     * left, which is what ends a held run.
      */
     function performHistoryAction(action) {
         var dropdown = document.getElementById('history-dropdown');
@@ -325,36 +330,35 @@
         if (target) {
             target.el.focus();
             if (applyStack(target.el, target.key, action === 'undo' ? -1 : 1)) {
-                return;
+                return Promise.resolve(true);
             }
             // Notes have no server-side history, so there is nothing coarser to
             // fall back to — escalating would revert the whole project instead.
             if (target.key === 'text-document') {
                 showHistoryToast(action === 'undo' ? 'Nothing to undo' : 'Nothing to redo');
-                return;
+                return Promise.resolve(false);
             }
         }
 
         var activeEl = document.activeElement;
         if (isInlineTextEdit(activeEl)) {
             activeEl.focus();
-            document.execCommand(action);
-            return;
+            return Promise.resolve(document.execCommand(action));
         }
 
-        performServerHistoryAction(action);
+        return performServerHistoryAction(action);
     }
 
     function performServerHistoryAction(action) {
         var projectId = resolveProjectId();
-        if (!projectId) return;
+        if (!projectId) return Promise.resolve(false);
         var editionId = resolveEditionId();
         var actionUrl = '/project/' + action + '?projectId=' + projectId;
         if (editionId) {
             actionUrl += '&editionId=' + encodeURIComponent(editionId);
         }
 
-        fetch(actionUrl, {
+        return fetch(actionUrl, {
             method: 'POST',
             credentials: 'same-origin',
             cache: 'no-store',
@@ -372,13 +376,30 @@
                         }
                         window.location.href = showUrl;
                     }
-                } else {
-                    updateUndoRedoButtons(projectId);
+                    // The page is leaving. A promise that never settles is the
+                    // honest answer: a held button asking for its next step
+                    // waits for a screen that is already on its way out.
+                    return new Promise(function () {});
                 }
+                updateUndoRedoButtons(projectId);
+                return false;
             })
             .catch(function () {
                 updateUndoRedoButtons(projectId);
+                return false;
             });
+    }
+
+    /**
+     * Holding Undo or Redo keeps stepping, as a held key repeats — see
+     * hold-repeat.js. A run over the project's own history ends of its own
+     * accord: that step navigates, and the promise it hands back never settles.
+     */
+    function holdToRepeat(button, action) {
+        if (typeof window.scriptyHoldToRepeat !== 'function') return;
+        window.scriptyHoldToRepeat(button, function () {
+            return performHistoryAction(action);
+        });
     }
 
     function initHistoryDropdown() {
@@ -413,6 +434,7 @@
                 e.preventDefault();
                 performHistoryAction('undo');
             };
+            holdToRepeat(undoBtn, 'undo');
         }
 
         if (redoBtn) {
@@ -425,6 +447,7 @@
                 e.preventDefault();
                 performHistoryAction('redo');
             };
+            holdToRepeat(redoBtn, 'redo');
         }
 
         var projectId = resolveProjectId();

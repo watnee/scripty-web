@@ -18,7 +18,7 @@ public class WebModelAdvice {
 
     public WebModelAdvice(FeatureFlags featureFlags,
                           UserService userService,
-                          @Value("${app.asset-version:262}") String assetVersion) {
+                          @Value("${app.asset-version:263}") String assetVersion) {
         this.assetVersion = assetVersion;
         this.userService = userService;
         this.serviceWorkerEnabled = featureFlags.isEnabled(FeatureFlag.SERVICE_WORKER);

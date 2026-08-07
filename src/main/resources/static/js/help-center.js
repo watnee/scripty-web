@@ -13,7 +13,7 @@
         { id: 'default-project', title: 'Default Project', keywords: 'home dashboard settings' },
         { id: 'install-app', title: 'Install as an App', keywords: 'pwa home screen offline ios android' },
         { id: 'inline-editing', title: 'Inline Editing & Auto-Save', keywords: 'edit block save typing' },
-        { id: 'offline-editing', title: 'Offline Editing', keywords: 'offline sync cache airplane' },
+        { id: 'offline-editing', title: 'Offline Editing', keywords: 'offline sync cache airplane saved saving not saved badge did it save sync now' },
         { id: 'adding-blocks', title: 'Adding Blocks', keywords: 'insert create plus enter' },
         { id: 'fountain-features', title: 'Fountain Power Features', keywords: 'tab element autocomplete outline scene list page view import export pdf fountain paste shortcut keyboard' },
         { id: 'songs-drafts', title: 'Songs & Notes', keywords: 'lyrics notes music documents export email share archive select workspace lock locked read only editing lock' },

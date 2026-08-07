@@ -15870,3 +15870,108 @@ body:has(.screenplay-page-bar:not([hidden])) .read-aloud-bar {
         display: none;
     }
 }
+
+/* ---------------------------------------------------------------------------
+   Where the words are
+
+   The badge save-state.js drives, beside the word count in the screenplay's
+   toolbar. A dot and a word: the dot carries the state at a glance, the word
+   carries it for anyone who cannot tell the colours apart, and neither is
+   drawn at all until there is news.
+   --------------------------------------------------------------------------- */
+.project-save-state {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    margin-right: 0.6rem;
+}
+
+.project-save-state[hidden] {
+    display: none;
+}
+
+.project-save-state-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.1rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted-fg, #64748b);
+    font: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.project-save-state-toggle:hover {
+    border-color: color-mix(in srgb, var(--muted-fg, #64748b) 40%, transparent);
+}
+
+.project-save-state-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: currentColor;
+    flex: none;
+}
+
+/* Saved is the quiet state and says so by staying muted. The other two are
+   worth a glance: amber while something is in the air, red where the server
+   said no. */
+.project-save-state[data-state="saving"] .project-save-state-toggle {
+    color: var(--warning-fg, #b45309);
+}
+
+.project-save-state[data-state="error"] .project-save-state-toggle {
+    color: var(--danger-fg, #b91c1c);
+}
+
+.project-save-state-panel {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    right: 0;
+    z-index: 60;
+    min-width: 15rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 8px;
+    background: var(--bg, #fff);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.project-save-state-panel[hidden] {
+    display: none;
+}
+
+.project-save-state-detail,
+.project-save-state-waiting {
+    margin: 0 0 0.4rem;
+    line-height: 1.4;
+}
+
+.project-save-state-waiting[hidden] {
+    display: none;
+}
+
+.project-save-state-sync {
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.project-save-state-sync:hover {
+    background: color-mix(in srgb, var(--fg, #0f172a) 8%, transparent);
+}
+
+.project-save-state-sync[hidden] {
+    display: none;
+}

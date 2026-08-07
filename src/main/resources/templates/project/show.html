@@ -975,6 +975,26 @@
             </div>
             </div>
             <div class="project-toolbar-right" th:if="${canEditScript == null or canEditScript}">
+                <!--/* Where the words are (save-state.js). Hidden until it has
+                       something to say — before the first change of a visit
+                       there is no news, and a badge announcing that would be one
+                       more thing on a full toolbar. */-->
+                <div class="project-save-state" id="project-save-state" hidden>
+                    <button type="button"
+                            class="project-save-state-toggle"
+                            aria-haspopup="dialog"
+                            aria-expanded="false"
+                            aria-label="Where these words are"
+                            title="Where these words are">
+                        <span class="project-save-state-dot" aria-hidden="true"></span>
+                        <span class="project-save-state-label" role="status" aria-live="polite">Saved</span>
+                    </button>
+                    <div class="project-save-state-panel" role="dialog" aria-label="Saving" hidden>
+                        <p class="project-save-state-detail"></p>
+                        <p class="project-save-state-waiting muted" hidden></p>
+                        <button type="button" class="project-save-state-sync">Sync now</button>
+                    </div>
+                </div>
                 <div id="project-script-stats"
                      class="project-script-stats"
                      role="status"

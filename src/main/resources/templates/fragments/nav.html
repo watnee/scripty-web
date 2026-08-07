@@ -6822,6 +6822,9 @@
     <!-- Song editor Tools menu (live word count): loaded from nav for the same
          reason as song-blocks.js above. -->
     <script th:src="@{/js/song-tools-menu.js(v=${assetVersion})}"></script>
+    <!-- Where the words are: the screenplay's save badge, which watches the
+         same HTMX block writes the editor already makes. -->
+    <script th:src="@{/js/save-state.js(v=${assetVersion})}"></script>
     <!-- The song/note editing lock: on the list, the workspace and the editor,
          so it is loaded from nav like the rest of them. -->
     <script th:src="@{/js/document-lock.js(v=${assetVersion})}"></script>

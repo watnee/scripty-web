@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scripty-cache-v137';
+const CACHE_NAME = 'scripty-cache-v138';
 const ASSETS_TO_CACHE = [
   '/offline.html',
   '/offline-project.html',
@@ -39,6 +39,7 @@ const ASSETS_TO_CACHE = [
   '/js/read-aloud.js',
   '/js/document-lock.js',
   '/js/hold-repeat.js',
+  '/js/save-state.js',
   '/js/offline-store.js',
   '/js/offline.js',
   '/js/offline-edit.js',

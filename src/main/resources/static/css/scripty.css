@@ -15768,3 +15768,105 @@ body:has(.screenplay-page-bar:not([hidden])) .read-aloud-bar {
 .document-lock-toggle[aria-pressed="true"] .lock-icon--locked {
     display: inline-block;
 }
+
+/* ---------------------------------------------------------------------------
+   A song or a note, open to be read
+
+   Same column, same serif, same measure as the screenplay's reading page — the
+   three readings are one family, and a writer who learns the shape of one
+   should recognise the others. What differs is only what each kind is made of.
+
+   Scoped to .document-reader-page throughout, because the reader page's own
+   rules (.script-reader-page article p, and the screenplay's shouted h2) are
+   more specific than a bare class and would otherwise win. These pages also
+   load this stylesheet without missing.css underneath, so every borrowed
+   variable carries a fallback.
+   --------------------------------------------------------------------------- */
+.document-reader-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    vertical-align: middle;
+}
+
+.document-reader-page .document-reader-empty {
+    color: #666;
+    font-style: italic;
+}
+
+/* A lyric is set as it is written: one line per line, and the blank line
+   between two verses left standing, because that gap is the writer's. */
+.document-reader-page .document-reader-line {
+    margin: 0 0 0.15rem;
+    white-space: pre-wrap;
+}
+
+.document-reader-page .document-reader-line--break {
+    margin-bottom: 0.9rem;
+}
+
+.document-reader-lyric .block-highlight-yellow,
+.document-reader-lyric .block-highlight-green,
+.document-reader-lyric .block-highlight-blue,
+.document-reader-lyric .block-highlight-red,
+.document-reader-lyric .block-highlight-gray {
+    padding: 0 0.2rem;
+    border-radius: 3px;
+}
+
+/* A note is prose with its markers set rather than shown. Paragraphs are spaced
+   instead of separated by empty rows, which is what the blank lines meant, and
+   the lines inside one sit together — a writer who broke a line meant to. */
+.document-reader-page .document-reader-paragraph {
+    margin: 0 0 1.15rem;
+}
+
+/* A note's headings are the writer's own words, not a screenplay's slug line:
+   the reader page shouts an h2 in letterspaced capitals, and "# act one" is
+   neither shouted nor a scene. */
+.document-reader-page .document-reader-heading {
+    margin: 0 0 0.4rem;
+    padding-top: 0;
+    border-top: none;
+    line-height: 1.25;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.document-reader-page h2.document-reader-heading {
+    font-size: 1.35rem;
+}
+
+.document-reader-page h3.document-reader-heading {
+    font-size: 1.15rem;
+}
+
+.document-reader-page h4.document-reader-heading {
+    font-size: 1rem;
+}
+
+.document-reader-page .document-reader-prose,
+.document-reader-page .document-reader-item {
+    margin: 0 0 0.15rem;
+    white-space: pre-wrap;
+}
+
+/* The marker is drawn beside the words rather than left in them. A numbered
+   item shows the writer's own number — the editor maintains that numbering, and
+   a reading that counted for itself would quietly disagree with the note. */
+.document-reader-page .document-reader-item {
+    padding-left: 1.9rem;
+    text-indent: -1.9rem;
+}
+
+.document-reader-marker {
+    display: inline-block;
+    width: 1.9rem;
+    text-indent: 0;
+}
+
+@media print {
+    .document-reader-header-actions {
+        display: none;
+    }
+}

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!--/* A song or a note, open to be read.
+
+       The screenplay's reading page and this one are one family: the same head,
+       the same serif column, the same sticky bar with the way back and Read
+       aloud in it. What differs is only what a document of this kind is made
+       of — a lyric is lines with verses between them, a note is prose the
+       writer marked up with hashes and dashes — so the setting differs and
+       nothing else does.
+
+       Read-only by construction: there is no form here and no field to type
+       into, which is a stronger promise than a disabled one. Editing is a link
+       back to the editor. */-->
+<head th:replace="~{fragments/scriptReader :: head(${#strings.isEmpty(title) ? (isSong ? 'Untitled Song' : 'Untitled Note') : title})}"></head>
+<body class="script-reader-page document-reader-page">
+    <header class="script-reader-header">
+        <a class="script-reader-back"
+           th:href="@{${listPath}(projectId=${projectId})}"
+           th:aria-label="${isSong} ? 'Back to songs' : 'Back to notes'"
+           th:text="${isSong} ? '← Back to songs' : '← Back to notes'">← Back</a>
+        <span class="document-reader-header-actions">
+            <span th:replace="~{fragments/scriptReader :: readAloudButton}"></span>
+            <a class="script-reader-read-aloud document-reader-edit"
+               th:if="${canEditScript}"
+               th:href="@{/project/documents/edit(id=${documentId})}"
+               th:title="${isSong} ? 'Edit this song' : 'Edit this note'">
+                <span th:text="${isSong} ? 'Edit song' : 'Edit note'">Edit</span>
+            </a>
+        </span>
+    </header>
+
+    <main role="main">
+        <!--/* Says which kind of document this is, so read-aloud.js reads it as
+               a lyric or as a note rather than as a screenplay. */-->
+        <article class="entry-content" role="article"
+                 th:attr="data-reader-kind=${isSong} ? 'song' : 'note',data-document-id=${documentId}">
+            <h1 class="entry-title"
+                th:text="${#strings.isEmpty(title) ? (isSong ? 'Untitled Song' : 'Untitled Note') : title}">Document</h1>
+            <p class="script-reader-byline">
+                <span th:text="${projectTitle}">Project</span>
+                <span th:if="${isSong and editionName != null}" th:text="' · ' + ${editionName}"> · Version</span>
+            </p>
+
+            <!--/* A lyric: its lines in order, with a blank line kept as the gap
+                   between one verse and the next — that gap is the writer's, and
+                   a reading that closes it up is a reading of a different song.
+                   Highlights come along because on the web they are part of how
+                   the lyric looks, not an editing mark. */-->
+            <th:block th:if="${isSong}">
+                <p class="document-reader-empty" th:if="${#lists.isEmpty(blocks)}">This song has no lines yet.</p>
+                <div class="document-reader-lyric" th:unless="${#lists.isEmpty(blocks)}">
+                    <p th:each="block : ${blocks}"
+                       class="document-reader-line"
+                       th:classappend="${(#strings.isEmpty(block.content) ? ' document-reader-line--break' : '')
+                                        + (block.highlight != null ? ' block-highlight-' + #strings.toLowerCase(block.highlight) : '')}"
+                       th:attr="data-block-id=${block.id}"><th:block th:if="${#strings.isEmpty(block.content)}">&#160;</th:block><th:block th:unless="${#strings.isEmpty(block.content)}" th:text="${block.content}"></th:block></p>
+                </div>
+            </th:block>
+
+            <!--/* A note: every line the writer typed, with its marker set rather
+                   than shown. The grouping and the classifying are NoteReading's,
+                   which read-aloud.js also follows, so the note you hear and the
+                   note you see agree about what a heading is. */-->
+            <th:block th:unless="${isSong}">
+                <p class="document-reader-empty" th:if="${#lists.isEmpty(paragraphs)}">This note has nothing in it yet.</p>
+                <div class="document-reader-note" th:unless="${#lists.isEmpty(paragraphs)}">
+                    <div class="document-reader-paragraph" th:each="paragraph : ${paragraphs}">
+                        <th:block th:each="line : ${paragraph}">
+                            <h2 th:if="${line.heading and line.level == 1}" class="document-reader-heading" th:text="${line.words}">Heading</h2>
+                            <h3 th:if="${line.heading and line.level == 2}" class="document-reader-heading" th:text="${line.words}">Heading</h3>
+                            <h4 th:if="${line.heading and line.level >= 3}" class="document-reader-heading" th:text="${line.words}">Heading</h4>
+                            <p th:if="${line.listItem}"
+                               class="document-reader-item"
+                               th:classappend="${line.kind.name() == 'NUMBERED' ? ' document-reader-item--numbered' : ' document-reader-item--bullet'}"
+                               th:style="${line.depth > 0 ? 'margin-left:' + (line.depth * 1.25) + 'rem' : null}"><span
+                                  class="document-reader-marker"
+                                  aria-hidden="true"
+                                  th:text="${line.kind.name() == 'NUMBERED' and line.number > 0} ? ${line.number} + '.' : '•'">•</span><span th:text="${line.words}">Item</span></p>
+                            <p th:if="${!line.heading and !line.listItem}"
+                               class="document-reader-prose"
+                               th:style="${line.depth > 0 ? 'margin-left:' + (line.depth * 1.25) + 'rem' : null}"
+                               th:text="${line.words}">Line</p>
+                        </th:block>
+                    </div>
+                </div>
+            </th:block>
+        </article>
+    </main>
+
+    <footer class="script-reader-footer">
+        <p>
+            <a th:href="@{${listPath}(projectId=${projectId})}"
+               th:text="${isSong} ? '← Back to songs' : '← Back to notes'">← Back</a>
+            ·
+            <a th:href="@{/project/show(id=${projectId})}">Back to project</a>
+        </p>
+    </footer>
+    <th:block th:replace="~{fragments/scriptReader :: readAloudScript}"></th:block>
+</body>
+</html>

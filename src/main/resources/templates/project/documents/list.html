@@ -481,6 +481,12 @@
                     <div class="text-document-card-actions">
                         <a th:href="@{/project/documents/edit(id=${doc.id})}"
                            class="project-list-action-btn project-list-action-btn--secondary">Edit</a>
+                        <!-- The reading page: the same words with the editing left
+                             out, which is what a rehearsal room or a music stand
+                             wants. Offered to readers as well as writers. -->
+                        <a th:href="@{/project/documents/read(id=${doc.id})}"
+                           class="project-list-action-btn project-list-action-btn--secondary"
+                           th:title="${isSongList} ? 'Read this song without the editing' : 'Read this note without the editing'">Read</a>
                         <!-- Filing one row. A select rather than a button, so
                              the choice and the action are one gesture; it posts
                              the shared move form on change. Only drawn once

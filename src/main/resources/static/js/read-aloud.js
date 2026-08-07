@@ -315,6 +315,23 @@
     }
 
     /**
+     * What a row says, leaving out whatever was drawn for the eye alone — the
+     * bullet or the number in front of a note's list item, which the page draws
+     * beside the words and marks aria-hidden precisely because it is not part of
+     * them. Read straight, a run of items comes out "bullet buy milk".
+     */
+    function spokenTextOf(node) {
+        if (!node) return '';
+        var text = '';
+        for (var i = 0; i < node.childNodes.length; i++) {
+            var child = node.childNodes[i];
+            if (child.nodeType === 1 && child.getAttribute('aria-hidden') === 'true') continue;
+            text += child.nodeType === 1 ? textOf(child) : String(child.nodeValue || '');
+        }
+        return text.replace(/\u00a0/g, ' ');
+    }
+
+    /**
      * A block's words. While a block is open for inline editing the row holds
      * both the rendered text and the textarea being typed into; the textarea is
      * the newer of the two, so it wins.
@@ -329,25 +346,37 @@
         return textOf(row.querySelector('.script-character-name strong')).trim();
     }
 
-    /** A lyric, wherever its lines are: one editor, or one card of a stack. */
-    function lyricSource(key, title, editor, prepare) {
+    /**
+     * A lyric, wherever its lines are: one editor, one card of a stack, or a
+     * reading page with no fields in it at all. What differs between those is
+     * only where the words are read from and what the highlight lands on, so
+     * both arrive as functions rather than being assumed here.
+     */
+    function lyricSource(key, title, lines, element, prepare) {
         return {
             kind: 'lyric',
             key: key,
             noun: 'Line',
             title: title,
             prepare: prepare,
-            read: function () {
-                var lines = [];
-                editor.querySelectorAll('.song-block-textarea').forEach(function (area) {
-                    lines.push({ id: area.getAttribute('data-block-id'), text: area.value });
-                });
-                return lyricCues(lines);
-            },
-            element: function (id) {
-                return document.getElementById('song-block-' + id);
-            }
+            read: function () { return lyricCues(lines()); },
+            element: element
         };
+    }
+
+    /** The lines of a lyric editor, in order, blanks included. */
+    function editorLyricLines(editor) {
+        return function () {
+            var lines = [];
+            editor.querySelectorAll('.song-block-textarea').forEach(function (area) {
+                lines.push({ id: area.getAttribute('data-block-id'), text: area.value });
+            });
+            return lines;
+        };
+    }
+
+    function songBlockElement(id) {
+        return document.getElementById('song-block-' + id);
     }
 
     /** A note: one textarea, and nothing on screen for a cue to point at. */
@@ -413,7 +442,8 @@
 
         var song = document.querySelector('.song-blocks-editor .song-blocks');
         if (song) {
-            return lyricSource('song:' + (documentId() || 'open'), documentTitle('Song'), song);
+            return lyricSource('song:' + (documentId() || 'open'), documentTitle('Song'),
+                editorLyricLines(song), songBlockElement);
         }
 
         var note = document.getElementById('text-document-content');
@@ -428,6 +458,9 @@
                 script, '.block-row[data-block-id]', blockText);
         }
 
+        var document_ = document.querySelector('article[data-reader-kind]');
+        if (document_) return readingPageSource(document_);
+
         var reader = document.querySelector('.script-reader-page article');
         if (reader) {
             return scriptSource('reader',
@@ -438,6 +471,71 @@
                 });
         }
         return null;
+    }
+
+    /**
+     * A song or a note on its reading page — where there are no fields to read
+     * the words out of, only the words themselves.
+     *
+     * A note is built straight from what is on the page rather than back from
+     * its text: the page has already had NoteReading run over it, which is the
+     * same grouping this file's own note rules follow, and running them twice
+     * over prose the markers are already off would be a second answer to a
+     * question that has one.
+     */
+    function readingPageSource(article) {
+        var id = article.getAttribute('data-document-id') || 'open';
+        var title = textOf(article.querySelector('h1')).trim();
+
+        if (article.getAttribute('data-reader-kind') === 'song') {
+            return lyricSource('song:' + id, title || 'Song', function () {
+                var lines = [];
+                article.querySelectorAll('.document-reader-line').forEach(function (line) {
+                    lines.push({
+                        id: line.getAttribute('data-block-id'),
+                        text: textOf(line)
+                    });
+                });
+                return lines;
+            }, function (blockId) {
+                return article.querySelector('.document-reader-line[data-block-id="' + blockId + '"]');
+            });
+        }
+
+        var rows = function () {
+            return article.querySelectorAll(
+                '.document-reader-paragraph > .document-reader-heading,' +
+                '.document-reader-paragraph > .document-reader-item,' +
+                '.document-reader-paragraph > .document-reader-prose');
+        };
+        return {
+            kind: 'note',
+            key: 'note:' + id,
+            noun: 'Line',
+            title: title || 'Note',
+            read: function () {
+                var cues = [];
+                rows().forEach(function (row, index) {
+                    var heading = row.classList.contains('document-reader-heading');
+                    var said = spoken(spokenTextOf(row), 'ACTION');
+                    if (!said) return;
+                    // The break belongs to the first line of a paragraph, and a
+                    // heading already takes that much air on its own.
+                    var opens = row.previousElementSibling === null;
+                    cue(cues, index, null, said,
+                        heading ? 'heading' : 'description',
+                        (opens && !heading && cues.length) ? BREAK_PAUSE : null);
+                });
+                return cues;
+            },
+            element: function (index) {
+                var found = null;
+                rows().forEach(function (row, i) {
+                    if (i === index) found = row;
+                });
+                return found;
+            }
+        };
     }
 
     /**
@@ -458,7 +556,10 @@
         if (note) return noteSource('note:' + id, name || 'Note', note, prepare);
 
         var editor = card.querySelector('.song-blocks-editor');
-        if (editor) return lyricSource('song:' + id, name || 'Song', editor, prepare);
+        if (editor) {
+            return lyricSource('song:' + id, name || 'Song',
+                editorLyricLines(editor), songBlockElement, prepare);
+        }
         return null;
     }
 

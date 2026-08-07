@@ -42,6 +42,15 @@
                 </ol>
             </nav>
             <div class="text-document-top-bar-actions">
+                <!--/* Put it up to be read: the reading page this editor's words
+                       belong to, in the same place the screenplay offers Read
+                       Script. Only for a document that exists — a new one has
+                       nothing to read yet. */-->
+                <a th:if="${!isNew}"
+                   class="project-list-action-btn project-list-action-btn--secondary"
+                   th:href="@{/project/documents/read(id=${commandModel.id})}"
+                   th:title="${isSong} ? 'Read this song without the editing' : 'Read this note without the editing'"
+                   th:text="${isSong} ? 'Read song' : 'Read note'">Read</a>
                 <th:block th:replace="~{fragments/textDocumentAbout :: about(${isSong})}"></th:block>
             </div>
         </div>

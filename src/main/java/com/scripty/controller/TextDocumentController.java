@@ -17,6 +17,7 @@ import com.scripty.service.SongVersionService;
 import com.scripty.service.TextDocumentFolderService;
 import com.scripty.service.TextDocumentService;
 import com.scripty.service.UserService;
+import com.scripty.util.NoteReading;
 import com.scripty.viewmodel.textdocument.NoteWorkspacePaneViewModel;
 import com.scripty.viewmodel.textdocument.SongWorkspacePaneViewModel;
 import com.scripty.viewmodel.textdocument.TextDocumentListViewModel;
@@ -285,6 +286,60 @@ public class TextDocumentController {
         model.addAttribute("listPath", listPath(isSong));
         model.addAttribute("canEditScript", canEditScript);
         return "project/documents/edit";
+    }
+
+    /**
+     * A song or a note, open to be read rather than typed into — the reading the
+     * screenplay has had at {@code /project/read}, for the other two kinds of
+     * document.
+     *
+     * <p>The words do not change on the way here. A lyric keeps its lines and
+     * the breaks between its verses; a note keeps every line the writer typed,
+     * with the prefixes the formatting row maintains <em>set</em> rather than
+     * shown — a heading drawn as a heading instead of a hash. What is left out
+     * is the editing: the fields, the line controls, the margins full of
+     * handles. Nothing is written; this is a way of looking at a document, not a
+     * change to it.
+     *
+     * <p>Everyone who may open the document may read it, including the reader
+     * who may not edit — which is most of the point, since a screenplay shared
+     * to be read comes with the songs that belong to it.
+     */
+    @RequestMapping(value = "/read")
+    public String read(@RequestParam Integer id,
+                       @RequestParam(required = false) Integer editionId,
+                       Model model,
+                       Principal principal) {
+        User user = currentUser(principal);
+        TextDocumentViewModel viewModel = textDocumentService.getViewModel(id, user);
+        if (viewModel == null) {
+            return "redirect:/project/list";
+        }
+        boolean isSong = TextDocument.TYPE_SONG.equalsIgnoreCase(viewModel.getDocumentType());
+        boolean canEditScript = projectAccess.canEditScript(viewModel.getProjectId(), user);
+
+        model.addAttribute("documentId", id);
+        model.addAttribute("projectId", viewModel.getProjectId());
+        model.addAttribute("projectTitle", viewModel.getProjectTitle());
+        model.addAttribute("title", viewModel.getTitle());
+        model.addAttribute("updatedAt", viewModel.getUpdatedAt());
+        model.addAttribute("isSong", isSong);
+        model.addAttribute("listPath", listPath(isSong));
+        model.addAttribute("canEditScript", canEditScript);
+
+        if (isSong) {
+            // Writers may read whichever version they are browsing; everyone
+            // else reads the published one, as the editor decides it.
+            songEditionService.ensureDefaultEdition(id);
+            SongEdition active = songEditionService.resolveForAccess(id, editionId, canEditScript);
+            Integer activeId = active != null ? active.getId() : null;
+            model.addAttribute("blocks", songBlockService.getBlocks(id, activeId));
+            model.addAttribute("editionId", activeId);
+            model.addAttribute("editionName", active != null ? active.getName() : null);
+        } else {
+            model.addAttribute("paragraphs", NoteReading.paragraphs(viewModel.getContent()));
+        }
+        return "project/documents/read";
     }
 
     @RequestMapping(value = "/text")

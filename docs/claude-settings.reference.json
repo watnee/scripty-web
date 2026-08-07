@@ -1,0 +1,139 @@
+{
+  "permissions": {
+    "defaultMode": "auto",
+    "autoMode": {
+      "hard_deny": [
+        "$defaults",
+        "Reaching the production database in any way: `railway connect`, `railway run` wrapping mysql/mysqldump, opening a tcp-proxy to the Railway MySQL, `scripts/restore-mysql.sh`, or a Flyway `repair`/`clean`/`migrate` aimed at anything other than the local ./db H2 files. Cloudflare D1 is production data too: `wrangler d1 execute --remote` and the Cloudflare MCP server's `d1_database_query`.",
+        "Mutating Railway or Cloudflare infrastructure: `railway up`, `railway config apply`, `railway init`, `railway link`, `railway domain`, `railway variable set|delete`, `wrangler deploy`, deleting a Cloudflare resource with `wrangler r2|kv|d1|queues|hyperdrive|pages ... delete`, or `scripts/bootstrap-deploy.sh` with any stage other than the read-only doctor. The same acts through the Cloudflare MCP server rather than the CLI — any `*_delete` tool — are the same deploy.",
+        "Driving the GitHub Actions workflows that ship to Railway and Cloudflare: `gh workflow run|enable|disable`, `gh run rerun|cancel`, `gh release create|delete|edit`, or `gh api` with a mutating method (-X POST|PUT|PATCH|DELETE, or --method). Production deploys from main through Actions, so triggering a workflow is a deploy however it is spelled.",
+        "Destroying the repository itself: `gh repo delete`, `gh repo archive`, `gh repo rename`.",
+        "Setting, rotating, printing, or copying a production secret or token: `gh secret set|delete`, `gh variable set|delete`, `wrangler secret put|delete|bulk`, `scripts/cf-token.sh`, `scripts/backup-secrets.sh`, `scripts/rotate-admin-password.sh`, or echoing the value of an API key, password, or bearer token.",
+        "Reading a credential file with any tool — cat, grep, awk, sed, strings, xxd, base64, cp, rsync — or uploading one: .env, .credentials.json, .netrc, id_rsa, id_ed25519, .pem, .p12, keystores. Piping `env` or `printenv` into curl, wget, or nc is the same act. Read what the code that consumes the file does instead.",
+        "Rewriting or deleting shared git history: force-pushing (`--force`, `--force-with-lease`) to any branch on origin, `git push --delete`, or deleting a remote branch or tag. Global options do not change this — `git -C /repo push --force` and `git -c x=y push --force` are the same push.",
+        "Disarming the guard: editing, moving, chmod-ing, or deleting anything under ~/.claude/hooks or a project's .claude/hooks, or the settings.json / settings.local.json that register those hooks. The user makes those changes by hand, or relaunches with CLAUDE_GUARD_OFF=1."
+      ],
+      "soft_deny": [
+        "$defaults",
+        "Discarding uncommitted work in this repo or a sibling worktree: `git reset --hard`, `git checkout -- .`, `git clean -fd`, `git stash`, `git worktree remove`, or deleting a directory under .claude/worktrees. Finished-but-uncommitted edits have been stranded in worktrees here before, invisible to any branch check — commit first, clean up second."
+      ]
+    },
+    "deny": [
+      "Bash(*railway connect*)",
+      "Bash(*railway up*)",
+      "Bash(*railway redeploy*)",
+      "Bash(*railway down*)",
+      "Bash(*railway delete*)",
+      "Bash(*railway init*)",
+      "Bash(*railway link*)",
+      "Bash(*railway unlink*)",
+      "Bash(*railway domain*)",
+      "Bash(*railway volume*)",
+      "Bash(*railway tcp-proxy*)",
+      "Bash(*railway variable *)",
+      "Bash(*railway variables *)",
+      "Bash(*railway config apply*)",
+      "Bash(*railway environment new*)",
+      "Bash(*railway environment delete*)",
+      "Bash(*wrangler deploy*)",
+      "Bash(*wrangler publish*)",
+      "Bash(*wrangler delete*)",
+      "Bash(*wrangler secret put*)",
+      "Bash(*wrangler secret delete*)",
+      "Bash(*wrangler secret bulk*)",
+      "Bash(*wrangler r2 *delete*)",
+      "Bash(*wrangler kv *delete*)",
+      "Bash(*wrangler d1 *delete*)",
+      "Bash(*wrangler queues *delete*)",
+      "Bash(*wrangler hyperdrive *delete*)",
+      "Bash(*wrangler vectorize *delete*)",
+      "Bash(*wrangler pages *delete*)",
+      "Bash(*wrangler d1 execute*--remote*)",
+      "Bash(*wrangler d1 migrations*--remote*)",
+      "Bash(gh workflow run*)",
+      "Bash(gh workflow enable*)",
+      "Bash(gh workflow disable*)",
+      "Bash(gh run rerun*)",
+      "Bash(gh run cancel*)",
+      "Bash(gh release create*)",
+      "Bash(gh release delete*)",
+      "Bash(gh release edit*)",
+      "Bash(gh repo delete*)",
+      "Bash(gh repo archive*)",
+      "Bash(gh repo rename*)",
+      "Bash(gh secret set*)",
+      "Bash(gh secret delete*)",
+      "Bash(gh variable set*)",
+      "Bash(gh variable delete*)",
+      "Bash(gh auth token*)",
+      "Bash(gh api *-X POST*)",
+      "Bash(gh api *-X PUT*)",
+      "Bash(gh api *-X PATCH*)",
+      "Bash(gh api *-X DELETE*)",
+      "Bash(gh api *--method POST*)",
+      "Bash(gh api *--method PUT*)",
+      "Bash(gh api *--method PATCH*)",
+      "Bash(gh api *--method DELETE*)",
+      "Bash(*restore-mysql.sh*)",
+      "Bash(*cf-token.sh*)",
+      "Bash(*backup-secrets.sh*)",
+      "Bash(*rotate-admin-password.sh*)",
+      "Bash(*flyway:clean*)",
+      "Bash(*flyway:repair*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push --mirror*)",
+      "Bash(git push --delete*)",
+      "Bash(git push --prune*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * --delete*)",
+      "Bash(git push * --prune*)",
+      "Bash(git * push*--force*)",
+      "Bash(git * push*--mirror*)",
+      "Bash(git * push*--delete*)",
+      "Bash(git * push*--prune*)",
+      "Bash(git * push* -f *)",
+      "mcp__b83f8afc-68d0-4e2e-a511-0c25aafe3d18__d1_database_delete",
+      "mcp__b83f8afc-68d0-4e2e-a511-0c25aafe3d18__d1_database_query",
+      "mcp__b83f8afc-68d0-4e2e-a511-0c25aafe3d18__kv_namespace_delete",
+      "mcp__b83f8afc-68d0-4e2e-a511-0c25aafe3d18__r2_bucket_delete",
+      "mcp__b83f8afc-68d0-4e2e-a511-0c25aafe3d18__hyperdrive_config_delete"
+    ],
+    "ask": [
+      "Bash(git reset --hard*)",
+      "Bash(git reset * --hard*)",
+      "Bash(git checkout -- *)",
+      "Bash(git restore *)",
+      "Bash(git clean -*)",
+      "Bash(git stash)",
+      "Bash(git stash push*)",
+      "Bash(git stash -*)",
+      "Bash(git worktree remove*)",
+      "Bash(git worktree prune*)",
+      "Bash(git branch -D*)",
+      "Bash(git rebase*)",
+      "Bash(git filter-branch*)",
+      "Bash(sudo *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|NotebookEdit|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.claude/hooks/dangerous-command-guard.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "lua-lsp@claude-plugins-official": true,
+    "clangd-lsp@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
+  },
+  "agentPushNotifEnabled": true
+}

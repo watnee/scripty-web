@@ -23,9 +23,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 /**
  * Builds HAL resources for a song's lyric blocks, the song counterpart of
  * {@link BlockResourceAssembler}. Mutation links (update, delete, createBelow,
- * move, setHighlight) appear only when the current user can edit the song's
- * project — the client gates its UI on their presence, the same rule the block
- * and document assemblers use.
+ * move, setHighlight, replace, and bulkReplace on the collection) appear only
+ * when the current user can edit the song's project — the client gates its UI on
+ * their presence, the same rule the block and document assemblers use.
  *
  * <p>Like {@link SongVersionResourceAssembler} it does not implement
  * {@link org.springframework.hateoas.server.RepresentationModelAssembler}: a
@@ -58,8 +58,18 @@ public class SongBlockResourceAssembler {
         return EntityModel.of(resource).add(documentLinks(documentId, projectId, true));
     }
 
+    /**
+     * The lyric lines of one version.
+     *
+     * <p>{@code editionId} is the version these blocks came from, already
+     * resolved — it rides into the {@code bulkReplace} link so a client can
+     * follow it without knowing which version it is looking at. That is not a
+     * convenience: the iOS client deliberately tracks its version as a link
+     * rather than as an id it assembles, so a Replace All it had to address by
+     * id would always address the default one.
+     */
     public CollectionModel<EntityModel<SongBlockResource>> toCollection(
-            List<SongBlockViewModel> blocks, Integer documentId, Integer projectId) {
+            List<SongBlockViewModel> blocks, Integer documentId, Integer editionId, Integer projectId) {
         List<EntityModel<SongBlockResource>> resources = new ArrayList<>();
         for (SongBlockViewModel block : blocks) {
             resources.add(toModel(block, projectId));
@@ -83,6 +93,11 @@ public class SongBlockResourceAssembler {
             // an undo of somebody else's typing.
             collection.add(linkTo(methodOn(SongBlockRestController.class)
                     .undoRedoStatus(documentId, null, null)).withRel(ApiRel.UNDO_REDO_STATUS));
+            // Replace All. The clients gate their whole replace row on this one
+            // link, so a server that predates it simply keeps offering find
+            // alone — which is why the feature needs no flag to roll out.
+            collection.add(linkTo(methodOn(SongBlockRestController.class)
+                    .bulkReplace(documentId, editionId, null, null)).withRel(ApiRel.BULK_REPLACE));
         }
         return collection;
     }
@@ -130,6 +145,8 @@ public class SongBlockResourceAssembler {
                     .withRel(ApiRel.MOVE));
             links.add(linkTo(methodOn(SongBlockRestController.class).setHighlight(id, null, null))
                     .withRel(ApiRel.SET_HIGHLIGHT));
+            links.add(linkTo(methodOn(SongBlockRestController.class).replace(id, null, null))
+                    .withRel(ApiRel.REPLACE));
         }
         links.addAll(List.of(documentLinks(documentId, projectId, true)));
         return links.toArray(Link[]::new);

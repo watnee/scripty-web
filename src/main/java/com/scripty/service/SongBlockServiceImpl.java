@@ -14,7 +14,11 @@ import com.scripty.viewmodel.song.deletedblocks.DeletedSongBlocksViewModel;
 import com.scripty.viewmodel.songblock.SongBlockViewModel;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -193,6 +197,106 @@ public class SongBlockServiceImpl implements SongBlockService {
         block.setUpdatedAt(LocalDateTime.now());
         songBlockRepository.save(block);
         return block;
+    }
+
+    @Override
+    @Transactional
+    public SongBlock replaceOccurrenceInBlock(Integer blockId, String find, String replace,
+                                              boolean matchCase, boolean wholeWord, int occurrence) {
+        if (blockId == null || find == null || find.isEmpty() || occurrence < 0) {
+            return null;
+        }
+        SongBlock block = read(blockId);
+        if (block == null || block.getTextDocument() == null) {
+            return null;
+        }
+        String original = block.getContent();
+        if (original == null || original.isEmpty()) {
+            return null;
+        }
+        Matcher matcher = LiteralReplace.pattern(find, matchCase, wholeWord).matcher(original);
+        int index = 0;
+        while (matcher.find()) {
+            if (index == occurrence) {
+                String updated = PlainTextSanitizer.sanitize(
+                        original.substring(0, matcher.start())
+                                + (replace != null ? replace : "")
+                                + original.substring(matcher.end()));
+                if (updated == null || updated.equals(original)) {
+                    return block;
+                }
+                block.setContent(updated);
+                block.setUpdatedAt(LocalDateTime.now());
+                songBlockRepository.save(block);
+                // Same trailing rebuild editContent does: the joined lines feed
+                // export, share and insert-into-script, so they cannot lag.
+                rebuildDocumentContent(block.getTextDocument(), resolveEditionForBlock(block), null);
+                return block;
+            }
+            index++;
+        }
+        return null;
+    }
+
+    @Override
+    @Transactional
+    public int replaceInLines(Integer documentId, Integer editionId, List<Integer> ids,
+                              String find, String replace, boolean matchCase, boolean wholeWord) {
+        if (documentId == null || find == null || find.isEmpty()) {
+            return 0;
+        }
+        // The live-song lookup every other editing path uses: a trashed song is
+        // not rewritable, and findById would happily hand one back.
+        TextDocument doc = textDocumentRepository.findByIdAndDeletedAtIsNull(documentId).orElse(null);
+        if (doc == null) {
+            return 0;
+        }
+        SongEdition edition = resolveEdition(documentId, editionId);
+        if (edition == null) {
+            return 0;
+        }
+        // ensureSeeded rather than blocksFor, the same as getBlocks and
+        // appendBlock: a song whose lines have never been materialised still has
+        // lyrics in the document text, and a writer replacing across it should
+        // not have to open the editor first to make the lines exist.
+        List<SongBlock> blocks = new ArrayList<>(ensureSeeded(doc, edition));
+        if (blocks.isEmpty()) {
+            return 0;
+        }
+        // A supplied list narrows what is rewritten; it never widens it. Ids
+        // from another song simply fall outside this version's lines and are
+        // dropped, so the document-level permission check cannot be sidestepped
+        // by naming a line the caller was never given.
+        Set<Integer> wanted = ids != null ? new HashSet<>(ids) : null;
+
+        Pattern pattern = LiteralReplace.pattern(find, matchCase, wholeWord);
+        String replacement = LiteralReplace.replacement(replace);
+        LocalDateTime now = LocalDateTime.now();
+        List<SongBlock> touched = new ArrayList<>();
+        for (SongBlock block : blocks) {
+            if (wanted != null && !wanted.contains(block.getId())) {
+                continue;
+            }
+            String original = block.getContent();
+            if (original == null || original.isEmpty()) {
+                continue;
+            }
+            String updated = PlainTextSanitizer.sanitize(pattern.matcher(original).replaceAll(replacement));
+            if (updated == null || updated.equals(original)) {
+                continue;
+            }
+            block.setContent(updated);
+            block.setUpdatedAt(now);
+            touched.add(block);
+        }
+        if (touched.isEmpty()) {
+            return 0;
+        }
+        songBlockRepository.saveAll(touched);
+        // One rebuild for the whole sweep, and no renumber: replacing text moves
+        // nothing, so churning every line's order would be work for its own sake.
+        rebuildDocumentContent(doc, edition, blocks);
+        return touched.size();
     }
 
     @Override

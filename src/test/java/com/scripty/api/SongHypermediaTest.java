@@ -36,6 +36,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 class SongHypermediaTest {
 
     private static final int DOCUMENT_ID = 7;
+    /// The version these lines belong to; it rides into the bulkReplace link so
+    /// a client can Replace All without knowing which version it is looking at.
+    private static final int EDITION_ID = 100;
     private static final int PROJECT_ID = 3;
 
     private final ProjectAccessSupport projectAccess = mock(ProjectAccessSupport.class);
@@ -121,7 +124,7 @@ class SongHypermediaTest {
         givenCanEdit(true);
 
         CollectionModel<EntityModel<SongBlockResource>> collection =
-                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, EDITION_ID, PROJECT_ID);
         EntityModel<SongBlockResource> block = collection.getContent().iterator().next();
 
         assertTrue(hasLink(collection, ApiRel.CREATE));
@@ -137,7 +140,7 @@ class SongHypermediaTest {
         givenCanEdit(false);
 
         CollectionModel<EntityModel<SongBlockResource>> collection =
-                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, EDITION_ID, PROJECT_ID);
         EntityModel<SongBlockResource> block = collection.getContent().iterator().next();
 
         assertFalse(hasLink(collection, ApiRel.CREATE));
@@ -162,7 +165,7 @@ class SongHypermediaTest {
         givenCanEdit(true);
 
         CollectionModel<EntityModel<SongBlockResource>> collection =
-                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, EDITION_ID, PROJECT_ID);
 
         assertTrue(hasLink(collection, ApiRel.UNDO_REDO_STATUS));
         assertTrue(hasLink(collection, ApiRel.TRASH));
@@ -173,7 +176,7 @@ class SongHypermediaTest {
         givenCanEdit(false);
 
         CollectionModel<EntityModel<SongBlockResource>> collection =
-                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, EDITION_ID, PROJECT_ID);
 
         assertFalse(hasLink(collection, ApiRel.UNDO_REDO_STATUS),
                 "a reader has no checkpoints of their own to step back through");
@@ -191,7 +194,7 @@ class SongHypermediaTest {
     void writerSelfLinksExposeMoreAffordancesThanReadOnly() {
         givenCanEdit(false);
         CollectionModel<EntityModel<SongBlockResource>> readOnly =
-                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, EDITION_ID, PROJECT_ID);
         int readOnlyBlockAffordances = readOnly.getContent().iterator().next()
                 .getRequiredLink(IanaLinkRelations.SELF).getAffordances().size();
         int readOnlyCollectionAffordances =
@@ -199,7 +202,7 @@ class SongHypermediaTest {
 
         givenCanEdit(true);
         CollectionModel<EntityModel<SongBlockResource>> writer =
-                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, EDITION_ID, PROJECT_ID);
         int writerBlockAffordances = writer.getContent().iterator().next()
                 .getRequiredLink(IanaLinkRelations.SELF).getAffordances().size();
         int writerCollectionAffordances =
@@ -214,7 +217,7 @@ class SongHypermediaTest {
         SecurityContextHolder.clearContext();
 
         CollectionModel<EntityModel<SongBlockResource>> collection =
-                blockAssembler.toCollection(blocks(), DOCUMENT_ID, PROJECT_ID);
+                blockAssembler.toCollection(blocks(), DOCUMENT_ID, EDITION_ID, PROJECT_ID);
         EntityModel<SongBlockResource> block = collection.getContent().iterator().next();
 
         assertFalse(hasLink(collection, ApiRel.CREATE));

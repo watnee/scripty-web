@@ -1194,15 +1194,13 @@ public class BlockServiceImpl implements BlockService {
 
     /**
      * Compiles the find term as a literal — regex search is deliberately not exposed to users.
+     *
+     * <p>Shared with the song side through {@link LiteralReplace} so a lyric
+     * line and a screenplay element can never come to disagree about what
+     * "whole word" or "match case" means.
      */
     private java.util.regex.Pattern buildFindPattern(String find, boolean matchCase, boolean wholeWord) {
-        String quoted = java.util.regex.Pattern.quote(find);
-        if (wholeWord) {
-            quoted = "\\b" + quoted + "\\b";
-        }
-        int flags = matchCase ? 0
-                : (java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.UNICODE_CASE);
-        return java.util.regex.Pattern.compile(quoted, flags);
+        return LiteralReplace.pattern(find, matchCase, wholeWord);
     }
 
     @Override
@@ -1249,7 +1247,7 @@ public class BlockServiceImpl implements BlockService {
             return 0;
         }
         java.util.regex.Pattern pattern = buildFindPattern(find, matchCase, wholeWord);
-        String replacement = java.util.regex.Matcher.quoteReplacement(replace != null ? replace : "");
+        String replacement = LiteralReplace.replacement(replace);
 
         java.util.Set<Integer> touchedProjectIds = new java.util.HashSet<>();
         int changed = 0;

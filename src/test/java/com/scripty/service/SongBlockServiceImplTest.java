@@ -366,6 +366,141 @@ class SongBlockServiceImplTest {
         assertFalse(service.projectIdForDocument(7) == null);
     }
 
+    // ---- find and replace ----
+
+    private List<Integer> ids() {
+        return service.getBlocks(7, EDITION_ID).stream()
+                .map(SongBlockViewModel::getId)
+                .collect(Collectors.toList());
+    }
+
+    @Test
+    void replaceAllRewritesEveryMatchingLineAndCountsThem() {
+        doc.setContent("the sun is up\nno match here\nsun sun");
+
+        int changed = service.replaceInLines(7, EDITION_ID, null, "sun", "moon", false, false);
+
+        assertEquals(2, changed);
+        assertEquals(List.of("the moon is up", "no match here", "moon moon"), contents());
+    }
+
+    /** The joined lines feed export, share and insert-into-script, so they follow. */
+    @Test
+    void replaceAllRebuildsTheDocumentContent() {
+        doc.setContent("the sun is up\nsun again");
+
+        service.replaceInLines(7, EDITION_ID, null, "sun", "moon", false, false);
+
+        assertEquals("the moon is up\nmoon again", doc.getContent());
+    }
+
+    @Test
+    void replaceAllHonoursMatchCase() {
+        doc.setContent("Sun and sun");
+
+        service.replaceInLines(7, EDITION_ID, null, "sun", "moon", true, false);
+
+        assertEquals(List.of("Sun and moon"), contents());
+    }
+
+    @Test
+    void replaceAllHonoursWholeWord() {
+        doc.setContent("sunset at sun");
+
+        service.replaceInLines(7, EDITION_ID, null, "sun", "moon", false, true);
+
+        assertEquals(List.of("sunset at moon"), contents());
+    }
+
+    /** The term is literal: a regex metacharacter means itself on both sides. */
+    @Test
+    void replaceAllTreatsBothSidesAsLiteralText() {
+        doc.setContent("a.c and abc");
+
+        service.replaceInLines(7, EDITION_ID, null, "a.c", "$1", false, false);
+
+        assertEquals(List.of("$1 and abc"), contents());
+    }
+
+    @Test
+    void replaceAllNarrowsToTheNamedLines() {
+        doc.setContent("sun one\nsun two");
+        Integer first = ids().get(0);
+
+        int changed = service.replaceInLines(7, EDITION_ID, List.of(first), "sun", "moon", false, false);
+
+        assertEquals(1, changed);
+        assertEquals(List.of("moon one", "sun two"), contents());
+    }
+
+    /** An id from another song is dropped, not trusted — see SongBulkReplaceRequest. */
+    @Test
+    void replaceAllIgnoresIdsOutsideTheVersion() {
+        doc.setContent("sun one\nsun two");
+
+        int changed = service.replaceInLines(7, EDITION_ID, List.of(9999), "sun", "moon", false, false);
+
+        assertEquals(0, changed);
+        assertEquals(List.of("sun one", "sun two"), contents());
+    }
+
+    @Test
+    void replaceAllChangesNothingWhenThereIsNoMatch() {
+        doc.setContent("nothing here");
+
+        assertEquals(0, service.replaceInLines(7, EDITION_ID, null, "sun", "moon", false, false));
+        assertEquals(List.of("nothing here"), contents());
+    }
+
+    @Test
+    void replaceAllRejectsAnEmptyFind() {
+        doc.setContent("sun");
+
+        assertEquals(0, service.replaceInLines(7, EDITION_ID, null, "", "moon", false, false));
+        assertEquals(List.of("sun"), contents());
+    }
+
+    @Test
+    void replaceOneSwapsTheNamedOccurrenceOnly() {
+        doc.setContent("sun sun sun");
+        Integer id = ids().get(0);
+
+        SongBlock changed = service.replaceOccurrenceInBlock(id, "sun", "moon", false, false, 1);
+
+        assertNotNull(changed);
+        assertEquals(List.of("sun moon sun"), contents());
+    }
+
+    @Test
+    void replaceOneRebuildsTheDocumentContent() {
+        doc.setContent("sun rise");
+        Integer id = ids().get(0);
+
+        service.replaceOccurrenceInBlock(id, "sun", "moon", false, false, 0);
+
+        assertEquals("moon rise", doc.getContent());
+    }
+
+    /** Out of range is a no-op, and says so, so the caller can tell them apart. */
+    @Test
+    void replaceOneAnswersNullForAnOccurrenceThatIsNotThere() {
+        doc.setContent("sun rise");
+        Integer id = ids().get(0);
+
+        assertNull(service.replaceOccurrenceInBlock(id, "sun", "moon", false, false, 4));
+        assertEquals(List.of("sun rise"), contents());
+    }
+
+    @Test
+    void replaceOneHonoursWholeWord() {
+        doc.setContent("sunset sun");
+        Integer id = ids().get(0);
+
+        service.replaceOccurrenceInBlock(id, "sun", "moon", false, true, 0);
+
+        assertEquals(List.of("sunset moon"), contents());
+    }
+
     @Test
     void purgeExpiredBlocksKeepsEverythingWhenRetentionIsUnlimited() {
         // The shipped default: trashed lines wait for a manual "Delete forever".

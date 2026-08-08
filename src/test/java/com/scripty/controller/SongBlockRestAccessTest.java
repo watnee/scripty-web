@@ -2,6 +2,7 @@ package com.scripty.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -12,8 +13,10 @@ import static org.mockito.Mockito.when;
 import com.scripty.api.CreateSongBlockBelowRequest;
 import com.scripty.api.EditSongBlockRequest;
 import com.scripty.api.MoveBlockRequest;
+import com.scripty.api.ReplaceOccurrenceRequest;
 import com.scripty.api.SetSongBlockHighlightRequest;
 import com.scripty.api.SongBlockResourceAssembler;
+import com.scripty.api.SongBulkReplaceRequest;
 import com.scripty.dto.SongEdition;
 import com.scripty.security.ProjectAccessSupport;
 import com.scripty.service.SongBlockService;
@@ -126,6 +129,33 @@ class SongBlockRestAccessTest {
         assertEquals(HttpStatus.FORBIDDEN,
                 controller.move(BLOCK_ID, new MoveBlockRequest(2), principal).getStatusCode());
         verify(songBlockService, never()).moveTo(anyInt(), anyInt());
+    }
+
+    @Test
+    void nonWriterCannotReplaceInALine() {
+        givenNonWriterMember();
+
+        assertEquals(HttpStatus.FORBIDDEN,
+                controller.replace(BLOCK_ID,
+                        new ReplaceOccurrenceRequest("sun", "moon", false, false, 0), principal)
+                        .getStatusCode());
+        verify(songBlockService, never()).replaceOccurrenceInBlock(
+                anyInt(), any(), any(), anyBoolean(), anyBoolean(), anyInt());
+    }
+
+    @Test
+    void nonWriterCannotReplaceAcrossTheSong() {
+        givenNonWriterMember();
+
+        assertEquals(HttpStatus.FORBIDDEN,
+                controller.bulkReplace(DOCUMENT_ID, EDITION_ID,
+                        new SongBulkReplaceRequest(null, "sun", "moon", false, false), principal)
+                        .getStatusCode());
+        verify(songBlockService, never()).replaceInLines(
+                anyInt(), anyInt(), any(), any(), any(), anyBoolean(), anyBoolean());
+        // No checkpoint either: a refused Replace All must not leave an empty
+        // step on the writer's undo stack.
+        verify(songUndoRedoService, never()).recordCheckpoint(anyInt(), anyInt());
     }
 
     /** Read-only: a member may still read the lyrics. */

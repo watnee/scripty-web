@@ -56,6 +56,28 @@ public interface SongBlockService {
     SongBlock setHighlight(Integer blockId, String highlight);
 
     /**
+     * Replaces a single occurrence of {@code find} inside one lyric line — the
+     * one-at-a-time "Replace" that walks a find down a song.
+     *
+     * <p>{@code occurrence} is the zero-based index of the match to swap within
+     * the line. Answers null when there is nothing at that index, so the caller
+     * can tell a no-op from a rewrite.
+     */
+    SongBlock replaceOccurrenceInBlock(Integer blockId, String find, String replace,
+                                       boolean matchCase, boolean wholeWord, int occurrence);
+
+    /**
+     * Replaces every occurrence of {@code find} across a version's lines, and
+     * answers how many lines changed.
+     *
+     * <p>A null {@code ids} means every live line in the version. A supplied
+     * list is intersected with that same set, so ids belonging to another song
+     * are ignored rather than trusted.
+     */
+    int replaceInLines(Integer documentId, Integer editionId, List<Integer> ids,
+                       String find, String replace, boolean matchCase, boolean wholeWord);
+
+    /**
      * Soft-deletes a block, moving it to the song's "recently deleted lines"
      * recovery list. Keeps at least one (empty) live block in the song.
      */

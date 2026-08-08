@@ -4,9 +4,11 @@ import com.scripty.api.ApiRel;
 import com.scripty.api.CreateSongBlockBelowRequest;
 import com.scripty.api.EditSongBlockRequest;
 import com.scripty.api.MoveBlockRequest;
+import com.scripty.api.ReplaceOccurrenceRequest;
 import com.scripty.api.SetSongBlockHighlightRequest;
 import com.scripty.api.SongBlockResource;
 import com.scripty.api.SongBlockResourceAssembler;
+import com.scripty.api.SongBulkReplaceRequest;
 import com.scripty.dto.SongBlock;
 import com.scripty.dto.SongEdition;
 import com.scripty.security.ProjectAccessSupport;
@@ -103,7 +105,7 @@ public class SongBlockRestController {
         Integer projectId = songBlockService.projectIdForDocument(documentId);
         Integer resolved = effectiveEdition(documentId, editionId);
         return ResponseEntity.ok(assembler.toCollection(
-                songBlockService.getBlocks(documentId, resolved), documentId, projectId));
+                songBlockService.getBlocks(documentId, resolved), documentId, resolved, projectId));
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
@@ -256,6 +258,93 @@ public class SongBlockRestController {
         return ResponseEntity.ok(assembler.toModel(block, projectId));
     }
 
+    /**
+     * Replaces one occurrence of {@code find} inside a single lyric line — the
+     * one-at-a-time "Replace" that walks a find down a song, as opposed to
+     * {@code /bulk/replace}'s "Replace All".
+     *
+     * <p>Its own checkpoint, so each single replace is a separate undo step,
+     * matching {@link BlockRestController#replace}. An empty {@code find} is
+     * rejected; an out-of-range {@code occurrence} simply changes nothing and
+     * the line comes back as it was, so the client always re-reads current
+     * state rather than guessing whether anything happened.
+     */
+    @RequestMapping(value = "/{id}/replace", method = RequestMethod.POST,
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> replace(
+            @PathVariable Integer id,
+            @RequestBody ReplaceOccurrenceRequest request,
+            Principal principal) {
+        if (!canEditBlock(id, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request == null || request.find() == null || request.find().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("find", "You must supply a value to find."), HttpStatus.BAD_REQUEST);
+        }
+        SongBlock current = songBlockService.read(id);
+        if (current == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        songUndoRedoService.recordCheckpointForBlock(id);
+        SongBlock block = songBlockService.replaceOccurrenceInBlock(
+                id,
+                request.find(),
+                request.replacementOrEmpty(),
+                request.matchCaseOrFalse(),
+                request.wholeWordOrFalse(),
+                request.occurrenceOrFirst());
+        SongBlock result = block != null ? block : current;
+        if (block != null) {
+            songVersionService.autoSaveVersionForBlock(block.getId());
+        }
+        return ResponseEntity.ok(assembler.toModel(result, songBlockService.projectIdForBlock(id)));
+    }
+
+    /**
+     * Find and replace across a song's lyric lines — "Replace All".
+     *
+     * <p>One checkpoint for the whole sweep, which is what makes the entire
+     * rewrite a single Undo rather than one step per line. The service's
+     * changed-line count is deliberately not surfaced: the refreshed collection
+     * comes back instead, exactly as {@code undo} and {@code redo} answer, and a
+     * caller sees what changed by comparing it with the lines it already held.
+     *
+     * <p>Authorised through the song's document rather than a project id — see
+     * {@link SongBulkReplaceRequest} for why this is not a {@code BulkBlockRequest}.
+     */
+    @RequestMapping(value = "/bulk/replace", method = RequestMethod.POST,
+            consumes = "application/json", produces = {MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    public ResponseEntity<?> bulkReplace(
+            @RequestParam Integer documentId,
+            @RequestParam(required = false) Integer editionId,
+            @RequestBody SongBulkReplaceRequest request,
+            Principal principal) {
+        if (!canEditDocument(documentId, principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request == null || request.find() == null || request.find().isEmpty()) {
+            return new ResponseEntity<>(
+                    Map.of("find", "You must supply a value to find."), HttpStatus.BAD_REQUEST);
+        }
+
+        Integer resolved = effectiveEdition(documentId, editionId);
+        songUndoRedoService.recordCheckpoint(documentId, resolved);
+        songBlockService.replaceInLines(
+                documentId,
+                resolved,
+                request.ids(),
+                request.find(),
+                request.replacementOrEmpty(),
+                request.matchCaseOrFalse(),
+                request.wholeWordOrFalse());
+        songVersionService.autoSaveVersion(documentId, resolved);
+        Integer projectId = songBlockService.projectIdForDocument(documentId);
+        return ResponseEntity.ok(assembler.toCollection(
+                songBlockService.getBlocks(documentId, resolved), documentId, resolved, projectId));
+    }
+
     // Undo and redo for the song editor. The MVC pair behind /song/block/undo
     // answers with an HTMX fragment, so an API client could see the stacks
     // through undoRedoStatus and never step through them; these return the
@@ -324,7 +413,7 @@ public class SongBlockRestController {
         // and undo-redo-status is where a client learns it had nowhere to go.
         Integer projectId = songBlockService.projectIdForDocument(documentId);
         return ResponseEntity.ok(assembler.toCollection(
-                songBlockService.getBlocks(documentId, resolved), documentId, projectId));
+                songBlockService.getBlocks(documentId, resolved), documentId, resolved, projectId));
     }
 
     private ResponseEntity<EntityModel<SongBlockResource>> created(SongBlock block, Integer projectId) {

@@ -25,6 +25,7 @@ import com.scripty.viewmodel.block.editblock.EditPersonViewModel;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -779,10 +780,28 @@ public class BlockServiceImpl implements BlockService {
         } else {
             blockRepository.decrementOrdersInRange(currentOrder, newOrder, scriptEditionId);
         }
-        block.setOrder(newOrder);
-        blockRepository.save(block);
-        recordScriptEdited(block.getProject(), resolveEdition(block));
-        return block;
+        // Both range updates clear the persistence context, so `block` and its
+        // lazy `person` proxy are detached from here on. Read the block back so
+        // what this method mutates and returns is managed again.
+        Block moved = blockRepository.findById(id).orElse(null);
+        if (moved == null) {
+            return null;
+        }
+        moved.setOrder(newOrder);
+        blockRepository.save(moved);
+        // The speaker has to be loaded here, inside the transaction. The
+        // resource assembler reads `getPerson().getName()` to name it, and with
+        // `open-in-view` off there is no session left by the time it runs: a
+        // proxy that reached it uninitialized threw LazyInitializationException,
+        // so moving a character cue answered 500 and the writer was told the
+        // server had returned an unexpected error. Nothing else on a block is
+        // read through an association — `getProject().getId()` and
+        // `getPerson().getId()` are answered by the proxy itself.
+        if (moved.getPerson() != null) {
+            Hibernate.initialize(moved.getPerson());
+        }
+        recordScriptEdited(moved.getProject(), resolveEdition(moved));
+        return moved;
     }
 
     @Override

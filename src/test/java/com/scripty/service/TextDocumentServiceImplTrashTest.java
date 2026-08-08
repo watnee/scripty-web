@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -184,18 +185,21 @@ class TextDocumentServiceImplTrashTest {
 
     @Test
     void purgeExpiredRemovesOnlyDocumentsPastTheRetentionWindow() {
-        when(textDocumentRepository.findByDeletedAtBefore(any(LocalDateTime.class)))
-                .thenReturn(List.of(song));
+        when(textDocumentRepository.findIdsDeletedBefore(any(LocalDateTime.class), any()))
+                .thenReturn(List.of(song.getId()))
+                .thenReturn(List.of());
+        when(textDocumentRepository.deleteAllByIdIn(List.of(song.getId()))).thenReturn(1);
 
         assertEquals(1, service.purgeExpired());
 
         ArgumentCaptor<LocalDateTime> cutoff = ArgumentCaptor.forClass(LocalDateTime.class);
-        verify(textDocumentRepository).findByDeletedAtBefore(cutoff.capture());
+        verify(textDocumentRepository, atLeastOnce())
+                .findIdsDeletedBefore(cutoff.capture(), any());
         LocalDateTime expected = LocalDateTime.now().minusDays(30);
         assertTrue(cutoff.getValue().isAfter(expected.minusMinutes(1))
                         && cutoff.getValue().isBefore(expected.plusMinutes(1)),
                 "cutoff should be the retention window before now, was " + cutoff.getValue());
-        verify(textDocumentRepository).delete(song);
+        verify(textDocumentRepository).deleteAllByIdIn(List.of(song.getId()));
     }
 
     @Test
@@ -230,7 +234,7 @@ class TextDocumentServiceImplTrashTest {
         ReflectionTestUtils.setField(service, "trashRetentionDays", 0);
 
         assertEquals(0, service.purgeExpired());
-        verify(textDocumentRepository, never()).findByDeletedAtBefore(any(LocalDateTime.class));
+        verify(textDocumentRepository, never()).findIdsDeletedBefore(any(LocalDateTime.class), any());
         verify(textDocumentRepository, never()).delete(any(TextDocument.class));
     }
 

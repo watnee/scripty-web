@@ -18,11 +18,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SongBlockServiceImpl implements SongBlockService {
+
 
     private final SongBlockRepository songBlockRepository;
     private final TextDocumentRepository textDocumentRepository;
@@ -34,6 +36,17 @@ public class SongBlockServiceImpl implements SongBlockService {
     // drops its purge-date copy. Set a positive value to re-enable expiry.
     @Value("${scripty.songblocks.trash-retention-days:0}")
     private int trashRetentionDays = 0;
+
+    /**
+     * How many rows the nightly purge deletes per statement.
+     *
+     * <p>Configurable only so it can be turned down: the number itself is
+     * arbitrary — big enough that a normal night is one or two passes, small
+     * enough that no single statement is a long lock. Loading the whole backlog
+     * is what this replaced, and no value here brings that back.
+     */
+    @Value("${app.trash-purge-batch-size:500}")
+    private int purgeBatchSize = 500;
 
     @Autowired
     public SongBlockServiceImpl(SongBlockRepository songBlockRepository,
@@ -284,9 +297,23 @@ public class SongBlockServiceImpl implements SongBlockService {
             return 0;
         }
         LocalDateTime cutoff = LocalDateTime.now().minusDays(trashRetentionDays);
-        List<SongBlock> expired = songBlockRepository.findByDeletedAtNotNullAndDeletedAtBefore(cutoff);
-        songBlockRepository.deleteAll(expired);
-        return expired.size();
+        return purgeInBatches(cutoff);
+    }
+
+    /**
+     * Deletes every trashed line older than {@code cutoff}, a page of ids at a
+     * time, so the sweep costs the same whether it finds a hundred lines or a
+     * hundred thousand. The screenplay's trash is swept the same way — see
+     * {@code TextDocumentServiceImpl.purgeInBatches} for the reasoning.
+     */
+    private int purgeInBatches(LocalDateTime cutoff) {
+        int purged = 0;
+        List<Integer> batch;
+        while (!(batch = songBlockRepository
+                .findIdsDeletedBefore(cutoff, PageRequest.of(0, purgeBatchSize))).isEmpty()) {
+            purged += songBlockRepository.deleteAllByIdIn(batch);
+        }
+        return purged;
     }
 
     @Override

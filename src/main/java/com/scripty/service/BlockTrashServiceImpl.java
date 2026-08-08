@@ -15,6 +15,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class BlockTrashServiceImpl implements BlockTrashService {
 
     private static final int PREVIEW_MAX_CHARS = 140;
 
+
     private final DeletedBlockRepository deletedBlockRepository;
     private final ScriptEditionRepository scriptEditionRepository;
     private final BlockService blockService;
@@ -34,6 +36,17 @@ public class BlockTrashServiceImpl implements BlockTrashService {
     // trash page drops its purge-date copy. Set a positive value to re-enable expiry.
     @Value("${app.block-trash-retention-days:0}")
     private int retentionDays;
+
+    /**
+     * How many rows the nightly purge deletes per statement.
+     *
+     * <p>Configurable only so it can be turned down: the number itself is
+     * arbitrary — big enough that a normal night is one or two passes, small
+     * enough that no single statement is a long lock. Loading the whole backlog
+     * is what this replaced, and no value here brings that back.
+     */
+    @Value("${app.trash-purge-batch-size:500}")
+    private int purgeBatchSize = 500;
 
     public BlockTrashServiceImpl(DeletedBlockRepository deletedBlockRepository,
                                  ScriptEditionRepository scriptEditionRepository,
@@ -96,12 +109,24 @@ public class BlockTrashServiceImpl implements BlockTrashService {
             return 0;
         }
         LocalDateTime cutoff = LocalDateTime.now().minusDays(retentionDays);
-        List<DeletedBlock> expired = deletedBlockRepository.findByDeletedAtBefore(cutoff);
-        if (expired.isEmpty()) {
-            return 0;
+        return purgeInBatches(cutoff);
+    }
+
+    /**
+     * Deletes every trash record older than {@code cutoff}, a page of ids at a
+     * time. Fetching the whole backlog as entities made the job's memory a
+     * function of how much everyone had deleted that month; see
+     * {@code TextDocumentServiceImpl.purgeInBatches} for the same reasoning on
+     * the document trash.
+     */
+    private int purgeInBatches(LocalDateTime cutoff) {
+        int purged = 0;
+        List<Integer> batch;
+        while (!(batch = deletedBlockRepository
+                .findIdsDeletedBefore(cutoff, PageRequest.of(0, purgeBatchSize))).isEmpty()) {
+            purged += deletedBlockRepository.deleteAllByIdIn(batch);
         }
-        deletedBlockRepository.deleteAll(expired);
-        return expired.size();
+        return purged;
     }
 
     @Override

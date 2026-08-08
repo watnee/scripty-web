@@ -23,6 +23,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -296,7 +297,16 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     @Override
     @Transactional(readOnly = true)
     public boolean canUndo(Integer projectId, Integer editionId) {
-        return projectId != null && !getState(projectId, editionId).undoStack.isEmpty();
+        if (projectId == null) {
+            return false;
+        }
+        Integer resolvedEditionId = resolveEditionId(projectId, editionId);
+        Integer userId = currentUserId();
+        if (userId == null) {
+            return !getSessionState(projectId, resolvedEditionId).undoStack.isEmpty();
+        }
+        return hasEntries(projectUndoStateRepository.findUndoStackLength(
+                projectId, editionKey(resolvedEditionId), userId));
     }
 
     @Override
@@ -308,7 +318,29 @@ public class ProjectUndoRedoServiceImpl implements ProjectUndoRedoService {
     @Override
     @Transactional(readOnly = true)
     public boolean canRedo(Integer projectId, Integer editionId) {
-        return projectId != null && !getState(projectId, editionId).redoStack.isEmpty();
+        if (projectId == null) {
+            return false;
+        }
+        Integer resolvedEditionId = resolveEditionId(projectId, editionId);
+        Integer userId = currentUserId();
+        if (userId == null) {
+            return !getSessionState(projectId, resolvedEditionId).redoStack.isEmpty();
+        }
+        return hasEntries(projectUndoStateRepository.findRedoStackLength(
+                projectId, editionKey(resolvedEditionId), userId));
+    }
+
+    /**
+     * Whether an encoded stack of this length holds anything.
+     *
+     * <p>A stack is written by {@code encodeStack} as a JSON array, so the empty
+     * one is {@code []} and every other one is longer. An absent row — nobody
+     * has edited this edition yet — is no stack at all. Asking the length rather
+     * than reading the column is what keeps the Undo button's question off the
+     * megabyte path; see {@link com.scripty.repository.ProjectUndoStateRepository}.
+     */
+    private static boolean hasEntries(Optional<Integer> encodedLength) {
+        return encodedLength.orElse(0) > 2;
     }
 
     @Override

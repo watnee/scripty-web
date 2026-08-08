@@ -97,6 +97,13 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         }
 
         List<VersionViewModel> versionVMs = new ArrayList<>();
+        // Each row is summarised against the one below it, so every snapshot is
+        // wanted twice — once as the newer side, once as the older. Carrying the
+        // previous iteration's parse down instead of re-reading it halves the
+        // JSON work on a page that is already pulling every snapshot of the
+        // whole screenplay out of the database.
+        Map<String, Object> newerSnapshot = null;
+        boolean newerParsed = false;
         for (int i = 0; i < versions.size(); i++) {
             ProjectVersion version = versions.get(i);
             VersionViewModel vvm = new VersionViewModel();
@@ -105,14 +112,20 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
             vvm.setCreatedAt(version.getCreatedAt());
             vvm.setAutoSave(isAutoSaveLabel(version.getLabel()));
             try {
-                Map<String, Object> snapshot = objectMapper.readValue(version.getSnapshotJson(), Map.class);
+                Map<String, Object> snapshot = newerParsed
+                        ? newerSnapshot
+                        : objectMapper.readValue(version.getSnapshotJson(), Map.class);
                 populateCounts(vvm, snapshot);
                 Map<String, Object> olderSnapshot = null;
                 if (i + 1 < versions.size()) {
                     olderSnapshot = objectMapper.readValue(versions.get(i + 1).getSnapshotJson(), Map.class);
                 }
                 vvm.setChangeSummary(computeChangeSummary(snapshot, olderSnapshot));
+                newerSnapshot = olderSnapshot;
+                newerParsed = olderSnapshot != null;
             } catch (JsonProcessingException e) {
+                newerSnapshot = null;
+                newerParsed = false;
                 vvm.setSceneCount(0);
                 vvm.setBlockCount(0);
                 vvm.setCharacterCount(0);
@@ -415,18 +428,17 @@ public class ProjectVersionServiceImpl implements ProjectVersionService {
         if (scriptEditionId == null) {
             return;
         }
-        List<ProjectVersion> autoSaves =
-                projectVersionRepository.findAutoSavesByScriptEditionIdOrderByCreatedAtDesc(scriptEditionId);
-        if (autoSaves.size() <= MAX_AUTO_SAVES_PER_EDITION) {
+        List<Integer> autoSaveIds =
+                projectVersionRepository.findAutoSaveIdsByScriptEditionIdOrderByCreatedAtDesc(scriptEditionId);
+        if (autoSaveIds.size() <= MAX_AUTO_SAVES_PER_EDITION) {
             return;
         }
-        List<Integer> toDelete = autoSaves.stream()
+        List<Integer> toDelete = autoSaveIds.stream()
                 .skip(MAX_AUTO_SAVES_PER_EDITION)
-                .map(ProjectVersion::getId)
                 .filter(Objects::nonNull)
                 .toList();
         if (!toDelete.isEmpty()) {
-            projectVersionRepository.deleteAllById(toDelete);
+            projectVersionRepository.deleteAllByIdIn(toDelete);
         }
     }
 

@@ -317,7 +317,25 @@ class SongUndoRedoServiceImplTest {
             rows.put(key(row.getTextDocument().getId(), row.getSongEdition().getId(), row.getUser().getId()), row);
             return row;
         });
+        // canUndo/canRedo ask the database for the encoded stack's length rather
+        // than reading the stack itself, so the stand-in answers that too — off
+        // the same rows, which is what makes it a stand-in and not a second story.
+        when(repository.findUndoStackLength(any(), any(), any()))
+                .thenAnswer(i -> lengthOf(i, SongUndoState::getUndoJson));
+        when(repository.findRedoStackLength(any(), any(), any()))
+                .thenAnswer(i -> lengthOf(i, SongUndoState::getRedoJson));
         return repository;
+    }
+
+    private Optional<Integer> lengthOf(org.mockito.invocation.InvocationOnMock invocation,
+                                       java.util.function.Function<SongUndoState, String> stack) {
+        SongUndoState row = rows.get(key(invocation.getArgument(0),
+                invocation.getArgument(1), invocation.getArgument(2)));
+        if (row == null) {
+            return Optional.empty();
+        }
+        String json = stack.apply(row);
+        return Optional.of(json != null ? json.length() : 0);
     }
 
     private static String key(Integer documentId, Integer editionId, Integer userId) {

@@ -18,6 +18,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -135,13 +136,39 @@ public class SongUndoRedoServiceImpl implements SongUndoRedoService {
     @Override
     @Transactional(readOnly = true)
     public boolean canUndo(Integer documentId, Integer editionId) {
-        return documentId != null && editionId != null && !getState(documentId, editionId).undoStack.isEmpty();
+        if (documentId == null || editionId == null) {
+            return false;
+        }
+        Integer userId = currentUserId();
+        if (userId == null) {
+            return !getSessionState(documentId, editionId).undoStack.isEmpty();
+        }
+        return hasEntries(songUndoStateRepository.findUndoStackLength(documentId, editionId, userId));
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean canRedo(Integer documentId, Integer editionId) {
-        return documentId != null && editionId != null && !getState(documentId, editionId).redoStack.isEmpty();
+        if (documentId == null || editionId == null) {
+            return false;
+        }
+        Integer userId = currentUserId();
+        if (userId == null) {
+            return !getSessionState(documentId, editionId).redoStack.isEmpty();
+        }
+        return hasEntries(songUndoStateRepository.findRedoStackLength(documentId, editionId, userId));
+    }
+
+    /**
+     * Whether an encoded stack of this length holds anything.
+     *
+     * <p>{@code encodeStack} writes a JSON array, so the empty stack is
+     * {@code []} and anything with a line in it is longer; an absent row is no
+     * stack at all. The screenplay side reasons the same way — see
+     * {@code ProjectUndoRedoServiceImpl.hasEntries}.
+     */
+    private static boolean hasEntries(Optional<Integer> encodedLength) {
+        return encodedLength.orElse(0) > 2;
     }
 
     private String encode(List<SongBlockService.LineSnapshot> lines) {

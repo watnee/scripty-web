@@ -82,6 +82,13 @@ public class SongVersionServiceImpl implements SongVersionService {
                 ? songVersionRepository.findBySongEditionIdOrderByCreatedAtDesc(edition.getId())
                 : List.of();
         List<SongVersionViewModel> versionVMs = new ArrayList<>();
+        // Every snapshot is read twice — as the newer side of one row's summary
+        // and the older side of the row above it. Carrying the previous
+        // iteration's parse down halves that; a null carried value means the
+        // read failed, so the next row reads again and reports it broken rather
+        // than inheriting the silence.
+        Map<String, Object> carried = null;
+        boolean haveCarried = false;
         for (int i = 0; i < versions.size(); i++) {
             SongVersion version = versions.get(i);
             SongVersionViewModel vvm = new SongVersionViewModel();
@@ -90,12 +97,16 @@ public class SongVersionServiceImpl implements SongVersionService {
             vvm.setCreatedAt(version.getCreatedAt());
             vvm.setAutoSave(isAutoSaveLabel(version.getLabel()));
 
-            Map<String, Object> snapshot = readSnapshot(version.getSnapshotJson());
+            Map<String, Object> snapshot = haveCarried
+                    ? carried
+                    : readSnapshot(version.getSnapshotJson());
             if (snapshot == null) {
                 vvm.setLineCount(0);
                 SongVersionChangeSummary broken = new SongVersionChangeSummary();
                 broken.addDetail("Unable to read snapshot");
                 vvm.setChangeSummary(broken);
+                carried = null;
+                haveCarried = false;
             } else {
                 vvm.setTitle(titleOf(snapshot));
                 vvm.setLineCount(linesOf(snapshot).size());
@@ -103,6 +114,8 @@ public class SongVersionServiceImpl implements SongVersionService {
                         ? readSnapshot(versions.get(i + 1).getSnapshotJson())
                         : null;
                 vvm.setChangeSummary(computeChangeSummary(snapshot, older));
+                carried = older;
+                haveCarried = older != null;
             }
             versionVMs.add(vvm);
         }
@@ -199,18 +212,17 @@ public class SongVersionServiceImpl implements SongVersionService {
         if (editionId == null) {
             return;
         }
-        List<SongVersion> autoSaves =
-                songVersionRepository.findAutoSavesBySongEditionIdOrderByCreatedAtDesc(editionId);
-        if (autoSaves.size() <= MAX_AUTO_SAVES_PER_SONG) {
+        List<Integer> autoSaveIds =
+                songVersionRepository.findAutoSaveIdsBySongEditionIdOrderByCreatedAtDesc(editionId);
+        if (autoSaveIds.size() <= MAX_AUTO_SAVES_PER_SONG) {
             return;
         }
-        List<Integer> toDelete = autoSaves.stream()
+        List<Integer> toDelete = autoSaveIds.stream()
                 .skip(MAX_AUTO_SAVES_PER_SONG)
-                .map(SongVersion::getId)
                 .filter(Objects::nonNull)
                 .toList();
         if (!toDelete.isEmpty()) {
-            songVersionRepository.deleteAllById(toDelete);
+            songVersionRepository.deleteAllByIdIn(toDelete);
         }
     }
 

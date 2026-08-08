@@ -144,36 +144,33 @@ class SongVersionServiceImplTest {
     @Test
     void pruneAutoSavesDoesNothingWhenEditionIdNull() {
         service.pruneAutoSaves(null);
-        verify(songVersionRepository, never()).deleteAllById(anyList());
+        verify(songVersionRepository, never()).deleteAllByIdIn(anyList());
     }
 
     @Test
     void pruneAutoSavesDoesNothingWhenAtLimit() {
-        when(songVersionRepository.findAutoSavesBySongEditionIdOrderByCreatedAtDesc(EDITION_ID))
-                .thenReturn(autoSaves(SongVersionServiceImpl.MAX_AUTO_SAVES_PER_SONG));
+        when(songVersionRepository.findAutoSaveIdsBySongEditionIdOrderByCreatedAtDesc(EDITION_ID))
+                .thenReturn(autoSaveIds(SongVersionServiceImpl.MAX_AUTO_SAVES_PER_SONG));
 
         service.pruneAutoSaves(EDITION_ID);
 
-        verify(songVersionRepository, never()).deleteAllById(anyList());
+        verify(songVersionRepository, never()).deleteAllByIdIn(anyList());
     }
 
     @Test
     void pruneAutoSavesDeletesOldestBeyondLimit() {
         int total = SongVersionServiceImpl.MAX_AUTO_SAVES_PER_SONG + 3;
-        List<SongVersion> autos = autoSaves(total);
-        when(songVersionRepository.findAutoSavesBySongEditionIdOrderByCreatedAtDesc(EDITION_ID)).thenReturn(autos);
+        List<Integer> autoIds = autoSaveIds(total);
+        when(songVersionRepository.findAutoSaveIdsBySongEditionIdOrderByCreatedAtDesc(EDITION_ID))
+                .thenReturn(autoIds);
 
         service.pruneAutoSaves(EDITION_ID);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Integer>> ids = ArgumentCaptor.forClass(List.class);
-        verify(songVersionRepository).deleteAllById(ids.capture());
+        verify(songVersionRepository).deleteAllByIdIn(ids.capture());
         assertEquals(3, ids.getValue().size());
-        assertEquals(
-                autos.subList(SongVersionServiceImpl.MAX_AUTO_SAVES_PER_SONG, total).stream()
-                        .map(SongVersion::getId)
-                        .toList(),
-                ids.getValue());
+        assertEquals(autoIds.subList(SongVersionServiceImpl.MAX_AUTO_SAVES_PER_SONG, total), ids.getValue());
     }
 
     // --- restore / delete ownership ---------------------------------------
@@ -380,12 +377,12 @@ class SongVersionServiceImplTest {
         return v;
     }
 
-    private static List<SongVersion> autoSaves(int count) {
-        List<SongVersion> list = new ArrayList<>(count);
-        LocalDateTime base = LocalDateTime.of(2026, 7, 1, 12, 0);
+    /** Auto-save ids newest first, the order the repository hands them back in. */
+    private static List<Integer> autoSaveIds(int count) {
+        List<Integer> ids = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            list.add(version(1000 + i, "Auto-save Jul 1, 12:00 PM", base.minusMinutes(i)));
+            ids.add(1000 + i);
         }
-        return list;
+        return ids;
     }
 }

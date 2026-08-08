@@ -152,6 +152,32 @@ class SongUndoRedoPersistenceIntegrationTest {
         assertEquals(List.of("the first line, rewritten"), currentLines());
     }
 
+    /**
+     * A stack that has been undone all the way back reads as empty.
+     *
+     * <p>The row is still there — it is the emptied stack inside it that has to
+     * answer no. {@code canUndo} does not read the stack any more; it asks the
+     * database how long the encoded one is and calls {@code []} empty, so this
+     * is the case that boundary exists for. Nothing else here undoes a song
+     * down to nothing, and a row left over from an earlier edit would have made
+     * the Undo button live with nothing behind it.
+     */
+    @Test
+    void anEmptiedStackReadsAsEmpty() {
+        givenASong("the first line");
+
+        undoRedoService.recordCheckpoint(documentId, editionId);
+        type("the first line, rewritten");
+        assertTrue(undoRedoService.undo(documentId, editionId));
+
+        newRequest();
+
+        assertFalse(undoRedoService.canUndo(documentId, editionId),
+                "the last step has been undone, so there is nothing left to undo");
+        assertTrue(undoRedoService.canRedo(documentId, editionId),
+                "and the step that was undone is waiting to be redone");
+    }
+
     /** One song's history is not another's, now that they share a table. */
     @Test
     void stacksAreKeptPerSong() {

@@ -398,6 +398,19 @@ public class ProjectServiceImpl implements ProjectService {
         }
         vm.setEditions(scriptEditionService.getEditionViewModels(project.getId(), canBrowseEditions));
 
+        // The cast is already in hand from the query above, so a block's character
+        // is a map lookup. It used to be a findById per block — outside any
+        // transaction, so nothing deduped them: opening a feature-length script
+        // asked the database for the same handful of characters a few thousand
+        // times over. A block pointing at somebody outside this list (a stale
+        // edition reference) still falls back to the repository, once each.
+        Map<Integer, Person> personsById = new HashMap<>();
+        for (Person person : persons) {
+            if (person.getId() != null) {
+                personsById.put(person.getId(), person);
+            }
+        }
+
         List<BlockViewModel> blockViewModels = new ArrayList<>();
         Integer lastBlockId = null;
         for (Block block : blocks) {
@@ -415,8 +428,15 @@ public class ProjectServiceImpl implements ProjectService {
             bvm.setTextBold(block.isTextBold());
             bvm.setTextItalic(block.isTextItalic());
             bvm.setTextUnderline(block.isTextUnderline());
-            if (block.getPerson() != null) {
-                Person person = personRepository.findById(block.getPerson().getId()).orElse(null);
+            if (block.getPerson() != null && block.getPerson().getId() != null) {
+                Integer personId = block.getPerson().getId();
+                // put rather than computeIfAbsent: a character the query did not
+                // return is remembered as absent too, so the fallback asks once
+                // and not once per line spoken.
+                if (!personsById.containsKey(personId)) {
+                    personsById.put(personId, personRepository.findById(personId).orElse(null));
+                }
+                Person person = personsById.get(personId);
                 if (person != null) {
                     bvm.setPersonId(person.getId());
                     bvm.setPersonName(person.getName());

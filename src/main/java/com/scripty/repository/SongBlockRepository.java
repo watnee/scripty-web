@@ -3,7 +3,11 @@ package com.scripty.repository;
 import com.scripty.dto.SongBlock;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface SongBlockRepository extends JpaRepository<SongBlock, Integer> {
 
@@ -20,8 +24,23 @@ public interface SongBlockRepository extends JpaRepository<SongBlock, Integer> {
      */
     List<SongBlock> findByTextDocumentIdOrderByOrderAsc(Integer textDocumentId);
 
-    /** Trashed lines whose retention window has lapsed, for the nightly purge. */
-    List<SongBlock> findByDeletedAtNotNullAndDeletedAtBefore(LocalDateTime cutoff);
+    /**
+     * The ids of trashed lines whose retention window has lapsed, oldest first
+     * and at most a page at a time, for the nightly purge.
+     *
+     * <p>Ids and a page rather than every expired line as an entity: the sweep
+     * only ever passed them to a delete, and how many there are is a question
+     * about how much everyone wrote last month — not a number this job should
+     * have to hold. Mirrors {@link DeletedBlockRepository#findIdsDeletedBefore}.
+     */
+    @Query("SELECT b.id FROM SongBlock b WHERE b.deletedAt IS NOT NULL AND b.deletedAt < :cutoff"
+            + " ORDER BY b.deletedAt ASC, b.id ASC")
+    List<Integer> findIdsDeletedBefore(@Param("cutoff") LocalDateTime cutoff, Pageable batch);
+
+    /** Deletes one batch of trashed lines outright, in a single statement. */
+    @Modifying(flushAutomatically = true)
+    @Query("DELETE FROM SongBlock b WHERE b.id IN :ids")
+    int deleteAllByIdIn(@Param("ids") List<Integer> ids);
 
     int countByTextDocumentId(Integer textDocumentId);
 

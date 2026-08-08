@@ -7,14 +7,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.scripty.dto.ProjectVersion;
-import com.scripty.dto.ScriptEdition;
 import com.scripty.repository.ActorRepository;
 import com.scripty.repository.BlockRepository;
 import com.scripty.repository.PersonRepository;
 import com.scripty.repository.ProjectRepository;
 import com.scripty.repository.ProjectVersionRepository;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,60 +57,47 @@ class ProjectVersionServiceImplPruneTest {
     @Test
     void pruneAutoSavesDoesNothingWhenEditionIdNull() {
         service.pruneAutoSaves(null);
-        verify(projectVersionRepository, never()).findAutoSavesByScriptEditionIdOrderByCreatedAtDesc(
+        verify(projectVersionRepository, never()).findAutoSaveIdsByScriptEditionIdOrderByCreatedAtDesc(
                 org.mockito.ArgumentMatchers.any());
-        verify(projectVersionRepository, never()).deleteAllById(anyList());
+        verify(projectVersionRepository, never()).deleteAllByIdIn(anyList());
     }
 
     @Test
     void pruneAutoSavesDoesNothingWhenAtOrUnderLimit() {
         Integer editionId = 7;
-        when(projectVersionRepository.findAutoSavesByScriptEditionIdOrderByCreatedAtDesc(editionId))
-                .thenReturn(autoSaves(editionId, ProjectVersionServiceImpl.MAX_AUTO_SAVES_PER_EDITION));
+        when(projectVersionRepository.findAutoSaveIdsByScriptEditionIdOrderByCreatedAtDesc(editionId))
+                .thenReturn(autoSaveIds(ProjectVersionServiceImpl.MAX_AUTO_SAVES_PER_EDITION));
 
         service.pruneAutoSaves(editionId);
 
-        verify(projectVersionRepository, never()).deleteAllById(anyList());
+        verify(projectVersionRepository, never()).deleteAllByIdIn(anyList());
     }
 
     @Test
     void pruneAutoSavesDeletesOldestBeyondLimit() {
         Integer editionId = 7;
         int total = ProjectVersionServiceImpl.MAX_AUTO_SAVES_PER_EDITION + 5;
-        List<ProjectVersion> autos = autoSaves(editionId, total);
-        when(projectVersionRepository.findAutoSavesByScriptEditionIdOrderByCreatedAtDesc(editionId))
-                .thenReturn(autos);
+        List<Integer> autoIds = autoSaveIds(total);
+        when(projectVersionRepository.findAutoSaveIdsByScriptEditionIdOrderByCreatedAtDesc(editionId))
+                .thenReturn(autoIds);
 
         service.pruneAutoSaves(editionId);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Integer>> idsCaptor = ArgumentCaptor.forClass(List.class);
-        verify(projectVersionRepository).deleteAllById(idsCaptor.capture());
+        verify(projectVersionRepository).deleteAllByIdIn(idsCaptor.capture());
         List<Integer> deleted = idsCaptor.getValue();
         assertEquals(5, deleted.size());
         // Newest first in list; overflow are the last 5 (oldest)
-        assertEquals(
-                autos.subList(ProjectVersionServiceImpl.MAX_AUTO_SAVES_PER_EDITION, total).stream()
-                        .map(ProjectVersion::getId)
-                        .toList(),
-                deleted);
+        assertEquals(autoIds.subList(ProjectVersionServiceImpl.MAX_AUTO_SAVES_PER_EDITION, total), deleted);
     }
 
-    private static List<ProjectVersion> autoSaves(Integer editionId, int count) {
-        ScriptEdition edition = new ScriptEdition();
-        edition.setId(editionId);
-        List<ProjectVersion> list = new ArrayList<>(count);
-        LocalDateTime base = LocalDateTime.of(2026, 7, 1, 12, 0);
+    /** Auto-save ids newest first, the order the repository hands them back in. */
+    private static List<Integer> autoSaveIds(int count) {
+        List<Integer> ids = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            ProjectVersion v = new ProjectVersion();
-            v.setId(1000 + i);
-            v.setScriptEdition(edition);
-            v.setLabel("Auto-save Jul 1, 12:00 PM");
-            // Descending createdAt (newest first), matching repository order
-            v.setCreatedAt(base.minusMinutes(i));
-            v.setSnapshotJson("{}");
-            list.add(v);
+            ids.add(1000 + i);
         }
-        return list;
+        return ids;
     }
 }

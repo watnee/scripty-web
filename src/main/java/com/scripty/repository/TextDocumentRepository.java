@@ -4,7 +4,11 @@ import com.scripty.dto.TextDocument;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Documents are soft deleted: {@code deleted_at} marks one as trashed instead of
@@ -55,8 +59,31 @@ public interface TextDocumentRepository extends JpaRepository<TextDocument, Inte
 
     Optional<TextDocument> findByIdAndProjectIdAndDeletedAtIsNotNull(Integer id, Integer projectId);
 
-    /** Trashed documents past their retention window, for the purge job. */
-    List<TextDocument> findByDeletedAtBefore(LocalDateTime cutoff);
+    /**
+     * The ids of trashed documents past their retention window, oldest first
+     * and at most a page at a time, for the nightly purge.
+     *
+     * <p>Ids and a page, not whole documents: every row here carries its lyric
+     * or note as {@code content}, so the finder that returned entities made the
+     * job's memory a function of how much was thrown away that month. Mirrors
+     * {@link DeletedBlockRepository#findIdsDeletedBefore}.
+     */
+    @Query("SELECT d.id FROM TextDocument d WHERE d.deletedAt < :cutoff"
+            + " ORDER BY d.deletedAt ASC, d.id ASC")
+    List<Integer> findIdsDeletedBefore(@Param("cutoff") LocalDateTime cutoff, Pageable batch);
+
+    /**
+     * Deletes one batch of trashed documents outright, in a single statement.
+     *
+     * <p>A document's lines, versions, editions, recordings and undo stacks go
+     * with it because every one of those tables references {@code text_document}
+     * {@code ON DELETE CASCADE} — the same thing that carried them away when the
+     * purge deleted entities one at a time, since nothing here cascades in the
+     * mapping.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("DELETE FROM TextDocument d WHERE d.id IN :ids")
+    int deleteAllByIdIn(@Param("ids") List<Integer> ids);
 
     // The archive. Nothing expires out of it, so there is no cutoff finder to
     // match findByDeletedAtBefore — only listing, counting and single lookups.

@@ -378,6 +378,6 @@ class SongBlockServiceImplTest {
 
         service.purgeExpiredBlocks();
 
-        verify(songBlockRepository).findByDeletedAtNotNullAndDeletedAtBefore(any());
+        verify(songBlockRepository).findIdsDeletedBefore(any(), any());
     }
 }

@@ -26,12 +26,14 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.HtmlUtils;
 
 @Service
 public class TextDocumentServiceImpl implements TextDocumentService {
+
 
     private final TextDocumentRepository textDocumentRepository;
     private final TextDocumentFolderRepository textDocumentFolderRepository;
@@ -51,6 +53,17 @@ public class TextDocumentServiceImpl implements TextDocumentService {
      */
     @Value("${scripty.documents.trash-retention-days:0}")
     private int trashRetentionDays = 0;
+
+    /**
+     * How many rows the nightly purge deletes per statement.
+     *
+     * <p>Configurable only so it can be turned down: the number itself is
+     * arbitrary — big enough that a normal night is one or two passes, small
+     * enough that no single statement is a long lock. Loading the whole backlog
+     * is what this replaced, and no value here brings that back.
+     */
+    @Value("${app.trash-purge-batch-size:500}")
+    private int purgeBatchSize = 500;
 
     @Autowired
     public TextDocumentServiceImpl(TextDocumentRepository textDocumentRepository,
@@ -430,11 +443,28 @@ public class TextDocumentServiceImpl implements TextDocumentService {
             return 0;
         }
         LocalDateTime cutoff = LocalDateTime.now().minusDays(trashRetentionDays);
-        List<TextDocument> expired = textDocumentRepository.findByDeletedAtBefore(cutoff);
-        for (TextDocument doc : expired) {
-            textDocumentRepository.delete(doc);
+        return purgeInBatches(cutoff);
+    }
+
+    /**
+     * Deletes everything trashed before {@code cutoff}, a page of ids at a time.
+     *
+     * <p>The sweep used to fetch every expired document and delete them one by
+     * one, which made both the memory it needed and the number of statements it
+     * ran a function of how much had been thrown away — worst on exactly the
+     * run that follows a few missed nights or a bulk delete. Taking ids in
+     * pages and deleting each page in one statement keeps the job the same size
+     * whatever it finds. Each page is re-queried against a table the previous
+     * page has already been deleted from, so the loop always makes progress.
+     */
+    private int purgeInBatches(LocalDateTime cutoff) {
+        int purged = 0;
+        List<Integer> batch;
+        while (!(batch = textDocumentRepository
+                .findIdsDeletedBefore(cutoff, PageRequest.of(0, purgeBatchSize))).isEmpty()) {
+            purged += textDocumentRepository.deleteAllByIdIn(batch);
         }
-        return expired.size();
+        return purged;
     }
 
     @Override

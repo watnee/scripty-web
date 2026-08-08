@@ -176,11 +176,16 @@ class BlockTrashServiceImplTest {
 
     @Test
     void purgeExpiredRemovesEverythingPastTheWindow() {
-        List<DeletedBlock> expired = List.of(record, new DeletedBlock());
-        when(deletedBlockRepository.findByDeletedAtBefore(any())).thenReturn(expired);
+        // The sweep takes ids a page at a time and stops when a page comes back
+        // empty, so a backlog costs the same whatever size it is.
+        List<Integer> expired = List.of(1, 2);
+        when(deletedBlockRepository.findIdsDeletedBefore(any(), any()))
+                .thenReturn(expired)
+                .thenReturn(List.of());
+        when(deletedBlockRepository.deleteAllByIdIn(expired)).thenReturn(2);
 
         assertEquals(2, service.purgeExpired());
-        verify(deletedBlockRepository).deleteAll(expired);
+        verify(deletedBlockRepository).deleteAllByIdIn(expired);
     }
 
     @Test
@@ -188,7 +193,7 @@ class BlockTrashServiceImplTest {
         ReflectionTestUtils.setField(service, "retentionDays", 0);
 
         assertEquals(0, service.purgeExpired());
-        verify(deletedBlockRepository, never()).findByDeletedAtBefore(any());
-        verify(deletedBlockRepository, never()).deleteAll(any());
+        verify(deletedBlockRepository, never()).findIdsDeletedBefore(any(), any());
+        verify(deletedBlockRepository, never()).deleteAllByIdIn(any());
     }
 }
